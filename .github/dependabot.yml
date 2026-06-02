@@ -7,9 +7,68 @@ updates:
     assignees:
       - "luisa-beerboom"
     groups:
-       opentelemetry-dependencies:
-          patterns:
-            - "opentelemetry-*"
+      opentelemetry-dependencies:
+        patterns:
+          - "opentelemetry-*"
+      code-style-depedencies:
+        patterns:
+          - "autoflake"
+          - "black"
+          - "debugpy"
+          - "flake8"
+          - "isort"
+          - "mypy"
+          - "pyupgrade"
+      web-dependencies:
+        patterns:
+          - "pyjwt"
+          - "requests"
+          - "types-requests"
+          - "Flask"
+          - "gunicorn"
+          - "Werkzeug"
+      database-dependencies:
+        patterns:
+          - "psycopg*"
+          - "python-sql"
+          - "sqlfluff"
+      general-dependencies:
+        patterns:
+          - "dependency_injector"
+          - "fastjsonschema"
+          - "pyyaml"
+          - "simplejson"
+          - "types-PyYAML"
+          - "types-simplejson"
+      redis-dependencies:
+        patterns:
+          - "redis"
+          - "types-redis"
+      translation-dependencies:
+        patterns:
+          - "Babel"
+          - "types-babel"
+      html-ops-dependencies:
+        patterns:
+          - "beautifulsoup4"
+          - "bleach[css]"
+          - "types-beautifulsoup4"
+          - "types-bleach"
+      mediafile-related-dependencies:
+        patterns:
+          - "pygments"
+          - "pypdf[crypto]"
+          - "python-magic"
+          - "types-Pygments"
+      test-dependencies:
+        patterns:
+          - "pytest*"
+          - "snakeviz"
+      miscellaneous-dependencies:
+        patterns:
+          - "pip-check"
+          - "roman"
+          - "aiosmtpd"
     open-pull-requests-limit: 42
 
   - package-ecosystem: "docker"

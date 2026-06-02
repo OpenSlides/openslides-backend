@@ -19,9 +19,11 @@ class ExtendHistoryMixin(Action):
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         yield from super().create_events(instance)
         field = self.model.get_field(self.extend_history_to)
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         model = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            fqid,
             [self.extend_history_to],
+            use_changed_models=not self.datastore.is_deleted(fqid),
         )
         value = model[self.extend_history_to]
         if isinstance(field, GenericRelationField):

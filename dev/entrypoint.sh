@@ -1,9 +1,18 @@
 #!/bin/bash
 
+printf "enter entrypoint.sh"
 set -e
 
-source scripts/export_datastore_variables.sh
-scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
+printf "\nOpenslides DBMS:\n"
+printf "Export env variables for database.\n"
+source scripts/export_database_variables.sh
+
+meta/dev/scripts/wait-for-database.sh
+printf "DBMS is started.\n"
+
+printf "Calling cli/create_schema.py ...\n"
+python cli/create_schema.py
+printf "\n"
 
 printf "\nMigrations:\n"
 python openslides_backend/migrations/migrate.py finalize

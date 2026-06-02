@@ -2,7 +2,7 @@ from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import StructureLevelListOfSpeakers

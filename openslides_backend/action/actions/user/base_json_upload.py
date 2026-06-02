@@ -687,7 +687,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.datastore,
             "committee",
             [(home_committee, {}) for home_committee in home_committee_names],
-            mapped_fields=["username", "saml_id", "default_password"],
         )
 
     def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:

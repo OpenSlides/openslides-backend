@@ -13,8 +13,8 @@ from openslides_backend.permissions.permission_helper import (
     has_committee_management_level,
 )
 from openslides_backend.permissions.permissions import Permissions, permission_parents
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.interface import Database
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 from openslides_backend.shared.exceptions import (
     ActionException,
@@ -34,7 +34,7 @@ class PermissionVarStore:
 
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         user_id: int,
         manage_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
@@ -53,7 +53,7 @@ class PermissionVarStore:
             lock_result=False,
         )
         self.user_oml = OrganizationManagementLevel(
-            self.user.get("organization_management_level")
+            self.user.get("organization_management_level", "")
         )
         self._user_committees: set[int] | None = None
         self._user_meetings: set[int] | None = None
@@ -386,7 +386,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN and fields:
             expected_oml = max(
                 OrganizationManagementLevel(
-                    instance.get("organization_management_level")
+                    instance.get("organization_management_level", "")
                 ),
                 OrganizationManagementLevel.CAN_MANAGE_USERS,
             )
@@ -645,7 +645,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         user_id: int,
         permstore: PermissionVarStore,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,

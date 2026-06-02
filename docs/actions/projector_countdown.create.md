@@ -3,7 +3,7 @@
 {
 // Required
     meeting_id: Id;
-    title: string;
+    title: string;  // unique in the meeting
 
 // Optional
     description: string;

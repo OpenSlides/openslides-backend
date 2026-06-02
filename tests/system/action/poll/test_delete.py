@@ -1,6 +1,8 @@
 from unittest.mock import Mock, patch
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.services.database.interface import PartialModel
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 from .base_poll_test import BasePollTestCase
@@ -8,6 +10,22 @@ from .poll_test_mixin import PollTestMixin
 
 
 class PollDeleteTest(PollTestMixin, BasePollTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting()
+        self.poll_base_data = {
+            "title": "Poll 111",
+            "pollmethod": "YNA",
+            "type": Poll.TYPE_NAMED,
+            "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
+            "meeting_id": 1,
+            "content_object_id": "motion/1",
+            "state": Poll.STATE_STARTED,
+        }
+
+    def set_up_poll(self, poll_data: PartialModel = {}) -> None:
+        self.set_models({"poll/111": self.poll_base_data | poll_data})
+
     @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
     def test_delete_correct(self, clear: Mock) -> None:
         """
@@ -19,33 +37,20 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             clear_called_on.append(id_)
 
         clear.side_effect = add_to_list
-        self.create_meeting()
-        self.set_models(
-            {
-                "poll/111": {
-                    "meeting_id": 1,
-                    "content_object_id": "motion/1",
-                    "state": "started",
-                },
-                "motion/1": {"meeting_id": 1, "poll_ids": [111]},
-            }
-        )
+        self.create_motion(1, 1)
+        self.set_up_poll()
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
+        self.assert_model_not_exists("poll/111")
         self.assert_history_information("motion/1", ["Voting deleted"])
         assert clear_called_on == [111]
 
     def test_delete_wrong_id(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "poll/112": {"meeting_id": 1},
-            }
-        )
-        response = self.request("poll.delete", {"id": 111})
+        self.create_motion(1, 1)
+        self.set_up_poll()
+        response = self.request("poll.delete", {"id": 110})
         self.assert_status_code(response, 400)
-        self.assert_model_exists("poll/112")
+        self.assert_model_exists("poll/111")
 
     @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
     def test_delete_correct_cascading(self, clear: Mock) -> None:
@@ -58,64 +63,40 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             clear_called_on.append(id_)
 
         clear.side_effect = add_to_list
-        self.create_meeting()
+        self.create_topic(1, 1)
+        self.set_up_poll({"content_object_id": "topic/1", "state": Poll.STATE_CREATED})
         self.set_models(
             {
-                "topic/1": {"poll_ids": [111], "meeting_id": 1},
-                "poll/111": {
-                    "option_ids": [42],
-                    "meeting_id": 1,
-                    "projection_ids": [1],
-                    "content_object_id": "topic/1",
-                },
                 "option/42": {"poll_id": 111, "meeting_id": 1},
-                "meeting/1": {
-                    "all_projection_ids": [1],
-                    "topic_ids": [1],
-                },
                 "projection/1": {
                     "content_object_id": "poll/111",
                     "current_projector_id": 1,
-                    "meeting_id": 1,
-                },
-                "projector/1": {
-                    "current_projection_ids": [1],
                     "meeting_id": 1,
                 },
             }
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
-        self.assert_model_deleted("option/42")
-        self.assert_model_deleted("projection/1")
-        self.assert_model_exists("projector/1", {"current_projection_ids": []})
+        self.assert_model_not_exists("poll/111")
+        self.assert_model_not_exists("option/42")
+        self.assert_model_not_exists("projection/1")
+        self.assert_model_exists("projector/1", {"current_projection_ids": None})
         assert clear_called_on == []
 
     def test_delete_cascading_poll_candidate_list(self) -> None:
         self.create_meeting()
+        self.create_topic(1, 1)
+        self.set_up_poll({"content_object_id": "topic/1"})
         self.set_models(
             {
-                "topic/1": {"poll_ids": [111], "meeting_id": 1},
-                "poll/111": {
-                    "option_ids": [42],
-                    "meeting_id": 1,
-                    "content_object_id": "topic/1",
-                },
                 "option/42": {
                     "poll_id": 111,
                     "meeting_id": 1,
                     "content_object_id": "poll_candidate_list/12",
                 },
-                "meeting/1": {
-                    "poll_candidate_list_ids": [12],
-                    "poll_candidate_ids": [13],
-                    "topic_ids": [1],
-                },
                 "poll_candidate_list/12": {
                     "meeting_id": 1,
                     "option_id": 42,
-                    "poll_candidate_ids": [13],
                 },
                 "poll_candidate/13": {
                     "meeting_id": 1,
@@ -123,14 +104,13 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                     "weight": 1,
                     "poll_candidate_list_id": 12,
                 },
-                "user/1": {"poll_candidate_ids": [13]},
             }
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
-        self.assert_model_deleted("option/42")
-        self.assert_model_deleted("poll_candidate_list/12")
+        self.assert_model_not_exists("poll/111")
+        self.assert_model_not_exists("option/42")
+        self.assert_model_not_exists("poll_candidate_list/12")
 
     @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
     def test_delete_no_permissions(self, clear: Mock) -> None:
@@ -143,14 +123,10 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             clear_called_on.append(id_)
 
         clear.side_effect = add_to_list
+        self.create_topic(1, 1)
+        self.set_up_poll({"content_object_id": "topic/1"})
         self.base_permission_test(
-            {
-                "poll/111": {
-                    "meeting_id": 1,
-                    "content_object_id": "topic/1",
-                    "state": "started",
-                }
-            },
+            {},
             "poll.delete",
             {"id": 111},
         )
@@ -158,22 +134,20 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         assert clear_called_on == []
 
     def test_delete_permissions(self) -> None:
-        self.set_models(
-            {
-                "topic/1": {"title": "The topic", "meeting_id": 1},
-                "meeting/1": {"topic_ids": [1]},
-            }
-        )
+        self.create_topic(1, 1)
+        self.set_up_poll({"content_object_id": "topic/1"})
         self.base_permission_test(
-            {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
+            {},
             "poll.delete",
             {"id": 111},
             Permissions.Poll.CAN_MANAGE,
         )
 
     def test_delete_permissions_locked_meeting(self) -> None:
+        self.create_topic(1, 1)
+        self.set_up_poll({"content_object_id": "topic/1"})
         self.base_locked_out_superadmin_permission_test(
-            {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
+            {},
             "poll.delete",
             {"id": 111},
         )
@@ -185,11 +159,12 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             response = self.request("poll.delete", {"id": 1})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/1")
-        assert counter.calls == 8
+        self.assert_model_not_exists("poll/1")
+        assert counter.calls == 16
 
     @performance
     def test_delete_performance(self) -> None:
+        # TODO this needs a different idea
         user_ids = self.prepare_users_and_poll(1000)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)

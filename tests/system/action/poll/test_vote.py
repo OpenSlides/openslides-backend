@@ -1,10 +1,11 @@
+from decimal import Decimal
 from typing import Any
 
 import requests
 import simplejson as json
 
 from openslides_backend.models.models import Poll
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.services.database.interface import PartialModel
 from tests.system.util import convert_to_test_response
 from tests.util import Response
 
@@ -25,10 +26,12 @@ class BaseVoteTestCase(BasePollTestCase):
         """Overwrite request method to reroute voting requests to the vote service."""
         if action == "poll.vote":
             if start_poll_before_vote:
-                self.vote_service.start(data["id"])
+                self.execute_action_internally("poll.start", {"id": data["id"]})
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
-                self.execute_action_internally("poll.stop", {"id": data["id"]})
+                # TODO: fix execute_action_internally to avoid concurrent update error
+                # self.execute_action_internally("poll.stop", {"id": data["id"]})
+                self.request("poll.stop", {"id": data["id"]}, internal=True)
             return response
         else:
             return super().request(action, data, anonymous, lang, internal)
@@ -49,61 +52,63 @@ class BaseVoteTestCase(BasePollTestCase):
 class PollVoteTest(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_model(
-            "meeting/113",
-            {"is_active_in_organization_id": 1},
+        self.create_meeting(113)
+        self.create_motion(113, 1)
+
+    def create_poll_with_3_options(self, poll_data: PartialModel = {}) -> None:
+        self.set_models(
+            {
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "title": "my test poll",
+                    "pollmethod": "YN",
+                    "meeting_id": 113,
+                    "state": Poll.STATE_CREATED,
+                    "backend": "fast",
+                    "type": "named",
+                    "onehundred_percent_base": "YNA",
+                    **poll_data,
+                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
+            }
         )
 
     def test_vote_correct_pollmethod_Y(self) -> None:
         user_id = self.create_user("test2")
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
+                "group/113": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                    "meeting_ids": [113],
-                },
                 "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
-                    "group_ids": [1],
-                },
-                f"user/{user_id}": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [12],
-                    "meeting_ids": [113],
                 },
                 "meeting_user/12": {
                     "meeting_id": 113,
                     "user_id": user_id,
-                    "vote_weight": "2.000000",
-                    "group_ids": [1],
-                },
-                "motion/1": {
-                    "meeting_id": 113,
+                    "vote_weight": Decimal("2.000000"),
                 },
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
-                    "option_ids": [11],
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "YNA",
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": True,
-                    "meeting_user_ids": [11, 12],
+                    "present_user_ids": [1, 2],
                 },
             }
         )
@@ -130,50 +135,22 @@ class PollVoteTest(BaseVoteTestCase):
                     "vote_ids": [vote["id"]],
                 },
             )
-            assert vote.get("weight") == f"{user_id}.000000"
+            assert vote.get("weight") == Decimal(f"{user_id}.000000")
         self.assert_model_exists(
             "option/11",
             {
                 "vote_ids": [1, 2],
-                "yes": "3.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("3.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
 
     def test_value_check(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             }
         )
         response = self.request(
@@ -191,41 +168,11 @@ class PollVoteTest(BaseVoteTestCase):
         )
 
     def test_vote_correct_pollmethod_YN(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 10,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             }
         )
         response = self.request(
@@ -242,7 +189,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "Y",
                 "option_id": 11,
-                "weight": "1.000000",
+                "weight": Decimal("1.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
                 "delegated_user_id": 1,
@@ -254,7 +201,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "N",
                 "option_id": 12,
-                "weight": "1.000000",
+                "weight": Decimal("1.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
                 "delegated_user_id": 1,
@@ -265,57 +212,29 @@ class PollVoteTest(BaseVoteTestCase):
             "option/11",
             {
                 "vote_ids": [1],
-                "yes": "1.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
         self.assert_model_exists(
             "option/12",
             {
                 "vote_ids": [2],
-                "yes": "0.000000",
-                "no": "1.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
 
     def test_vote_wrong_votes_total(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "Y",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "Y",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "pollmethod": "Y",
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "max_votes_per_option": 1,
+                "onehundred_percent_base": "Y",
             }
         )
         response = self.request(
@@ -334,38 +253,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_model_not_exists("vote/1")
 
     def test_vote_pollmethod_Y_wrong_value(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "Y",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "title": "Poll 1",
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-            }
-        )
+        self.create_poll_with_3_options({"pollmethod": "Y"})
         response = self.request(
             "poll.vote",
             {
@@ -378,41 +266,12 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_model_not_exists("vote/1")
 
     def test_vote_no_votes_total_check_by_YNA(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "YNA",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 2,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "pollmethod": "YNA",
+                "min_votes_amount": 1,
+                "max_votes_amount": 2,
+                "max_votes_per_option": 1,
             }
         )
         response = self.request(
@@ -427,41 +286,12 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_model_exists("vote/1")
 
     def test_vote_no_votes_total_check_by_YNA_max_votes_error(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "YNA",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "pollmethod": "YNA",
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "max_votes_per_option": 1,
             }
         )
         response = self.request(
@@ -476,40 +306,8 @@ class PollVoteTest(BaseVoteTestCase):
         assert "You have to select between 1 and 1 options" in response.json["message"]
 
     def test_vote_no_votes_total_check_by_YN(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-            }
+        self.create_poll_with_3_options(
+            {"max_votes_amount": 10, "max_votes_per_option": 1}
         )
         response = self.request(
             "poll.vote",
@@ -523,41 +321,12 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_model_exists("vote/1")
 
     def test_vote_wrong_votes_total_min_case(self) -> None:
-        self.set_models(
+        self.create_poll_with_3_options(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "title": "my test poll",
-                    "option_ids": [11, 12, 13],
-                    "pollmethod": "Y",
-                    "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 2,
-                    "max_votes_amount": 2,
-                    "max_votes_per_option": 1,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "YNA",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "pollmethod": "Y",
+                "min_votes_amount": 2,
+                "max_votes_amount": 2,
+                "max_votes_per_option": 1,
             }
         )
         response = self.request(
@@ -576,33 +345,14 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_model_not_exists("vote/1")
 
     def test_vote_global(self) -> None:
+        self.create_user("test2")
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11, 12]},
+                "meeting/113": {"present_user_ids": [1, 2]},
+                "group/113": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/2": {
-                    "username": "test2",
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [12],
-                },
-                "meeting_user/12": {
-                    "user_id": 2,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
+                "meeting_user/12": {"user_id": 2, "meeting_id": 113},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
@@ -611,12 +361,10 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "pollmethod": "YNA",
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
             }
@@ -627,7 +375,11 @@ class PollVoteTest(BaseVoteTestCase):
             stop_poll_after_vote=False,
         )
         self.assert_status_code(response, 200)
-        response = self.request("poll.vote", {"id": 1, "user_id": 2, "value": "Y"})
+        response = self.request(
+            "poll.vote",
+            {"id": 1, "user_id": 2, "value": "Y"},
+            start_poll_before_vote=False,
+        )
         self.assert_status_code(response, 400)
 
         self.assert_model_exists(
@@ -635,7 +387,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "N",
                 "option_id": 11,
-                "weight": "1.000000",
+                "weight": Decimal("1.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
             },
@@ -644,9 +396,9 @@ class PollVoteTest(BaseVoteTestCase):
             "option/11",
             {
                 "vote_ids": [1],
-                "yes": "0.000000",
-                "no": "1.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
         self.assert_model_exists(
@@ -662,32 +414,19 @@ class PollVoteTest(BaseVoteTestCase):
     def test_vote_schema_problems(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
-                    "entitled_group_ids": [1],
                     "meeting_id": 113,
                     "pollmethod": "YNA",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "YNA",
                 },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "X"})
@@ -697,35 +436,22 @@ class PollVoteTest(BaseVoteTestCase):
     def test_vote_invalid_vote_value(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "option_ids": [11],
                     "pollmethod": "YNA",
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "meeting_id": 113,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                     "onehundred_percent_base": "YNA",
                 },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
             }
         )
         response = self.request(
@@ -745,34 +471,21 @@ class PollVoteTest(BaseVoteTestCase):
     def test_vote_not_started_in_service(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "type": "named",
                     "meeting_id": 113,
                     "pollmethod": "YNA",
                     "global_yes": True,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                     "onehundred_percent_base": "YNA",
                 },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
             }
         )
         response = self.request(
@@ -785,40 +498,8 @@ class PollVoteTest(BaseVoteTestCase):
         assert "Poll does not exist" in response.json["message"]
 
     def test_vote_option_not_in_poll(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
-                "option/11": {"meeting_id": 113, "poll_id": 1},
-                "option/12": {"meeting_id": 113, "poll_id": 1},
-                "option/13": {"meeting_id": 113, "poll_id": 1},
-                "poll/1": {
-                    "content_object_id": "motion/1",
-                    "option_ids": [11, 12, 13],
-                    "title": "my test poll",
-                    "type": "named",
-                    "pollmethod": "YNA",
-                    "entitled_group_ids": [1],
-                    "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
-                    "backend": "fast",
-                    "type": "named",
-                    "sequential_number": 1,
-                    "onehundred_percent_base": "Y",
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-            }
+        self.create_poll_with_3_options(
+            {"pollmethod": "YNA", "onehundred_percent_base": "Y"}
         )
         response = self.request(
             "poll.vote",
@@ -832,33 +513,14 @@ class PollVoteTest(BaseVoteTestCase):
         assert "Option_id 113 does not belong to the poll" in response.json["message"]
 
     def test_double_vote(self) -> None:
+        self.create_user("test2")
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11, 12]},
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/2": {
-                    "username": "test2",
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [12],
-                },
-                "meeting_user/12": {
-                    "user_id": 2,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
+                "meeting_user/12": {"user_id": 2, "meeting_id": 113},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
@@ -867,12 +529,10 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
                     "pollmethod": "YN",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
             }
@@ -895,7 +555,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "N",
                 "option_id": 11,
-                "weight": "1.000000",
+                "weight": Decimal("1.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
                 "delegated_user_id": 1,
@@ -910,17 +570,10 @@ class PollVoteTest(BaseVoteTestCase):
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                    "meeting_ids": [113],
-                },
-                "meeting_user/11": {"user_id": 1, "meeting_id": 113, "group_ids": [1]},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "pollmethod": "YNA",
@@ -929,11 +582,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "entitled_group_ids": [],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                     "onehundred_percent_base": "YNA",
                 },
@@ -946,18 +597,9 @@ class PollVoteTest(BaseVoteTestCase):
     def test_check_user_present_in_meeting(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "user/1": {"meeting_user_ids": [11]},
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
@@ -966,12 +608,10 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "pollmethod": "YNA",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
             }
@@ -983,32 +623,19 @@ class PollVoteTest(BaseVoteTestCase):
     def test_check_str_validation(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
                     "type": "named",
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
                     "pollmethod": "Y",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "X"})
@@ -1018,37 +645,25 @@ class PollVoteTest(BaseVoteTestCase):
     def test_default_vote_weight(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                    "default_vote_weight": "3.000000",
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "motion/1": {
-                    "meeting_id": 113,
-                },
+                "user/1": {"default_vote_weight": Decimal("3.000000")},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
-                    "option_ids": [11],
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
-                "meeting/113": {"users_enable_vote_weight": True},
+                "meeting/113": {
+                    "users_enable_vote_weight": True,
+                    "present_user_ids": [1],
+                },
             }
         )
         response = self.request(
@@ -1060,7 +675,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "Y",
                 "option_id": 11,
-                "weight": "3.000000",
+                "weight": Decimal("3.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
             },
@@ -1069,9 +684,9 @@ class PollVoteTest(BaseVoteTestCase):
             "option/11",
             {
                 "vote_ids": [1],
-                "yes": "3.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("3.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
         self.assert_model_exists(
@@ -1082,40 +697,28 @@ class PollVoteTest(BaseVoteTestCase):
     def test_vote_weight_not_enabled(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "default_vote_weight": "3.000000",
-                    "meeting_user_ids": [11],
-                },
+                "user/1": {"default_vote_weight": Decimal("3.000000")},
                 "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
-                    "vote_weight": "4.200000",
-                    "group_ids": [1],
-                },
-                "motion/1": {
-                    "meeting_id": 113,
+                    "vote_weight": Decimal("4.200000"),
                 },
                 "poll/1": {
                     "content_object_id": "motion/1",
                     "title": "my test poll",
-                    "option_ids": [11],
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "entitled_group_ids": [1],
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
-                    "sequential_number": 1,
                     "onehundred_percent_base": "Y",
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": False,
-                    "meeting_user_ids": [11],
+                    "present_user_ids": [1],
                 },
             }
         )
@@ -1128,7 +731,7 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 "value": "Y",
                 "option_id": 11,
-                "weight": "1.000000",
+                "weight": Decimal("1.000000"),
                 "meeting_id": 113,
                 "user_id": 1,
             },
@@ -1137,9 +740,9 @@ class PollVoteTest(BaseVoteTestCase):
             "option/11",
             {
                 "vote_ids": [1],
-                "yes": "1.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
             },
         )
         self.assert_model_exists(
@@ -1151,45 +754,30 @@ class PollVoteTest(BaseVoteTestCase):
 class VotePollBaseTestClass(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "assignment/1": {
-                    "title": "test_assignment_tcLT59bmXrXif424Qw7K",
-                    "open_posts": 1,
-                    "meeting_id": 113,
-                },
-                "meeting/113": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting(113)
+        self.create_assignment(1, 113, {"open_posts": 1})
         self.create_poll()
         self.set_models(
             {
-                "group/1": {"meeting_user_ids": [11], "meeting_id": 113},
+                "meeting/113": {"present_user_ids": [1]},
+                "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "option/1": {
                     "meeting_id": 113,
                     "poll_id": 1,
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
+                    "yes": Decimal("0.000000"),
+                    "no": Decimal("0.000000"),
+                    "abstain": Decimal("0.000000"),
                 },
                 "option/2": {
                     "meeting_id": 113,
                     "poll_id": 1,
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
+                    "yes": Decimal("0.000000"),
+                    "no": Decimal("0.000000"),
+                    "abstain": Decimal("0.000000"),
                 },
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 113,
-                    "group_ids": [1],
-                },
-                "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "poll/1": {"global_option_id": 11, "backend": "fast"},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113},
+                "option/11": {"meeting_id": 113},
+                "poll/1": {"global_option_id": 11},
             }
         )
 
@@ -1198,13 +786,12 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         raise NotImplementedError()
 
     def start_poll(self) -> None:
-        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        self.update_model("poll/1", {"state": Poll.STATE_CREATED})
 
     def add_option(self) -> None:
         self.set_models(
             {
                 "option/3": {"meeting_id": 113, "poll_id": 1},
-                "poll/1": {"option_ids": [1, 2, 3]},
             }
         )
 
@@ -1220,15 +807,12 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votescast": "0.000000",
-                "votesvalid": "0.000000",
-                "votesinvalid": "0.000000",
+                "votescast": Decimal("0.000000"),
+                "votesvalid": Decimal("0.000000"),
+                "votesinvalid": Decimal("0.000000"),
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "YNA",
             },
         )
@@ -1242,33 +826,44 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 200)
         self.assert_model_count("vote", 113, 3)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertIn(1, poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        option3 = self.get_model("option/3")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "1.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        self.assertEqual(option3.get("yes"), "0.000000")
-        self.assertEqual(option3.get("no"), "0.000000")
-        self.assertEqual(option3.get("abstain"), "1.000000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/3",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("1.000000"),
+            },
+        )
 
     def test_vote_with_voteweight(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_user_ids": [11]},
-                "meeting_user/11": {
-                    "meeting_id": 113,
-                    "user_id": 1,
-                    "vote_weight": "4.200000",
-                },
+                "meeting_user/11": {"vote_weight": "4.200000"},
                 "meeting/113": {"users_enable_vote_weight": True},
             }
         )
@@ -1280,23 +875,39 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 200)
         self.assert_model_count("vote", 113, 3)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "4.200000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertEqual(poll.get("state"), Poll.STATE_FINISHED)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        option3 = self.get_model("option/3")
-        self.assertEqual(option1.get("yes"), "4.200000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "4.200000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        self.assertEqual(option3.get("yes"), "0.000000")
-        self.assertEqual(option3.get("no"), "0.000000")
-        self.assertEqual(option3.get("abstain"), "4.200000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("4.200000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "state": Poll.STATE_FINISHED,
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("4.200000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("4.200000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/3",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("4.200000"),
+            },
+        )
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -1305,6 +916,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
+        self.assert_status_code(response, 200)
         response = self.request(
             "poll.vote",
             {"value": {"1": "N"}, "id": 1, "user_id": 1},
@@ -1341,7 +953,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -1415,16 +1027,13 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -1438,19 +1047,31 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
         self.assert_model_not_exists("vote/2")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertIn(1, poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -1459,29 +1080,42 @@ class VotePollNamedY(VotePollBaseTestClass):
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
+        self.assert_status_code(response, 200)
         response = self.request(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
         )
         self.assert_status_code(response, 400)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "1.000000")
-        self.assertEqual(option.get("no"), "0.000000")
-        self.assertEqual(option.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_yes_forbidden(self) -> None:
         self.update_model("poll/1", {"global_yes": False})
@@ -1494,10 +1128,14 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "0.000000")
-        self.assertEqual(option.get("no"), "1.000000")
-        self.assertEqual(option.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_no_forbidden(self) -> None:
         self.update_model("poll/1", {"global_no": False})
@@ -1510,10 +1148,14 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "0.000000")
-        self.assertEqual(option.get("no"), "0.000000")
-        self.assertEqual(option.get("abstain"), "1.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("1.000000"),
+            },
+        )
 
     def test_global_abstain_forbidden(self) -> None:
         self.update_model("poll/1", {"global_abstain": False})
@@ -1567,7 +1209,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1641,16 +1283,13 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "global_yes": False,
                 "global_no": False,
                 "global_abstain": False,
                 "min_votes_amount": 1,
                 "max_votes_amount": 5,
                 "max_votes_per_option": 3,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -1663,19 +1302,31 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertIn(1, poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "2.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "3.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("2.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("3.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -1690,17 +1341,25 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
             start_poll_before_vote=False,
         )
         self.assert_status_code(response, 400)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "3.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("3.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_vote_weight(self) -> None:
-        self.update_model("user/1", {"default_vote_weight": "3.000000"})
+        self.update_model("user/1", {"default_vote_weight": Decimal("3.000000")})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
         self.start_poll()
         response = self.request(
@@ -1708,17 +1367,25 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
             {"value": {"1": 1, "2": 3}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 200)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "3.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "9.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("3.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("9.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_vote_change_weight(self) -> None:
-        self.update_model("user/1", {"default_vote_weight": "3.000000"})
+        self.update_model("user/1", {"default_vote_weight": Decimal("3.000000")})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
         self.start_poll()
         response = self.request(
@@ -1732,14 +1399,22 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
             start_poll_before_vote=False,
         )
         self.assert_status_code(response, 400)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "6.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("6.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
 
 class VotePollNamedN(VotePollBaseTestClass):
@@ -1753,16 +1428,13 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -1776,19 +1448,31 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
         self.assert_model_not_exists("vote/2")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertTrue(1 in poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "0.000000")
-        self.assertEqual(option1.get("no"), "1.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_change_vote(self) -> None:
         self.add_option()
@@ -1804,23 +1488,35 @@ class VotePollNamedN(VotePollBaseTestClass):
             start_poll_before_vote=False,
         )
         self.assert_status_code(response, 400)
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "0.000000")
-        self.assertEqual(option1.get("no"), "1.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "1.000000")
-        self.assertEqual(option.get("no"), "0.000000")
-        self.assertEqual(option.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_yes_forbidden(self) -> None:
         self.update_model("poll/1", {"global_yes": False})
@@ -1833,10 +1529,14 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "0.000000")
-        self.assertEqual(option.get("no"), "1.000000")
-        self.assertEqual(option.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_global_no_forbidden(self) -> None:
         self.update_model("poll/1", {"global_no": False})
@@ -1849,10 +1549,14 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
-        option = self.get_model("option/11")
-        self.assertEqual(option.get("yes"), "0.000000")
-        self.assertEqual(option.get("no"), "0.000000")
-        self.assertEqual(option.get("abstain"), "1.000000")
+        self.assert_model_exists(
+            "option/11",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("1.000000"),
+            },
+        )
 
     def test_global_abstain_forbidden(self) -> None:
         self.update_model("poll/1", {"global_abstain": False})
@@ -1887,7 +1591,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1961,13 +1665,10 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -1981,22 +1682,38 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 200)
         self.assert_model_count("vote", 113, 3)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        option3 = self.get_model("option/3")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "1.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        self.assertEqual(option3.get("yes"), "0.000000")
-        self.assertEqual(option3.get("no"), "0.000000")
-        self.assertEqual(option3.get("abstain"), "1.000000")
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/3",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("1.000000"),
+            },
+        )
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -2011,10 +1728,14 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
             start_poll_before_vote=False,
         )
         self.assert_status_code(response, 400)
-        option1 = self.get_model("option/1")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_too_many_options(self) -> None:
         self.start_poll()
@@ -2052,7 +1773,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -2126,13 +1847,10 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -2146,21 +1864,32 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
         self.assert_model_not_exists("vote/2")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertTrue(1 in poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        vote = self.get_model("vote/1")
-        self.assertIsNone(vote.get("user_id"))
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists("vote/1", {"user_id": None})
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -2176,14 +1905,22 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 400)
         self.get_model("poll/1")
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_negative_vote(self) -> None:
         self.start_poll()
@@ -2205,7 +1942,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -2279,13 +2016,10 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-                "votesinvalid": "0.000000",
+                "votesinvalid": Decimal("0.000000"),
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
-                "sequential_number": 1,
                 "onehundred_percent_base": "Y",
             },
         )
@@ -2299,21 +2033,32 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
         self.assert_model_not_exists("vote/2")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertTrue(1 in poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "0.000000")
-        self.assertEqual(option1.get("no"), "1.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        vote = self.get_model("vote/1")
-        self.assertIsNone(vote.get("user_id"))
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votesvalid": Decimal("1.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votescast": Decimal("1.000000"),
+                "voted_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists("vote/1", {"user_id": None})
 
     def test_change_vote(self) -> None:
         self.start_poll()
@@ -2329,14 +2074,22 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         )
         self.assert_status_code(response, 400)
         self.get_model("poll/1")
-        option1 = self.get_model("option/1")
-        self.assertEqual(option1.get("yes"), "0.000000")
-        self.assertEqual(option1.get("no"), "1.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assert_model_exists(
+            "option/1",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("1.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "yes": Decimal("0.000000"),
+                "no": Decimal("0.000000"),
+                "abstain": Decimal("0.000000"),
+            },
+        )
 
     def test_negative_vote(self) -> None:
         self.start_poll()
@@ -2349,7 +2102,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
 
         response = self.request(
             "poll.vote",

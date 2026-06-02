@@ -4,12 +4,12 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import GenderPermissionMixin, GenderUniqueMixin
+from .mixins import GenderPermissionMixin
 
 
 @register_action("gender.update")
 class GenderUpdateAction(
-    UpdateAction, CheckForArchivedMeetingMixin, GenderPermissionMixin, GenderUniqueMixin
+    UpdateAction, CheckForArchivedMeetingMixin, GenderPermissionMixin
 ):
     """
     Action to update a gender.

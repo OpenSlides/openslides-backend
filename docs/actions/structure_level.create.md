@@ -3,7 +3,7 @@
 ```js
 {
     // required
-    name: string;
+    name: string;  // unique in the meeting
     meeting_id: Id;
     
     // optional

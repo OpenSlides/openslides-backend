@@ -4,7 +4,7 @@ from typing import Any
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
 from ....models.models import Poll
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
@@ -75,7 +75,11 @@ class PollStopAction(
                 ["meeting_user_ids"],
             ),
         ]
-        result = self.datastore.get_many(requests, use_changed_models=False)
+        result = self.datastore.get_many(
+            requests,
+            use_changed_models=False,
+            lock_result=False,
+        )
         groups = result["group"].values()
         result = self.datastore.get_many(
             [
@@ -92,6 +96,7 @@ class PollStopAction(
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )
         meeting_users = result["meeting_user"].values()
         self.datastore.get_many(
@@ -107,6 +112,7 @@ class PollStopAction(
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

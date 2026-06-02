@@ -1,45 +1,25 @@
+from collections.abc import Iterable
 from typing import Any
 
-from datastore.shared.util import DeletedModelsBehaviour
-
-from ...models.models import Model
-from ...services.datastore.interface import DatastoreService
-from ...shared.filters import FilterOperator
+from ...shared.interfaces.event import Event
+from ...shared.patterns import fqid_from_collection_and_id
+from ..action import EditFunction
 from ..generics.create import CreateAction
-from ..util.typing import ActionResultElement
 
 
 class SequentialNumbersMixin(CreateAction):
-    datastore: DatastoreService
-    model: Model
-
-    def get_sequential_number(self, meeting_id: int) -> int:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """
-        Creates a sequential number, unique per meeting and returns it
+        Creates events for one instance of the current model.
         """
-        filter = FilterOperator("meeting_id", "=", meeting_id)
+        events: list[Event] = list(super().create_events(instance))
+        for event in events:
+            event["return_fields"] = ["sequential_number"]
+        yield from events
 
-        number = self.datastore.max(
-            collection=self.model.collection,
-            filter=filter,
-            field="sequential_number",
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
-        )
-        number = 1 if number is None else number + 1
-        return number
+    def get_post_edit_function(self) -> EditFunction | None:
+        return self.post_edit_fn
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        instance = super().update_instance(instance)
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
-        return instance
-
-    def create_action_result_element(
-        self, instance: dict[str, Any]
-    ) -> ActionResultElement | None:
-        result = super().create_action_result_element(instance)
-        if result is None:
-            result = {"id": instance["id"]}
-        result["sequential_number"] = instance["sequential_number"]
-        return result
+    def post_edit_fn(self, data: dict, results: dict[str, dict[str, Any]]) -> None:
+        fqid = fqid_from_collection_and_id(self.model.collection, data.get("id", 0))
+        data.update(results.get(fqid, {}))

@@ -1,17 +1,17 @@
 # Code generated. DO NOT EDIT.
 
-from enum import Enum
+from enum import StrEnum
 
 from .base_classes import Permission
 
 
-class _AgendaItem(str, Permission, Enum):
+class _AgendaItem(Permission, StrEnum):
     CAN_MANAGE = "agenda_item.can_manage"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
 
 
-class _Assignment(str, Permission, Enum):
+class _Assignment(Permission, StrEnum):
     CAN_MANAGE = "assignment.can_manage"
     CAN_MANAGE_POLLS = "assignment.can_manage_polls"
     CAN_NOMINATE_OTHER = "assignment.can_nominate_other"
@@ -19,11 +19,11 @@ class _Assignment(str, Permission, Enum):
     CAN_SEE = "assignment.can_see"
 
 
-class _Chat(str, Permission, Enum):
+class _Chat(Permission, StrEnum):
     CAN_MANAGE = "chat.can_manage"
 
 
-class _ListOfSpeakers(str, Permission, Enum):
+class _ListOfSpeakers(Permission, StrEnum):
     CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
     CAN_MANAGE = "list_of_speakers.can_manage"
     CAN_MANAGE_MODERATOR_NOTES = "list_of_speakers.can_manage_moderator_notes"
@@ -31,12 +31,12 @@ class _ListOfSpeakers(str, Permission, Enum):
     CAN_SEE_MODERATOR_NOTES = "list_of_speakers.can_see_moderator_notes"
 
 
-class _Mediafile(str, Permission, Enum):
+class _Mediafile(Permission, StrEnum):
     CAN_MANAGE = "mediafile.can_manage"
     CAN_SEE = "mediafile.can_see"
 
 
-class _Meeting(str, Permission, Enum):
+class _Meeting(Permission, StrEnum):
     CAN_MANAGE_LOGOS_AND_FONTS = "meeting.can_manage_logos_and_fonts"
     CAN_MANAGE_SETTINGS = "meeting.can_manage_settings"
     CAN_SEE_AUTOPILOT = "meeting.can_see_autopilot"
@@ -45,7 +45,7 @@ class _Meeting(str, Permission, Enum):
     CAN_SEE_LIVESTREAM = "meeting.can_see_livestream"
 
 
-class _Motion(str, Permission, Enum):
+class _Motion(Permission, StrEnum):
     CAN_CREATE = "motion.can_create"
     CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
     CAN_FORWARD = "motion.can_forward"
@@ -58,21 +58,21 @@ class _Motion(str, Permission, Enum):
     CAN_SUPPORT = "motion.can_support"
 
 
-class _Poll(str, Permission, Enum):
+class _Poll(Permission, StrEnum):
     CAN_MANAGE = "poll.can_manage"
     CAN_SEE_PROGRESS = "poll.can_see_progress"
 
 
-class _Projector(str, Permission, Enum):
+class _Projector(Permission, StrEnum):
     CAN_MANAGE = "projector.can_manage"
     CAN_SEE = "projector.can_see"
 
 
-class _Tag(str, Permission, Enum):
+class _Tag(Permission, StrEnum):
     CAN_MANAGE = "tag.can_manage"
 
 
-class _User(str, Permission, Enum):
+class _User(Permission, StrEnum):
     CAN_EDIT_OWN_DELEGATION = "user.can_edit_own_delegation"
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"

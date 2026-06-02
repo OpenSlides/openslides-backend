@@ -1,7 +1,18 @@
-from ..shared.exceptions import View400Exception
+from openslides_backend.shared.exceptions import View400Exception
 
 
 class MigrationException(View400Exception):
-    def __init__(self, errors: list[str]):
-        err_str = "\n* ".join(sorted(errors))
-        super().__init__(f"Migration exception:\n* {err_str}")
+    pass
+
+
+class MigrationSetupException(MigrationException):
+    pass
+
+
+class MismatchingMigrationIndicesException(MigrationException):
+    pass
+
+
+class InvalidMigrationCommand(MigrationException):
+    def __init__(self, command: str) -> None:
+        super().__init__(f"Invalid migration command: {command}")

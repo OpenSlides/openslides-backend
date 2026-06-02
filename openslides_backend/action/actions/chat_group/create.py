@@ -7,14 +7,13 @@ from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
+from .mixins import ChatEnabledMixin
 
 
 @register_action("chat_group.create")
 class ChatGroupCreate(
     WeightMixin,
     ChatEnabledMixin,
-    CheckUniqueNameMixin,
     CreateAction,
     ForbidAnonymousGroupMixin,
 ):
@@ -31,7 +30,6 @@ class ChatGroupCreate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        self.check_name_unique(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])
         self.check_anonymous_not_in_list_fields(instance, ["write_group_ids"])
         return instance

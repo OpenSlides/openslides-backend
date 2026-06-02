@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 
@@ -43,7 +44,7 @@ class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
         ):
             raise ActionException("Speaker is not currently speaking.")
 
-        instance["pause_time"] = now = round(time())
+        instance["pause_time"] = now = datetime.now(ZoneInfo("UTC"))
 
         # update countdowns
         self.decrease_structure_level_countdown(now, db_instance)

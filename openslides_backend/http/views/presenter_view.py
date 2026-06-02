@@ -1,5 +1,6 @@
-from ...migrations import assert_migration_index
+from ...migrations.migration_helper import MigrationHelper
 from ...presenter.presenter import PresenterHandler
+from ...services.postgresql.db_connection_handling import get_new_os_conn
 from ...shared.interfaces.wsgi import RouteResponse
 from ..request import Request
 from .base_view import BaseView, route
@@ -17,7 +18,9 @@ class PresenterView(BaseView):
     def presenter_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching presenter request.")
 
-        assert_migration_index()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
 
         # Handle request.
         handler = PresenterHandler(

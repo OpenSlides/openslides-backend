@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
@@ -14,12 +14,12 @@ from ...permissions.permission_helper import (
     has_perm,
 )
 from ...permissions.permissions import Permission, Permissions
-from ...services.datastore.interface import GetManyRequest
+from ...services.database.interface import GetManyRequest
 from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
 
 
-class UserScope(str, Enum):
+class UserScope(StrEnum):
     Meeting = "meeting"
     Committee = "committee"
     Organization = "organization"

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.action.generics.update import UpdateAction
@@ -45,6 +46,9 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
             raise ActionException(
                 "Cannot set remaining_time and spoken_time at the same time."
             )
+
+        if (t := instance.get("current_start_time")) and isinstance(t, int):
+            instance["current_start_time"] = datetime.fromtimestamp(t)
 
         if spoken_time := instance.pop("spoken_time", None):
             db_instance = self.datastore.get(

@@ -1,7 +1,9 @@
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -70,7 +72,16 @@ class PollUpdateAction(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["state", "type", "entitled_users_at_stop", "content_object_id"],
+            [
+                "state",
+                "type",
+                "entitled_users_at_stop",
+                "content_object_id",
+                "pollmethod",
+                "max_votes_amount",
+                "global_yes",
+                "option_ids",
+            ],
         )
 
         self.check_entitled_users_at_stop(instance, poll)
@@ -79,7 +90,7 @@ class PollUpdateAction(
 
         self.check_onehundred_percent_base(instance)
 
-        not_allowed = []
+        not_allowed: list[str] = []
         if not poll.get("state") == Poll.STATE_CREATED:
             for key in (
                 "pollmethod",
@@ -118,12 +129,47 @@ class PollUpdateAction(
             )
 
         # check named and live_voting_enabled
+        global_yes_for_check = instance.get("global_yes") or poll.get("global_yes")
+        pollmethod_for_check = instance.get("pollmethod") or poll.get("pollmethod")
+        max_votes_amount_for_check = instance.get("max_votes_amount") or poll.get(
+            "max_votes_amount"
+        )
+        option_ids: list[int] = poll.get("option_ids", [])
+        length_for_check = len(option_ids)
+        content_object_id = (
+            self.datastore.get(
+                fqid_from_collection_and_id("option", option_ids[0]),
+                ["content_object_id"],
+            ).get("content_object_id")
+            if length_for_check
+            else None
+        )
+        is_list_poll = (
+            collection_from_fqid(content_object_id) == "poll_candidate_list"
+            if content_object_id
+            else False
+        )
         if instance.get("live_voting_enabled") and not (
             poll["type"] == Poll.TYPE_NAMED
-            and collection_from_fqid(poll["content_object_id"]) == "motion"
+            and (
+                collection_from_fqid(poll["content_object_id"]) == "motion"
+                or (
+                    collection_from_fqid(poll["content_object_id"]) == "assignment"
+                    and (
+                        not global_yes_for_check
+                        and pollmethod_for_check == "Y"
+                        and max_votes_amount_for_check == 1
+                    )
+                    or is_list_poll
+                    or (
+                        (pollmethod_for_check == "YNA" or pollmethod_for_check == "YN")
+                        and length_for_check == 1
+                    )
+                )
+            )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls."
+                "live_voting_enabled only allowed for named motion polls and some named assignment polls."
             )
 
         if poll["type"] == Poll.TYPE_ANALOG and (
@@ -155,6 +201,11 @@ class PollUpdateAction(
 
         instance.pop("publish_immediately", None)
         self.check_anonymous_not_in_list_fields(instance, ["entitled_group_ids"])
+
+        if raw_entitled_users_at_stop := instance.get("entitled_users_at_stop"):
+            if isinstance(raw_entitled_users_at_stop, list):
+                instance["entitled_users_at_stop"] = Jsonb(raw_entitled_users_at_stop)
+
         return instance
 
     def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:

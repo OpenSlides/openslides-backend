@@ -1,9 +1,5 @@
 from typing import Any
 
-from openslides_backend.action.mixins.check_unique_name_mixin import (
-    CheckUniqueInContextMixin,
-)
-
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -18,9 +14,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 
-class CommitteeCommonCreateUpdateMixin(
-    CheckUniqueInContextMixin, CheckForArchivedMeetingMixin
-):
+class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
     def check_forwarding_fields(self, instance: dict[str, Any]) -> None:
         id_ = instance.get("id")
         forwarding_fields = [
@@ -87,13 +81,3 @@ class CommitteeCommonCreateUpdateMixin(
             ):
                 raise ActionException(message)
         return instance
-
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if instance.get("external_id"):
-            self.check_unique_in_context(
-                "external_id",
-                instance["external_id"],
-                "The external_id of the committee is not unique.",
-                instance.get("id"),
-            )

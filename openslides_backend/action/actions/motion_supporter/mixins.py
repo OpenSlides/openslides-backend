@@ -2,7 +2,7 @@ from typing import Any
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin

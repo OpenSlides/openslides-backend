@@ -1,5 +1,6 @@
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
+from decimal import Decimal
+
+from psycopg.types.json import Jsonb
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -11,17 +12,19 @@ class UserBaseSamlAccount(BaseActionTestCase):
             {
                 "organization/1": {
                     "saml_enabled": True,
-                    "saml_attr_mapping": {
-                        "saml_id": "username",
-                        "title": "title",
-                        "first_name": "firstName",
-                        "last_name": "lastName",
-                        "email": "email",
-                        "gender": "gender",
-                        "pronoun": "pronoun",
-                        "is_active": "is_active",
-                        "is_physical_person": "is_person",
-                    },
+                    "saml_attr_mapping": Jsonb(
+                        {
+                            "saml_id": "username",
+                            "title": "title",
+                            "first_name": "firstName",
+                            "last_name": "lastName",
+                            "email": "email",
+                            "gender": "gender",
+                            "pronoun": "pronoun",
+                            "is_active": "is_active",
+                            "is_physical_person": "is_person",
+                        }
+                    ),
                     "gender_ids": [1, 2, 3, 4],
                 },
                 "gender/1": {"organization_id": 1, "name": "male"},
@@ -43,7 +46,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
 
     def test_saml_attr_mapping_empty(self) -> None:
-        self.update_model("organization/1", {"saml_attr_mapping": {}})
+        self.update_model("organization/1", {"saml_attr_mapping": Jsonb({})})
         response = self.request("user.save_saml_account", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -96,10 +99,12 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             {
                 "organization/1": {
                     "saml_enabled": True,
-                    "saml_attr_mapping": {
-                        "saml_id": "username",
-                        "default_number": "default_number",
-                    },
+                    "saml_attr_mapping": Jsonb(
+                        {
+                            "saml_id": "username",
+                            "default_number": "default_number",
+                        }
+                    ),
                 }
             }
         )
@@ -238,14 +243,6 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
 
 
 class UserUpdateSamlAccount(UserBaseSamlAccount):
-    connection_handler = injector.get(ConnectionHandler)
-
-    @classmethod
-    def get_current_db_position(cls) -> int:
-        with cls.connection_handler.get_connection_context():
-            with cls.connection_handler.get_current_connection().cursor() as cursor:
-                cursor.execute("select max(position) from positions;")
-                return cursor.fetchone()[0]
 
     def test_update_saml_account_correct(self) -> None:
         self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
@@ -325,7 +322,6 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         }
 
         self.set_models({"user/78": user_data})
-        old_position = self.get_current_db_position()
         response = self.request(
             "user.save_saml_account",
             {
@@ -342,8 +338,6 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/78", user_data)
-        new_position = self.get_current_db_position()
-        assert new_position == old_position
 
     def test_create_saml_account_all_fields_mixed_changes(self) -> None:
         self.set_models(
@@ -560,21 +554,22 @@ class UserAddToGroup(UserBaseSamlAccount):
                 },
             },
         ]
+        self.saml_attr_mapping = {
+            "member_number": "member_number",
+            "saml_id": "username",
+            "title": "title",
+            "first_name": "firstName",
+            "last_name": "lastName",
+            "email": "email",
+            "gender": "gender",
+            "pronoun": "pronoun",
+            "is_active": "is_active",
+            "is_physical_person": "is_person",
+            "meeting_mappers": self.meeting_mappers,
+        }
         self.organization = {
             "saml_enabled": True,
-            "saml_attr_mapping": {
-                "member_number": "member_number",
-                "saml_id": "username",
-                "title": "title",
-                "first_name": "firstName",
-                "last_name": "lastName",
-                "email": "email",
-                "gender": "gender",
-                "pronoun": "pronoun",
-                "is_active": "is_active",
-                "is_physical_person": "is_person",
-                "meeting_mappers": self.meeting_mappers,
-            },
+            "saml_attr_mapping": Jsonb(self.saml_attr_mapping),
         }
         self.create_meeting()
         self.create_meeting(4)
@@ -640,7 +635,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 1,
                 "group_ids": [2],
                 "structure_level_ids": [1],
-                "vote_weight": "42.000000",
+                "vote_weight": Decimal("42"),
                 "number": "MG_1254",
                 "comment": "normal data used",
             },
@@ -724,7 +719,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "user_id": 2,
                 "group_ids": [4, 5, 6],
                 "meeting_id": 4,
-                "vote_weight": "2.000000",
+                "vote_weight": Decimal("2"),
             },
         )
         self.assert_model_exists(
@@ -777,7 +772,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "user_id": 2,
                 "group_ids": [2],
                 "meeting_id": 1,
-                "vote_weight": "0.000001",
+                "vote_weight": Decimal("0.000001"),
             },
         )
         self.assert_model_exists(
@@ -791,7 +786,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("meeting_user/2")
 
     def test_create_user_mapping_no_mapper(self) -> None:
-        del self.organization["saml_attr_mapping"]["meeting_mappers"]  # type: ignore
+        del self.saml_attr_mapping["meeting_mappers"]
+        self.organization["saml_attr_mapping"] = Jsonb(self.saml_attr_mapping)
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -822,13 +818,13 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_condition_non_string_condition_attribute(self) -> None:
         """Shows that the condition check works with numbers and lists and list entries are checked individually."""
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0]["conditions"] = [  # type: ignore
+        self.meeting_mappers[0]["conditions"] = [
             {
                 "attribute": "membership-list",
                 "condition": "Del.*Admin",
             }
         ]
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [  # type: ignore
+        self.meeting_mappers[1]["conditions"] = [
             {
                 "attribute": "eery_number",
                 "condition": "5",
@@ -838,6 +834,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "condition": "Delegates",
             },
         ]
+        self.organization["saml_attr_mapping"] = Jsonb(self.saml_attr_mapping)
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -876,7 +873,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 4,
                 "group_ids": [4],
                 "structure_level_ids": [1],
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1"),
                 "number": "MG_1254",
                 "comment": "Vote weight, groups and structure levels set via SSO.",
             },
@@ -1139,26 +1136,26 @@ class UserAddToGroup(UserBaseSamlAccount):
             "group/5", {"meeting_user_ids": [2], "external_id": "Delegates"}
         )
 
-    def test_update_user_participant_already_in_group(self) -> None:
+    def test_update_user_participant_already_in_another_meeting(self) -> None:
         """
         Shows:
             * user stays in group 2
             * structure_level/1 left untouched structure_level/2 added
-            * second mapper is ignored due to being an update and allow_update being false
+            * second mapper is used in spite of allow_update being false since the user is not yet in 'Kreistag' meeting and the meeting_user will therefore be created.
         """
         self.meeting_mappers[1]["allow_update"] = "False"
-        self.set_models({"organization/1": self.organization})
         self.set_user_groups(1, [2])
         self.set_models(
             {
+                "organization/1": self.organization,
                 "structure_level/1": {
                     "name": "structure1",
                     "meeting_user_ids": [1],
                     "meeting_id": 1,
-                }
+                },
+                "meeting_user/1": {"structure_level_ids": [1]},
             }
         )
-        self.update_model("meeting_user/1", {"structure_level_ids": [1]})
         response = self.request(
             "user.save_saml_account",
             {
@@ -1172,6 +1169,160 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_kv_number": "MG_1254",
                 "kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
+                "structure": "structure2",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 4],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 1,
+                "group_ids": [2],
+                "meeting_id": 1,
+                "structure_level_ids": [1, 2],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "user_id": 1,
+                "group_ids": [5],
+                "meeting_id": 4,
+                "structure_level_ids": [3],
+            },
+        )
+        self.assert_model_not_exists("meeting_user/3")
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+        self.assert_model_exists(
+            "group/5", {"meeting_user_ids": [2], "external_id": "Delegates"}
+        )
+        self.assert_model_exists(
+            "structure_level/1", {"name": "structure1", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "structure_level/2", {"name": "structure2", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "structure_level/3", {"name": "structure2", "meeting_user_ids": [2]}
+        )
+        self.assert_model_not_exists("structure_level/4")
+
+    def test_update_user_participant_already_in_not_mapped_meeting(self) -> None:
+        """
+        Shows:
+            * user stays in group 2
+            * second mapper is used in spite of allow_update being false since the user is not yet in 'Kreistag' meeting and the meeting_user will therefore be created.
+        """
+        del self.meeting_mappers[0]
+        self.meeting_mappers[0]["allow_update"] = "false"
+        self.set_user_groups(1, [2])
+        self.set_models(
+            {
+                "organization/1": self.organization,
+                "structure_level/1": {
+                    "name": "structure1",
+                    "meeting_user_ids": [1],
+                    "meeting_id": 1,
+                },
+                "meeting_user/1": {"structure_level_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["admin_saml"],
+                "email": "holzi@holz.de",
+                "kv_member_number": "KV_Könighols",
+                "kv_email": "hols@holz.de",
+                "participant_kv_number": "MG_1254",
+                "kv_group_attribute": "Delegates",
+                "kv_structure": "structure2",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 4],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 1,
+                "group_ids": [2],
+                "meeting_id": 1,
+                "structure_level_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "user_id": 1,
+                "group_ids": [5],
+                "meeting_id": 4,
+                "structure_level_ids": [2],
+            },
+        )
+        self.assert_model_not_exists("meeting_user/3")
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+        self.assert_model_exists(
+            "group/5", {"meeting_user_ids": [2], "external_id": "Delegates"}
+        )
+        self.assert_model_exists(
+            "structure_level/1", {"name": "structure1", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "structure_level/2", {"name": "structure2", "meeting_user_ids": [2]}
+        )
+        self.assert_model_not_exists("structure_level/3")
+
+    def test_update_user_participant_already_in_group_no_idp_group(self) -> None:
+        """
+        Shows when no idp group is send or mapping set:
+            * user stays in group 2
+            * structure_level/1 left untouched structure_level/2 added
+        """
+        self.meeting_mappers[0]["mappings"]["groups"] = [  # type: ignore
+            {"default": "Staff"}
+        ]
+        self.set_user_groups(1, [2])
+        self.set_models(
+            {
+                "organization/1": self.organization,
+                "structure_level/1": {
+                    "name": "structure1",
+                    "meeting_user_ids": [1],
+                    "meeting_id": 1,
+                },
+                "group/42": {"name": "Staff", "external_id": "Staff", "meeting_id": 4},
+                "meeting_user/1": {"structure_level_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["admin_saml"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "groups": "Admin",  # should be ignored
                 "structure": "structure2",
             },
         )
@@ -1206,8 +1357,56 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
         self.assert_model_not_exists("structure_level/3")
 
+    def test_update_user_participant_already_in_group_updates_default(self) -> None:
+        """
+        Shows when no idp group is send but mapping with inexistent group set:
+            * user stays in group 2 and shouldn't get a default group
+        """
+        self.set_user_groups(1, [2])
+        self.set_models({"organization/1": self.organization})
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["admin_saml"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "groups": "Admin",  # should be ignored
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 1,
+                "group_ids": [2],
+                "meeting_id": 1,
+            },
+        )
+        self.assert_model_not_exists("meeting_user/2")
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": None, "external_id": "Default"}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+
     def test_update_user_add_group_to_existing_groups(self) -> None:
-        """group added, user created and logged in"""
+        """
+        Shows:
+            * group added
+            * user created and logged in
+            * default group removed as it's not legal next to other groups
+        """
         self.set_user_groups(1, [1, 3])
         response = self.request(
             "user.save_saml_account",
@@ -1232,7 +1431,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 1, "group_ids": [1, 3, 2], "meeting_id": 1}
+            "meeting_user/1", {"user_id": 1, "group_ids": [2, 3], "meeting_id": 1}
         )
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "group_ids": [5], "meeting_id": 4}

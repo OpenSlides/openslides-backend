@@ -9,7 +9,6 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..meeting_user.create import MeetingUserCreate
 from .mixins import PermissionMixin
 
 
@@ -59,20 +58,8 @@ class PersonalNoteCreateAction(
             filtered_meeting_user = self.datastore.filter(
                 "meeting_user", filter_, ["id", "personal_note_ids"]
             )
-            if filtered_meeting_user:
-                meeting_user = list(filtered_meeting_user.values())[0]
-                instance["meeting_user_id"] = meeting_user["id"]
-            else:
-                action_results = self.execute_other_action(
-                    MeetingUserCreate,
-                    [
-                        {
-                            "user_id": self.user_id,
-                            "meeting_id": instance["meeting_id"],
-                        }
-                    ],
-                )
-                instance["meeting_user_id"] = action_results[0]["id"]  # type: ignore
+            meeting_user = list(filtered_meeting_user.values())[0]
+            instance["meeting_user_id"] = meeting_user["id"]
 
         if not (instance.get("star") or instance.get("note")):
             raise ActionException("Can't create personal note without star or note.")
@@ -84,7 +71,9 @@ class PersonalNoteCreateAction(
                 "content_object_id", "=", str(instance["content_object_id"])
             ),
         )
-        exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
+        exists = self.datastore.exists(
+            collection=self.model.collection, filter_=filter_
+        )
         if exists:
             raise ActionException(
                 "(meeting_user_id, content_object_id) must be unique."
