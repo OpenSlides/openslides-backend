@@ -109,10 +109,6 @@ class VoteAdapter(VoteService, AuthenticatedService):
         endpoint = self.get_endpoint(id, "reset")
         return self.retrieve(endpoint)
 
-    def vote(self, id: int, payload: dict[str, Any]) -> dict[str, Any]:
-        endpoint = self.get_endpoint(id, "vote")
-        return self.retrieve(endpoint, payload=payload)
-
     def get_endpoint(self, id: int | None = None, route: str | None = None) -> str:
         return (
             f"{self.url}/poll"
