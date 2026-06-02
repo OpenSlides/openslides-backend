@@ -406,7 +406,7 @@ class MeetingImport(BaseActionTestCase):
             "list_of_speakers_id": 1,
             "state_id": 1,
             "title": "bla",
-            "number": "1 - 1",
+            "number": f"{obj_id} - 1",
             "number_value": 1,
             "sequential_number": 2,
             "text": "<p>l&ouml;mk</p>",
