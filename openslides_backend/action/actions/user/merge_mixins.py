@@ -448,13 +448,13 @@ class MeetingUserMergeMixin(
                 f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
             )
 
-    def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> list[int]:
-        seen_ids = []
-        duplicates = []
+    def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> set[int]:
+        seen_ids = set()
+        duplicates = set()
         for ids in ids_map.values():
             for id_ in ids:
                 if id_ in seen_ids:
-                    duplicates.append(id_)
+                    duplicates.add(id_)
                 else:
-                    seen_ids.append(id_)
+                    seen_ids.add(id_)
         return duplicates
