@@ -15,7 +15,7 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Meeting, PollBallot
+from ..models.models import Meeting
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
@@ -208,62 +208,29 @@ def export_meeting(
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
 
-    # Get related ballots
+    # Get related configs, options and ballots
     if polls := export.get("poll"):
-        ballot_ids = [
-            ballot_id
-            for poll in polls.values()
-            for ballot_id in poll.get("ballot_ids", [])
-        ]
-        if ballot_ids:
-            ballots = datastore.get_many(
-                [
-                    GetManyRequest(
-                        "poll_ballot", ballot_ids, get_fields_for_export("poll_ballot")
-                    )
-                ],
-                lock_result=False,
-                use_changed_models=False,
-            )["poll_ballot"]
-            for ballot_id, instance in ballots.items():
-                export.setdefault("poll_ballot", {})[str(ballot_id)] = instance
-                for field_name, value in instance.items():
-                    model_field = PollBallot().get_field(field_name)
-                    if (
-                        not isinstance(model_field, RelationField)
-                        or model_field.get_own_field_name() == "poll_id"
-                    ):
-                        continue
-                    collection, relation_field = next(iter(model_field.to.items()))
-                    export[collection][str(value)].setdefault(
-                        relation_field, []
-                    ).append(ballot_id)
-
-        config_ids = [poll.get("config_id") for poll in polls.values()]
-
-        for config_fqid in config_ids:
-            collection, id_ = config_fqid.split("/")
-            instance = datastore.get(
-                config_fqid,
-                list(get_fields_for_export(collection)),
-                lock_result=False,
-                use_changed_models=False,
+        related_collections: dict[str, list[int]] = {}
+        for poll in polls.values():
+            for collection_base_name in ["ballot", "option"]:
+                if ids := poll.get(f"{collection_base_name}_ids"):
+                    related_collections.setdefault(
+                        f"poll_{collection_base_name}", list()
+                    ).extend(ids)
+            config_collection, config_id = poll["config_id"].split("/")
+            related_collections.setdefault(config_collection, list()).append(
+                int(config_id)
             )
-            export.setdefault(collection, {})[str(id_)] = instance
-            if option_ids := instance.get("option_ids"):
-                options = datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "poll_config_option",
-                            option_ids,
-                            get_fields_for_export("poll_config_option"),
-                        )
-                    ],
-                    lock_result=False,
-                    use_changed_models=False,
-                )["poll_config_option"]
-                for id_, option in options.items():
-                    export.setdefault("poll_config_option", {})[str(id_)] = option
+        related_models = datastore.get_many(
+            [
+                GetManyRequest(collection, ids, get_fields_for_export(collection))
+                for collection, ids in related_collections.items()
+            ]
+        )
+        for collection, data in related_models.items():
+            export.setdefault(collection, {}).update(
+                {str(id_): instance_data for id_, instance_data in data.items()}
+            )
 
     # Sort instances by id within each collection
     for collection, instances in export.items():
