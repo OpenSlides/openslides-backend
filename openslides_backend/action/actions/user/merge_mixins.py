@@ -395,7 +395,6 @@ class MeetingUserMergeMixin(
                 ballot_poll_ids_per_user_id.setdefault(
                     meeting_user["user_id"], set()
                 ).update(set(poll_voted_ids))
-        for meeting_user in meeting_users.values():
             if len(
                 (o_ids := meeting_user.get("poll_option_ids", []))
                 + (
@@ -410,11 +409,12 @@ class MeetingUserMergeMixin(
                     )
                 )
             ):
-                get_many_requests = [
-                    GetManyRequest("poll_option", o_ids, ["poll_id"]),
-                    GetManyRequest("poll_ballot", b_ids, ["poll_id"]),
-                ]
-                many_models = self.datastore.get_many(get_many_requests)
+                many_models = self.datastore.get_many(
+                    [
+                        GetManyRequest("poll_option", o_ids, ["poll_id"]),
+                        GetManyRequest("poll_ballot", b_ids, ["poll_id"]),
+                    ]
+                )
                 if o_ids:
                     option_poll_ids_per_user_id.setdefault(
                         meeting_user["user_id"], set()
@@ -428,20 +428,12 @@ class MeetingUserMergeMixin(
                 ballot_poll_ids_per_user_id.setdefault(
                     meeting_user["user_id"], set()
                 ).update({ballot["poll_id"] for ballot in ballot_data.values()})
-        ballot_conflicts = {
-            poll_id
-            for id1, poll_ids1 in ballot_poll_ids_per_user_id.items()
-            for id2, poll_ids2 in ballot_poll_ids_per_user_id.items()
-            for poll_id in poll_ids1.intersection(poll_ids2)
-            if id1 != id2
-        }
-        option_conflicts = {
-            poll_id
-            for id1, poll_ids1 in option_poll_ids_per_user_id.items()
-            for id2, poll_ids2 in option_poll_ids_per_user_id.items()
-            for poll_id in poll_ids1.intersection(poll_ids2)
-            if id1 != id2
-        }
+        ballot_conflicts = self._get_conflicts_between_users(
+            ballot_poll_ids_per_user_id
+        )
+        option_conflicts = self._get_conflicts_between_users(
+            option_poll_ids_per_user_id
+        )
         if len(ballot_conflicts):
             messages.append(
                 f"among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in ballot_conflicts])}"
@@ -455,3 +447,14 @@ class MeetingUserMergeMixin(
             raise ActionException(
                 f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
             )
+
+    def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> list[int]:
+        seen_ids = []
+        duplicates = []
+        for ids in ids_map.values():
+            for id_ in ids:
+                if id_ in seen_ids:
+                    duplicates.append(id_)
+                else:
+                    seen_ids.append(id_)
+        return duplicates
