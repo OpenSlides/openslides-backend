@@ -24,5 +24,7 @@ Nothing special for this json_upload, see [common description](preface_special_i
 ## Action
 The data, which is enriched with the `meeting_id`, is saved in an action_worker. The action_worker, id and the preview data are returned. For generating the preview data it is looked for errors or duplicates.
 
+This json upload does no duplicate checking. It always creates.
+
 ## Permission
 Need `agenda_item.can_manage` in this meeting.
