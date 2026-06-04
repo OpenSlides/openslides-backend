@@ -3293,22 +3293,22 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "title": "Will not transfer",
                     "visibility": Poll.VISIBILITY_SECRET,
-                    "config_id": "poll_config_rating_approval/34",
+                    "config_id": "poll_config_rating_score/34",
                     "state": Poll.STATE_CREATED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_Y,
                     "content_object_id": "topic/11",
                 },
-                "poll_config_approval/34": {"poll_id": 1, "allow_abstain": False},
-                "poll_config_option/123": {
-                    "meeting_id": 1,
+                "poll_config_rating_score/34": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                    "min_options_amount": 1,
+                    "max_options_amount": 1,
+                    "max_votes_per_option": 1,
+                },
+                "poll_option/123": {
                     "poll_id": 1234,
                     "text": "Option A",
                 },
-                "poll_config_option/234": {
-                    "poll_config_id": "poll_config_approval/34",
+                "poll_option/234": {
+                    "poll_id": 1234,
                     "text": "Option B",
                 },
                 # mediafiles
@@ -3488,7 +3488,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             "meeting_mediafile": 36,
             "poll": 1235,
             "poll_config_approval": 35,
-            "poll_config_option": 235,
+            "poll_option": 235,
             "speaker": 38,
             "structure_level_list_of_speakers": 15,
             "point_of_order_category": 8,

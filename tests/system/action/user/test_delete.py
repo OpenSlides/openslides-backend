@@ -191,7 +191,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_exists("motion/50", {"submitter_ids": [34]})
 
-    def test_delete_with_poll_candidate(self) -> None:
+    def test_delete_poll_option_meeting_user(self) -> None:
         self.create_meeting()
         user_id = self.create_user_for_meeting(1)
         self.set_models(
@@ -213,46 +213,17 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "title": "Duckburg town council",
                     "meeting_id": 1,
                 },
-                "poll_config_option/1": {
-                    "poll_config_id": "poll_config_approval/1",
-                    "meeting_user_id": 1,
+                "poll_option/1": {"poll_id": 1, "meeting_user_id": 1},
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "poll_config_approval/1": {"poll_id": 1},
             }
         )
         response = self.request("user.delete", {"id": user_id})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists(f"user/{user_id}")
         self.assert_model_not_exists("meeting_user/1")
-        self.assert_model_exists("poll_config_option/1", {"meeting_user_id": None})
-
-    def test_delete_poll_option_user(self) -> None:
-        self.create_meeting()
-        self.create_meeting(4)
-        self.create_topic(1, 1)
-        bob_id = self.create_user("bob", [1])
-        self.set_models(
-            {
-                "poll/1": {
-                    "type": "named",
-                    "pollmethod": "Y",
-                    "backend": "long",
-                    "state": "finished",
-                    "meeting_id": 1,
-                    "content_object_id": "topic/1",
-                    "title": "Poll 1",
-                    "onehundred_percent_base": "YNA",
-                },
-                "option/1": {
-                    "meeting_id": 1,
-                    "poll_id": 1,
-                    "content_object_id": f"user/{bob_id}",
-                },
-                "option/2": {"meeting_id": 1, "poll_id": 1},
-            }
-        )
-        response = self.request("user.delete", {"id": bob_id})
-        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll_option/1", {"meeting_user_id": None})
 
     def test_delete_with_group_ids_set_null(self) -> None:
         self.create_meeting()

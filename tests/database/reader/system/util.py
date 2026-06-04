@@ -233,7 +233,6 @@ meeting_data: dict[str, dict[int, Any]] = {
                 "meeting.can_see_history",
                 "motion.can_manage",
                 "motion.can_manage_polls",
-                "poll.can_manage",
                 "projector.can_manage",
                 "tag.can_manage",
                 "user.can_manage",

@@ -288,14 +288,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
 
-    def test_update_poll_default_backend_fields(self) -> None:
-        data = {
-            "motion_poll_default_backend": "long",
-            "assignment_poll_default_backend": "long",
-        }
-        self.basic_test(data)
-        self.assert_model_exists("meeting/1", data)
-
     def test_update_poll_default_live_voting_enabled(self) -> None:
         self.basic_test({"poll_default_live_voting_enabled": True})
         self.assert_model_exists(

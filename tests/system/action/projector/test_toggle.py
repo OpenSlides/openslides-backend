@@ -22,8 +22,8 @@ class ProjectorToggle(BaseActionTestCase):
                     "content_object_id": "motion/1",
                 },
                 f"poll_config_rating_approval/{base}": {
-                    "poll_id": base,
                     "allow_abstain": False,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
             }
         )

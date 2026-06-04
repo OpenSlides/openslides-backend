@@ -92,9 +92,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_method": "YNA",
-            "motion_poll_default_onehundred_percent_base": "YNA",
-            "motion_poll_default_backend": "fast",
+            "motion_poll_default_onehundred_percent_base": "valid",
             "motion_poll_projection_name_order_first": "last_name",
             "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": False,
@@ -116,9 +114,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "Y",
             "assignment_poll_default_onehundred_percent_base": "valid",
-            "assignment_poll_default_backend": "fast",
             "poll_default_type": "analog",
-            "poll_default_onehundred_percent_base": "YNA",
+            "poll_default_onehundred_percent_base": "valid",
             "poll_default_live_voting_enabled": False,
             "poll_default_allow_invalid": False,
             "poll_couple_countdown": True,
@@ -583,11 +580,13 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                     "visibility": Poll.VISIBILITY_NAMED,
-                    "config_id": "poll_config_rating_approval/1",
+                    "config_id": "poll_config_rating_approval/7",
                     "state": Poll.STATE_STARTED,
                 },
-                "poll_config_rating_approval/7": {"poll_id": 7},
-                "ballot/8": {
+                "poll_config_rating_approval/7": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_ballot/8": {
                     "poll_id": 7,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,

@@ -108,7 +108,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             },
         )
 
-    def test_update_with_vote_related_fields(self) -> None:
+    def test_update_with_poll_related_fields(self) -> None:
         self.create_meeting()
         self.set_user_groups(1, [1])
         self.create_user("dummy2", [1])
@@ -142,17 +142,19 @@ class MeetingUserUpdate(BaseActionTestCase):
                     "sequential_number": 1,
                     "list_of_speakers_id": 1,
                 },
-                "poll_config_option/1": {
-                    "poll_config_id": "poll_config_approval/1",
+                "poll_option/1": {
+                    "poll_id": 1,
                     "meeting_user_id": 2,
                 },
-                "poll_config_approval/1": {"poll_id": 1},
-                "ballot/1": {
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_ballot/1": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 1,
                 },
-                "ballot/2": {
+                "poll_ballot/2": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 2,
@@ -179,9 +181,9 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "represented_ballot_ids": [2],
             },
             "poll/1": {"voted_ids": [3]},
-            "poll_config_option/1": {"meeting_user_id": 3},
-            "ballot/1": {"acting_meeting_user_id": 3},
-            "ballot/2": {"represented_meeting_user_id": 3},
+            "poll_option/1": {"meeting_user_id": 3},
+            "poll_ballot/1": {"acting_meeting_user_id": 3},
+            "poll_ballot/2": {"represented_meeting_user_id": 3},
         }
         for fqid, model in expected.items():
             self.assert_model_exists(fqid, model)

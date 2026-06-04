@@ -252,13 +252,15 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "visibility": Poll.VISIBILITY_MANUALLY,
                     "meeting_id": 1,
                 },
-                "poll_config_approval/160": {"poll_id": 150},
-                "poll_config_option/180": {
-                    "poll_config_id": "poll_config_approval/160",
+                "poll_config_approval/160": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_option/180": {
+                    "poll_id": 150,
                     "meeting_user_id": 1,
                 },
-                "poll_config_option/181": {
-                    "poll_config_id": "poll_config_approval/160",
+                "poll_option/181": {
+                    "poll_id": 150,
                     "meeting_user_id": 2,
                 },
                 "list_of_speakers/190": {
@@ -298,8 +300,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "assignment/140",
             "poll/150",
             "poll_config_approval/160",
-            "poll_config_option/180",
-            "poll_config_option/181",
+            "poll_option/180",
+            "poll_option/181",
             "list_of_speakers/190",
             "speaker/210",
             "speaker/211",

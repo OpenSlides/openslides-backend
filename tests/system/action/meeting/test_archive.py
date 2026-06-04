@@ -115,7 +115,7 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "published": published,
                 },
                 f"poll_config_approval/{base}": {
-                    "poll_id": base,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
             }
         )
