@@ -11,10 +11,9 @@ from ....models.models import (
     MotionWorkingGroupSpeaker,
     PersonalNote,
     Poll,
-    PollBallot,
-    PollOption,
     Speaker,
 )
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, fqid_from_collection_and_id
@@ -115,7 +114,6 @@ motion_meeting_user_list_item_groups: MergeModeDict = {
 
 
 class MotionSubmitterMergeMixin(BaseMergeMixin):
-    # ???
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
@@ -197,36 +195,6 @@ class PersonalNoteMergeMixin(BaseMergeMixin):
         )
 
 
-class PollMergeMixin(BaseMergeMixin):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.add_collection_field_groups(
-            Poll,
-            {},
-            "meeting_user_id",
-        )
-
-
-class PollOptionMergeMixin(BaseMergeMixin):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.add_collection_field_groups(
-            PollOption,
-            {},
-            "meeting_user_id",
-        )
-
-
-class PollBallotMergeMixin(BaseMergeMixin):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.add_collection_field_groups(
-            PollBallot,
-            {},
-            "meeting_user_id",
-        )
-
-
 class MeetingUserMergeMixin(
     PersonalNoteMergeMixin,
     MotionWorkingGroupSpeakerMergeMixin,
@@ -234,9 +202,6 @@ class MeetingUserMergeMixin(
     MotionSubmitterMergeMixin,
     MotionSupporterMergeMixin,
     AssignmentCandidateMergeMixin,
-    PollMergeMixin,
-    PollBallotMergeMixin,
-    PollOptionMergeMixin,
     SpeakerMergeMixin,
 ):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -261,10 +226,10 @@ class MeetingUserMergeMixin(
                     "chat_message_ids",
                     "group_ids",
                     "structure_level_ids",
-                    "poll_voted_ids",
-                    "poll_option_ids",
-                    "acting_ballot_ids",
-                    "represented_ballot_ids",
+                    "poll_voted_ids",  # throw error if conflict on same poll
+                    "poll_option_ids",  # throw error if conflict on same poll
+                    "acting_ballot_ids",  # throw error if conflict on same poll
+                    "represented_ballot_ids",  # throw error if conflict on same poll
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
@@ -315,11 +280,37 @@ class MeetingUserMergeMixin(
             case _:
                 return super().get_merge_comparison_hash(collection, model)
 
-    def check_polls_helper(self, meeting_users: dict[str, dict[str, Any]]) -> list[str]:
+    def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         messages: list[str] = []
         group_ids: set[int] = set()
         meeting_ids: set[int] = set()
         meeting_id_by_group_ids: dict[int, int] = {}
+
+        meeting_user_ids = [
+            mu_id
+            for user in [into, *other_models]
+            for mu_id in user.get("meeting_user_ids", [])
+        ]
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    meeting_user_ids,
+                    [
+                        "user_id",
+                        "meeting_id",
+                        "group_ids",
+                        "vote_delegations_from_ids",
+                        "vote_delegated_to_id",
+                        "poll_voted_ids",
+                        "poll_option_ids",
+                        "acting_ballot_ids",
+                        "represented_ballot_ids",
+                    ],
+                )
+            ]
+        )["meeting_user"]
+
         for m_user in meeting_users.values():
             if len(g_ids := m_user.get("group_ids", [])):
                 meeting_id_by_group_ids.update(
@@ -396,4 +387,74 @@ class MeetingUserMergeMixin(
             messages.append(
                 f"some of the selected users are delegating votes to each other in meeting(s) {', '.join(bad_meetings)}"
             )
-        return messages
+
+        ballot_poll_ids_per_user_id: dict[int, set[int]] = {}
+        option_poll_ids_per_user_id: dict[int, set[int]] = {}
+        for meeting_user in meeting_users.values():
+            if poll_voted_ids := meeting_user.get("poll_voted_ids"):
+                ballot_poll_ids_per_user_id.setdefault(
+                    meeting_user["user_id"], set()
+                ).update(set(poll_voted_ids))
+            if len(
+                (o_ids := meeting_user.get("poll_option_ids", []))
+                + (
+                    b_ids := list(
+                        {
+                            id_
+                            for id_ in [
+                                *meeting_user.get("acting_ballot_ids", []),
+                                *meeting_user.get("represented_ballot_ids", []),
+                            ]
+                        }
+                    )
+                )
+            ):
+                many_models = self.datastore.get_many(
+                    [
+                        GetManyRequest("poll_option", o_ids, ["poll_id"]),
+                        GetManyRequest("poll_ballot", b_ids, ["poll_id"]),
+                    ]
+                )
+                if o_ids:
+                    option_poll_ids_per_user_id.setdefault(
+                        meeting_user["user_id"], set()
+                    ).update(
+                        {
+                            option["poll_id"]
+                            for option in many_models["poll_option"].values()
+                        }
+                    )
+                ballot_data = many_models["poll_ballot"]
+                ballot_poll_ids_per_user_id.setdefault(
+                    meeting_user["user_id"], set()
+                ).update({ballot["poll_id"] for ballot in ballot_data.values()})
+        ballot_conflicts = self._get_conflicts_between_users(
+            ballot_poll_ids_per_user_id
+        )
+        option_conflicts = self._get_conflicts_between_users(
+            option_poll_ids_per_user_id
+        )
+        if len(ballot_conflicts):
+            messages.append(
+                f"among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in ballot_conflicts])}"
+            )
+        if len(option_conflicts):
+            messages.append(
+                f"multiple of the selected users are among the options in poll(s) {', '.join([str(id_) for id_ in option_conflicts])}"
+            )
+
+        if len(messages):
+            raise ActionException(
+                f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
+            )
+
+    def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> set[int]:
+        seen_ids = set()
+        duplicates = set()
+        for ids in ids_map.values():
+            for id_ in ids:
+                if id_ in seen_ids:
+                    duplicates.add(id_)
+                else:
+                    seen_ids.add(id_)
+        return duplicates

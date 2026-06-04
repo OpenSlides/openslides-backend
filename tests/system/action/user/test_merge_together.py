@@ -5,9 +5,6 @@ from decimal import Decimal
 from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
-import pytest
-from psycopg.types.json import Jsonb
-
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
@@ -22,8 +19,6 @@ from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
 
-@pytest.mark.skip()
-# class UserMergeTogether(BaseVoteTestCase):
 class UserMergeTogether(BaseActionTestCase):
     """committee/63 is created but remains unused in all of the tests as 60 is used for meeting/1 and 4"""
 
@@ -841,9 +836,6 @@ class UserMergeTogether(BaseActionTestCase):
         self.create_assignment(1, 1)
         self.create_motion(4, 4)
         self.create_topic(7, 7)
-        self.create_assignment(1, 1)
-        self.create_motion(4, 1)
-        self.create_topic(7, 7)
         self.set_models(
             {
                 "meeting/1": {"present_user_ids": [2, 4]},
@@ -859,213 +851,133 @@ class UserMergeTogether(BaseActionTestCase):
                     "meeting_id": 4,
                     "meeting_user_id": 43,
                 },
-            }
-        )
-        polls_data = {
-            "poll/1": {
-                "title": "Assignment poll 1",
-                "content_object_id": "assignment/1",
-                "visibility": Poll.VISIBILITY_NAMED,
-                "config_id": "poll_config_selection/1",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 1,
-                "entitled_group_ids": [1, 2, 3],
-            },
-            "poll/2": {
-                "title": "Assignment poll 2",
-                "content_object_id": "assignment/1",
-                "visibility": Poll.VISIBILITY_NAMED,
-                "config_id": "poll_config_approval/2",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 1,
-                "entitled_group_ids": [1, 2, 3],
-            },
-            "poll/3": {
-                "title": "Assignment poll 3",
-                "content_object_id": "assignment/1",
-                "visibility": Poll.VISIBILITY_NAMED,
-                "config_id": "poll_config_approval/3",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 1,
-                "entitled_group_ids": [1, 2, 3],
-            },
-            "poll/4": {
-                "title": "Assignment poll 4",
-                "content_object_id": "assignment/1",
-                "visibility": Poll.VISIBILITY_SECRET,
-                "config_id": "poll_config_selection/4",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 1,
-                "entitled_group_ids": [1, 2, 3],
-            },
-            "poll/5": {
-                "title": "Motion poll",
-                "content_object_id": "motion/1",
-                "visibility": Poll.VISIBILITY_NAMED,
-                "config_id": "poll_config_approval/5",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 4,
-                "entitled_group_ids": [4, 5, 6],
-            },
-            "poll/6": {
-                "title": "Topic poll",
-                "content_object_id": "topic/7",
-                "visibility": Poll.VISIBILITY_SECRET,
-                "config_id": "poll_config_rating_score/6",
-                "state": Poll.STATE_STARTED,
-                "meeting_id": 7,
-                "entitled_group_ids": [7, 8, 9],
-            },
-        }
-        # add entitled groups
-        configs_data = {
-            **{
-                f"group/{group_id}": {"poll_ids": list(range(1, 5))}
-                for group_id in range(1, 4)
-            },
-            "poll_config_selection/1": {
-                "poll_id": 1,
-                "min_options_amount": 1,
-                "max_options_amount": 2,
-            },
-            "poll_config_option/112": {
-                "poll_config_id": "poll_config_selection/1",
-                "meeting_user_id": 12,
-            },
-            "poll_config_option/115": {
-                "poll_config_id": "poll_config_selection/1",
-                "meeting_user_id": 15,
-            },
-            "poll_config_approval/2": {"poll_id": 2, "allow_abstain": False},
-            "poll_config_option/214": {
-                "poll_config_id": "poll_config_approval/2",
-                "meeting_user_id": 14,
-            },
-            "poll_config_option/215": {
-                "poll_config_id": "poll_config_approval/2",
-                "meeting_user_id": 15,
-            },
-            "poll_config_approval/3": {"poll_id": 3, "allow_abstain": False},
-            "poll_config_option/312": {
-                "poll_config_id": "poll_config_approval/3",
-                "meeting_user_id": 12,
-            },
-            "poll_config_option/315": {
-                "poll_config_id": "poll_config_approval/3",
-                "meeting_user_id": 15,
-            },
-            "poll_config_selection/4": {
-                "poll_id": 4,
-                "min_options_amount": 1,
-                "max_options_amount": 2,
-            },
-            "poll_config_option/414": {
-                "poll_config_id": "poll_config_selection/4",
-                "meeting_user_id": 14,
-            },
-            "poll_config_option/415": {
-                "poll_config_id": "poll_config_selection/4",
-                "meeting_user_id": 15,
-            },
-            "poll_config_approval/5": {"poll_id": 5},
-            "poll_config_rating_score/6": {
-                "poll_id": 6,
-                "min_options_amount": 1,
-                "max_options_amount": 3,
-                "max_votes_per_option": 1,
-            },
-            **{
-                f"poll_config_option/{poll_6_option_id}": {
-                    "poll_config_id": "poll_config_rating_score/6",
-                    "text": f"Option {poll_6_option_id}",
-                }
-                for poll_6_option_id in range(61, 64)
-            },
-            "meeting_user/13": {
-                "user_id": 3,
-                "meeting_id": 1,
-                "group_ids": [1],
-                "vote_weight": Decimal("1"),
-            },
-        }
-        self.set_models(polls_data)
-        self.set_models(configs_data)
-
-    # def vote(self, poll_id: int, payload: dict[str, Any]) -> None:
-    #     self.vote_service.vote(poll_id, payload)
-    def vote(
-        self,
-        base: int,
-        poll_id: int,
-        value: Any,  # TODO: narrow down
-        acting_meeting_user_id: int | None = None,
-        represented_meeting_user_id: int | None = None,
-        is_secret: bool = False,
-    ) -> None:
-        mu_data = (
-            {
-                "acting_meeting_user_id": acting_meeting_user_id,
-                "represented_meeting_user_id": represented_meeting_user_id
-                or acting_meeting_user_id,
-            }
-            if not is_secret
-            else {}
-        )
-        self.set_models(
-            {
-                f"ballot/{base}": {
-                    "poll_id": poll_id,
-                    "value": value,
-                    **mu_data,
-                }
+                "poll/1": {
+                    "title": "Assignment poll 1",
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/1",
+                    "meeting_id": 1,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_option/1": {"poll_id": 1, "meeting_user_id": 12},
+                "poll_option/2": {"poll_id": 1, "meeting_user_id": 15},
+                "poll/2": {
+                    "title": "Assignment poll 2",
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_selection/1",
+                    "meeting_id": 1,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll_config_selection/1": {
+                    "min_options_amount": 1,
+                    "max_options_amount": 1,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_option/3": {"poll_id": 2, "meeting_user_id": 15},
+                "poll_option/4": {"poll_id": 2, "meeting_user_id": 14},
+                "poll/3": {
+                    "title": "Assignment poll 3",
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/2",
+                    "meeting_id": 1,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll_config_approval/2": {
+                    "allow_abstain": False,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_option/5": {"poll_id": 3, "meeting_user_id": 12},
+                "poll_option/6": {"poll_id": 3, "meeting_user_id": 15},
+                "poll/4": {
+                    "title": "Assignment poll 4",
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "config_id": "poll_config_approval/3",
+                    "meeting_id": 1,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll_config_approval/3": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_option/7": {"poll_id": 4, "meeting_user_id": 14},
+                "poll_option/8": {"poll_id": 4, "meeting_user_id": 15},
+                "poll/5": {
+                    "title": "Motion poll",
+                    "content_object_id": "motion/4",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/4",
+                    "meeting_id": 4,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll_config_approval/4": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll/6": {
+                    "title": "Topic poll",
+                    "content_object_id": "topic/7",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "config_id": "poll_config_rating_score/1",
+                    "meeting_id": 7,
+                    "state": Poll.STATE_FINISHED,
+                    "entitled_group_ids": [7, 8, 9],
+                },
+                "poll_config_rating_score/1": {
+                    "min_options_amount": 1,
+                    "max_options_amount": 3,
+                    "max_votes_per_option": 1,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_option/9": {"poll_id": 6, "text": "Option 1"},
+                "poll_option/10": {"poll_id": 6, "text": "Option 2"},
+                "poll_option/11": {"poll_id": 6, "text": "Option 3"},
+                **{f"group/{id_}": {"poll_ids": [1, 2, 3, 4]} for id_ in range(1, 4)},
+                **{f"group/{id_}": {"poll_ids": [5]} for id_ in range(4, 7)},
+                **{f"group/{id_}": {"poll_ids": [6]} for id_ in range(7, 10)},
             }
         )
 
-    def create_polls_with_correct_votes(self, poll_4_is_running: bool = False) -> None:
+    def create_polls_with_correct_votes(self) -> None:
         self.set_up_polls_for_merge()
-        self.vote(1, 1, [112, 115], 14)
-        self.vote(2, 1, [112], 14, 15)
-        self.vote(3, 2, "yes", 12)
-        # secret
-        self.vote(4, 5, "abstain", 43, is_secret=True)
-        self.vote(5, 6, Jsonb({"1": 1, "2": 1, "3": 0}), 73, is_secret=True)
-
-        self.login(1)
         self.set_models(
             {
                 "meeting_user/12": {"poll_voted_ids": [2]},
-                "meeting_user/43": {"poll_voted_ids": [5]},
-                "meeting_user/73": {"poll_voted_ids": [6]},
                 "meeting_user/14": {"poll_voted_ids": [1]},
                 "meeting_user/15": {"poll_voted_ids": [1]},
+                "meeting_user/43": {"poll_voted_ids": [5]},
+                "meeting_user/73": {"poll_voted_ids": [6]},
+                "poll_ballot/1": {
+                    "value": "no",
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 14,
+                },
+                "poll_ballot/2": {
+                    "value": "no",
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 15,
+                },
+                "poll_ballot/3": {
+                    "value": "4",
+                    "poll_id": 2,
+                    "acting_meeting_user_id": 12,
+                    "represented_meeting_user_id": 12,
+                },
+                "poll_ballot/4": {
+                    "value": "abstain",
+                    "poll_id": 5,
+                    "acting_meeting_user_id": 43,
+                    "represented_meeting_user_id": 43,
+                },
+                "poll_ballot/5": {"value": "9", "poll_id": 6},
+                "poll_ballot/6": {"value": "10", "poll_id": 6},
             }
         )
-        self.set_models(
-            {
-                f"poll/{poll_id}": {"state": Poll.STATE_FINISHED, "published": True}
-                for poll_id in range(1, 7)
-                if not (poll_id == 4 and poll_4_is_running)
-            }
-        )
-        # self.login(4)
-        # self.vote(1, {"value": [112, 115]})
-        # self.vote(1, {"value": [112], "meeting_user_id": 15})
-
-        # self.login(2)
-        # self.vote(2, {"value": "yes"})
-
-        # self.login(3)
-        # self.vote(5, {"value": "abstain"})
-        # self.vote(6, {"value": {"1": 1, "2": 1, "3": 0}})
-
-        # self.login(1)
-        # self.set_models(
-        #     {
-        #         f"poll/{poll_id}": {"state": Poll.STATE_FINISHED, "published": True}
-        #         for poll_id in range(1, 7)
-        #         if not (poll_id == 4 and poll_4_is_running)
-        #     }
-        # )
 
     def assert_merge_with_polls_correct(
         self, password: str, add_to_creatable_ids: int = 0
@@ -1085,100 +997,76 @@ class UserMergeTogether(BaseActionTestCase):
         )
         self.assert_model_exists("committee/60", {"user_ids": [2, 5]})
         self.assert_model_exists("committee/66", {"user_ids": [2]})
-        self.assert_model_exists(
-            "meeting_user/12",
-            {
-                "poll_option_ids": [112, 214, 312, 414],
-                "poll_voted_ids": [1, 2],
-                "acting_ballot_ids": [1, 2, 3],
-                "represented_ballot_ids": [1, 3],
-                "vote_delegations_from_ids": [15],
-            },
-        )
-
         for id_ in range(3, 5):
             self.assert_model_not_exists(f"user/{id_}")
         for id_ in [43, 73, 14, 44, 74, *range(106, 106 + add_to_creatable_ids)]:
             self.assert_model_not_exists(f"meeting_user/{id_}")
-        for meeting_id, id_ in {1: 12, 7: 106 + add_to_creatable_ids}.items():
-            self.assert_model_exists(
-                f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
-            )
+        self.assert_model_exists(
+            "meeting_user/12",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "poll_option_ids": [1, 4, 5, 7],
+                "poll_voted_ids": [1, 2],
+                "acting_ballot_ids": [1, 2, 3],
+                "represented_ballot_ids": [1, 3],
+            },
+        )
         self.assert_model_exists(
             "meeting_user/42",
             {
                 "user_id": 2,
                 "meeting_id": 4,
-                "motion_submitter_ids": [2],
-                "poll_option_ids": None,
+                "motion_submitter_ids": [1],
                 "poll_voted_ids": [5],
-                "acting_ballot_ids": None,
-                "represented_ballot_ids": None,
+                "acting_ballot_ids": [4],
+                "represented_ballot_ids": [4],
             },
         )
         self.assert_model_exists(
-            "meeting_user/106",
-            {
-                "user_id": 2,
-                "meeting_id": 7,
-                "motion_submitter_ids": None,
-                "poll_option_ids": None,
-                "poll_voted_ids": [6],
-                "acting_ballot_ids": None,
-                "represented_ballot_ids": None,
-            },
+            f"meeting_user/{106 + add_to_creatable_ids}",
+            {"user_id": 2, "meeting_id": 7, "poll_voted_ids": [6]},
         )
         self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
             "motion_submitter/1",
             {"motion_id": 4, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
         )
+        for poll_option_id in [1, 4, 5, 7]:
+            self.assert_model_exists(
+                f"poll_option/{poll_option_id}", {"meeting_user_id": 12}
+            )
+
+        self.assert_model_exists(
+            "poll_ballot/2",
+            {"acting_meeting_user_id": 12, "represented_meeting_user_id": 15},
+        )
         for id_ in [1, 3]:
             self.assert_model_exists(
-                f"ballot/{id_}",
+                f"poll_ballot/{id_}",
                 {"acting_meeting_user_id": 12, "represented_meeting_user_id": 12},
             )
         self.assert_model_exists(
-            "ballot/2",
-            {"acting_meeting_user_id": 12, "represented_meeting_user_id": 15},
+            "poll_ballot/4",
+            {"acting_meeting_user_id": 42, "represented_meeting_user_id": 42},
         )
-        for id_ in [4, 5]:  # votes from secret voting
+        for id_ in [5, 6]:  # anonymous ballots
             self.assert_model_exists(
-                f"ballot/{id_}",
-                {"acting_meeting_user_id": None, "represented_meeting_user_id": None},
-            )
-
-        for id_ in [112, 214, 312, 414]:
-            self.assert_model_exists(
-                f"poll_config_option/{id_}", {"meeting_user_id": 12}
-            )
-
-        def build_expected_user_dates(
-            voted_present_user_delegated_merged: list[
-                tuple[bool, bool, int, int | None, int | None, int | None]
-            ],
-        ) -> list[dict[str, Any]]:
-            return [
+                f"poll_ballot/{id_}",
                 {
-                    "voted": date[0],
-                    "present": date[1],
-                    "user_id": date[2],
-                    "vote_delegated_to_user_id": date[3],
-                    **({"user_merged_into_id": date[4]} if date[4] else {}),
-                    **({"delegation_user_merged_into_id": date[5]} if date[5] else {}),
-                }
-                for date in voted_present_user_delegated_merged
-            ]
-
-        for poll_id, meeting_user_id in {2: 12, 5: 42, 6: 106}.items():
-            self.assert_model_exists(
-                f"poll/{poll_id}", {"voted_ids": [meeting_user_id]}
+                    "value": str(id_ + 4),
+                    "acting_meeting_user_id": None,
+                    "represented_meeting_user_id": None,
+                },
             )
+
         self.assert_model_exists("poll/1", {"voted_ids": [12, 15]})
+        self.assert_model_exists("poll/2", {"voted_ids": [12]})
         for id_ in [3, 4]:
             self.assert_model_exists(f"poll/{id_}", {"voted_ids": None})
+        self.assert_model_exists("poll/5", {"voted_ids": [42]})
+        self.assert_model_exists("poll/6", {"voted_ids": [106 + add_to_creatable_ids]})
 
-    # @pytest.mark.skip(reason="Finalize and unskip when new vote service is ready")
     def test_merge_with_polls_correct(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
@@ -1186,22 +1074,53 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password)
 
-    # @pytest.mark.skip(reason="Finalize and unskip when new vote service is ready")
     def test_merge_with_polls_and_subsequent_merges(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
-        e = self.datastore.get_everything()
         response = self.request("user.merge_together", {"id": 3, "user_ids": [4]})
-        e = self.datastore.get_everything()
         self.assert_status_code(response, 200)
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
-        e = self.datastore.get_everything()
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password, 1)
 
-    # @pytest.mark.skip(reason="Finalize and unskip when new vote service is ready")
     def test_merge_with_polls_all_errors(self) -> None:
-        self.create_polls_with_correct_votes(True)
+        self.set_up_polls_for_merge()
+        self.set_models(
+            {
+                "poll/4": {"state": Poll.STATE_STARTED},
+                "meeting_user/12": {"poll_voted_ids": [2]},
+                "meeting_user/14": {"poll_voted_ids": [1]},
+                "meeting_user/15": {"poll_voted_ids": [1]},
+                "meeting_user/43": {"poll_voted_ids": [5]},
+                "meeting_user/73": {"poll_voted_ids": [6]},
+                "poll_ballot/1": {
+                    "value": "no",
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 14,
+                },
+                "poll_ballot/2": {
+                    "value": "no",
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 15,
+                },
+                "poll_ballot/3": {
+                    "value": "4",
+                    "poll_id": 2,
+                    "acting_meeting_user_id": 12,
+                    "represented_meeting_user_id": 12,
+                },
+                "poll_ballot/4": {
+                    "value": "abstain",
+                    "poll_id": 5,
+                    "acting_meeting_user_id": 43,
+                    "represented_meeting_user_id": 43,
+                },
+                "poll_ballot/5": {"value": "9", "poll_id": 6},
+                "poll_ballot/6": {"value": "10", "poll_id": 6},
+            }
+        )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
         self.assert_status_code(response, 400)
         assert (
@@ -1212,8 +1131,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "some of the selected users have different delegations roles in meeting(s) 1",
                     "some of the selected users are delegating votes to each other in meeting(s) 1",
                     "among the selected users multiple voted in poll(s) 1",
-                    "multiple of the selected users are among the options in poll(s) 1, 4",
-                    "multiple of the selected users are in the same candidate list in poll(s) 2, 3",
+                    "multiple of the selected users are among the options in poll(s) 1, 2, 3, 4",
                 ]
             )
             in response.json["message"]
@@ -2414,7 +2332,6 @@ class UserMergeTogether(BaseActionTestCase):
         self.archive_all_meetings()
         self.test_merge_normal()
 
-    # @pytest.mark.skip(reason="Finalize and unskip when new vote service is ready")
     def test_merge_archived_polls(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()

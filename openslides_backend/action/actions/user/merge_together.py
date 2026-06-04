@@ -1,6 +1,5 @@
-from typing import Any, cast
+from typing import Any
 
-from openslides_backend.models.models import Poll
 from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
@@ -360,198 +359,6 @@ class UserMergeTogether(
                 [{"id": id_} for id_ in to_delete],
             )
 
-    def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
-        all_models = [into, *other_models]
-        # user -> meeting user, same name
-        mu_ids_per_user = {
-            user["id"]: user.get("meeting_user_ids", []) for user in all_models
-        }
-        meeting_user_ids = [
-            mu_id for user in all_models for mu_id in user.get("meeting_user_ids", [])
-        ]
-        poll_conflict_fields = [
-            "poll_voted_ids",
-            "poll_option_ids",
-            "acting_ballot_ids",
-            "represented_ballot_ids",
-        ]
-        helper_fields = [
-            "vote_delegations_from_ids",
-            "vote_delegated_to_id",
-            "meeting_id",
-            "group_ids",
-        ]
-        mu_data = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting_user",
-                    meeting_user_ids,
-                    ["user_id"] + poll_conflict_fields + helper_fields,
-                )
-            ]
-        )["meeting_user"]
-
-        vote_poll_ids_per_meeting_user_id: dict[int, set[int]] = {
-            meeting_user["id"]: {
-                "user_id": meeting_user["user_id"],
-                "poll_voted_ids": poll_voted_ids,
-            }
-            for id_, meeting_user in mu_data.items()
-            if (poll_voted_ids := meeting_user.get("poll_voted_ids"))
-        }
-
-        ballot_poll_ids_per_user_id: dict[int, set[int]] = {}
-        for meeting_user in vote_poll_ids_per_meeting_user_id.values():
-            ballot_poll_ids_per_user_id.setdefault(
-                meeting_user["user_id"], set()
-            ).update(set(meeting_user["poll_voted_ids"]))
-        # acting_vote_ids, represented_vote_ids -> mu
-        # meeting_user.poll_option_ids
-        # list: option of config-approval with options
-        option_poll_ids_per_user_id: dict[int, set[int]] = {}
-        candidate_list_ids_per_user_id: dict[int, set[int]] = {}
-        meeting_user_ids: list[int] = []
-        for model in mu_data.values():
-            if len(
-                # (pc_ids := model.get("poll_candidate_ids", []))
-                # +(o_ids := model.get("poll_option_ids", []))
-                (o_ids := model.get("poll_option_ids", []))
-                + (
-                    v_ids := list(
-                        {
-                            id_
-                            for id_ in [
-                                *model.get("acting_ballot_ids", []),
-                                *model.get("represented_ballot_ids", []),
-                            ]
-                        }
-                    )
-                )
-            ):
-                get_many_requests = [
-                    # GetManyRequest(
-                    #     "poll_candidate", pc_ids, ["poll_candidate_list_id"]
-                    # ),
-                    GetManyRequest(
-                        "poll_config_option",
-                        o_ids,
-                        ["poll_config_id"],
-                    ),
-                    GetManyRequest(
-                        "poll_ballot",
-                        v_ids,
-                        ["poll_id"],
-                    ),
-                ]
-                many_models = self.datastore.get_many(get_many_requests)
-                # if pc_ids:
-                #     candidate_list_ids_per_user_id[model["id"]] = {
-                #         poll_candidate["poll_candidate_list_id"]
-                #         for poll_candidate in many_models["poll_candidate"].values()
-                #         if poll_candidate.get("poll_candidate_list_id")
-                #     }
-                # if o_ids:
-                #     option_poll_ids_per_user_id[model["id"]] = {
-                #         option["poll_id"]
-                #         for option in many_models["option"].values()
-                #         if option.get("poll_id")
-                #     }
-                if o_ids:
-                    option_data = many_models["poll_config_option"]
-                    config_ids_per_collection = {}
-                    for config in option_data.values():
-                        collection, id_ = config["poll_config_id"].split("/")
-                        config_ids_per_collection.setdefault(collection, set()).update(
-                            id_
-                        )
-                    gmr = [
-                        GetManyRequest(
-                            collection,
-                            [int(id_) for id_ in ids],
-                            ["poll_id"],
-                        )
-                        for collection, ids in config_ids_per_collection.items()
-                    ]
-                    r = self.datastore.get_many(gmr)
-                    option_poll_ids_per_user_id[model["user_id"]] = {
-                        *option_poll_ids_per_user_id.get(model["user_id"], set()),
-                        *{
-                            cast(int, option["poll_id"])
-                            for collection, config in self.datastore.get_many(
-                                gmr
-                            ).items()
-                            for option in config.values()
-                            if collection != Poll.CONFIG_TYPE_APPROVAL
-                        },
-                    }
-                    candidate_list_ids_per_user_id[model["user_id"]] = {
-                        *candidate_list_ids_per_user_id.get(model["user_id"], set()),
-                        *{
-                            cast(int, option["poll_id"])
-                            for collection, config in self.datastore.get_many(
-                                gmr
-                            ).items()
-                            for option in config.values()
-                            if collection == Poll.CONFIG_TYPE_APPROVAL
-                        },
-                    }
-
-                ballot_data = many_models["poll_ballot"]
-                ballot_poll_ids_per_user_id[model["user_id"]] = {
-                    *ballot_poll_ids_per_user_id.get(model["user_id"], set()),
-                    *{
-                        id_
-                        for id_ in [
-                            ballot["poll_id"] for ballot in ballot_data.values()
-                        ]
-                    },
-                }
-                # if v_ids:
-                #     vote_poll_ids_per_user_id[model["id"]] = {
-                #         vote["poll_id"]
-                #         for vote in many_models["vote"].values()
-                #         if vote.get("poll_id")
-                #     }
-            # meeting_user_ids += model.get("meeting_user_ids", [])
-        voting_conflicts = {
-            poll_id
-            for id1, poll_ids1 in ballot_poll_ids_per_user_id.items()
-            for id2, poll_ids2 in ballot_poll_ids_per_user_id.items()
-            for poll_id in poll_ids1.intersection(poll_ids2)
-            if id1 != id2
-        }
-        option_conflicts = {
-            poll_id
-            for id1, poll_ids1 in option_poll_ids_per_user_id.items()
-            for id2, poll_ids2 in option_poll_ids_per_user_id.items()
-            for poll_id in poll_ids1.intersection(poll_ids2)
-            if id1 != id2
-        }
-        candidate_list_conflicts = {
-            list_id
-            for id1, list_ids1 in candidate_list_ids_per_user_id.items()
-            for id2, list_ids2 in candidate_list_ids_per_user_id.items()
-            for list_id in list_ids1.intersection(list_ids2)
-            if id1 != id2
-        }
-        messages: list[str] = self.check_polls_helper(mu_data)
-        if len(voting_conflicts):
-            messages.append(
-                f"among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in voting_conflicts])}"
-            )
-        if len(option_conflicts):
-            messages.append(
-                f"multiple of the selected users are among the options in poll(s) {', '.join([str(id_) for id_ in option_conflicts])}"
-            )
-        if len(candidate_list_conflicts):
-            messages.append(
-                f"multiple of the selected users are in the same candidate list in poll(s) {', '.join([str(id_) for id_ in candidate_list_conflicts])}"
-            )
-        if len(messages):
-            raise ActionException(
-                f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
-            )
-
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
     ) -> int | str | tuple[int | str, ...]:
@@ -588,9 +395,10 @@ class UserMergeTogether(
                         )
                     return None
                 case "is_present_in_meeting_ids":
-                    all_meeting_ids = self.get_meeting_ids_per_user(
-                        [into_, *ranked_others]
-                    )
+                    all_meeting_ids = {
+                        user["id"]: set(user.get("meeting_ids", []))
+                        for user in [into_, *ranked_others]
+                    }
                     check_meeting_ids = all_meeting_ids[into_["id"]]
                     present_meeting_ids: set[int] = set(into_.get(field, []))
                     for other in ranked_others:
@@ -620,30 +428,6 @@ class UserMergeTogether(
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
         )
-
-    def get_meeting_ids_per_user(
-        self, users: list[PartialModel]
-    ) -> dict[int, set[int]]:
-        meeting_users = self.datastore.filter(
-            "meeting_user",
-            And(
-                FilterOperator("group_ids", "!=", []),
-                Or(FilterOperator("user_id", "=", user["id"]) for user in users),
-            ),
-            ["meeting_id"],
-        )
-        return {
-            user["id"]: {
-                meeting_id
-                for meeting_user_id in user.get("meeting_user_ids", [])
-                if (
-                    meeting_id := meeting_users.get(meeting_user_id, {}).get(
-                        "meeting_id"
-                    )
-                )
-            }
-            for user in users
-        }
 
     def get_full_history_information(self) -> HistoryInformation | None:
         information = super().get_full_history_information() or {}
