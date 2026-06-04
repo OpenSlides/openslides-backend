@@ -12,6 +12,8 @@ from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
@@ -64,6 +66,7 @@ created_fqids: set()
 data: dict[str, any] = {}
 
 
+@pytest.mark.skip(reason="Waiting for the migration framework.")
 class TestMigration100(BaseMigrationTestCase):
     """
     Commentary:
