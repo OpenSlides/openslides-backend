@@ -440,13 +440,13 @@ class MeetingImport(BaseActionTestCase):
                     "id": obj_id,
                     "title": "just do it",
                     "meeting_id": 1,
-                    "list_of_speakers_id": obj_id + 100,
+                    "list_of_speakers_id": obj_id,
                     "poll_ids": [obj_id],
                 }
             },
             "list_of_speakers": {
-                str(obj_id + 100): {
-                    "id": obj_id + 100,
+                str(obj_id): {
+                    "id": obj_id,
                     "content_object_id": f"assignment/{obj_id}",
                     "meeting_id": 1,
                 }
@@ -2369,7 +2369,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting": {
                     "1": {
                         "assignment_ids": [1],
-                        "list_of_speakers_ids": [101],
+                        "list_of_speakers_ids": [1],
                         "poll_ids": [1],
                     }
                 },
