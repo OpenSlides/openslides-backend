@@ -433,40 +433,40 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
-    def get_assignment_poll_data(self, obj_id: int = 1) -> dict[str, Any]:
+    def get_assignment_poll_data(self, obj_id: int) -> dict[str, Any]:
         return {
-            "assignment": {
-                str(obj_id): {
-                    "id": obj_id,
-                    "title": "just do it",
-                    "meeting_id": 1,
-                    "list_of_speakers_id": obj_id,
-                    "poll_ids": [obj_id],
-                }
-            },
-            "list_of_speakers": {
-                str(obj_id): {
-                    "id": obj_id,
-                    "content_object_id": f"assignment/{obj_id}",
-                    "meeting_id": 1,
-                }
-            },
             "poll": {
                 str(obj_id): {
                     "id": obj_id,
                     "title": "pull",
-                    "config_id": f"poll_config_approval/{obj_id}",
+                    "config_id": f"poll_config_rating_approval/{obj_id + 1}",
                     "visibility": Poll.VISIBILITY_MANUALLY,
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
-                    "content_object_id": f"assignment/{obj_id}",
+                    "content_object_id": f"assignment/{obj_id + 2}",
                 }
             },
-            "poll_config_approval": {
-                str(obj_id): {
-                    "id": obj_id,
+            "poll_config_rating_approval": {
+                str(obj_id + 1): {
+                    "id": obj_id + 1,
                     "poll_id": obj_id,
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                }
+            },
+            "assignment": {
+                str(obj_id + 2): {
+                    "id": obj_id + 2,
+                    "title": "just do it",
+                    "meeting_id": 1,
+                    "list_of_speakers_id": obj_id + 3,
+                    "poll_ids": [obj_id],
+                }
+            },
+            "list_of_speakers": {
+                str(obj_id + 3): {
+                    "id": obj_id + 3,
+                    "content_object_id": f"assignment/{obj_id + 2}",
+                    "meeting_id": 1,
                 }
             },
         }
@@ -2357,31 +2357,43 @@ class MeetingImport(BaseActionTestCase):
     def prepare_user_with_ballot_data(self) -> dict[str, dict[str, Any]]:
         data = self.create_request_data(
             {
-                **self.get_assignment_poll_data(),
+                **self.get_assignment_poll_data(3),
                 "poll_ballot": {
-                    "1": {
-                        "id": 1,
+                    "7": {
+                        "id": 7,
+                        "poll_id": 3,
                         "acting_meeting_user_id": 11,
                         "represented_meeting_user_id": 11,
-                        "poll_id": 1,
                     },
                 },
                 "meeting": {
                     "1": {
-                        "assignment_ids": [1],
-                        "list_of_speakers_ids": [1],
-                        "poll_ids": [1],
+                        "poll_ids": [3],
+                        "assignment_ids": [5],
+                        "list_of_speakers_ids": [6],
+                    }
+                },
+                "group": {
+                    "2": {
+                        "poll_ids": [3],
                     }
                 },
                 "meeting_user": {
                     "11": {
-                        "acting_ballot_ids": [1],
-                        "represented_ballot_ids": [1],
+                        "poll_voted_ids": [3],
+                        "acting_ballot_ids": [7],
+                        "represented_ballot_ids": [7],
                     }
                 },
             }
         )
-        data["meeting"]["poll"]["1"]["ballot_ids"] = [1]
+        data["meeting"]["poll"]["3"].update(
+            {
+                "entitled_group_ids": [2],
+                "ballot_ids": [7],
+                "voted_ids": [11],
+            }
+        )
         return data
 
     def test_import_new_user_with_ballot(self) -> None:
@@ -2405,6 +2417,7 @@ class MeetingImport(BaseActionTestCase):
                     "represented_meeting_user_id": 1,
                     "poll_id": 1,
                 },
+                "meeting_user/1": {"poll_voted_ids": [1]},
             }
         )
 
@@ -2432,6 +2445,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 1,
                 "acting_ballot_ids": [1],
                 "represented_ballot_ids": [1],
+                "poll_voted_ids": [1],
             },
         )
         self.assert_model_exists(
@@ -2441,6 +2455,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 2,
                 "acting_ballot_ids": [2],
                 "represented_ballot_ids": [2],
+                "poll_voted_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -2450,8 +2465,21 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 2,
                 "acting_ballot_ids": None,
                 "represented_ballot_ids": None,
+                "poll_voted_ids": None,
             },
         )
+        self.assert_model_exists(
+            "poll/2",
+            {
+                "config_id": "poll_config_rating_approval/1",
+                "content_object_id": "assignment/1",
+                "meeting_id": 2,
+                "ballot_ids": [2],
+                "voted_ids": [2],
+                "entitled_group_ids": [5],
+            },
+        )
+        self.assert_model_exists("poll_config_rating_approval/1", {"poll_id": 2})
 
     def test_gender_import(self) -> None:
         """
