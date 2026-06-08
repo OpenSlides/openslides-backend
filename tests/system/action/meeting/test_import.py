@@ -317,7 +317,11 @@ class MeetingImport(BaseActionTestCase):
                 if collection not in data["meeting"]:
                     data["meeting"][collection] = models
                 else:
-                    data["meeting"][collection].update(models)
+                    for id_, model in models.items():
+                        if id_ in data["meeting"][collection]:
+                            data["meeting"][collection][id_].update(model)
+                        else:
+                            data["meeting"][collection][id_] = model
 
         return data
 
@@ -427,6 +431,44 @@ class MeetingImport(BaseActionTestCase):
             "projection_ids": [],
             "attachment_ids": [],
             **data,
+        }
+
+    def get_assignment_poll_data(self, obj_id: int = 1) -> dict[str, Any]:
+        return {
+            "assignment": {
+                str(obj_id): {
+                    "id": obj_id,
+                    "title": "just do it",
+                    "meeting_id": 1,
+                    "list_of_speakers_id": obj_id + 100,
+                    "poll_ids": [obj_id],
+                }
+            },
+            "list_of_speakers": {
+                str(obj_id + 100): {
+                    "id": obj_id + 100,
+                    "content_object_id": f"assignment/{obj_id}",
+                    "meeting_id": 1,
+                }
+            },
+            "poll": {
+                str(obj_id): {
+                    "id": obj_id,
+                    "title": "pull",
+                    "config_id": f"poll_config_approval/{obj_id}",
+                    "visibility": Poll.VISIBILITY_MANUALLY,
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                    "content_object_id": f"assignment/{obj_id}",
+                }
+            },
+            "poll_config_approval": {
+                str(obj_id): {
+                    "id": obj_id,
+                    "poll_id": obj_id,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                }
+            },
         }
 
     def replace_migrated_projector_fields(self, data: dict[str, Any]) -> None:
@@ -2312,8 +2354,39 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_import_new_user_with_vote(self) -> None:
+    def prepare_user_with_ballot_data(self) -> dict[str, dict[str, Any]]:
+        data = self.create_request_data(
+            {
+                **self.get_assignment_poll_data(),
+                "poll_ballot": {
+                    "1": {
+                        "id": 1,
+                        "acting_meeting_user_id": 11,
+                        "represented_meeting_user_id": 11,
+                        "poll_id": 1,
+                    },
+                },
+                "meeting": {
+                    "1": {
+                        "assignment_ids": [1],
+                        "list_of_speakers_ids": [101],
+                        "poll_ids": [1],
+                    }
+                },
+                "meeting_user": {
+                    "11": {
+                        "acting_ballot_ids": [1],
+                        "represented_ballot_ids": [1],
+                    }
+                },
+            }
+        )
+        data["meeting"]["poll"]["1"]["ballot_ids"] = [1]
+        return data
+
+    def test_import_new_user_with_ballot(self) -> None:
         self.set_user_groups(1, [1])
+        self.create_motion(1, 30)
         self.set_models(
             {
                 "poll/1": {
@@ -2322,50 +2395,41 @@ class MeetingImport(BaseActionTestCase):
                     "visibility": Poll.VISIBILITY_MANUALLY,
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
-                    "content_object_id": "meeting/1",
+                    "content_object_id": "motion/30",
                 },
-                "poll_config_approval/1": {"poll_id": 1},
-                "ballot/1": {
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_ballot/1": {
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 1,
                     "poll_id": 1,
                 },
             }
         )
-        data = self.create_request_data(
-            {
-                "poll_ballot": {
-                    "1": {
-                        "id": 1,
-                        "acting_meeting_user_id": 1,
-                        "represented_meeting_user_id": 1,
-                        "poll_id": 1,
-                    },
-                },
-            }
-        )
-        data["meeting"]["meeting_user"]["1"]["acting_ballot_ids"] = [1]
-        data["meeting"]["meeting_user"]["1"]["represented_ballot_ids"] = [1]
+
+        data = self.prepare_user_with_ballot_data()
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/1",
             {
                 "username": "admin",
-                "meeting_user_ids": [2],
+                "meeting_user_ids": [1, 3],
             },
         )
         self.assert_model_exists(
             "user/2",
             {
                 "username": "test",
-                "meeting_user_ids": [1],
+                "meeting_user_ids": [2],
             },
         )
         self.assert_model_exists(
             "meeting_user/1",
             {
-                "user_id": 2,
+                "user_id": 1,
+                "meeting_id": 1,
                 "acting_ballot_ids": [1],
                 "represented_ballot_ids": [1],
             },
@@ -2373,9 +2437,19 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/2",
             {
-                "user_id": 1,
+                "user_id": 2,
+                "meeting_id": 2,
                 "acting_ballot_ids": [2],
                 "represented_ballot_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/3",
+            {
+                "user_id": 1,
+                "meeting_id": 2,
+                "acting_ballot_ids": None,
+                "represented_ballot_ids": None,
             },
         )
 
@@ -2516,57 +2590,19 @@ class MeetingImport(BaseActionTestCase):
             {"user_ids": [1, 2, 3, 4, 5, 6, 7], "gender_ids": [1, 4, 5, 6]},
         )
 
-    def test_import_existing_user_with_vote(self) -> None:
-        self.set_user_groups(1, [1])
-        self.set_models(
-            {
-                "poll/1": {
-                    "title": "pull",
-                    "config_id": "poll_config_approval/1",
-                    "visibility": Poll.VISIBILITY_MANUALLY,
-                    "state": Poll.STATE_STARTED,
-                    "meeting_id": 1,
-                    "content_object_id": "meeting/1",
-                },
-                "poll_config_approval/1": {"poll_id": 1},
-                "vote/1": {
-                    "acting_meeting_user_id": 1,
-                    "represented_meeting_user_id": 1,
-                    "poll_id": 1,
-                },
-            }
-        )
-        data = self.create_request_data(
-            {
-                "poll_ballot": {
-                    "1": {
-                        "id": 1,
-                        "acting_meeting_user_id": 1,
-                        "represented_meeting_user_id": 1,
-                    },
-                },
-            }
-        )
+    def test_import_existing_user_with_ballot(self) -> None:
+        data = self.prepare_user_with_ballot_data()
         data["meeting"]["user"]["1"]["username"] = "admin"
         data["meeting"]["user"]["1"]["last_name"] = ""
-        data["meeting"]["meeting_user"]["1"]["acting_ballot_ids"] = [1]
-        data["meeting"]["meeting_user"]["1"]["represented_ballot_ids"] = [1]
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/1",
-            {
-                "username": "admin",
-                "meeting_user_ids": [1],
-            },
+            {"username": "admin", "meeting_user_ids": [1]},
         )
         self.assert_model_exists(
-            "meeting_user_ids/1",
-            {
-                "user_id": 1,
-                "acting_ballot_ids": [1, 2],
-                "represented_ballot_ids": [1, 2],
-            },
+            "meeting_user/1",
+            {"user_id": 1, "acting_ballot_ids": [1], "represented_ballot_ids": [1]},
         )
         self.assert_model_not_exists("user/2")
 
