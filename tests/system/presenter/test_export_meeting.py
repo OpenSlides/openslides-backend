@@ -61,7 +61,6 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_block",
             "motion_change_recommendation",
             "poll",
-            "vote",
             "assignment",
             "assignment_candidate",
             "mediafile",
@@ -223,17 +222,15 @@ class TestExportMeeting(BasePresenterTestCase):
         Find meeting_users in:
         Collection          | Field
         poll                | voted_ids
-        motion              | supporter_meeting_user_ids
         ballot              | acting_meeting_user_id
         ballot              | represented_meeting_user_id
-        poll_config_option  | meeting_user_id
+        poll_option         | meeting_user_id
         """
-        self.create_meeting()
         self.create_motion(1, 30)
         self.set_models(
             {
                 "meeting/1": {"present_user_ids": [11]},
-                "group/1": {"meeting_user_ids": [112, 114]},
+                "group/1": {"meeting_user_ids": [112, 113, 114]},
                 "user/11": {"username": "exuser11"},
                 "user/12": {"username": "exuser12"},
                 "user/13": {"username": "exuser13"},
@@ -245,27 +242,28 @@ class TestExportMeeting(BasePresenterTestCase):
                     "meeting_user_id": 112,
                 },
                 "meeting_user/113": {"meeting_id": 1, "user_id": 13},
-                "meeting_user/114": {"meeting_id": 1, "user_id": 14},
+                "meeting_user/114": {
+                    "meeting_id": 1,
+                    "user_id": 14,
+                    "poll_voted_ids": [80],
+                },
                 "poll/80": {
                     "title": "Poll 80",
                     "meeting_id": 1,
-                    "content_object_id": "assignment/10",
+                    "content_object_id": "motion/30",
                     "visibility": Poll.VISIBILITY_NAMED,
                     "config_id": "poll_config_approval/90",
-                    "state": Poll.STATE_STARTED,
-                    "voted_ids": [114],
+                    "state": Poll.STATE_FINISHED,
                 },
-                "poll_config_approval/90": {"poll_id": 80},
-                "poll_config_option/100": {
-                    "poll_config_id": "poll_config_approval/90",
-                    "meeting_user_id": 113,
+                "poll_config_approval/90": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "ballot/120": {
+                "poll_option/100": {"poll_id": 80, "meeting_user_id": 113},
+                "poll_ballot/120": {
                     "poll_id": 80,
                     "value": "yes",
                     "represented_meeting_user_id": 114,
                     "acting_meeting_user_id": 114,
-                    "meeting_id": 1,
                 },
             }
         )
@@ -280,18 +278,121 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["meeting"]["1"]["present_user_ids"] == [11]
         assert data["user"]["11"]["is_present_in_meeting_ids"] == [1]
 
-        assert data["motion"]["30"]["supporter_meeting_user_ids"] == [112]
-        assert data["meeting_user"]["112"]["supported_motion_ids"] == [30]
-
-        assert data["poll_config_option"]["100"]["meeting_user_id"] == 113
+        assert data["poll_option"]["100"]["meeting_user_id"] == 113
         assert data["meeting_user"]["113"]["poll_option_ids"] == [100]
 
         assert data["poll"]["80"]["voted_ids"] == [114]
         assert data["meeting_user"]["114"]["poll_voted_ids"] == [80]
-        assert data["poll_ballot"]["120"]["c"] == 114
+        assert data["poll_ballot"]["120"]["acting_meeting_user_id"] == 114
         assert data["poll_ballot"]["120"]["represented_meeting_user_id"] == 114
         assert data["meeting_user"]["114"]["acting_ballot_ids"] == [120]
         assert data["meeting_user"]["114"]["represented_ballot_ids"] == [120]
+
+    def create_assignment(self, meeting_id: int, base: int) -> None:
+        self.set_models(
+            {
+                f"assignment/{base}": {
+                    "title": "just do it",
+                    "meeting_id": meeting_id,
+                },
+                f"list_of_speakers/{base + 100}": {
+                    "content_object_id": f"assignment/{base}",
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
+    def test_export_meeting_find_poll_configs(self) -> None:
+        configs_data = {
+            "poll_config_approval/1": {
+                "poll_id": 11,
+                "allow_abstain": False,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+            },
+            "poll_config_selection/2": {
+                "poll_id": 12,
+                "max_options_amount": 1,
+                "min_options_amount": 1,
+                "allow_nota": True,
+                "strike_out": True,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED,
+            },
+            "poll_config_rating_score/3": {
+                "poll_id": 13,
+                "min_options_amount": 1,
+                "max_options_amount": 2,
+                "max_votes_per_option": 3,
+                "min_vote_sum": 1,
+                "max_vote_sum": 3,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED_PRESENT,
+            },
+            "poll_config_rating_approval/4": {
+                "poll_id": 14,
+                "min_options_amount": 1,
+                "max_options_amount": 3,
+                "allow_abstain": False,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED_PRESENT,
+            },
+        }
+        self.create_motion(1, 21)
+        self.create_motion(1, 24)
+        self.create_assignment(1, 22)
+        self.create_assignment(1, 23)
+        self.create_user_for_meeting(1)
+        self.create_user_for_meeting(1)
+
+        self.set_models(
+            {
+                **configs_data,
+                "poll/11": {
+                    "title": "Poll 11",
+                    "meeting_id": 1,
+                    "content_object_id": "motion/21",
+                    "config_id": "poll_config_approval/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "state": Poll.STATE_CREATED,
+                },
+                "poll/12": {
+                    "title": "Poll 12",
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/22",
+                    "config_id": "poll_config_selection/2",
+                    "visibility": Poll.VISIBILITY_OPEN,
+                    "state": Poll.STATE_STARTED,
+                },
+                "poll/13": {
+                    "title": "Poll 13",
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/23",
+                    "config_id": "poll_config_rating_score/3",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "state": Poll.STATE_FINISHED,
+                },
+                "poll/14": {
+                    "title": "Poll 14",
+                    "meeting_id": 1,
+                    "content_object_id": "motion/24",
+                    "config_id": "poll_config_rating_approval/4",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "state": Poll.STATE_STARTED,
+                },
+                "poll_option/121": {"poll_id": 12, "meeting_user_id": 1},
+                "poll_option/122": {"poll_id": 12, "meeting_user_id": 2},
+                "poll_option/131": {"poll_id": 13, "meeting_user_id": 1},
+                "poll_option/132": {"poll_id": 13, "meeting_user_id": 2},
+                "poll_option/141": {"poll_id": 14, "text": "Blue"},
+                "poll_option/142": {"poll_id": 14, "text": "Green"},
+                "poll_option/143": {"poll_id": 14, "text": "Red"},
+                "group/1": {"poll_ids": [11, 12, 13, 14]},
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        for config_fqid, config_data in configs_data.items():
+            config_collection, config_id = config_fqid.split("/")
+            assert data["poll"][str(config_data["poll_id"])]["config_id"] == config_fqid
+            for k, v in config_data.items():
+                assert data[config_collection][config_id][k] == v
 
     def test_with_structured_published_orga_files(self) -> None:
         self.set_models(
@@ -380,9 +481,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                     "motion_poll_ballot_paper_number": 8,
                     "motion_poll_default_type": "pseudoanonymous",
-                    "motion_poll_default_method": "YNA",
-                    "motion_poll_default_onehundred_percent_base": "YNA",
-                    "motion_poll_default_backend": "fast",
+                    "motion_poll_default_onehundred_percent_base": "valid",
                     "motion_poll_projection_name_order_first": "last_name",
                     "motion_poll_projection_max_columns": 6,
                     "users_enable_presence_view": False,
@@ -403,10 +502,10 @@ class TestExportMeeting(BasePresenterTestCase):
                     "assignment_poll_default_type": "pseudoanonymous",
                     "assignment_poll_default_method": "Y",
                     "assignment_poll_default_onehundred_percent_base": "valid",
-                    "assignment_poll_default_backend": "fast",
                     "poll_default_type": "analog",
-                    "poll_default_onehundred_percent_base": "YNA",
+                    "poll_default_onehundred_percent_base": "valid",
                     "poll_default_live_voting_enabled": False,
+                    "poll_default_method": "YNA",
                     "poll_couple_countdown": True,
                 },
                 "group/1": {

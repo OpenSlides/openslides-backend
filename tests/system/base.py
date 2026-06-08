@@ -26,6 +26,7 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import (
     ActionException,
@@ -51,8 +52,6 @@ from openslides_backend.shared.util import (
 )
 from tests.util import AuthData, Client, Response
 
-from .util import TestVoteService
-
 DEFAULT_PASSWORD = "password"
 
 ADMIN_USERNAME = "admin"
@@ -62,7 +61,7 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    vote_service: TestVoteService
+    vote_service: VoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
     anon_client: Client
@@ -84,7 +83,7 @@ class BaseSystemTestCase(TestCase):
         self.env = cast(Environment, self.app.env)
         self.auth = self.services.authentication()
         self.media = self.services.media()
-        self.vote_service = cast(TestVoteService, self.services.vote())
+        self.vote_service = self.services.vote()
         self.set_thread_watch_timeout(-1)
 
         self.user_id = 1

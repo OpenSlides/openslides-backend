@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -206,10 +206,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "start_time": datetime.fromtimestamp(1608120653, ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1608121653, ZoneInfo("UTC")),
                 "external_id": external_id,
-                "assignment_poll_default_type": "pseudoanonymous",
-                "assignment_poll_default_method": "Y",
-                "motion_poll_default_type": "pseudoanonymous",
-                "motion_poll_default_method": "YNA",
+                "assignment_poll_default_type": Poll.VISIBILITY_SECRET,
+                "assignment_poll_default_method": Poll.METHOD_SELECTION,
+                "motion_poll_default_type": Poll.VISIBILITY_SECRET,
             },
         )
 
