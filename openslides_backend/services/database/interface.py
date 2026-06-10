@@ -10,6 +10,7 @@ from openslides_backend.shared.interfaces.collection_field_lock import (
 from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
+from ...shared.interfaces.event import ListFields
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId, Id
 from .commands import GetManyRequest
@@ -168,3 +169,25 @@ class Database(Protocol):
         lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]: ...
+
+    @abstractmethod
+    def insert_model(
+        self,
+        collection: Collection,
+        fields: dict[str, Any],
+        id_: Id | None = None,
+        return_fields: list[str] = ["id"],
+    ) -> tuple[FullQualifiedId, dict[str, Any]]: ...
+
+    @abstractmethod
+    def update_model(
+        self,
+        collection: Collection,
+        id_: Id,
+        fields: dict[str, Any],
+        list_fields: ListFields = {},
+        return_fields: list[str] = ["id"],
+    ) -> tuple[FullQualifiedId, dict[str, Any]]: ...
+
+    @abstractmethod
+    def delete_model(self, collection: Collection, id_: Id) -> FullQualifiedId: ...

@@ -94,6 +94,9 @@ class ExtendedDatabase(Database):
     _changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
 
+    # TODO: Delete once old-style actions are all removed
+    enable_changed_models: bool = True
+
     def __init__(
         self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
     ) -> None:
@@ -113,6 +116,10 @@ class ExtendedDatabase(Database):
         Adds or replaces the model identified by fqid in the changed_models.
         Automatically adds missing id field.
         """
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "apply_changed_model: No usage of changed_models if it is disabled."
+            )
         collection, id_ = collection_and_id_from_fqid(fqid)
         if replace or isinstance(instance, DeletedModel):
             self._changed_models[collection][id_] = instance
@@ -126,6 +133,10 @@ class ExtendedDatabase(Database):
         The model will be marked as to be deleted.
         This will not be undone when it is marked as deleted.
         """
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "apply_to_be_deleted: No usage of changed_models if it is disabled."
+            )
         self._to_be_deleted.add(fqid)
 
     def apply_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> None:
@@ -134,22 +145,38 @@ class ExtendedDatabase(Database):
         This will not be undone when it is marked as deleted.
         Only used for protected models deletion.
         """
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "apply_to_be_deleted_for_protected: No usage of changed_models if it is disabled."
+            )
         self._to_be_deleted_for_protected.add(fqid)
 
     def get_changed_model(
         self, collection_or_fqid: str, id_: int | None = None
     ) -> PartialModel:
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "get_changed_model: No usage of changed_models if it is disabled."
+            )
         if not id_:
             collection_or_fqid, id_ = collection_and_id_from_fqid(collection_or_fqid)
         return self._changed_models[collection_or_fqid][id_]
 
     def get_changed_models(self, collection: str) -> dict[Id, PartialModel]:
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "get_changed_models: No usage of changed_models if it is disabled."
+            )
         return self._changed_models.get(collection, dict())
 
     def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
         """
         Returns if the model was ever marked for deletion.
         """
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "is_to_be_deleted: No usage of changed_models if it is disabled."
+            )
         return fqid in self._to_be_deleted
 
     def is_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> bool:
@@ -157,6 +184,10 @@ class ExtendedDatabase(Database):
         Returns if the model was ever marked for deletion.
         Only used for protected models deletion.
         """
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "is_to_be_deleted_for_protected: No usage of changed_models if it is disabled."
+            )
         return fqid in self._to_be_deleted_for_protected or fqid in self._to_be_deleted
 
     def get(
@@ -183,6 +214,10 @@ class ExtendedDatabase(Database):
         if use_changed_models and (
             changed_model := self._changed_models[collection][id_]
         ):
+            if not self.enable_changed_models:
+                raise BadCodingException(
+                    "get: No usage of changed_models if it is disabled."
+                )
             if self.is_deleted(fqid):
                 raise ModelDoesNotExist(fqid)
             # TODO do deep copy instead
@@ -252,6 +287,10 @@ class ExtendedDatabase(Database):
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
         if use_changed_models:
+            if not self.enable_changed_models:
+                raise BadCodingException(
+                    "get_many: No usage of changed_models if it is disabled."
+                )
             mapped_fields_per_collection_and_id: dict[str, dict[int, Any]] = (
                 defaultdict(dict)
             )
@@ -433,6 +472,10 @@ class ExtendedDatabase(Database):
                 collection, filter_, MappedFields(mapped_fields), lock_result
             )
             if use_changed_models:
+                if not self.enable_changed_models:
+                    raise BadCodingException(
+                        "filter: No usage of changed_models if it is disabled."
+                    )
                 for id_, changed_model in changed_models_collection.items():
                     # new models will not be in the filter result. So we need to search them in the before matched ids and add a dict.
                     if changed_model.get("meta_new") and id_ in fully_matched_ids:
@@ -466,6 +509,10 @@ class ExtendedDatabase(Database):
         if method not in VALID_AGGREGATE_FUNCTIONS:
             raise BadCodingException(f"Invalid aggregate function: {method}")
         if use_changed_models and self._changed_models[collection]:
+            if not self.enable_changed_models:
+                raise BadCodingException(
+                    "aggregate: No usage of changed_models if it is disabled."
+                )
             match method:
                 case "count":
                     return len(self.filter(collection, filter_, [], lock_result))
@@ -535,16 +582,19 @@ class ExtendedDatabase(Database):
         )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        if not self.enable_changed_models:
+            raise BadCodingException(
+                "is_deleted: No usage of changed_models if it is disabled."
+            )
         collection, id_ = collection_and_id_from_fqid(fqid)
         return isinstance(self._changed_models[collection].get(id_), DeletedModel)
 
     def is_new(self, fqid: FullQualifiedId) -> bool:
+        if not self.enable_changed_models:
+            # TODO: This is used in get, we should handle this differently
+            return False
         collection, id_ = collection_and_id_from_fqid(fqid)
         return self._changed_models[collection].get(id_, {}).get("meta_new") is True
-
-    def reset(self, hard: bool = True) -> None:
-        if hard:
-            self._changed_models.clear()
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         self.logger.debug(
@@ -643,6 +693,42 @@ class ExtendedDatabase(Database):
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
         return self.database_reader.execute_custom_select(query, lock_result, arguments)
+
+    def insert_model(
+        self,
+        collection: Collection,
+        fields: dict[str, Any],
+        id_: Id | None = None,
+        return_fields: list[str] = ["id"],
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        return self.database_writer.insert_model(collection, fields, id_, return_fields)
+
+    def update_model(
+        self,
+        collection: Collection,
+        id_: Id,
+        fields: dict[str, Any],
+        list_fields: ListFields = {},
+        return_fields: list[str] = ["id"],
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        return self.database_writer.update_model(
+            collection, id_, fields, list_fields, return_fields
+        )
+
+    def delete_model(self, collection: Collection, id_: Id) -> FullQualifiedId:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        return self.database_writer.delete_model(collection, id_)
 
     def _model_fits_subfilter(
         self, model: Model, filter_: Filter, negation: bool = False
@@ -747,3 +833,16 @@ class ExtendedDatabase(Database):
                 raise NotImplementedError("Operator %= is not supported")
             case default:
                 raise NotImplementedError(f"Operator {default} is not supported")
+
+    # ----------------------------------------------------------------------------------------------------
+    # CODE FOR COMPATIBILITY WITH OLD_STYLE ACTIONS.
+    # TO BE DELETED WHEN THOSE ARE REMOVED COMPLETELY.
+
+    def reset(self, hard: bool = True) -> None:
+        if hard:
+            self._changed_models.clear()
+
+    def toggle_changed_models(self, enable_changed_models: bool) -> None:
+        if not enable_changed_models != self.enable_changed_models:
+            self.reset()
+        self.enable_changed_models = enable_changed_models

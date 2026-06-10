@@ -40,6 +40,7 @@ from openslides_backend.shared.interfaces.event import (
     Event,
     EventType,
     ListField,
+    ListFields,
     ListFieldsDict,
 )
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -126,29 +127,36 @@ class DatabaseWriter(SqlQueryHelper):
 
             match event["type"]:
                 case EventType.Create:
-                    fqid, data = self.insert_model(event, collection, id_)
+                    fqid, data = self.insert_event_model(event, collection, id_)
                     models_created_or_updated[fqid] = data
                 case EventType.Update:
                     assert id_
-                    fqid, data = self.update_model(event, collection, id_)
+                    fqid, data = self.update_event_model(event, collection, id_)
                     models_created_or_updated[fqid].update(data)
                 case EventType.Delete:
                     assert id_
-                    models_created_or_updated[
-                        self.delete_model(event, collection, id_)
-                    ] = {}
+                    models_created_or_updated[self.delete_model(collection, id_)] = {}
 
         return models_created_or_updated
 
-    def insert_model(
+    def insert_event_model(
         self, event: Event, collection: Collection, id_: Id | None
     ) -> tuple[FullQualifiedId, dict[str, Any]]:
         event_fields = event.get("fields", dict())
         event_return_fields = event.get("return_fields", ["id"])
-        if "id" not in event_return_fields:
-            event_return_fields.append("id")
+        return self.insert_model(collection, event_fields, id_, event_return_fields)
+
+    def insert_model(
+        self,
+        collection: Collection,
+        fields: dict[str, Any],
+        id_: Id | None = None,
+        return_fields: list[str] = ["id"],
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+        if "id" not in return_fields:
+            return_fields.append("id")
         simple_fields, intermediate_tables = self.get_simple_fields_intermediate_table(
-            event_fields, collection
+            fields, collection
         )
         if id_ and not simple_fields.get("id"):
             simple_fields["id"] = id_
@@ -165,17 +173,13 @@ class DatabaseWriter(SqlQueryHelper):
             list(simple_fields.values()),
             collection,
             id_,
-            return_fields=event_return_fields,
+            return_fields=return_fields,
         )
         id_ = result.get("id", 0)
-        self.write_to_intermediate_tables(
-            event_fields, intermediate_tables, id_, collection
-        )
+        self.write_to_intermediate_tables(fields, intermediate_tables, id_, collection)
         return fqid_from_collection_and_id(collection, id_), result
 
-    def delete_model(
-        self, event: Event, collection: Collection, id_: Id
-    ) -> FullQualifiedId:
+    def delete_model(self, collection: Collection, id_: Id) -> FullQualifiedId:
         statement = sql.SQL("""
             DELETE FROM {table_name} WHERE id = {id}
             """).format(
@@ -185,8 +189,23 @@ class DatabaseWriter(SqlQueryHelper):
             collection, self.execute_sql(statement, [], collection, id_).get("id", 0)
         )
 
-    def update_model(
+    def update_event_model(
         self, event: Event, collection: Collection, id_: Id
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+        event_fields = event["fields"]
+        event_return_fields = event.get("return_fields", ["id"])
+        list_fields: ListFields = event.get("list_fields") or {}
+        return self.update_model(
+            collection, id_, event_fields, list_fields, event_return_fields
+        )
+
+    def update_model(
+        self,
+        collection: Collection,
+        id_: Id,
+        event_fields: dict[str, Any],
+        list_fields: ListFields = {},
+        event_return_fields: list[str] = ["id"],
     ) -> tuple[FullQualifiedId, dict[str, Any]]:
         table = sql.Identifier(f"{collection}_t")
         statement = sql.SQL("""
@@ -196,8 +215,6 @@ class DatabaseWriter(SqlQueryHelper):
             row=sql.Identifier(f"{collection}_row"),
         )
 
-        event_fields = event["fields"]
-        event_return_fields = event.get("return_fields", ["id"])
         set_fields_dict, intermediate_tables = (
             self.get_simple_fields_intermediate_table(event_fields, collection)
         )
@@ -209,7 +226,6 @@ class DatabaseWriter(SqlQueryHelper):
             event_fields, intermediate_tables, id_, collection
         )
 
-        list_fields = event.get("list_fields") or dict()
         add_dict = list_fields.get("add", dict())
         remove_dict = list_fields.get("remove", dict())
         array_types, nm_relation_list_fields = (
