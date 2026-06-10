@@ -1,47 +1,77 @@
+import os
+import re
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
-from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_helper import (
+    MIGRATIONS_PATH,
+    MIN_NON_REL_MIGRATION,
+    MigrationHelper,
+)
+from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.models.fields import (
     DecimalField,
     Field,
     JSONField,
     TimestampField,
 )
+from openslides_backend.services.postgresql.create_schema import create_schema
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
+from tests.conftest import get_rel_db_table_names
+from tests.conftest_helper import (
+    deactivate_notify_triggers,
+    generate_sql_for_test_initiation,
+)
 from tests.system.base import BaseSystemTestCase
+from tests.system.util import get_route_path
+
+DEPR_SQL_PATH = os.path.realpath(
+    os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
+)
+MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 
 
 class BaseMigrationTestCase(BaseSystemTestCase):
     # has to be set by subclass
     migration_file: str
-    patcher: Any
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-
-        # mock the return value
-        cls.patcher = patch("os.listdir", return_value=[cls.migration_file])
-        # start the patch
-        cls.patcher.start()
-        # stop after all tests
-        cls.addClassCleanup(cls.patcher.stop)
 
     def setUp(self) -> None:
         """
         Does not call super class to prevent usage of client and so forth.
         """
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
         self.used_collections: set[str] = set()
         self.created_fqids: set[str] = set()
         self.deleted_fqids: set[str] = set()
+
+        self.apply_test_relational_schema()
+
+        # Migrate to state before tested migration.
+        migration_number = int(self.migration_file[:4])
+        filenames = [
+            f
+            for f in os.listdir(MIGRATIONS_PATH)
+            if re.match("\\d+", f[:4]) and int(f[:4]) < migration_number
+        ]
+        with patch("os.listdir", return_value=filenames):
+            self.migrate()
+
+        # Only migrate tested migration in following test.
+        patcher = patch("os.listdir", return_value=[self.migration_file])
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self) -> None:
         MigrationHelper.migrate_thread = None
@@ -50,6 +80,57 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         if MigrationHelper.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
         super().tearDown()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.apply_fresh_relational_schema()
+        super().tearDownClass()
+
+    @staticmethod
+    def apply_test_relational_schema() -> None:
+        """
+        Creates old idempotent key-value-store schema and relational schema on top.
+        Also deactivates notify triggers.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("DROP SCHEMA public CASCADE;")
+                curs.execute("CREATE SCHEMA public;")
+                curs.execute(open(DEPR_SQL_PATH).read())
+
+                # Write migration index like legacy migrations expected to apply initial schema correctly.
+                curs.execute(
+                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2026-06-04', 1, {MIN_NON_REL_MIGRATION + 1})"
+                )
+        create_schema()
+
+    @staticmethod
+    def apply_fresh_relational_schema() -> None:
+        """
+        Creates fresh relational schema and deactivates notify triggers.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("DROP SCHEMA public CASCADE;")
+                curs.execute("CREATE SCHEMA public;")
+        # Uses current schema because schema is fresh.
+        create_schema()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                table_names = get_rel_db_table_names(curs)
+                curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
+                # TODO test without
+                deactivate_notify_triggers(curs)
+
+    def migrate(self) -> dict[str, Any]:
+        """
+        Executes the `migrate` command using a MigrationManager.
+        Waits for thread execution.
+        """
+        manager = MigrationManager(Mock(), Mock(), Mock())
+        result = manager.handle_request({"cmd": "migrate", "verbose": True})
+        self.wait_for_migration_thread(15)
+        return result
 
     def assert_content_not_none(
         self,

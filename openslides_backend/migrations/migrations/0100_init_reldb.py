@@ -11,11 +11,7 @@ from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.data.mig_0100_resulting_models import model_registry
-from openslides_backend.migrations.migration_helper import (
-    OLD_TABLES,
-    MigrationHelper,
-    MigrationState,
-)
+from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
 from openslides_backend.migrations.migration_models import (
     MigrationModelCreateUpdate as Model,
 )
@@ -379,13 +375,6 @@ class Migration(BaseMigration):
         # 4) INSERT intermediate tables
         for command, values in insert_intermediate_t_commands:
             curs.execute(command, values)
-
-        # clear replace tables as this migration writes the tables directly
-        MigrationHelper.set_database_migration_info(
-            curs,
-            100,
-            MigrationState.FINALIZATION_REQUIRED,
-        )
 
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:

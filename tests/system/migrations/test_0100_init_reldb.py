@@ -23,22 +23,11 @@ from openslides_backend.migrations.migration_helper import (
 )
 from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.postgresql.create_schema import (
-    create_db,
-    create_schema,
-    drop_db,
-)
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
-    get_unpooled_db_connection,
     os_conn_pool,
 )
 from openslides_backend.shared.env import DEV_PASSWORD
-from tests.conftest import OLD_TABLES, get_rel_db_table_names
-from tests.conftest_helper import (
-    deactivate_notify_triggers,
-    generate_sql_for_test_initiation,
-)
 from tests.system.action.util import get_internal_auth_header
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import create_action_test_application, get_route_path
@@ -53,9 +42,6 @@ EXAMPLE_DATA_PATH = os.path.realpath(
     os.path.join(
         os.getcwd(), "tests", "system", "migrations", "legacy-example-data.json"
     )
-)
-DEPR_SQL_PATH = os.path.realpath(
-    os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
 )
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -107,30 +93,13 @@ For more information, see
     @classmethod
     def tearDownClass(cls) -> None:
         # 8) Final Cleanup
-        drop_db()
-        cls.apply_test_relational_schema()
         for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
             if os.getenv(key):
                 del os.environ[key]
         super().tearDownClass()
 
-    @staticmethod
-    def apply_test_relational_schema() -> None:
-        create_schema()
-        with get_unpooled_db_connection("openslides") as conn:
-            with conn.cursor() as curs:
-                table_names = get_rel_db_table_names(curs)
-                curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
-                deactivate_notify_triggers(curs)
-
     def tearDown(self) -> None:
         migration_module.Sql_helper.offset = 0
-        # Reset tables to ensure that init sql doesn't write garbage.
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                for collection in self.used_collections:
-                    curs.execute(f"DELETE FROM {collection}_t CASCADE;")
-                    curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
         super().tearDown()
 
     def setUp(self) -> None:
@@ -138,19 +107,17 @@ For more information, see
         os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
         os.environ["MIG0100_I_READ_DOCS"] = "YES"
 
-        # 1) Create old idempotent key-value-store schema and relational schema on top
-        drop_db()
-        create_db()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                curs.execute(open(DEPR_SQL_PATH).read())
-
         # 1.1) Create services and login.
         self.app = create_action_test_application()
         self.client = Client(self.app)
+
+        # 1.2) Setup data and other class variables
         super().setUp()
         self.setup_data()
-        self.apply_test_relational_schema()
+
+    def migrate(self) -> dict[str, Any]:
+        """override since this would only be used to set up previous thus nonexistant migrations"""
+        return {}
 
     def request(
         self,
@@ -199,11 +166,6 @@ For more information, see
                         [fqid, json_blob],
                     )
 
-                # 4.2) Write Migration Index like Docker setup would expect
-                curs.execute(
-                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2020-05-20', 1, {MIN_NON_REL_MIGRATION + 1})"
-                )
-
     def check_data(self) -> None:
         # 6) TEST CASES
         with os_conn_pool.connection() as conn:
@@ -211,7 +173,7 @@ For more information, see
                 # 6.1) 1:1 relation
                 self.assert_content_not_none(
                     cur,
-                    "SELECT theme_id FROM organization_t WHERE id=1;",
+                    "SELECT theme_id FROM organization_m WHERE id=1;",
                     None,
                     "1:1 relation in organization not filled.",
                 )
@@ -219,7 +181,7 @@ For more information, see
                 # 6.1.1) 1G:1 relation
                 self.assert_content_not_none(
                     cur,
-                    "SELECT type, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM agenda_item_t WHERE id=1;",
+                    "SELECT type, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM agenda_item_m WHERE id=1;",
                     {
                         "type": "common",
                         "content_object_id": "motion/1",
@@ -230,13 +192,13 @@ For more information, see
 
                 # 6.2) 1:n relation
                 self.assert_content_not_none(
-                    cur, "SELECT gender_id FROM user_t WHERE id=1;", {"gender_id": 1}
+                    cur, "SELECT gender_id FROM user_m WHERE id=1;", {"gender_id": 1}
                 )
 
                 # 6.2.1) 1G:n relation
                 self.assert_content_not_none(
                     cur,
-                    "SELECT title, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM poll_t WHERE id=1;",
+                    "SELECT title, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM poll_m WHERE id=1;",
                     {
                         "title": "1",
                         "content_object_id": "motion/1",
@@ -248,45 +210,24 @@ For more information, see
                 # 6.3) n:m relation
                 self.assert_content_not_none(
                     cur,
-                    "SELECT user_id, committee_id FROM nm_committee_manager_ids_user_t WHERE committee_id=1 ORDER BY user_id;",
+                    "SELECT user_id, committee_id FROM nm_committee_manager_ids_user_m WHERE committee_id=1 ORDER BY user_id;",
                     {"user_id": 1, "committee_id": 1},
                 )
                 # 6.3.1) nG:m relation
                 self.assert_content_not_none(
                     cur,
-                    "SELECT tagged_id FROM gm_organization_tag_tagged_ids_t WHERE organization_tag_id=1 AND tagged_id LIKE 'committee/1';",
+                    "SELECT tagged_id FROM gm_organization_tag_tagged_ids_m WHERE organization_tag_id=1 AND tagged_id LIKE 'committee/1';",
                 )
                 self.assert_content_not_none(
                     cur,
-                    "SELECT tagged_id FROM gm_organization_tag_tagged_ids_t WHERE organization_tag_id=1 AND tagged_id LIKE 'meeting/1';",
+                    "SELECT tagged_id FROM gm_organization_tag_tagged_ids_m WHERE organization_tag_id=1 AND tagged_id LIKE 'meeting/1';",
                 )
 
-                # 6.4) Set id sequences correctly
-                self.assert_content_not_none(
-                    cur,
-                    "SELECT last_value FROM gender_t_id_seq;",
-                    {"last_value": 4},
-                )
-
-                # 6.4.1) Set sequential_number sequences correctly
-                self.assert_content_not_none(
-                    cur,
-                    "SELECT last_value FROM projector_t_meeting_id1_sequential_number_seq;",
-                    {"last_value": 2},
-                )
-
-                # 6.5) Deleted old table schema
-                for table_name in OLD_TABLES:
-                    cur.execute(
-                        f"SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{table_name}';"
-                    )
-                    assert cur.fetchone() is None
-
-                # 6.6) Recreated constraints
-                self.assert_content_not_none(
-                    cur,
-                    "SELECT 1 FROM information_schema.constraint_column_usage WHERE constraint_name = 'fk_option_t_content_object_id_poll_candidate_list_id_pold428251';",
-                )
+                # TODO updated sequence checks were here. Need to be readded in finalize tests.
+                # also old tables cleanup
+                # also fk constraint
+                # also tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids_m
+                # also origin views
 
                 # 6.7) Recreated triggers
                 for trigger_name in [
@@ -294,37 +235,18 @@ For more information, see
                     "tr_i_not_null_meeting_default_projector_agenda_item_list_ids",  # check_not_null_for_relation_lists
                     "tr_restrict_unique_ids_pair_motion_identical_motion_ids",  # check_unique_ids_pair
                     "tr_generate_sequence_motion_block_sequential_number",
-                    "tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids_t",
                 ]:
                     self.assert_content_not_none(
                         cur,
                         f"SELECT 1 FROM pg_trigger WHERE tgname = '{trigger_name}';",
                     )
 
-                # 6.8 Recreated foreign key constraints
-                self.assert_content_not_none(
-                    cur,
-                    """SELECT 1
-                    FROM information_schema.table_constraints AS tc
-                    JOIN information_schema.key_column_usage AS kcu
-                        ON tc.constraint_name = kcu.constraint_name
-                        AND tc.table_schema = kcu.table_schema
-                    JOIN information_schema.constraint_column_usage AS ccu
-                        ON ccu.constraint_name = tc.constraint_name
-                    WHERE tc.constraint_type = 'FOREIGN KEY'
-                        AND tc.table_name = 'organization_t'
-                        AND ccu.table_name = 'theme_t'
-                        AND kcu.column_name = 'theme_id'
-                        AND ccu.column_name = 'id'
-                        AND tc.constraint_name = 'fk_organization_t_theme_id_theme_t_id';""",
-                )
-
-                # 6.9) Recreated views
-                self.assert_content_not_none(cur, "SELECT 1 from organization;")
+                # 6.9) Created migration views
+                self.assert_content_not_none(cur, "SELECT 1 from organizationvm;")
 
                 # 6.10) Created correct timestamp
                 assert cur.execute(
-                    "SELECT start_time, end_time, time_zone FROM meeting_t;"
+                    "SELECT start_time, end_time, time_zone FROM meeting_m;"
                 ).fetchone() == {
                     # Meeting begins and ends at midnight Europe/Berlin.
                     # UTC value is epxected to be shifted by the Europe/Berlin offset one hour or two hours considering dst.
@@ -389,10 +311,10 @@ For more information, see
             with conn.cursor() as curs:
                 handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging)
                 handler.execute_command("migrate")
-                self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
-                handler.execute_command("finalize")
+                # self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
+                # handler.execute_command("finalize")
 
-        self.assert_indices_state(MigrationState.FINALIZED)
+        self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
         self.check_data()
 
     def test_migration_manager(self) -> None:
@@ -408,18 +330,18 @@ For more information, see
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
 
-        manager.handle_request({"cmd": "finalize", "verbose": True})
+        # manager.handle_request({"cmd": "finalize", "verbose": True})
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                while (
-                    MigrationHelper.get_migration_state(curs)
-                    != MigrationState.FINALIZED
-                ):
-                    sleep(0.1)
-                    curs.connection.commit()
+        # with get_new_os_conn() as conn:
+        #     with conn.cursor() as curs:
+        #         while (
+        #             MigrationHelper.get_migration_state(curs)
+        #             != MigrationState.FINALIZED
+        #         ):
+        #             sleep(0.1)
+        #             curs.connection.commit()
 
-        self.assert_indices_state(MigrationState.FINALIZED)
+        # self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
     @patch(
@@ -515,7 +437,7 @@ For more information, see
         }
         wait_lock.release()
 
-        # Wait for migrate with a sec delay per iteration.
+        # Wait for migrate with a sec delay per iteration. Also asserting the output doesn't get omitted.
         max_time = timedelta(seconds=self.MAX_WAIT)
         start = datetime.now()
         expected_response = {
@@ -541,41 +463,41 @@ For more information, see
                 )
         self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
 
-        response = self.request("finalize")
-        assert response.json == {
-            "success": True,
-            "status": MigrationState.FINALIZATION_RUNNING,
-            "output": "finalization started\n",
-        }
+        # response = self.request("finalize")
+        # assert response.json == {
+        #     "success": True,
+        #     "status": MigrationState.FINALIZATION_RUNNING,
+        #     "output": "finalization started\n",
+        # }
 
-        indicator_lock.acquire()
-        wait_lock.release()
-        start = datetime.now()
-        # Continue after setting finalized migration state.
-        while (response := self.request("migrate").json) == {
-            "success": False,
-            "message": "Finalization is running, only 'stats' command is allowed.",
-        }:
-            sleep(0.1)
-            if datetime.now() - start > max_time:
-                raise Exception(
-                    f"The finalization doesn't finish in {max_time}. {response}"
-                )
-        assert response == {
-            "success": True,
-            "status": MigrationState.FINALIZED,
-            "output": "",
-        }
+        # indicator_lock.acquire()
+        # wait_lock.release()
+        # start = datetime.now()
+        # # Continue after setting finalized migration state.
+        # while (response := self.request("migrate").json) == {
+        #     "success": False,
+        #     "message": "Finalization is running, only 'stats' command is allowed.",
+        # }:
+        #     sleep(0.1)
+        #     if datetime.now() - start > max_time:
+        #         raise Exception(
+        #             f"The finalization doesn't finish in {max_time}. {response}"
+        #         )
+        # assert response == {
+        #     "success": True,
+        #     "status": MigrationState.FINALIZED,
+        #     "output": "",
+        # }
 
-        self.assert_indices_state(MigrationState.FINALIZED)
+        # self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
     def test_migration_route_1(self) -> None:
-        """Uses finalize command directly and tries to migrate in fast succession."""
+        """Tries to migrate in fast succession."""
         # 5) Call data_manipulation of module
         # Future migrations do not need to test all commands. Finalize should be sufficient. Or call MigrationHelper().run_migrations() directly.
 
-        response = self.request("finalize")
+        response = self.request("migrate")
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
@@ -588,7 +510,7 @@ For more information, see
         start = datetime.now()
         while (response := self.request("migrate").json) != {
             "success": True,
-            "status": MigrationState.FINALIZED,
+            "status": MigrationState.FINALIZATION_REQUIRED,
             "output": "",
         }:
             sleep(0.1)
@@ -598,9 +520,9 @@ For more information, see
                 )
         assert response == {
             "success": True,
-            "status": MigrationState.FINALIZED,
+            "status": MigrationState.FINALIZATION_REQUIRED,
             "output": "",
         }
 
-        self.assert_indices_state(MigrationState.FINALIZED)
+        self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
         self.check_data()

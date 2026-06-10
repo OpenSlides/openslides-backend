@@ -42,12 +42,6 @@ class TestMigration101(BaseMigrationTestCase):
         super().setUp()
         data: dict[FullQualifiedId, Model] = dict()
 
-        with os_conn_pool.connection() as conn:
-            with conn.cursor() as curs:
-                # 4.D1) clears models table
-                curs.execute("TRUNCATE TABLE organization_t CASCADE;")
-                curs.execute("TRUNCATE TABLE version;")
-
         with open(EXAMPLE_DATA_PATH) as file:
             raw_data: dict[str, Any] = json.loads(file.read())
 
@@ -65,16 +59,9 @@ class TestMigration101(BaseMigrationTestCase):
                 }
         self.set_models(data)
 
-        # TODO this step is probably equal for all tests # TODO should be done for all previous # TODO just use mig number for this
-        with os_conn_pool.connection() as conn:
-            with conn.cursor() as curs:
-                MigrationHelper.set_database_migration_info(
-                    curs, 100, MigrationState.FINALIZED
-                )
-
     def test_simple(self) -> None:
         manager = MigrationManager(Mock(), Mock(), Mock())
-        assert manager.handle_request({"cmd": "finalize", "verbose": True}) == {
+        assert manager.handle_request({"cmd": "migrate", "verbose": True}) == {
             "output": "migration started\n",
             "status": MigrationState.MIGRATION_RUNNING,
         }

@@ -1,4 +1,5 @@
 import os
+import re
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
@@ -294,7 +295,9 @@ class MigrationHelper:
             migration_index = MigrationHelper.get_database_migration_index(curs)
         elif MigrationHelper.table_exists(curs, "positions"):
             row = curs.execute("SELECT MAX(migration_index) FROM positions;").fetchone()
-            assert row, "No migration_index could be found."
+            assert row and row.get(
+                "max"
+            ), "No migration_index could be could be found in positions."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
         else:
@@ -309,7 +312,7 @@ class MigrationHelper:
     def get_migration_state(curs: Cursor[DictRow]) -> MigrationState:
         """
         Returns the highest MigrationState among all migrations in the ascending order of
-        FINALIZED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
+        FINALIZED, FINALIZATION_REQUIRED, FINALIZATION_FAILED, MIGRATION_REQUIRED, MIGRATION_RUNNING, MIGRATION_FAILED.
         """
         states_and_indices = curs.execute(
             sql.SQL(
@@ -376,6 +379,7 @@ class MigrationHelper:
         )
         return {
             col: {
+                # TODO hier muss ich noch mal die Zusammensetzung der registries prüfen.
                 "to_delete": col in migration_class.PREVIOUS_MODEL_REGISTRY
                 and col not in migration_class.RESULTING_MODEL_REGISTRY,
                 "to_create": col in classes_to_create,
@@ -419,29 +423,28 @@ class MigrationHelper:
 
     @staticmethod
     def get_unified_replace_tables_from_database(
-        curs: Cursor[DictRow],
-    ) -> tuple[dict[str, Any], list[int]]:
+        curs: Cursor[DictRow], migration_state: MigrationState | None = None
+    ) -> dict[str, Any]:
         """
         Returns the replace tables, mapping the collection to its migration copies,
-        stored in the database unified for all -non- migrated indices.
-        Returns the list of used (unmigrated) migration indices as a side product.
+        stored in the database unified for all indices with `migration_state`.
+        If no `migration_state` was given: stored in the database unified for all -non- migrated indices.
         """
-        current_mi = MigrationHelper.get_database_migration_index(curs)
-        relevant_mis = [
-            mi
-            for mi in MigrationHelper.get_indices_from_database(curs)
-            if mi > current_mi
-        ]
-        return (
-            {
-                collection: r_tables
-                for migration_number in relevant_mis
-                for collection, r_tables in MigrationHelper.get_replace_tables_from_database(
-                    curs, migration_number
-                ).items()
-            },
-            relevant_mis,
-        )
+        if not migration_state:
+            rows = curs.execute(
+                "SELECT replace_tables FROM version WHERE migration_state != %s",
+                [MigrationState.FINALIZED],
+            )
+        else:
+            rows = curs.execute(
+                "SELECT replace_tables FROM version WHERE migration_state = %s",
+                [migration_state],
+            )
+        return {
+            collection: replace_tables
+            for row in rows
+            for collection, replace_tables in row["replace_tables"].items()
+        }
 
     @staticmethod
     def get_view_definition(curs: Cursor[DictRow], collection: str) -> str:
@@ -508,6 +511,46 @@ class MigrationHelper:
         )
 
     @staticmethod
+    def create_field(
+        curs: Cursor[DictRow],
+        type: str,
+        collection: str,
+        new_field_name: str,
+        ref_collection: str,
+        ref_field: str = "id",
+    ) -> None:
+        """Creates a column for that field."""
+        curs.execute(
+            sql.SQL("ALTER TABLE {} ADD COLUMN {} {};").format(
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+                sql.Identifier(new_field_name),
+                sql.SQL(type),
+            )
+        )
+        constraint_name, idx_name = HelperGetNames.get_fk_and_index_name(
+            collection, new_field_name, ref_collection, ref_field
+        )
+        curs.execute(
+            sql.SQL("""
+                    ALTER TABLE {table} ADD CONSTRAINT {constraint_name} FOREIGN KEY({column}) REFERENCES {ref_table}({ref_column}) INITIALLY DEFERRED;
+                    CREATE INDEX {idx_name} ON {table} ({column});
+                """).format(
+                table=sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+                ref_table=sql.Identifier(
+                    HelperGetNames.get_table_name(ref_collection, migration=True)
+                ),
+                column=sql.Identifier(new_field_name),
+                ref_column=sql.Identifier(ref_field),
+                constraint_name=sql.SQL(constraint_name),
+                idx_name=sql.SQL(idx_name),
+            )
+        )
+
+    @staticmethod
     def rename_field(
         curs: Cursor[DictRow], collection: str, old_field_name: str, new_field_name: str
     ) -> None:
@@ -526,21 +569,24 @@ class MigrationHelper:
         curs: Cursor[DictRow],
         collection: str,
         migrationModelClass: type[MigrationModelCreateUpdate],
+        sql_statement: str,
     ) -> None:
-        # TODO: implement fields
-        fields = migrationModelClass().get_fields_dict()
-        curs.execute(
-            sql.SQL("CREATE TABLE {} ();").format(
-                sql.Identifier(
-                    HelperGetNames.get_table_name(collection, migration=True)
-                ),
-            )
+        unified_replace_tables = (
+            MigrationHelper.get_unified_replace_tables_from_database(curs)
         )
-        curs.execute(
-            sql.SQL("CREATE VIEW {} AS SELECT * FROM {};").format(
-                sql.Identifier(collection + "vm"),
-                sql.Identifier(
-                    HelperGetNames.get_table_name(collection, migration=True)
-                ),
-            )
-        )
+        im_tables = set()
+        for collection, r_tables in unified_replace_tables.items():
+            if not r_tables["to_create"]:
+                im_tables.update(r_tables["im_tables"])
+        im_tables_without_suffix = {table[:-2] for table in im_tables}
+
+        def replace_suffix(m: re.Match) -> str:
+            base = m.group(1)
+            if base in unified_replace_tables or base in im_tables_without_suffix:
+                return base + "_m"
+            else:
+                return base + "_t"
+
+        TABLE_RE = re.compile(r"\b(?!pk_|tr_|equal_)([A-Za-z0-9_.]+)(_t)\b")
+        sql_statement = TABLE_RE.sub(replace_suffix, sql_statement)
+        curs.execute(sql.SQL(sql_statement))
