@@ -204,11 +204,11 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             return instance["meeting_id"]
         else:
             model = self.model
-            # if self.permission_model:
-            #     model = self.permission_model
+            if self.permission_model:
+                model = self.permission_model
             identifier = "id"
-            # if self.permission_id:
-            #     identifier = self.permission_id
+            if self.permission_id:
+                identifier = self.permission_id
             db_instance = self.datastore.get(
                 fqid_from_collection_and_id(model.collection, instance[identifier]),
                 ["meeting_id"],

@@ -839,6 +839,6 @@ class ExtendedDatabase(Database):
             self._changed_models.clear()
 
     def toggle_changed_models(self, enable_changed_models: bool) -> None:
-        if not enable_changed_models != self.enable_changed_models:
+        if enable_changed_models != self.enable_changed_models:
             self.reset()
         self.enable_changed_models = enable_changed_models

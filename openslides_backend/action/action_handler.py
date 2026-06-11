@@ -343,9 +343,6 @@ class ActionHandler(BaseHandler):
         action = ActionClass(
             self.services, self.datastore, relation_manager, self.logging, self.env
         )
-        # TODO: use self.datastore.toggle_changed_models to tell the datastore what mode it is in
-        # based on whether the action is old- or new-style.
-        # Also write previous write_requests when switching from old-style to new-style
         action_data = deepcopy(action_payload_element["data"])
         try:
             # with self.datastore.get_database_context():
