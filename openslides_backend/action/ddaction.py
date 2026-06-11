@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Callable
+from abc import abstractmethod
 from copy import deepcopy
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -15,11 +16,12 @@ from ..models.base import Model, model_registry
 from ..services.database.commands import GetManyRequest
 from ..services.database.extended_database import ExtendedDatabase
 from ..services.database.interface import Database
-from ..shared.exceptions import ActionException, BadCodingException, MissingPermission
+from ..shared.exceptions import ActionException, BadCodingException, MissingPermission, PermissionDenied
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
+from ..shared.interfaces.write_request import WriteRequest
 from ..shared.otel import make_span
 from ..shared.patterns import (
     collection_from_fqid,
@@ -31,6 +33,12 @@ from .action import Action, SchemaProvider
 from .relations.relation_manager import RelationManager
 from .util.action_type import ActionType
 from .util.typing import ActionData, ActionResults
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ..permissions.permission_helper import has_organization_management_level, has_perm
+from ..permissions.permissions import Permission
 
 
 class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
@@ -45,9 +53,9 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
 
     is_singular: bool = False
     action_type: ActionType = ActionType.PUBLIC
-    # permission: Permission | OrganizationManagementLevel | None = None
-    # permission_model: Model | None = None
-    # permission_id: str | None = None
+    permission: Permission | OrganizationManagementLevel | None = None
+    permission_model: Model | None = None
+    permission_id: str | None = None
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
     # history_information: str | None = None
@@ -127,9 +135,42 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service or using internal check.
         """
-        raise BadCodingException(
-            f"{self.__class__.__name__}: check_permissions not implemented."
-        )
+        if self.permission:
+            if isinstance(self.permission, OrganizationManagementLevel):
+                if has_organization_management_level(
+                    self.datastore,
+                    self.user_id,
+                    cast(OrganizationManagementLevel, self.permission),
+                ):
+                    return
+                raise MissingPermission(self.permission)
+            elif isinstance(self.permission, CommitteeManagementLevel):
+                """
+                set permission in class to: permission = CommitteeManagementLevel.CAN_MANAGE
+                A specialized realisation see in create_update_permissions_mixin.py
+                """
+                raise NotImplementedError()
+            else:
+                meeting_id = self.get_meeting_id(instance)
+                if has_perm(
+                    self.datastore,
+                    self.user_id,
+                    cast(Permission, self.permission),
+                    meeting_id,
+                ):
+                    return
+                raise MissingPermission(self.permission)
+
+        msg = f"You are not allowed to perform action {self.name}."
+        raise PermissionDenied(msg)
+
+    @abstractmethod
+    def write_instances(self, action_data: ActionData) -> ActionResults | None:
+        """
+        Method that calculates all necessary changes for the entire action data and writes it all.
+        To be overwritten by subclasses.
+        """
+        ...
 
     def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         """Do not allow changing any data in an archived meeting"""
@@ -211,15 +252,6 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             raise ActionException(str(e))
         return instance
 
-    def write_instances(self, action_data: ActionData) -> ActionResults | None:
-        """
-        Method that calculates all necessary changes for the entire action data and writes it all.
-        To be overwritten by subclasses.
-        """
-        raise BadCodingException(
-            f"{self.__class__.__name__}: write_instances not implemented."
-        )
-
     def execute_other_action(
         self,
         ActionClass: type[Action] | type["DDAction"],
@@ -252,7 +284,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             if isinstance(action, Action):
                 # Code for if the sub-action is old-style.
                 # TODO: To be deleted along with the old-style actions
-                return self.execute_old_style_action(action, action_data, skip_history)
+                return self._execute_old_style_action(action, action_data, skip_history)
             else:
                 results = action.perform(
                     action_data, self.user_id, internal=True, is_sub_call=True
@@ -279,12 +311,12 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         else:
             found = self.datastore.execute_custom_select(
                 sql.SQL(
-                    "id, model_id, entries FROM history_entry_t WHERE position_id = {position_id} AND model_id IN {fqids}",
+                    "id, model_id, entries FROM history_entry_t WHERE position_id = {position_id} AND model_id IN {fqids}"
+                ).format(
                     fqids=tuple(history_information),
                     position_id=self.history_position_id,
                 )
             )
-            update_history: dict[int, list[str]] = {}
             for model in found:
                 update_history[model["id"]] = [
                     *model.get("entries", []),
@@ -324,7 +356,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
     # CODE FOR COMPATIBILITY WITH OLD_STYLE ACTIONS.
     # TO BE DELETED WHEN THOSE ARE REMOVED COMPLETELY.
 
-    def execute_old_style_action(
+    def _execute_old_style_action(
         self, action: Action, action_data: ActionData, skip_history: bool
     ) -> ActionResults | None:
         cast(ExtendedDatabase, self.datastore).toggle_changed_models(True)
@@ -333,9 +365,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         )
         if write_request:
             if events := write_request.events:
-                raise BadCodingException(
-                    "TODO: Ayo! You derp forgot to implement event writing!"
-                )
+                self.datastore.write(WriteRequest(events=events))
             if not skip_history and (history_information := write_request.information):
                 self.write_history_information(history_information)
         cast(ExtendedDatabase, self.datastore).toggle_changed_models(False)

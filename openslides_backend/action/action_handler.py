@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
@@ -13,7 +14,10 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.exceptions import DatabaseException
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+)
 
 from ..shared.exceptions import (
     ActionException,
@@ -31,6 +35,7 @@ from ..shared.interfaces.write_request import WriteRequest
 from ..shared.otel import make_span
 from ..shared.schema import schema_version
 from . import actions  # noqa
+from .action import Action
 from .relations.relation_manager import RelationManager
 from .util.action_type import ActionType
 from .util.actions_map import actions_map
@@ -89,6 +94,8 @@ class ActionHandler(BaseHandler):
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.on_success = []
+        self.prev_was_new = False
+        self.write_requests: list[WriteRequest] = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
@@ -228,7 +235,23 @@ class ActionHandler(BaseHandler):
                 try:
                     write_requests, data = get_write_requests(*args)
                     if write_requests:
-                        results = self.datastore.write(write_requests)
+                        results: dict[FullQualifiedId, dict[str, Any]] = defaultdict(
+                            dict
+                        )
+                        unwritten_requests: list[WriteRequest] = []
+                        for write_request in write_requests:
+                            if write_request:
+                                if write_request.written and write_request.results:
+                                    for (
+                                        fqid,
+                                        result_data,
+                                    ) in write_request.results.items():
+                                        results[fqid].update(result_data)
+                                else:
+                                    unwritten_requests.append(write_request)
+                        newer_results = self.datastore.write(unwritten_requests)
+                        for fqid, result_data in newer_results.items():
+                            results[fqid].update(result_data)
                         data = self.update_action_data_with_write_results(data, results)
                     return data
                 except DatastoreLockedException as exception:
@@ -324,31 +347,50 @@ class ActionHandler(BaseHandler):
         # based on whether the action is old- or new-style.
         # Also write previous write_requests when switching from old-style to new-style
         action_data = deepcopy(action_payload_element["data"])
-
+        is_old_style= isinstance(action, Action)
         try:
             # with self.datastore.get_database_context():
             with make_span(self.env, "action.perform"):
-                write_request, results = action.perform(
-                    action_data, self.user_id, internal=self.internal
-                )
-                if results and (edit_fn := action.get_post_edit_function()):
-                    for element in results:
-                        if element and isinstance(element, dict):
-                            element[META_POST_EDIT_FN_KEY] = edit_fn
-                            self.post_edit_necessary = True
+                if is_old_style:
+                    self.datastore.toggle_changed_models(True)
+                    self.prev_was_new = True
+                    write_request, results = action.perform(
+                        action_data, self.user_id, internal=self.internal
+                    )
+                    if results and (edit_fn := action.get_post_edit_function()):
+                        for element in results:
+                            if element and isinstance(element, dict):
+                                element[META_POST_EDIT_FN_KEY] = edit_fn
+                                self.post_edit_necessary = True
+                else:
+                    if self.prev_was_new:
+                        for write_request in self.write_requests:
+                            results = self.datastore.write(write_request)
+                            write_request.written = True
+                            write_request.results = results
+                        self.write_requests = []
+                    self.datastore.toggle_changed_models(False)
+                    write_request = None
+                    results = action.perform(
+                        action_data, self.user_id, internal=self.internal
+                    )
 
-            if write_request:
-                action.validate_write_request(write_request)
+            if is_old_style:
+                if write_request:
+                    action.validate_write_request(write_request)
 
-                # # add locked_fields to request
-                # write_request.locked_fields = self.datastore.locked_fields
-                # # reset locked fields, but not changed models - these might be needed
-                # # by another action
-                # self.datastore.reset(hard=False)
+                    # # add locked_fields to request
+                    # write_request.locked_fields = self.datastore.locked_fields
+                    # # reset locked fields, but not changed models - these might be needed
+                    # # by another action
+                    # self.datastore.reset(hard=False)
 
-            # add on_success routine
-            if on_success := action.get_on_success(action_data):
-                self.on_success.append(on_success)
+                # add on_success routine
+                if (on_success := action.get_on_success(action_data)):
+                    self.on_success.append(on_success)
+
+                if write_request:
+                    self.write_requests.append(write_request)
 
             return (write_request, results)
         except ActionException as exception:
@@ -358,6 +400,6 @@ class ActionHandler(BaseHandler):
             # -1: error which cannot be directly associated with a single action data
             if action.index > -1:
                 exception.action_data_error_index = action.index
-            if on_failure := action.get_on_failure(action_data):
+            if is_old_style and (on_failure := action.get_on_failure(action_data)):
                 on_failure()
             raise exception

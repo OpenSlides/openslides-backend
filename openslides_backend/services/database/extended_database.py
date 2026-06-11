@@ -211,13 +211,9 @@ class ExtendedDatabase(Database):
             collection, id_ = collection_and_id_from_fqid(fqid)
         except IndexError as e:
             raise InvalidFormat(f"Invalid fqid format. {e}")
-        if use_changed_models and (
+        if self.enable_changed_models and use_changed_models and (
             changed_model := self._changed_models[collection][id_]
         ):
-            if not self.enable_changed_models:
-                raise BadCodingException(
-                    "get: No usage of changed_models if it is disabled."
-                )
             if self.is_deleted(fqid):
                 raise ModelDoesNotExist(fqid)
             # TODO do deep copy instead
@@ -286,11 +282,7 @@ class ExtendedDatabase(Database):
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
-        if use_changed_models:
-            if not self.enable_changed_models:
-                raise BadCodingException(
-                    "get_many: No usage of changed_models if it is disabled."
-                )
+        if self.enable_changed_models and use_changed_models:
             mapped_fields_per_collection_and_id: dict[str, dict[int, Any]] = (
                 defaultdict(dict)
             )
@@ -411,7 +403,7 @@ class ExtendedDatabase(Database):
                 collection, MappedFields(mapped_fields), lock_result
             )
         else:
-            if use_changed_models and (
+            if self.enable_changed_models and use_changed_models and (
                 changed_models_collection := self._changed_models[collection]
             ):
                 fully_matched_ids = []
@@ -471,7 +463,7 @@ class ExtendedDatabase(Database):
             result = self.database_reader.filter(
                 collection, filter_, MappedFields(mapped_fields), lock_result
             )
-            if use_changed_models:
+            if self.enable_changed_models and use_changed_models:
                 if not self.enable_changed_models:
                     raise BadCodingException(
                         "filter: No usage of changed_models if it is disabled."
@@ -508,11 +500,7 @@ class ExtendedDatabase(Database):
     ) -> int | None:
         if method not in VALID_AGGREGATE_FUNCTIONS:
             raise BadCodingException(f"Invalid aggregate function: {method}")
-        if use_changed_models and self._changed_models[collection]:
-            if not self.enable_changed_models:
-                raise BadCodingException(
-                    "aggregate: No usage of changed_models if it is disabled."
-                )
+        if self.enable_changed_models and use_changed_models and self._changed_models[collection]:
             match method:
                 case "count":
                     return len(self.filter(collection, filter_, [], lock_result))

@@ -27,6 +27,7 @@ from ..shared.exceptions import (
     MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
+    BadCodingException
 )
 from ..shared.history_events import calculate_history_event_payloads
 from ..shared.interfaces.env import Env
@@ -704,7 +705,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def execute_other_action(
         self,
-        ActionClass: type["Action"],
+        ActionClass: type["Action"] | type[Any],
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
@@ -731,6 +732,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 self.env,
                 skip_archived_meeting_check,
             )
+            if not isinstance(action, Action):
+                raise BadCodingException(
+                    f"Old-style action {self.__class__.__name__} can only call subactions of the same type. Called {action.__class__.__name__}."
+                )
             write_request, action_results = action.perform(
                 action_data, self.user_id, internal=True, is_sub_call=True
             )

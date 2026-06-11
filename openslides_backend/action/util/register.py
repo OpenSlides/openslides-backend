@@ -1,6 +1,7 @@
 from collections.abc import Callable
 
 from ..action import Action
+from ..ddaction import DDAction
 from ..action_set import ActionSet
 from .action_type import ActionType
 from .actions_map import actions_map
@@ -8,13 +9,13 @@ from .actions_map import actions_map
 
 def register_action(
     name: str, action_type: ActionType = ActionType.PUBLIC
-) -> Callable[[type[Action]], type[Action]]:
+) -> Callable[[type[Action]|type[DDAction]], type[Action]|type[DDAction]]:
     """
     Decorator to be used for action classes. Registers the class so that it can
     be found by the handler.
     """
 
-    def wrapper(clazz: type[Action]) -> type[Action]:
+    def wrapper(clazz: type[Action]|type[DDAction]) -> type[Action]:
         _register_action(name, clazz)
         clazz.action_type = action_type
         return clazz
@@ -40,7 +41,7 @@ def register_action_set(
     return wrapper
 
 
-def _register_action(name: str, ActionClass: type[Action]) -> type[Action]:
+def _register_action(name: str, ActionClass: type[Action]|type[DDAction]) -> type[Action]|type[DDAction]:
     if actions_map.get(name):
         raise RuntimeError(f"Action {name} is registered twice.")
     actions_map[name] = ActionClass
