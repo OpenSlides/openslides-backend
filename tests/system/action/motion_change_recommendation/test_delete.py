@@ -7,7 +7,14 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_motion(1, 1)
         self.set_models(
-            {"motion_change_recommendation/111": {"meeting_id": 1, "motion_id": 1}}
+            {
+                "motion_change_recommendation/111": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "line_from": 1,
+                    "line_to": 7,
+                }
+            }
         )
 
     def test_delete_correct(self) -> None:

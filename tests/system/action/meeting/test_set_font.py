@@ -14,6 +14,8 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                 "is_directory": False,
                 "mimetype": "font/woff",
                 "owner_id": "meeting/1",
+                "filename": "font-fancy.woff",
+                "title": "fancy font",
             },
             "meeting_mediafile/7": {
                 "meeting_id": 1,
@@ -48,6 +50,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         self.test_models["mediafile/17"] = {
             "owner_id": "meeting/1",
             "is_directory": True,
+            "title": "fonts",
         }
         self.set_models(self.test_models)
         response = self.request(
@@ -75,6 +78,8 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                     "is_directory": False,
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
+                    "filename": "font-fancy.woff",
+                    "title": "fancy font",
                 },
             }
         )
@@ -112,6 +117,8 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "font-fancy.woff",
+                    "title": "fancy font",
                 },
             }
         )
@@ -140,6 +147,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [17],
+                    "title": "fonts",
                 },
                 "mediafile/17": {
                     "parent_id": 16,
@@ -147,6 +155,8 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "font-fancy.woff",
+                    "title": "fancy font",
                 },
             }
         )

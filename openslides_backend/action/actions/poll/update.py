@@ -90,7 +90,7 @@ class PollUpdateAction(
 
         self.check_onehundred_percent_base(instance)
 
-        not_allowed = []
+        not_allowed: list[str] = []
         if not poll.get("state") == Poll.STATE_CREATED:
             for key in (
                 "pollmethod",

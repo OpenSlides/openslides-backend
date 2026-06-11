@@ -98,6 +98,7 @@ def export_meeting(
                                     "published_to_meetings_in_organization_id",
                                     "parent_id",
                                     "child_ids",
+                                    "title",
                                 ],
                             ),
                         ],

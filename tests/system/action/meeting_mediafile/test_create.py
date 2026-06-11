@@ -39,6 +39,7 @@ class MeetingMediafileCreate(BaseActionTestCase):
         response = self.request("meeting_mediafile.create", test_dict)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "MeetingMediafile instance with mediafile 10 and meeting 1 already exists",
+            'meeting_mediafile/3: duplicate key value violates unique constraint "unique_meeting_mediafile_mediafile_id_meeting_id"\n'
+            + "DETAIL:  Key (mediafile_id, meeting_id)=(10, 1) already exists.",
             response.json["message"],
         )

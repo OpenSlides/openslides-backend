@@ -217,6 +217,34 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_not_exists("user/111")
         self.assert_model_exists("poll_candidate/34", {"user_id": None})
 
+    def test_delete_poll_option_user(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_topic(1, 1)
+        bob_id = self.create_user("bob", [1])
+        self.set_models(
+            {
+                "poll/1": {
+                    "type": "named",
+                    "pollmethod": "Y",
+                    "backend": "long",
+                    "state": "finished",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "YNA",
+                },
+                "option/1": {
+                    "meeting_id": 1,
+                    "poll_id": 1,
+                    "content_object_id": f"user/{bob_id}",
+                },
+                "option/2": {"meeting_id": 1, "poll_id": 1},
+            }
+        )
+        response = self.request("user.delete", {"id": bob_id})
+        self.assert_status_code(response, 200)
+
     def test_delete_with_group_ids_set_null(self) -> None:
         self.create_meeting()
         self.set_models(
@@ -356,8 +384,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_not_exists("meeting_user/1112")
 
     def test_delete_scope_meeting_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(None)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -366,24 +394,24 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_meeting_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_meeting_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_meeting_permission_in_meeting_can_update(self) -> None:
+        self.setup_scoped_user(UserScope.Meeting)
         self.setup_admin_scope_permissions(
             UserScope.Meeting, Permissions.User.CAN_UPDATE
         )
-        self.setup_scoped_user(UserScope.Meeting)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -392,17 +420,17 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_meeting_permission_in_meeting_can_manage(self) -> None:
+        self.setup_scoped_user(UserScope.Meeting)
         self.setup_admin_scope_permissions(
             UserScope.Meeting, Permissions.User.CAN_MANAGE
         )
-        self.setup_scoped_user(UserScope.Meeting)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_committee_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(None)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -411,23 +439,23 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_committee_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_committee_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         self.assert_model_exists("user/111")
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_committee_permission_in_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Meeting)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -436,8 +464,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_organization_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(None)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -446,13 +474,15 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_organization_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
 
     def test_delete_scope_organization_permission_in_committee(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
@@ -471,8 +501,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_scope_multi_committee_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
@@ -519,8 +549,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_delete_superadmin_with_1_meeting_by_oml_usermanager(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         self.set_models(
             {
                 "user/111": {

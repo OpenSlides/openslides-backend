@@ -17,6 +17,8 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
                 "is_directory": False,
                 "mimetype": "image/png",
                 "owner_id": "meeting/1",
+                "filename": "logo_2002.png",
+                "title": "logo (old)",
             },
             "meeting_mediafile/7": {
                 "meeting_id": 1,

@@ -78,24 +78,8 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         Also checks if the correct password is stored from the given default_password
         """
-        self.create_meeting(110)
-        self.create_meeting(114)
-        self.set_models(
-            {
-                "meeting/110": {
-                    "name": "name_DsJFXoot",
-                    "committee_id": 78,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/114": {
-                    "name": "name_xXRGTLAJ",
-                    "committee_id": 79,
-                    "is_active_in_organization_id": 1,
-                },
-                "committee/78": {"name": "name_TSXpBGdt", "meeting_ids": [110]},
-                "committee/79": {"name": "name_hOldWvVF", "meeting_ids": [114]},
-            }
-        )
+        self.create_meeting(110)  # committee/169
+        self.create_meeting(114)  # committee/173
         response = self.request(
             "user.create",
             {
@@ -104,7 +88,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.500000",
                 "organization_management_level": "can_manage_users",
                 "default_password": "password",
-                "committee_management_ids": [78],
+                "committee_management_ids": [169],
                 "meeting_id": 114,
                 "group_ids": [114],
                 "member_number": "abcdefg1234567",
@@ -119,10 +103,10 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_vote_weight": Decimal("1.500000"),
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "default_password": "password",
-                "committee_management_ids": [78],
+                "committee_management_ids": [169],
                 "meeting_user_ids": [1],
                 "member_number": "abcdefg1234567",
-                "committee_ids": [78, 79],
+                "committee_ids": [169, 173],
             },
         )
         assert self.auth.is_equal(
@@ -134,10 +118,10 @@ class UserCreateActionTest(BaseActionTestCase):
             "meeting_user/1", {"meeting_id": 114, "user_id": 2, "group_ids": [114]}
         )
         self.assert_model_exists(
-            "committee/78", {"meeting_ids": [110], "user_ids": [2]}
+            "committee/169", {"meeting_ids": [110], "user_ids": [2]}
         )
         self.assert_model_exists(
-            "committee/79", {"meeting_ids": [114], "user_ids": [2]}
+            "committee/173", {"meeting_ids": [114], "user_ids": [2]}
         )
         self.assert_history_information(
             "user/2",
@@ -269,13 +253,7 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_invalid_group_id(self) -> None:
         self.create_meeting()
-        self.create_meeting(4)
-        self.set_models(
-            {
-                "committee/60": {"meeting_ids": [1, 4]},
-                "meeting/4": {"committee_id": 60},
-            }
-        )
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         response = self.request(
             "user.create",
             {
@@ -598,11 +576,10 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_group_A_cml_manage_user(self) -> None:
         """May create group A fields on cml scope"""
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(base=4, meeting_data={"committee_id": 60})
         self.set_models(
             {
                 f"user/{self.user_id}": {"committee_ids": [60]},
-                "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
                 "committee/60": {
                     "name": "minish council",
                     "meeting_ids": [1, 4],

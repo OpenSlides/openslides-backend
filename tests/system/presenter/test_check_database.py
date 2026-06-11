@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from psycopg.types.json import Jsonb
@@ -445,19 +446,29 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_clock": True,
                     **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
-                "mediafile/2": {"owner_id": "meeting/1", "meeting_mediafile_ids": [2]},
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [1],
+                    "title": "first",
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [2],
+                    "title": "second",
+                },
                 "mediafile/3": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "is_directory": True,
                     "child_ids": [4],
+                    "title": "third",
                 },
                 "mediafile/4": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "parent_id": 3,
                     "meeting_mediafile_ids": [4],
+                    "title": "zero",
                 },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
@@ -504,6 +515,8 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_id": 4,
                     "delegated_user_id": 5,
                     "meeting_id": 1,
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/8": {
                     "vote_ids": [7],

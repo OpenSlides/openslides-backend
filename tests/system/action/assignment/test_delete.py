@@ -60,9 +60,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 110,
                 },
-                "projector/1": {
-                    "meeting_id": 110,
-                },
+                "projector/1": {"meeting_id": 110, "name": "Projector 1"},
                 "assignment_candidate/1111": {"assignment_id": 111, "meeting_id": 110},
             }
         )

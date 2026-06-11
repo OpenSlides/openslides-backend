@@ -14,6 +14,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "section_id": 78,
                     "motion_id": 1,
+                    "comment": "Comment 111",
                 },
                 "motion_comment_section/78": {
                     "meeting_id": 1,

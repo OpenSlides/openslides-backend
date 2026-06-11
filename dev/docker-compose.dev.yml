@@ -69,7 +69,7 @@ services:
             - redis
             - auth
     postgres:
-        image: postgres:15
+        image: postgres:17
         command: ["postgres", "-c", "log_statement=all"]
         environment:
             - POSTGRES_USER=openslides

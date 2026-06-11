@@ -4,17 +4,11 @@ from collections.abc import Iterable
 from textwrap import dedent
 from typing import Any
 
-from cli.util.util import (
-    assert_equal,
-    get_collection_names_and_filenames,
-    load_fields,
-    open_output,
-    open_yml_file,
-    parse_arguments,
-)
+from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
+from meta.dev.src.helper_get_names import PERMISSIONS_SOURCE
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = "./meta/permission.yml"
+SOURCE = os.path.join("meta", PERMISSIONS_SOURCE)
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -78,23 +72,6 @@ def main() -> None:
         if args.check:
             assert_equal(dest, DESTINATION)
             print("Permissions file up-to-date.")
-
-            # check group.permissions enum in models.yml, if possible
-            collection_to_filename = get_collection_names_and_filenames()
-            group_fields = load_fields(collection_to_filename["group"])
-            enum = set(group_fields["fields"]["permissions"]["items"]["enum"])
-            permissions = {
-                str(permission)
-                for permissions in all_permissions.values()
-                for permission in permissions
-            }
-            assert enum == permissions, (
-                "Missing permissions: "
-                + str(permissions - enum)
-                + "\nAdditional permissions: "
-                + str(enum - permissions)
-            )
-            print("models.yml field group/permissions enum contains all permissions")
         else:
             print(f"Permissions file {DESTINATION} successfully created.")
 

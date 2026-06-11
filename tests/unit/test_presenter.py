@@ -7,7 +7,6 @@ from openslides_backend.shared.exceptions import PresenterException
 
 
 class GeneralPresenterTester(TestCase):
-    # TODO: more unit tests, e.g. with right key etc.
     def setUp(self) -> None:
         self.presenter_handler = PresenterHandler(
             env=MagicMock(),

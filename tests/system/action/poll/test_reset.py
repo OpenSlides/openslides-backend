@@ -28,9 +28,27 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
             },
             "option/1": {"poll_id": 1, "meeting_id": 1},
             "option/2": {"meeting_id": 1},
-            "vote/1": {"option_id": 1, "meeting_id": 1, "user_token": "abs"},
-            "vote/2": {"option_id": 1, "meeting_id": 1, "user_token": "def"},
-            "vote/3": {"option_id": 2, "meeting_id": 1, "user_token": "ghi"},
+            "vote/1": {
+                "option_id": 1,
+                "meeting_id": 1,
+                "user_token": "abs",
+                "weight": Decimal("1.000000"),
+                "value": "Y",
+            },
+            "vote/2": {
+                "option_id": 1,
+                "meeting_id": 1,
+                "user_token": "def",
+                "weight": Decimal("1.000000"),
+                "value": "Y",
+            },
+            "vote/3": {
+                "option_id": 2,
+                "meeting_id": 1,
+                "user_token": "ghi",
+                "weight": Decimal("1.000000"),
+                "value": "Y",
+            },
         }
 
     def test_reset_correct(self) -> None:

@@ -29,7 +29,6 @@ class CreateAction(Action):
         instance["meta_new"] = True  # mark as a new model
         instance = self.update_instance(instance)
         self.apply_instance(instance)
-        self.validate_relation_fields(instance)
 
         return instance
 

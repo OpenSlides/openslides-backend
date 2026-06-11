@@ -47,11 +47,19 @@ class ProjectionDelete(BaseActionTestCase):
 
     def test_delete_motion_in_history(self) -> None:
         self.create_motion(1, 42)
-        self.set_models({"projection/14": {"content_object_id": "motion/42"}})
+        self.set_models(
+            {
+                "projection/15": {
+                    "history_projector_id": 1,
+                    "meeting_id": 1,
+                    "content_object_id": "motion/42",
+                }
+            }
+        )
         response = self.request("motion.delete", {"id": 42})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("motion/42")
-        self.assert_model_not_exists("projection/14")
+        self.assert_model_not_exists("projection/15")
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test({}, "projection.delete", {"id": 12})

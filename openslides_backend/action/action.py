@@ -19,7 +19,6 @@ from ..permissions.management_levels import (
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
-from ..presenter.base import BasePresenter
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from ..shared.exceptions import (
@@ -48,7 +47,6 @@ from ..shared.typing import DeletedModel, HistoryInformation
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
-from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
 
 HISTORY_MODELS = list(
@@ -697,54 +695,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             raise ActionException(str(e))
         return instance
 
-    def validate_relation_fields(self, instance: dict[str, Any]) -> None:
-        """
-        Validates all relation fields according to the model definition.
-        """
-        for field in self.model.get_relation_fields():
-            if not field.equal_fields or field.own_field_name not in instance:
-                continue
-
-            fields = [field.own_field_name]
-            for equal_field in field.equal_fields:
-                if not (own_equal_field_value := instance.get(equal_field)):
-                    fqid = fqid_from_collection_and_id(
-                        self.model.collection, instance["id"]
-                    )
-                    db_instance = self.datastore.get(
-                        fqid,
-                        [equal_field],
-                    )
-                    if not (own_equal_field_value := db_instance.get(equal_field)):
-                        raise ActionException(
-                            f"{fqid} has no value for the field {equal_field}"
-                        )
-                for instance_field in fields:
-                    fqids = transform_to_fqids(
-                        instance[instance_field], field.get_target_collection()
-                    )
-                    if equal_field == "meeting_id":
-                        assert_belongs_to_meeting(
-                            self.datastore, fqids, own_equal_field_value
-                        )
-                    else:
-                        for fqid in fqids:
-                            related_instance = self.datastore.get(
-                                fqid,
-                                [equal_field],
-                            )
-                            if str(related_instance.get(equal_field)) != str(
-                                own_equal_field_value
-                            ):
-                                raise ActionException(
-                                    f"The relation {field.own_field_name} requires the following "
-                                    f"fields to be equal:\n"
-                                    f"{field.own_collection}/{instance['id']}/{equal_field}: "
-                                    f"{own_equal_field_value}\n"
-                                    f"{fqid}/{equal_field}: "
-                                    f"{related_instance.get(equal_field)}"
-                                )
-
     def apply_instance(
         self, instance: dict[str, Any], fqid: FullQualifiedId | None = None
     ) -> None:
@@ -805,19 +755,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         after an error appeared in an action.
         """
         return None
-
-    def execute_presenter(
-        self, PresenterClass: type[BasePresenter], payload: Any
-    ) -> Any:
-        presenter_instance = PresenterClass(
-            payload,
-            self.services,
-            self.datastore,
-            self.logging,
-            self.user_id,
-        )
-        presenter_instance.validate()
-        return presenter_instance.get_result()
 
     def get_post_edit_function(self) -> EditFunction | None:
         """

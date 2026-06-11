@@ -32,7 +32,14 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_delete_existing_comment(self) -> None:
         self.create_motion(1, 17)
         self.set_models(
-            {"motion_comment/79": {"motion_id": 17, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/79": {
+                    "motion_id": 17,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "Comment 79",
+                }
+            }
         )
 
         response = self.request("motion_comment_section.delete", {"id": 111})
@@ -47,10 +54,24 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.create_motion(1, 17)
         self.create_motion(1, 42)
         self.set_models(
-            {"motion_comment/79": {"motion_id": 17, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/79": {
+                    "motion_id": 17,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 79",
+                }
+            }
         )
         self.set_models(
-            {"motion_comment/81": {"motion_id": 42, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/81": {
+                    "motion_id": 42,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 81",
+                }
+            }
         )
 
         response = self.request("motion_comment_section.delete", {"id": 111})
@@ -71,16 +92,44 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.create_motion(1, 7)
         self.create_motion(1, 11)
         self.set_models(
-            {"motion_comment/13": {"motion_id": 1, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/13": {
+                    "motion_id": 1,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 13",
+                }
+            }
         )
         self.set_models(
-            {"motion_comment/17": {"motion_id": 3, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/17": {
+                    "motion_id": 3,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 17",
+                }
+            }
         )
         self.set_models(
-            {"motion_comment/19": {"motion_id": 7, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/19": {
+                    "motion_id": 7,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 19",
+                }
+            }
         )
         self.set_models(
-            {"motion_comment/23": {"motion_id": 11, "meeting_id": 1, "section_id": 111}}
+            {
+                "motion_comment/23": {
+                    "motion_id": 11,
+                    "meeting_id": 1,
+                    "section_id": 111,
+                    "comment": "comment 23",
+                }
+            }
         )
 
         response = self.request("motion_comment_section.delete", {"id": 111})

@@ -8,7 +8,7 @@ class ProjectorUpdate(BaseActionTestCase):
         self.create_meeting()
 
     def test_update_correct(self) -> None:
-        self.set_models({"projector/2": {"meeting_id": 1}})
+        self.set_models({"projector/2": {"meeting_id": 1, "name": "Projector 2"}})
         response = self.request(
             "projector.update",
             {
@@ -66,7 +66,7 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         response = self.request("projector.update", {"id": 2, "name": "name_Xcdfgee"})
         self.assert_status_code(response, 400)
-        self.assert_model_exists("projector/1", {"name": None})
+        self.assert_model_exists("projector/1", {"name": "Projector 1"})
 
     def test_update_wrong_color(self) -> None:
         response = self.request("projector.update", {"id": 1, "color": "#aaaXbb"})
@@ -97,7 +97,7 @@ class ProjectorUpdate(BaseActionTestCase):
                 "projector/1": {
                     "used_as_default_projector_for_topic_in_meeting_id": 1,
                 },
-                "projector/2": {"meeting_id": 1},
+                "projector/2": {"meeting_id": 1, "name": "Projector 2"},
             }
         )
         response = self.request(

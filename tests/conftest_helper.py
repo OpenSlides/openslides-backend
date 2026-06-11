@@ -50,6 +50,7 @@ def generate_remove_all_test_functions() -> str:
     DROP TABLE IF EXISTS public.truncate_tables;
     DROP FUNCTION IF EXISTS store_table_names CASCADE;
     DROP FUNCTION IF EXISTS truncate_testdata_tables CASCADE;
+    DROP FUNCTION IF EXISTS init_table_contents CASCADE;
     """
 
 

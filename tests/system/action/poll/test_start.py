@@ -91,8 +91,27 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_start_motion_poll(self) -> None:
         self.create_motion(1, 1)
-        self.set_models({"poll/1": {"content_object_id": "motion/1"}})
-        response = self.request("poll.start", {"id": 1})
+        self.set_models(
+            {
+                "group/1": {"poll_ids": [1, 2]},
+                "option/3": {"meeting_id": 1, "poll_id": 2},
+                "option/4": {"meeting_id": 1, "poll_id": 2},
+                "poll/2": {
+                    "content_object_id": "motion/1",
+                    "title": "motion poll 2",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                    "votesinvalid": Decimal("0.000000"),
+                    "votesvalid": Decimal("0.000000"),
+                    "votescast": Decimal("0.000000"),
+                    "backend": "fast",
+                    "pollmethod": "YNA",
+                    "type": Poll.TYPE_NAMED,
+                    "onehundred_percent_base": "YNA",
+                },
+            }
+        )
+        response = self.request("poll.start", {"id": 2})
         self.assert_status_code(response, 200)
         self.assert_history_information("motion/1", ["Voting started"])
 

@@ -2,6 +2,8 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, Protocol
 
+from psycopg import sql
+
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
 )
@@ -22,6 +24,9 @@ MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
 COLLECTION_MAX_LEN = 32
 FQID_MAX_LEN = 48  # collection + id
 COLLECTIONFIELD_MAX_LEN = 239  # collection + field
+
+SqlArguments = list[str | int]
+SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
 
 
 class Database(Protocol):
@@ -155,3 +160,11 @@ class Database(Protocol):
 
     @abstractmethod
     def get_everything(self) -> dict[Collection, dict[int, PartialModel]]: ...
+
+    @abstractmethod
+    def execute_custom_select(
+        self,
+        query: sql.Composed | sql.SQL,
+        lock_result: LockResult = False,
+        arguments: SqlArgumentsExtended = [],
+    ) -> list[PartialModel]: ...

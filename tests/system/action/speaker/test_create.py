@@ -286,13 +286,16 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/7": {"username": "Nils"},
                 "user/8": {"username": "Claudia"},
                 "user/9": {"username": "Wulf-Siegmar"},
-                "topic/1337": {
-                    "title": "leet",
-                    "meeting_id": 1,
+                "topic/2676": {
+                    "title": "doubleleet",
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/2676",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
-                    "content_object_id": "topic/1337",
+                    "content_object_id": "topic/2676",
                     "meeting_id": 7844,
                 },
             }
@@ -343,9 +346,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -381,9 +387,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -427,9 +436,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -493,9 +505,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -520,10 +535,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2, 3, 4]})
 
     def test_create_not_in_meeting(self) -> None:
-        self.create_meeting(4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_models(
             {
-                "meeting/4": {"committee_id": 60},
                 "meeting_user/17": {"meeting_id": 1, "user_id": 7},
                 "group/1": {"meeting_user_ids": [17]},
                 "user/7": {"username": "Helgard"},
@@ -531,7 +545,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 4,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 4},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 4,
@@ -1046,7 +1060,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def create_expansive_test_data(self) -> None:
+    def create_expansive_test_data(
+        self, speakers_data: dict[int, dict[str, Any]] = {}
+    ) -> None:
         speaker_ids = list(range(1, 16))
         speakers: list[dict[str, Any]] = [
             {
@@ -1111,6 +1127,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                         "list_of_speakers_id": 23,
                         "weight": id_,
                         **speakers[id_ - 1],
+                        **speakers_data.get(id_, {}),
                     }
                     for id_ in speaker_ids
                 },
@@ -1179,14 +1196,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.test_models["meeting/1"][
             "list_of_speakers_enable_interposed_question"
         ] = True
-        self.create_expansive_test_data()
-        self.set_models(
-            {
-                "speaker/6": {
+        self.create_expansive_test_data(
+            speakers_data={
+                6: {
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "answer": True,
                 },
-                "speaker/7": {
+                7: {
                     "speech_state": SpeechState.INTERVENTION,
                     "answer": True,
                     "point_of_order": False,
@@ -1218,10 +1234,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self,
     ) -> None:
         self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
-        self.create_expansive_test_data()
-        self.set_models(
-            {
-                "speaker/7": {
+        self.create_expansive_test_data(
+            speakers_data={
+                7: {
                     "point_of_order": False,
                     "speech_state": SpeechState.INTERVENTION,
                     "answer": True,
