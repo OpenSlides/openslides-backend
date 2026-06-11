@@ -1,7 +1,6 @@
 from ....action.util.typing import ActionData, ActionResults
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.util import ONE_ORGANIZATION_ID
 from ...ddaction import DDAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -57,7 +56,7 @@ THEME_OPT_FIELDS = [
 @register_action("theme.create")
 class ThemeCreate(DDAction):
     """
-    Action to create an theme.
+    Action to create a theme.
     """
 
     model = Theme()
@@ -71,7 +70,12 @@ class ThemeCreate(DDAction):
     def write_instances(self, action_data: ActionData) -> ActionResults | None:
         results: ActionResults = []
         for instance in action_data:
-            instance["organization_id"] = ONE_ORGANIZATION_ID
+            # TODO: Shouldn't be using this `insert_model` function
+            # (or its siblings) as is
+            # It writes onto intermediate tables (do we want that?)
+            # It only writes from the primary part of the intermediate table
+            # => unsafe if we intend to use the intermediate functionality
+            # Also maybe do batch creation instead?
             results.append(
                 self.database.insert_model(self.model.collection, instance)[1]
             )
