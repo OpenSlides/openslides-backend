@@ -118,14 +118,14 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def __init__(
         self,
         services: Services,
-        datastore: Database,
+        database: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
         skip_archived_meeting_check: bool | None = None,
         use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
-        super().__init__(services, datastore, logging)
+        super().__init__(services, database, logging)
         self.relation_manager = relation_manager
         self.logger = logging.getLogger(__name__)
         self.env = env
@@ -138,6 +138,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.events = []
         self.results = []
         self.cascaded_actions_history = {}
+
+    @property
+    def datastore(self) -> Database:
+        return self.database
 
     def perform(
         self,

@@ -138,7 +138,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         if self.permission:
             if isinstance(self.permission, OrganizationManagementLevel):
                 if has_organization_management_level(
-                    self.datastore,
+                    self.database,
                     self.user_id,
                     cast(OrganizationManagementLevel, self.permission),
                 ):
@@ -153,7 +153,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             else:
                 meeting_id = self.get_meeting_id(instance)
                 if has_perm(
-                    self.datastore,
+                    self.database,
                     self.user_id,
                     cast(Permission, self.permission),
                     meeting_id,
@@ -188,7 +188,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         gmr = GetManyRequest(
             "meeting", meeting_ids, ["id", "is_active_in_organization_id", "name"]
         )
-        gm_result = self.datastore.get_many([gmr], lock_result=False)
+        gm_result = self.database.get_many([gmr], lock_result=False)
         for meeting in gm_result.get("meeting", {}).values():
             if not meeting.get("is_active_in_organization_id"):
                 raise ActionException(
@@ -209,7 +209,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             identifier = "id"
             if self.permission_id:
                 identifier = self.permission_id
-            db_instance = self.datastore.get(
+            db_instance = self.database.get(
                 fqid_from_collection_and_id(model.collection, instance[identifier]),
                 ["meeting_id"],
                 lock_result=False,
@@ -275,7 +275,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
 
             action = ActionClass(
                 self.services,
-                self.datastore,
+                self.database,
                 self.relation_manager,
                 self.logging,
                 self.env,
@@ -300,7 +300,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         update_history: dict[int, list[str]] = {}
         if self.history_position_id is None:
             # TODO: Create a history_position
-            self.history_position_id = self.datastore.insert_model(
+            self.history_position_id = self.database.insert_model(
                 "history_position",
                 {
                     "original_user_id": self.user_id,
@@ -309,7 +309,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
                 },
             )[1]["id"]
         else:
-            found = self.datastore.execute_custom_select(
+            found = self.database.execute_custom_select(
                 sql.SQL(
                     "id, model_id, entries FROM history_entry_t WHERE position_id = {position_id} AND model_id IN {fqids}"
                 ).format(
@@ -327,7 +327,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             collection_to_ids: dict[str, list[int]] = defaultdict(list)
             for fqid in history_information:
                 collection_to_ids[collection_from_fqid(fqid)].append(id_from_fqid(fqid))
-            data = self.datastore.get_many(
+            data = self.database.get_many(
                 [
                     GetManyRequest(collection, ids, ["meeting_id"])
                     for collection, ids in collection_to_ids.items()
@@ -336,7 +336,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
                 use_changed_models=False,
             )
             for fqid, entries in create_history.items():
-                self.datastore.insert_model(
+                self.database.insert_model(
                     "history_entry",
                     {
                         "entries": entries,
@@ -350,7 +350,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
                 )
         if update_history:
             for id_, entries in update_history.items():
-                self.datastore.update_model("history_entry", id_, {"entries": entries})
+                self.database.update_model("history_entry", id_, {"entries": entries})
 
     # ----------------------------------------------------------------------------------------------------
     # CODE FOR COMPATIBILITY WITH OLD_STYLE ACTIONS.
@@ -359,14 +359,14 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
     def _execute_old_style_action(
         self, action: Action, action_data: ActionData, skip_history: bool
     ) -> ActionResults | None:
-        cast(ExtendedDatabase, self.datastore).toggle_changed_models(True)
+        cast(ExtendedDatabase, self.database).toggle_changed_models(True)
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True, is_sub_call=True
         )
         if write_request:
             if events := write_request.events:
-                self.datastore.write(WriteRequest(events=events))
+                self.database.write(WriteRequest(events=events))
             if not skip_history and (history_information := write_request.information):
                 self.write_history_information(history_information)
-        cast(ExtendedDatabase, self.datastore).toggle_changed_models(False)
+        cast(ExtendedDatabase, self.database).toggle_changed_models(False)
         return action_results

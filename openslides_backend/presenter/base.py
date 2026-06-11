@@ -25,14 +25,18 @@ class BasePresenter(BaseServiceProvider):
         self,
         data: Any,
         services: Services,
-        datastore: Database,
+        database: Database,
         logging: LoggingModule,
         user_id: int,
     ):
-        super().__init__(services, datastore, logging)
+        super().__init__(services, database, logging)
         self.data = data
         self.logger = logging.getLogger(__name__)
         self.user_id = user_id
+
+    @property
+    def datastore(self) -> Database:
+        return self.database
 
     def validate(self) -> None:
         """Validates the given data. If schema is not set, assumes that no data should be given."""

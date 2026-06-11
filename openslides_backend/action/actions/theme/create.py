@@ -73,6 +73,6 @@ class ThemeCreate(DDAction):
         for instance in action_data:
             instance["organization_id"] = ONE_ORGANIZATION_ID
             results.append(
-                self.datastore.insert_model(self.model.collection, instance)[1]
+                self.database.insert_model(self.model.collection, instance)[1]
             )
         return results
