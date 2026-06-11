@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.action import Action
+from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.action_type import ActionType

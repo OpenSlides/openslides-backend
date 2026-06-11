@@ -1,10 +1,8 @@
-from typing import Any
-
-from ...ddaction import DDAction
 from ....action.util.typing import ActionData, ActionResults
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.util import ONE_ORGANIZATION_ID
+from ...ddaction import DDAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
@@ -68,11 +66,13 @@ class ThemeCreate(DDAction):
         optional_properties=THEME_OPT_FIELDS,
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
-    skip_archived_meeting_check=True
+    skip_archived_meeting_check = True
 
     def write_instances(self, action_data: ActionData) -> ActionResults | None:
         results: ActionResults = []
         for instance in action_data:
             instance["organization_id"] = ONE_ORGANIZATION_ID
-            results.append(self.datastore.insert_model(self.model.collection, instance)[1])
+            results.append(
+                self.datastore.insert_model(self.model.collection, instance)[1]
+            )
         return results

@@ -1,6 +1,6 @@
+from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Callable
-from abc import abstractmethod
 from copy import deepcopy
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -13,10 +13,16 @@ from psycopg.types.json import Jsonb
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ..permissions.permission_helper import has_organization_management_level, has_perm
+from ..permissions.permissions import Permission
 from ..services.database.commands import GetManyRequest
 from ..services.database.extended_database import ExtendedDatabase
 from ..services.database.interface import Database
-from ..shared.exceptions import ActionException, BadCodingException, MissingPermission, PermissionDenied
+from ..shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.logging import LoggingModule
@@ -33,12 +39,6 @@ from .action import Action, SchemaProvider
 from .relations.relation_manager import RelationManager
 from .util.action_type import ActionType
 from .util.typing import ActionData, ActionResults
-from ..permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
-from ..permissions.permission_helper import has_organization_management_level, has_perm
-from ..permissions.permissions import Permission
 
 
 class DDAction(BaseServiceProvider, metaclass=SchemaProvider):

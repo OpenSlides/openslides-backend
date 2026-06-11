@@ -24,10 +24,10 @@ from ..services.database.interface import Database
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
+    BadCodingException,
     MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
-    BadCodingException
 )
 from ..shared.history_events import calculate_history_event_payloads
 from ..shared.interfaces.env import Env

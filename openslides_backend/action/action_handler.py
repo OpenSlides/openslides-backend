@@ -347,11 +347,10 @@ class ActionHandler(BaseHandler):
         # based on whether the action is old- or new-style.
         # Also write previous write_requests when switching from old-style to new-style
         action_data = deepcopy(action_payload_element["data"])
-        is_old_style= isinstance(action, Action)
         try:
             # with self.datastore.get_database_context():
             with make_span(self.env, "action.perform"):
-                if is_old_style:
+                if isinstance(action, Action):
                     self.datastore.toggle_changed_models(True)
                     self.prev_was_new = True
                     write_request, results = action.perform(
@@ -365,9 +364,9 @@ class ActionHandler(BaseHandler):
                 else:
                     if self.prev_was_new:
                         for write_request in self.write_requests:
-                            results = self.datastore.write(write_request)
+                            write_results = self.datastore.write(write_request)
                             write_request.written = True
-                            write_request.results = results
+                            write_request.results = write_results
                         self.write_requests = []
                     self.datastore.toggle_changed_models(False)
                     write_request = None
@@ -375,7 +374,7 @@ class ActionHandler(BaseHandler):
                         action_data, self.user_id, internal=self.internal
                     )
 
-            if is_old_style:
+            if isinstance(action, Action):
                 if write_request:
                     action.validate_write_request(write_request)
 
@@ -386,7 +385,7 @@ class ActionHandler(BaseHandler):
                     # self.datastore.reset(hard=False)
 
                 # add on_success routine
-                if (on_success := action.get_on_success(action_data)):
+                if on_success := action.get_on_success(action_data):
                     self.on_success.append(on_success)
 
                 if write_request:
@@ -400,6 +399,8 @@ class ActionHandler(BaseHandler):
             # -1: error which cannot be directly associated with a single action data
             if action.index > -1:
                 exception.action_data_error_index = action.index
-            if is_old_style and (on_failure := action.get_on_failure(action_data)):
+            if isinstance(action, Action) and (
+                on_failure := action.get_on_failure(action_data)
+            ):
                 on_failure()
             raise exception

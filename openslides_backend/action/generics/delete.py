@@ -49,7 +49,9 @@ class DeleteAction(Action):
 
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
-        delete_actions: list[tuple[FullQualifiedId, type[Action]|type[DDAction], ActionData]] = []
+        delete_actions: list[
+            tuple[FullQualifiedId, type[Action] | type[DDAction], ActionData]
+        ] = []
         for field_name, value in sorted(db_instance.items()):
             if field_name == "id":
                 continue
