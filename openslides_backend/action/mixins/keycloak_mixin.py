@@ -1,9 +1,7 @@
-import psycopg
 import logging
 import os
 import requests
 import json
-import base64
 
 from ..action import Action
 from openslides_backend.shared.exceptions import ActionException
@@ -124,7 +122,7 @@ class KeycloakMixin(Action):
 
         try:
             ## Find OS User
-            response = requests.delete(self.keycloak_admin_route + "users?username=" + username,
+            response = requests.get(self.keycloak_admin_route + "users?username=" + username,
                 headers={
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }

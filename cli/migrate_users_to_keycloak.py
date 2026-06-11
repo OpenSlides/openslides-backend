@@ -260,7 +260,7 @@ def main() -> None:
     ## Record Keycloak ID to OS User
     for username, keycloak_user_id in user_keycloak_map.items():
         with conn.cursor() as cursor:
-            cursor.execute(f"UPDATE user_t SET keycloak_id = '{keycloak_user_id}' WHERE username = '{username}';")
+            cursor.execute("UPDATE user_t SET keycloak_id = %s WHERE username = %s", (keycloak_user_id, username))
 
     ## Commit user changes
     conn.commit()

@@ -54,16 +54,11 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         if not header_value.startswith("Bearer: "):
             raise AuthenticationException("Authorization does not contain 'Bearer: '")
 
-        self.logger.error(header_value)
-
         # Convert JWT to Payload
         payload = self._extract_payload(header_value[len("Bearer: "):])
 
         if not payload or not payload.sub or not payload.os_id:
-            self.logger.error("You are anon")
             return (0, "")
-
-        self.logger.error(f"You are {payload.os_id}")
 
         return (payload.os_id, payload.sub)
 
@@ -75,7 +70,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         kid = unverified_header.get("kid")
         if not kid:
-            raise AuthErrAuthenticationExceptionor("No keycloak id in auth headers")
+            raise AuthenticationException("No keycloak id in auth headers")
 
         public_key = self._get_key(kid)
 
