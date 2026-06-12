@@ -16,7 +16,12 @@ from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin, KeycloakMixin):
+class UserDelete(
+    UserScopeMixin,
+    DeleteAction,
+    AdminIntegrityCheckMixin,
+    KeycloakMixin,
+):
     """
     Action to delete a user.
     """
@@ -31,7 +36,7 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin, Keycloa
             raise ActionException("You cannot delete yourself.")
 
         # Delete keycloak account
-        self.delete_user(self.schema)
+        self.delete_user(instance)
 
         return super().update_instance(instance)
 

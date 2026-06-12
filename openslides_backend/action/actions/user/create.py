@@ -33,7 +33,7 @@ class UserCreate(
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
-    KeycloakMixin
+    KeycloakMixin,
 ):
     """
     Action to create a user.
@@ -80,6 +80,7 @@ class UserCreate(
         if instance.get("is_active"):
             self.check_limit_of_user(1)
         saml_id = instance.get("saml_id")
+
         if not instance.get("username"):
             if saml_id:
                 instance["username"] = saml_id

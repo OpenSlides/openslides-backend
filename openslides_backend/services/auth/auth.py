@@ -6,6 +6,7 @@ import base64
 import requests
 import jwt
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+from argon2 import PasswordHasher
 
 from ...shared.filters import FilterOperator
 from ...shared.exceptions import AuthenticationException
@@ -29,6 +30,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     OIDC authentication service
     """
 
+    passwordHasher = PasswordHasher()
     ANONYMOUS_USER = 0
 
     def __init__(self, env: Environment, logging: LoggingModule) -> None:
@@ -129,10 +131,10 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
 
     def hash(self, toHash: str) -> str:
-        return self.auth_handler.hash(toHash)
+        return self.passwordHasher.hash(toHash)
 
     def is_equal(self, toHash: str, toCompare: str) -> bool:
-        return self.auth_handler.is_equal(toHash, toCompare)
+        return toHash == toCompare
 
 
     def is_anonymous(self, user_id: int) -> bool:

@@ -61,6 +61,44 @@ class KeycloakMixin(Action):
             raise ActionException(f"Error receiving keycloak admin token: {e}")
         return ""
 
+    def find_keycloak_user(self, user) -> str:
+        ## Returns Keycloak ID of given user, if it exists
+        keycloak_admin_key = self._get_admin_key()
+
+        username = user["username"]
+
+        try:
+            ## Find OS User
+            response = requests.get(self.keycloak_admin_route + "users?username=" + username,
+                headers={
+                    'Authorization': f'Bearer {keycloak_admin_key}',
+                }
+            )
+            json_response = response.json()
+
+            if response.status_code != 200:
+                raise ActionException(f"{response.status_code} {json_response}")
+
+            if len(json_response) == 0:
+                # User does not exist
+                return None
+
+            if not 'id' in json_response[0]:
+                raise ActionException(f"Error finding user: No id in Keycloak JSON response: {json_response}")
+
+            return json_response[0]['id']
+        except Exception as e:
+            raise ActionException(f"Error finding user: {e}")
+
+        return None
+
+    # Gets keycloak id of given instance from the datastore
+    def get_keycloak_id_from_datastore(self, instance) -> str:
+        return self.datastore.get(
+                fqid=f"user/{instance.get('id')}",
+                mapped_fields=["keycloak_id"]
+                )["keycloak_id"]
+
     def create_user(self, user, password = ""):
         keycloak_admin_key = self._get_admin_key()
 
@@ -75,6 +113,7 @@ class KeycloakMixin(Action):
             # Check if there is already a Keycloak User with the same username and delete that account
             already_existing_keycloak_user = self.find_keycloak_user(user)
             if already_existing_keycloak_user is not None and already_existing_keycloak_user != "":
+                self.logger.debug(f"User {user} already exists in keycloak with id {already_existing_keycloak_user}")
                 self.delete_keycloak_user(already_existing_keycloak_user)
 
             try:
@@ -114,30 +153,6 @@ class KeycloakMixin(Action):
         ## Set
         user['keycloak_id'] = keycloak_id
 
-    def find_keycloak_user(self, user) -> str:
-        ## Returns Keycloak ID of given user, if it exists
-        keycloak_admin_key = self._get_admin_key()
-
-        username = user["username"]
-
-        try:
-            ## Find OS User
-            response = requests.get(self.keycloak_admin_route + "users?username=" + username,
-                headers={
-                    'Authorization': f'Bearer {keycloak_admin_key}',
-                }
-            )
-            json_response = response.json()
-
-            if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
-
-            return json_response[0]['id']
-        except Exception as e:
-            raise ActionException(f"Error deleting user: {e}")
-
-        return None
-
     def delete_keycloak_user(self, keycloak_id):
         keycloak_admin_key = self._get_admin_key()
 
@@ -152,20 +167,16 @@ class KeycloakMixin(Action):
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }
             )
+
             if response.status_code != 204:
-                raise ActionException(f"{response.status_code} {json_response}")
+                raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}")
 
     # Deletes the keycloak user belonging to the given os user.
     # Warning: This will not remove the keycloak_id from the os user in the database!
-    def delete_user(self, user):
-        keycloak_id = self.datastore.get(
-            fqid=f"user/{user.id}",
-            mapped_fields=["keycloak_id"]
-        )["keycloak_id"]
-
-        self.delete_keycloak_user(keycloak_id)
+    def delete_user(self, instance):
+        self.delete_keycloak_user(self.get_keycloak_id_from_datastore(instance))
 
     def update_email(self, keycloak_id, email):
         keycloak_admin_key = self._get_admin_key()
@@ -194,7 +205,11 @@ class KeycloakMixin(Action):
             raise ActionException(f"Error updating email of user: {e}")
 
     # Enables or disables the keycloak user associated with the given keycloak_id
-    def set_user_enable_status(self, keycloak_id, enabled):
+    def set_user_enable_status(self, instance, enabled):
+        self.set_keycloak_user_enable_status(self.get_keycloak_id_from_datastore(instance), enabled)
+
+    # Enables or disables the keycloak user associated with the given keycloak_id
+    def set_keycloak_user_enable_status(self, keycloak_id, enabled):
         keycloak_admin_key = self._get_admin_key()
 
         if keycloak_id is None or keycloak_id == "":

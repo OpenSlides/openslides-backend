@@ -17,6 +17,7 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.keycloak_mixin import KeycloakMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.base_delete import MeetingUserBaseDelete
@@ -50,6 +51,7 @@ class UserUpdate(
     ConditionalSpeakerCascadeMixin,
     AdminIntegrityCheckMixin,
     CheckLockOutPermissionMixin,
+    KeycloakMixin,
 ):
     """
     Action to update a user.
@@ -70,6 +72,7 @@ class UserUpdate(
     schema = DefaultSchema(User()).get_update_schema(
         optional_properties=[
             "username",
+            "keycloak_id",
             "pronoun",
             "title",
             "first_name",
@@ -142,6 +145,7 @@ class UserUpdate(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
                 "is_active",
+                "keycloak_id",
                 "organization_management_level",
                 "saml_id",
                 "password",
@@ -187,11 +191,13 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-        if is_active := instance.get("is_active"):
-            if not user.get("is_active"):
-                self.check_limit_of_user(1)
-        elif is_active is False and user.get("is_active"):
-            self.auth.clear_sessions_by_user_id(instance["id"])
+        self.set_user_enable_status(instance, instance.get("is_active"))
+        # TODO: What was this about?
+        #if is_active := instance.get("is_active"):
+            #if not user.get("is_active"):
+            #    self.check_limit_of_user(1)
+        #elif is_active is False and user.get("is_active"):
+        #    self.auth.clear_sessions_by_user_id(instance["id"])
 
         check_gender_exists(self.datastore, instance)
         return instance
