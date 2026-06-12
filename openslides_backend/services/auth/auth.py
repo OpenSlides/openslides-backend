@@ -52,7 +52,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         # Fetch JWT
         header_value = self.access_token
         if not header_value.startswith("Bearer: "):
-            raise AuthenticationException("Authorization does not contain 'Bearer: '")
+            raise AuthenticationException(f"Authorization does not contain 'Bearer:', instead {self.access_token}")
 
         # Convert JWT to Payload
         payload = self._extract_payload(header_value[len("Bearer: "):])
@@ -60,7 +60,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         if not payload or not payload.sub or not payload.os_id:
             return (0, "")
 
-        return (payload.os_id, payload.sub)
+        return (int(payload.os_id), payload.sub)
 
     def _extract_payload(self, token_string: str) -> KeycloakPayload:
         try:
