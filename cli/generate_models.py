@@ -140,6 +140,7 @@ class Model(Node):
         self.collection = collection
         assert collection
         self.attributes = {}
+        print(collection)
         for field_name, field in fields.items():
             if field_name == "_meta":
                 continue
@@ -270,6 +271,8 @@ class Attribute(Node):
             properties += "is_view_field=True, "
         if self.is_primary:
             properties += "is_primary=True, "
+            if self.type in ["relation-list", "generic-relation-list"]:
+                print(field_name, self.to.to if self.to else None)
         if self.required:
             properties += "required=True, "
         if self.unique:

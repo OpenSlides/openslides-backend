@@ -29,6 +29,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import (
     BadCodingException,
+    DoesNotExist,
     InvalidData,
     InvalidFormat,
     ModelDoesNotExist,
@@ -234,15 +235,15 @@ class DatabaseWriter(SqlQueryHelper):
             )
         )
 
-        for field_name in nm_relation_list_fields:
-            if field_name in add_dict:
-                self.write_to_intermediate_tables(
-                    add_dict, nm_relation_list_fields, id_, collection
-                )
-            if field_name in remove_dict:
-                self.delete_from_intermediate_tables(
-                    remove_dict, nm_relation_list_fields, id_, collection, directly=True
-                )
+        nm_relation_list_fields_set = set(nm_relation_list_fields)
+        if nm_relation_list_fields_set.intersection(add_dict):
+            self.write_to_intermediate_tables(
+                add_dict, nm_relation_list_fields, id_, collection
+            )
+        if nm_relation_list_fields_set.intersection(remove_dict):
+            self.delete_from_intermediate_tables(
+                remove_dict, nm_relation_list_fields, id_, collection, directly=True
+            )
 
         array_statements_per_field, array_values = self.get_array_values(
             collection, table, set_fields_dict, add_dict, remove_dict, array_types
@@ -480,6 +481,259 @@ class DatabaseWriter(SqlQueryHelper):
             ],
         )
 
+    def insert_rows(
+        self,
+        table_name: str,
+        columns: list[str],
+        instances: list[dict[str, Any]],
+        return_fields: list[str] | None = None,
+    ) -> None:
+        """
+        As is this can probably only be trusted to write correctly
+        for every instance if all columns are filled in every instance.
+        This is why values.update is using hard instead of soft get.
+
+        This is a problem since it'd be more useful if it were different.
+        """
+        values: dict[str, Any] = {}
+        placeholders: list[sql.SQL] = []
+        base = 0
+        for instance in instances:
+            placeholders.append(
+                sql.SQL(
+                    "("
+                    + ", ".join(
+                        [
+                            f"%({i})s" if col in instance else "DEFAULT"
+                            for i, col in enumerate(columns, base)
+                        ]
+                    )
+                    + ")"
+                )
+            )
+            values.update(
+                {
+                    str(i): instance[field]
+                    for i, field in enumerate(columns, base)
+                    if field in instance
+                }
+            )
+            base += len(columns)
+        statement = sql.SQL("""
+            INSERT INTO {table_name} ({columns})
+            VALUES {placeholders}
+            """).format(
+            table_name=sql.Identifier(table_name),
+            columns=sql.SQL(", ").join(sql.Identifier(field) for field in columns),
+            placeholders=sql.SQL(", ").join(placeholders),
+        )
+        self.execute_multi_row_sql(
+            statement,
+            values,
+            return_fields=return_fields,
+        )
+
+    def update_rows(
+        self,
+        table_name: str,
+        columns: list[str],
+        instances: list[dict[str, Any]],
+        return_fields: list[str] | None = None,
+        match_on: list[str] = ["id"],
+    ) -> None:
+        values: dict[str, Any] = {}
+        placeholders: list[sql.SQL] = []
+        base = 0
+        for instance in instances:
+            placeholders.append(
+                sql.SQL(
+                    "("
+                    + ", ".join(
+                        [f"%({i})s" for i in range(base, base + len(columns) * 2)]
+                    )
+                    + ")"
+                )
+            )
+            values.update(
+                {str(i): instance.get(field) for i, field in enumerate(columns, base)}
+            )
+            values.update(
+                {
+                    str(i + len(columns)): field in instance
+                    for i, field in enumerate(columns, base)
+                }
+            )
+            base += len(columns) * 2
+            # Generate exists columns to ensure unfilled columns get skipped
+            # TODO: Is there a simpler way to do this?
+        columns_and_exists_columns = [*columns, *[f"_exists_{col}" for col in columns]]
+        statement = sql.SQL("""
+            UPDATE {table_name} AS t SET
+            {columns_equal}
+            FROM (VALUES {placeholders}) as c({columns})
+            WHERE {conditions}
+            """).format(
+            table_name=sql.Identifier(table_name),
+            columns=sql.SQL(", ").join(
+                sql.Identifier(field) for field in columns_and_exists_columns
+            ),
+            columns_equal=sql.SQL(", ").join(
+                sql.SQL(
+                    f"{field} = CASE WHEN c._exists_{field} THEN c.{field} ELSE {field} END"
+                )
+                for field in columns
+            ),
+            placeholders=sql.SQL(", ").join(placeholders),
+            conditions=sql.SQL(" AND ").join(
+                sql.SQL(f"t.{field} = c.{field}") for field in match_on
+            ),
+        )
+        self.execute_multi_row_sql(
+            statement,
+            values,
+            return_fields=return_fields,
+        )
+
+    def delete_rows(
+        self,
+        table_name: str,
+        columns: list[str],
+        instances: list[dict[str, Any]],
+        return_fields: list[str] | None = None,
+        match_on: list[str] = ["id"],
+    ) -> None:
+        values: dict[str, Any] = {}
+        placeholders: list[sql.SQL] = []
+        base = 0
+        for instance in instances:
+            placeholders.append(
+                sql.SQL(
+                    "("
+                    + ", ".join([f"%({i})s" for i in range(base, base + len(match_on))])
+                    + ")"
+                )
+            )
+            values.update(
+                {str(i): instance[field] for i, field in enumerate(match_on, base)}
+            )
+            base += len(columns)
+        statement = sql.SQL("""
+            DELETE FROM {table_name}
+            WHERE {columns} IN ({placeholders})
+            """).format(
+            table_name=sql.Identifier(table_name),
+            columns=sql.SQL(", ").join(sql.Identifier(field) for field in match_on),
+            placeholders=sql.SQL(", ").join(placeholders),
+        )
+        self.execute_multi_row_sql(
+            statement,
+            values,
+            return_fields=return_fields,
+        )
+
+    def execute_multi_row_sql(
+        self,
+        statement: sql.Composed,
+        arguments: list[Any] | dict[str, Any],
+        return_fields: list[str] | None = None,
+        error_identifier: str | None = None,
+    ) -> list[dict[str, Any]]:
+        verbose_error_identifier = error_identifier or "undefined operation"
+        if return_fields:
+            statement += sql.SQL("""RETURNING {fields};""").format(
+                fields=sql.SQL(", ").join(sql.SQL(field) for field in return_fields)
+            )
+        try:
+            with self.connection.cursor() as curs:
+                curs.execute(statement, arguments)
+                if return_fields:
+                    result = curs.fetchall()
+                    if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
+                        raise DoesNotExist(error_identifier)
+                    return result
+        except InFailedSqlTransaction as e:
+            raise BadCodingException(
+                f"Tried to set data in an already broken transaction (on {verbose_error_identifier}): {e}"
+            )
+        except UniqueViolation as e:
+            if error_identifier:
+                raise RelationException(f"{error_identifier}: {e}")
+            else:
+                raise RelationException(str(e))
+        except NotNullViolation as e:
+            column = e.args[0].split('"')[1]
+            raise BadCodingException(
+                f"Missing fields '{column}' on {verbose_error_identifier}. Ooopsy Daisy! {e}"
+            )
+        except GeneratedAlways as e:
+            raise BadCodingException(
+                f"Used a field that must only be generated by the database: {e}"
+            )
+        except UndefinedColumn as e:
+            column = e.args[0].split('"')[1]
+            raise InvalidFormat(
+                f"Field '{column}' does not exist on {verbose_error_identifier}: {e}"
+            )
+        except UndefinedTable as e:
+            table = e.args[0].split('"')[1]
+            if table.startswith(("gm_", "nm_")):
+                raise InvalidFormat(
+                    f"Intermediate table '{table}' does not exist in the database: {e}"
+                )
+            else:
+                raise InvalidFormat(
+                    f"Table '{table}' does not exist in the database: {e}"
+                )
+        except DatatypeMismatch as e:
+            column = e.args[0].split('"')[1]
+            raise InvalidFormat(
+                f"Invalid data type for '{column}' on {verbose_error_identifier}. {e}"
+            )
+        except CheckViolation as e:
+            _, table, _, constraint_name, *_ = e.args[0].split('"')
+            # Fetch the generated constraint from the initially applied schema.
+            in_table_block = False
+            constraint = ""
+            with open("meta/dev/sql/schema_relational.sql") as f:
+                for line in f:
+                    # search only in the table block to prevent finding duplicates of other tables
+                    if "CREATE TABLE" in line and f" {table} " in line:
+                        in_table_block = True
+                    elif in_table_block and f"CONSTRAINT {constraint_name} " in line:
+                        constraint = line
+                        break
+                    elif line == "":
+                        break
+            # Using psycopgs inner working for a conversion into the real SQL.
+            with self.connection.cursor() as curs:
+                curs._tx = adapt.Transformer(curs)
+                real_statement = curs._convert_query(statement, arguments)
+            raise InvalidFormat(f"""{e.args[0]}
+        Violating data formatting or other constraints on {verbose_error_identifier}
+        The psycopg arguments are: {arguments}
+        The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
+        The constraint from the relational schema:
+        {constraint}        The postgres statement: {real_statement.query.decode()}""")
+        except ProgrammingError as e:
+            if "Constant value constraint violated for " in e.args[0]:
+                raise InvalidFormat(e.args[0])
+            raise InvalidFormat(f"Invalid data on {verbose_error_identifier}: {e}")
+        except StringDataRightTruncation as e:
+            raise InvalidData(
+                f"Invalid data passed on {verbose_error_identifier}:\n\n{statement} \n\n{arguments} \n\n{e.args}"
+            )
+        except SyntaxError as e:
+            if 'syntax error at or near "WHERE"' in e.args[0]:
+                raise DoesNotExist(error_identifier)
+            else:
+                raise e
+        except Exception as e:
+            raise e
+            raise ModelLocked(f"Model ... is locked on fields .... {e}\
+                This is not the end. There will be more next episode. To be continued.")
+
+        return []
+
     def execute_sql(
         self,
         statement: sql.Composed,
@@ -575,7 +829,7 @@ class DatabaseWriter(SqlQueryHelper):
                 curs._tx = adapt.Transformer(curs)
                 real_statement = curs._convert_query(statement, arguments)
             raise InvalidFormat(f"""{e.args[0]}
-        Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
+        Violating data formatting or other constraints for fqid '{error_fqid}'
         The psycopg arguments are: {arguments}
         The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
         The constraint from the relational schema:
@@ -590,9 +844,7 @@ class DatabaseWriter(SqlQueryHelper):
             )
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
-                raise ModelDoesNotExist(
-                    fqid_from_collection_and_id(collection, target_id or 0)
-                )
+                raise ModelDoesNotExist(error_fqid)
             else:
                 raise e
         except Exception as e:
