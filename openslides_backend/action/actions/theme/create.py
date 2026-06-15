@@ -68,15 +68,10 @@ class ThemeCreate(DDAction):
     skip_archived_meeting_check = True
 
     def write_instances(self, action_data: ActionData) -> ActionResults | None:
-        results: ActionResults = []
-        for instance in action_data:
-            # TODO: Shouldn't be using this `insert_model` function
-            # (or its siblings) as is
-            # It writes onto intermediate tables (do we want that?)
-            # It only writes from the primary part of the intermediate table
-            # => unsafe if we intend to use the intermediate functionality
-            # Also maybe do batch creation instead?
-            results.append(
-                self.database.insert_model(self.model.collection, instance)[1]
+        return list(
+            self.database.insert_models(
+                self.model.collection,
+                list(action_data),
+                [*THEME_REQ_FIELDS, *THEME_OPT_FIELDS],
             )
-        return results
+        )

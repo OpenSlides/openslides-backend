@@ -487,7 +487,7 @@ class DatabaseWriter(SqlQueryHelper):
         columns: list[str],
         instances: list[dict[str, Any]],
         return_fields: list[str] | None = None,
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         """
         As is this can probably only be trusted to write correctly
         for every instance if all columns are filled in every instance.
@@ -498,6 +498,8 @@ class DatabaseWriter(SqlQueryHelper):
         values: dict[str, Any] = {}
         placeholders: list[sql.SQL] = []
         base = 0
+        if not table_name.endswith("_t"):
+            table_name += "_t"
         for instance in instances:
             placeholders.append(
                 sql.SQL(
@@ -527,7 +529,7 @@ class DatabaseWriter(SqlQueryHelper):
             columns=sql.SQL(", ").join(sql.Identifier(field) for field in columns),
             placeholders=sql.SQL(", ").join(placeholders),
         )
-        self.execute_multi_row_sql(
+        return self.execute_multi_row_sql(
             statement,
             values,
             return_fields=return_fields,
@@ -540,32 +542,42 @@ class DatabaseWriter(SqlQueryHelper):
         instances: list[dict[str, Any]],
         return_fields: list[str] | None = None,
         match_on: list[str] = ["id"],
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         values: dict[str, Any] = {}
         placeholders: list[sql.SQL] = []
         base = 0
+        if return_fields:
+            return_fields = [f"t.{field}" for field in return_fields]
+        if not table_name.endswith("_t"):
+            table_name += "_t"
         for instance in instances:
             placeholders.append(
                 sql.SQL(
                     "("
                     + ", ".join(
-                        [f"%({i})s" for i in range(base, base + len(columns) * 2)]
+                        [
+                            f"%({i})s"
+                            for i in range(
+                                base, base + len(columns) * 2 + len(match_on)
+                            )
+                        ]
                     )
                     + ")"
                 )
             )
             values.update(
-                {str(i): instance.get(field) for i, field in enumerate(columns, base)}
+                {
+                    str(i): instance.get(field)
+                    for i, field in enumerate([*match_on, *columns], base)
+                }
             )
             values.update(
                 {
-                    str(i + len(columns)): field in instance
+                    str(i + len(columns) + len(match_on)): field in instance
                     for i, field in enumerate(columns, base)
                 }
             )
-            base += len(columns) * 2
-            # Generate exists columns to ensure unfilled columns get skipped
-            # TODO: Is there a simpler way to do this?
+            base += len(columns) * 2 + len(match_on)
         columns_and_exists_columns = [*columns, *[f"_exists_{col}" for col in columns]]
         statement = sql.SQL("""
             UPDATE {table_name} AS t SET
@@ -575,11 +587,12 @@ class DatabaseWriter(SqlQueryHelper):
             """).format(
             table_name=sql.Identifier(table_name),
             columns=sql.SQL(", ").join(
-                sql.Identifier(field) for field in columns_and_exists_columns
+                sql.Identifier(field)
+                for field in [*match_on, *columns_and_exists_columns]
             ),
             columns_equal=sql.SQL(", ").join(
                 sql.SQL(
-                    f"{field} = CASE WHEN c._exists_{field} THEN c.{field} ELSE {field} END"
+                    f"{field} = CASE WHEN c._exists_{field} THEN c.{field} ELSE t.{field} END"
                 )
                 for field in columns
             ),
@@ -588,7 +601,7 @@ class DatabaseWriter(SqlQueryHelper):
                 sql.SQL(f"t.{field} = c.{field}") for field in match_on
             ),
         )
-        self.execute_multi_row_sql(
+        return self.execute_multi_row_sql(
             statement,
             values,
             return_fields=return_fields,
@@ -597,14 +610,15 @@ class DatabaseWriter(SqlQueryHelper):
     def delete_rows(
         self,
         table_name: str,
-        columns: list[str],
         instances: list[dict[str, Any]],
         return_fields: list[str] | None = None,
         match_on: list[str] = ["id"],
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         values: dict[str, Any] = {}
         placeholders: list[sql.SQL] = []
         base = 0
+        if not table_name.endswith("_t"):
+            table_name += "_t"
         for instance in instances:
             placeholders.append(
                 sql.SQL(
@@ -616,7 +630,7 @@ class DatabaseWriter(SqlQueryHelper):
             values.update(
                 {str(i): instance[field] for i, field in enumerate(match_on, base)}
             )
-            base += len(columns)
+            base += len(match_on)
         statement = sql.SQL("""
             DELETE FROM {table_name}
             WHERE {columns} IN ({placeholders})
@@ -625,7 +639,7 @@ class DatabaseWriter(SqlQueryHelper):
             columns=sql.SQL(", ").join(sql.Identifier(field) for field in match_on),
             placeholders=sql.SQL(", ").join(placeholders),
         )
-        self.execute_multi_row_sql(
+        return self.execute_multi_row_sql(
             statement,
             values,
             return_fields=return_fields,

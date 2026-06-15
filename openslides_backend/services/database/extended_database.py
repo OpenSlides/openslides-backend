@@ -693,38 +693,88 @@ class ExtendedDatabase(Database):
     def insert_model(
         self,
         collection: Collection,
-        fields: dict[str, Any],
-        id_: Id | None = None,
+        instance: dict[str, Any],
         return_fields: list[str] = ["id"],
-    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+    ) -> dict[str, Any]:
         if self.enable_changed_models:
             raise BadCodingException(
                 "Cannot use insert_model if changed_models is enabled."
             )
-        return self.database_writer.insert_model(collection, fields, id_, return_fields)
+        return self.database_writer.insert_rows(
+            collection, list(instance), [instance], return_fields
+        )[0]
+
+    def insert_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        fields: list[str] | None = None,
+        return_fields: list[str] = ["id"],
+    ) -> list[dict[str, Any]]:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        if fields is None:
+            fields = list(str(field for instance in instances for field in instance))
+        return self.database_writer.insert_rows(
+            collection, fields, instances, return_fields
+        )
 
     def update_model(
         self,
         collection: Collection,
         id_: Id,
-        fields: dict[str, Any],
-        list_fields: ListFields = {},
+        instance: dict[str, Any],
         return_fields: list[str] = ["id"],
-    ) -> tuple[FullQualifiedId, dict[str, Any]]:
+    ) -> dict[str, Any]:
         if self.enable_changed_models:
             raise BadCodingException(
                 "Cannot use insert_model if changed_models is enabled."
             )
-        return self.database_writer.update_model(
-            collection, id_, fields, list_fields, return_fields
+        return self.database_writer.insert_rows(
+            collection, list(instance), [{"id": id_, **instance}], return_fields
+        )[0]
+
+    def update_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        fields: list[str] | None = None,
+        return_fields: list[str] = ["id"],
+        match_on: list[str] = ["id"],
+    ) -> list[dict[str, Any]]:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        if fields is None:
+            fields = list(str(field for instance in instances for field in instance))
+        return self.database_writer.update_rows(
+            collection, fields, instances, return_fields, match_on
         )
 
-    def delete_model(self, collection: Collection, id_: Id) -> FullQualifiedId:
+    def delete_model(self, collection: Collection, id_: Id) -> Id:
         if self.enable_changed_models:
             raise BadCodingException(
                 "Cannot use insert_model if changed_models is enabled."
             )
-        return self.database_writer.delete_model(collection, id_)
+        return self.database_writer.delete_rows(collection, [{"id": id_}])[0]["id"]
+
+    def delete_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        return_fields: list[str] = ["id"],
+        match_on: list[str] = ["id"],
+    ) -> list[dict[str, Any]]:
+        if self.enable_changed_models:
+            raise BadCodingException(
+                "Cannot use insert_model if changed_models is enabled."
+            )
+        return self.database_writer.delete_rows(
+            collection, instances, return_fields, match_on
+        )
 
     def _model_fits_subfilter(
         self, model: Model, filter_: Filter, negation: bool = False

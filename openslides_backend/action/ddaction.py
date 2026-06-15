@@ -307,7 +307,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
                     "user_id": self.user_id,
                     "timestamp": datetime.now(),
                 },
-            )[1]["id"]
+            )["id"]
         else:
             found = self.database.execute_custom_select(
                 sql.SQL(
