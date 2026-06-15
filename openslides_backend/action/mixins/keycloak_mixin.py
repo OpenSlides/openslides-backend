@@ -69,7 +69,7 @@ class KeycloakMixin(Action):
 
         try:
             ## Find OS User
-            response = requests.get(self.keycloak_admin_route + "users?username=" + username,
+            response = requests.get(self.keycloak_admin_route + "users?username=" + username + "&exact=true",
                 headers={
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }
@@ -85,6 +85,10 @@ class KeycloakMixin(Action):
 
             if not 'id' in json_response[0]:
                 raise ActionException(f"Error finding user: No id in Keycloak JSON response: {json_response}")
+
+            if json_response[0]['username'] != username:
+                self.logger.error(f"Found keycloak user does not match username query. Looking for {username}. Found {json_response[0]}")
+                return None
 
             return json_response[0]['id']
         except Exception as e:
@@ -131,7 +135,6 @@ class KeycloakMixin(Action):
                         'Authorization': f'Bearer {keycloak_admin_key}',
                     }
                 )
-
                 if response.status_code == 201:
                     keycloak_id = response.headers.get('Location').split('/')[-1]
                 elif response.status_code == 409:
@@ -153,6 +156,11 @@ class KeycloakMixin(Action):
         ## Set
         user['keycloak_id'] = keycloak_id
 
+    # Deletes the keycloak user belonging to the given os user.
+    # Warning: This will not remove the keycloak_id from the os user in the database!
+    def delete_user(self, instance):
+        self.delete_keycloak_user(self.get_keycloak_id_from_datastore(instance))
+
     def delete_keycloak_user(self, keycloak_id):
         keycloak_admin_key = self._get_admin_key()
 
@@ -161,6 +169,9 @@ class KeycloakMixin(Action):
             return
 
         try:
+            ## Revoke their session
+            self.revoke_keycloak_user_session(keycloak_id)
+
             ## Delete OS user from Keycloak
             response = requests.delete(self.keycloak_admin_route + "users/" + keycloak_id,
                 headers={
@@ -173,12 +184,11 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}")
 
-    # Deletes the keycloak user belonging to the given os user.
-    # Warning: This will not remove the keycloak_id from the os user in the database!
-    def delete_user(self, instance):
-        self.delete_keycloak_user(self.get_keycloak_id_from_datastore(instance))
+    # Updates email of user
+    def update_email(self, instance, email):
+        self.update_keycloak_email(self.get_keycloak_id_from_datastore(instance), email)
 
-    def update_email(self, keycloak_id, email):
+    def update_keycloak_email(self, keycloak_id, email):
         keycloak_admin_key = self._get_admin_key()
 
         if keycloak_id is None or keycloak_id == "":
@@ -204,11 +214,46 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error updating email of user: {e}")
 
-    # Enables or disables the keycloak user associated with the given keycloak_id
+    # Revokes any active session of user
+    def revoke_user_session(self, instance):
+        self.revoke_keycloak_user_session(self.get_keycloak_id_from_datastore(instance))
+
+    def revoke_keycloak_user_session(self, keycloak_id):
+        keycloak_admin_key = self._get_admin_key()
+
+        if keycloak_id is None or keycloak_id == "":
+            self.logger.error(f"Revoking session of keycloak user couldn't be done: no keycloak ID")
+            return
+
+        try:
+            ## Get session id
+            sessionsResponse = requests.get(self.keycloak_admin_route + "users/" + keycloak_id + "/sessions",
+                headers={
+                    'Authorization': f'Bearer {keycloak_admin_key}',
+                }
+            )
+            if sessionsResponse.status_code != 200:
+                raise ActionException(f"Couldn't get active sessions of {keycloak_id}: {response.status_code}")
+
+            for session in sessionsResponse.json():
+                if "id" not in session:
+                    continue
+
+                deleteResponse = requests.delete(self.keycloak_admin_route + "sessions/" + session['id'],
+                    headers={
+                        'Authorization': f'Bearer {keycloak_admin_key}',
+                    }
+                )
+                if deleteResponse.status_code != 204:
+                    raise ActionException(f"Couldn't revoke session id of {keycloak_id}: {deleteResponse.status_code}")
+
+        except Exception as e:
+            raise ActionException(f"Error revoking session of user: {e}")
+
+    # Enables or disables login access in keycloak for the user
     def set_user_enable_status(self, instance, enabled):
         self.set_keycloak_user_enable_status(self.get_keycloak_id_from_datastore(instance), enabled)
 
-    # Enables or disables the keycloak user associated with the given keycloak_id
     def set_keycloak_user_enable_status(self, keycloak_id, enabled):
         keycloak_admin_key = self._get_admin_key()
 
