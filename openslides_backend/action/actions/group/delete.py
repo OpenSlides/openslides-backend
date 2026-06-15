@@ -4,10 +4,10 @@ from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ....models.models import Group
+from ....models.models import Group, Poll
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.event import Event, EventType, ListFields
 from ....shared.patterns import (
     FullQualifiedId,
@@ -41,12 +41,24 @@ class GroupDeleteAction(DeleteAction):
                 "meeting_mediafile_inherited_access_group_ids",
                 "meeting_user_ids",
                 "meeting_id",
+                "poll_ids",
             ],
         )
         if len(group.get("meeting_user_ids", [])) and not self.is_meeting_to_be_deleted(
             group["meeting_id"]
         ):
             raise ActionException("You cannot delete a group with users.")
+        if poll_ids := group.get("poll_ids", []):
+            running_polls = self.datastore.filter(
+                "poll",
+                And(
+                    FilterOperator("state", "=", Poll.STATE_STARTED),
+                    Or(FilterOperator("id", "=", poll_id) for poll_id in poll_ids),
+                ),
+                ["id"],
+            )
+            if running_polls:
+                raise ActionException("You cannot delete a group with a running poll.")
         self.meeting_mediafile_ids: list[int] = list(
             set(group.get("meeting_mediafile_access_group_ids", []))
             | set(group.get("meeting_mediafile_inherited_access_group_ids", []))
