@@ -45,7 +45,7 @@ class UserForgetPasswordConfirm(UpdateAction, ClearSessionsMixin, KeycloakMixin)
         self.check_token(user_id, token)
         instance["id"] = user_id
         instance["password"] = self.auth.hash(new_password)
-        self.update_password(instance["keycloak_id"], new_password)
+        self.update_password(instance, new_password)
         return instance
 
     def check_token(self, user_id: int, token: str) -> None:

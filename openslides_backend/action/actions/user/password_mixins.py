@@ -36,7 +36,7 @@ class SetPasswordMixin(KeycloakMixin):
 
         hashed_password = self.auth.hash(password)
 
-        self.update_password(instance["keycloak_id"], hashed_password)
+        self.update_password(instance, hashed_password)
 
         instance["password"] = hashed_password
 

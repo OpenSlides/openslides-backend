@@ -46,7 +46,7 @@ class UserSetPasswordSelf(
 
         instance["password"] = self.auth.hash(new_pw)
 
-        self.update_password(instance["keycloak_id"], instance["password"])
+        self.update_password(instance, instance["password"])
 
         return instance
 

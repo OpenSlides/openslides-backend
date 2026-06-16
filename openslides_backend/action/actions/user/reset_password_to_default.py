@@ -34,7 +34,7 @@ class UserResetPasswordToDefaultMixin(
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password
 
-        self.update_password(instance["keycloak_id"], default_password)
+        self.update_password(instance, default_password)
         return instance
 
 

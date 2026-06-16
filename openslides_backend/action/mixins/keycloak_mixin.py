@@ -151,7 +151,7 @@ class KeycloakMixin(Action):
 
         ## Update passowrd
         if password is not None and password != "":
-            self.update_password(keycloak_id, password)
+            self.update_keycloak_password(keycloak_id, password)
 
         ## Set
         user['keycloak_id'] = keycloak_id
@@ -162,11 +162,12 @@ class KeycloakMixin(Action):
         self.delete_keycloak_user(self.get_keycloak_id_from_datastore(instance))
 
     def delete_keycloak_user(self, keycloak_id):
-        keycloak_admin_key = self._get_admin_key()
 
         if keycloak_id is None or keycloak_id == "":
             self.logger.error(f"Deleting keycloak user couldn't be done: no keycloak ID")
             return
+
+        keycloak_admin_key = self._get_admin_key()
 
         try:
             ## Revoke their session
@@ -189,7 +190,6 @@ class KeycloakMixin(Action):
         self.update_keycloak_email(self.get_keycloak_id_from_datastore(instance), email)
 
     def update_keycloak_email(self, keycloak_id, email):
-        keycloak_admin_key = self._get_admin_key()
 
         if keycloak_id is None or keycloak_id == "":
             self.logger.error(f"Updating email of keycloak user couldn't be done: no keycloak ID")
@@ -198,6 +198,8 @@ class KeycloakMixin(Action):
         if email is None or email == "":
             self.logger.error(f"Updating email of keycloak user couldn't be done: no email")
             return
+
+        keycloak_admin_key = self._get_admin_key()
 
         try:
             ## Change email of Keycloak user
@@ -219,11 +221,12 @@ class KeycloakMixin(Action):
         self.revoke_keycloak_user_session(self.get_keycloak_id_from_datastore(instance))
 
     def revoke_keycloak_user_session(self, keycloak_id):
-        keycloak_admin_key = self._get_admin_key()
 
         if keycloak_id is None or keycloak_id == "":
             self.logger.error(f"Revoking session of keycloak user couldn't be done: no keycloak ID")
             return
+
+        keycloak_admin_key = self._get_admin_key()
 
         try:
             ## Get session id
@@ -255,8 +258,6 @@ class KeycloakMixin(Action):
         self.set_keycloak_user_enable_status(self.get_keycloak_id_from_datastore(instance), enabled)
 
     def set_keycloak_user_enable_status(self, keycloak_id, enabled):
-        keycloak_admin_key = self._get_admin_key()
-
         if keycloak_id is None or keycloak_id == "":
             self.logger.error(f"Setting enable status of keycloak user couldn't be done: no keycloak ID")
             return
@@ -264,6 +265,8 @@ class KeycloakMixin(Action):
         if not isinstance(enabled, bool):
             self.logger.error(f"Setting enable status of keycloak user couldn't be done: enabled parameter not a bool")
             return
+
+        keycloak_admin_key = self._get_admin_key()
 
         try:
             ## Change enable status of Keycloak user
@@ -280,14 +283,27 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error setting enable status of user: {e}")
 
+    # Resets users password. User has to create new password. An email will be send with necessary information
+    # Active session of user will be revoked
+    def reset_password(self, instance):
+        self.reset_keycloak_password(self.get_keycloak_id_from_datastore(instance))
+
+    def reset_keycloak_password(self, keycloak_id):
+        if not keycloak_id or keycloak_id == "":
+            raise ActionException(f"Reseting password couldn't be done: no keycloak ID")
+
+        keycloak_admin_key = self._get_admin_key()
 
     # This adds '=' for argon2 padding at the end of a password or salt. It needs to pad until the length of the string is divisible by 4
     def hash_padding(self, to_pad):
         return to_pad + '=' * (-len(to_pad) % 4)
 
-    def update_password(self, keycloak_id, password):
+    def update_password(self, instance, password):
+        self.update_keycloak_password(self.get_keycloak_id_from_datastore(instance), password)
+
+    def update_keycloak_password(self, keycloak_id, password):
         if not keycloak_id or keycloak_id == "":
-            raise ActionException(f"Updating password of a non-existant user")
+            raise ActionException(f"Updating password couldn't be done: no keycloak ID")
 
         # An argon2 encrypted password is expected
         if not password.startswith("$argon2"):
