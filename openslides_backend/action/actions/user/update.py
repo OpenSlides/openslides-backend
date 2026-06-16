@@ -193,7 +193,7 @@ class UserUpdate(
                 )
 
         self.set_user_enable_status(instance, instance.get("is_active"))
-        self.revoke_user_session(instance)
+        self.logout_user(instance)
         # TODO: What was this about?
         #if is_active := instance.get("is_active"):
             #if not user.get("is_active"):

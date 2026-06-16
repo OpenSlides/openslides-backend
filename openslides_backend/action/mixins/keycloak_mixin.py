@@ -61,40 +61,40 @@ class KeycloakMixin(Action):
             raise ActionException(f"Error receiving keycloak admin token: {e}")
         return ""
 
-    def find_keycloak_user(self, user) -> str:
-        ## Returns Keycloak ID of given user, if it exists
+    def find_and_remove_similar_keycloak_users(self, user):
+        ## Finds keycloak users that share the same identifying keys in Keycloak and deletes them
         keycloak_admin_key = self._get_admin_key()
 
-        username = user["username"]
+        # Database Key - Keycloak Query
+        identifyingKeys = [["id", "q=os_id:{0}"], ["username", "username={0}"]]
 
         try:
-            ## Find OS User
-            response = requests.get(self.keycloak_admin_route + "users?username=" + username + "&exact=true",
-                headers={
-                    'Authorization': f'Bearer {keycloak_admin_key}',
-                }
-            )
-            json_response = response.json()
+            for idKey in identifyingKeys:
+                ## Construct query
+                query = idKey[1].format(str(user[idKey[0]]))
 
-            if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
+                self.logger.error(self.keycloak_admin_route + "users?" + query + "&exact=true")
+                ## Find OS User
+                response = requests.get(self.keycloak_admin_route + "users?" + query + "&exact=true&briefRepresentation=false",
+                    headers={
+                        'Authorization': f'Bearer {keycloak_admin_key}',
+                    }
+                )
+                json_response = response.json()
 
-            if len(json_response) == 0:
-                # User does not exist
-                return None
+                if response.status_code != 200:
+                    raise ActionException(f"{response.status_code} {json_response}")
 
-            if not 'id' in json_response[0]:
-                raise ActionException(f"Error finding user: No id in Keycloak JSON response: {json_response}")
+                if len(json_response) == 0:
+                    # User does not exist
+                    continue
 
-            if json_response[0]['username'] != username:
-                self.logger.error(f"Found keycloak user does not match username query. Looking for {username}. Found {json_response[0]}")
-                return None
+                if not 'id' in json_response[0]:
+                    raise ActionException(f"No id in Keycloak JSON response: {json_response}")
 
-            return json_response[0]['id']
+                self.delete_keycloak_user(json_response[0]['id'])
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
-
-        return None
 
     # Gets keycloak id of given instance from the datastore
     def get_keycloak_id_from_datastore(self, instance) -> str:
@@ -114,11 +114,8 @@ class KeycloakMixin(Action):
         if keycloak_id is None or keycloak_id == "":
             # No Keycloak ID set. This OS User likely has no Keycloak Account yet
 
-            # Check if there is already a Keycloak User with the same username and delete that account
-            already_existing_keycloak_user = self.find_keycloak_user(user)
-            if already_existing_keycloak_user is not None and already_existing_keycloak_user != "":
-                self.logger.debug(f"User {user} already exists in keycloak with id {already_existing_keycloak_user}")
-                self.delete_keycloak_user(already_existing_keycloak_user)
+            # Check if there is already a Keycloak User with the identifying keys and delete those accounts
+            self.find_and_remove_similar_keycloak_users(user)
 
             try:
                 ## Upload OS user to Keycloak
@@ -162,7 +159,6 @@ class KeycloakMixin(Action):
         self.delete_keycloak_user(self.get_keycloak_id_from_datastore(instance))
 
     def delete_keycloak_user(self, keycloak_id):
-
         if keycloak_id is None or keycloak_id == "":
             self.logger.error(f"Deleting keycloak user couldn't be done: no keycloak ID")
             return
@@ -170,8 +166,8 @@ class KeycloakMixin(Action):
         keycloak_admin_key = self._get_admin_key()
 
         try:
-            ## Revoke their session
-            self.revoke_keycloak_user_session(keycloak_id)
+            ## Logout user
+            self.logout_keycloak_user(keycloak_id)
 
             ## Delete OS user from Keycloak
             response = requests.delete(self.keycloak_admin_route + "users/" + keycloak_id,
@@ -216,42 +212,31 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error updating email of user: {e}")
 
-    # Revokes any active session of user
-    def revoke_user_session(self, instance):
-        self.revoke_keycloak_user_session(self.get_keycloak_id_from_datastore(instance))
+    # Logs user out and thereby revokes any active session of user
+    def logout_user(self, instance):
+        self.logout_keycloak_user(self.get_keycloak_id_from_datastore(instance))
 
-    def revoke_keycloak_user_session(self, keycloak_id):
+    def logout_keycloak_user(self, keycloak_id):
 
         if keycloak_id is None or keycloak_id == "":
-            self.logger.error(f"Revoking session of keycloak user couldn't be done: no keycloak ID")
+            self.logger.error(f"Logout of keycloak user couldn't be done: no keycloak ID")
             return
 
         keycloak_admin_key = self._get_admin_key()
 
         try:
-            ## Get session id
-            sessionsResponse = requests.get(self.keycloak_admin_route + "users/" + keycloak_id + "/sessions",
+            ## Logout user
+            response = requests.post(self.keycloak_admin_route + "users/" + keycloak_id + "/logout",
                 headers={
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }
             )
-            if sessionsResponse.status_code != 200:
-                raise ActionException(f"Couldn't get active sessions of {keycloak_id}: {response.status_code}")
 
-            for session in sessionsResponse.json():
-                if "id" not in session:
-                    continue
-
-                deleteResponse = requests.delete(self.keycloak_admin_route + "sessions/" + session['id'],
-                    headers={
-                        'Authorization': f'Bearer {keycloak_admin_key}',
-                    }
-                )
-                if deleteResponse.status_code != 204:
-                    raise ActionException(f"Couldn't revoke session id of {keycloak_id}: {deleteResponse.status_code}")
+            if response.status_code != 204:
+                raise ActionException(f"{response.status_code} {json_response}")
 
         except Exception as e:
-            raise ActionException(f"Error revoking session of user: {e}")
+            raise ActionException(f"Error logout of user: {e}")
 
     # Enables or disables login access in keycloak for the user
     def set_user_enable_status(self, instance, enabled):
@@ -284,15 +269,34 @@ class KeycloakMixin(Action):
             raise ActionException(f"Error setting enable status of user: {e}")
 
     # Resets users password. User has to create new password. An email will be send with necessary information
-    # Active session of user will be revoked
-    def reset_password(self, instance):
+    # User will be logged out
+    def force_reset_password(self, instance):
         self.reset_keycloak_password(self.get_keycloak_id_from_datastore(instance))
 
-    def reset_keycloak_password(self, keycloak_id):
+    def force_reset_keycloak_password(self, keycloak_id):
         if not keycloak_id or keycloak_id == "":
-            raise ActionException(f"Reseting password couldn't be done: no keycloak ID")
+            raise ActionException(f"Resetting password couldn't be done: no keycloak ID")
 
         keycloak_admin_key = self._get_admin_key()
+
+        try:
+            response = requests.put(self.keycloak_admin_route + "users/" + keycloak_id + "/execute-actions-email",
+                json=[
+                        'UPDATE_PASSWORD'
+                    ]
+                ,
+                headers={
+                    'Authorization': f'Bearer {keycloak_admin_key}',
+                }
+            )
+
+            if response.status_code != 204:
+                raise ActionException(f"{response.status_code}, {response.json()}")
+
+            # Logout user
+            self.logout_keycloak_user(keycloak_id)
+        except Exception as e:
+            raise ActionException(f"Error sending password reset email to user {keycloak_id}: {e}")
 
     # This adds '=' for argon2 padding at the end of a password or salt. It needs to pad until the length of the string is divisible by 4
     def hash_padding(self, to_pad):

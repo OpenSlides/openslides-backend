@@ -106,8 +106,6 @@ class UserCreate(
 
             self.create_user(instance, self.auth.hash(instance["default_password"]))
 
-            self.reset_password(instance)
-
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
         if instance.get("external") and instance.get("home_committee_id"):
