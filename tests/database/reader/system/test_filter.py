@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
-
+from typing import Any
 import pytest
 from psycopg import Connection
 
@@ -10,7 +10,7 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import InvalidFormat
+from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
 from openslides_backend.shared.filters import (
     And,
     Filter,
@@ -247,6 +247,28 @@ def test_types_enum_list(db_connection: Connection) -> None:
 
 
 @pytest.mark.parametrize(
+    "filter_value",
+    [
+        [True],
+        [None],
+        [("agenda_item.can_see_internal",)],
+        [{"agenda_item.can_see_internal"}],
+        [{"agenda_item": "can_see_internal"}],
+    ],
+)
+def test_types_list_not_allowed(
+    db_connection: Connection, filter_value: list[Any]
+) -> None:
+    with get_new_os_conn() as conn:
+        with pytest.raises(ValueError) as e:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.filter(
+                "group", FilterOperator("permissions", "=", filter_value), []
+            )
+    assert "Only integer, string or enum lists are supported." == e.value.args[0]
+
+
+@pytest.mark.parametrize(
     "filter_,to_be_found_id",
     [
         pytest.param(
@@ -296,6 +318,38 @@ def test_eq_none(db_connection: Connection) -> None:
 
 def test_neq_none(db_connection: Connection) -> None:
     base_test(db_connection, "user", FilterOperator("last_name", "!=", None), 2)
+
+
+@pytest.mark.parametrize(
+    "filter_operator",
+    [("<"), (">"), (">="), ("<="), ("~="), ("%="), ("in"), ("has")],
+)
+def test_none_not_allowed(db_connection: Connection, filter_operator: str) -> None:
+    with get_new_os_conn() as conn:
+        with pytest.raises(InvalidFormat) as e:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.filter(
+                "user", FilterOperator("last_name", filter_operator, None), []
+            )
+    assert "You can only compare to None with = or !=" == e.value.message
+
+
+def test_invalid_operator(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        with pytest.raises(InvalidFormat) as e:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.filter(
+                "user", FilterOperator("first_name", "=!=", "Gregor"), []
+            )
+    assert "operator does not exist: character varying =!= unknown" == e.value.message
+
+
+def test_invalid_filter(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        with pytest.raises(BadCodingException) as e:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.filter("meeting", "id = 1", [])
+    assert "Invalid filter type" == e.value.message
 
 
 def test_mapped_fields(db_connection: Connection) -> None:

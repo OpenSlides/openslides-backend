@@ -96,6 +96,17 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
             == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
         )
 
+    def test_anonymous_no_anonymous_group(self) -> None:
+        self.set_models({"meeting/1": {"enable_anonymous": True}})
+        response = self.request(
+            "fake_model_p.create", {"meeting_id": 1}, anonymous=True
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
+        )
+
     def test_anonymous_valid(self) -> None:
         self.set_anonymous(True, permissions=[Permissions.Motion.CAN_CREATE])
         response = self.request(

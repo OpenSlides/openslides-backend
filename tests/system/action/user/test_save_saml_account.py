@@ -588,6 +588,60 @@ class UserAddToGroup(UserBaseSamlAccount):
             }
         )
 
+    def test_create_user_no_external_id(self) -> None:
+        del self.meeting_mappers[0]["external_id"]
+        del self.meeting_mappers[1]["external_id"]
+        self.set_models({"organization/1": self.organization})
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["111"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "idp_group_attribute": "Delegates",
+                "kv_member_number": "KV_Könighols",
+                "kv_email": "hols@holz.de",
+                "participant_kv_number": "MG_1254",
+                "idp_kv_group_attribute": "Delegates",
+                "kv_structure": "structure2",
+                "idp_commentary": "normal data used",
+                "vw": 42,
+                "kv_vw": 13.0,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"meeting_ids": None, "meeting_user_ids": None}
+        )
+
+    def test_create_user_empty_external_id(self) -> None:
+        self.meeting_mappers[0]["external_id"] = None
+        self.meeting_mappers[1]["external_id"] = None
+        self.set_models({"organization/1": self.organization})
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["111"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "idp_group_attribute": "Delegates",
+                "kv_member_number": "KV_Könighols",
+                "kv_email": "hols@holz.de",
+                "participant_kv_number": "MG_1254",
+                "idp_kv_group_attribute": "Delegates",
+                "kv_structure": "structure2",
+                "idp_commentary": "normal data used",
+                "vw": 42,
+                "kv_vw": 13.0,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"meeting_ids": None, "meeting_user_ids": None}
+        )
+
     def test_create_user_with_multi_membership(self) -> None:
         """
         Shows:
