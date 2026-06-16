@@ -1,5 +1,3 @@
-from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
-
 from ...services.database.interface import Database
 from ...shared.exceptions import ActionException
 from ...shared.patterns import (
@@ -28,12 +26,6 @@ def assert_belongs_to_meeting(
                 raise_exception=False,
             )
             if meeting_id in instance.get("meeting_ids", []):
-                continue
-            # try on datastore whether minimum 1 group-relation exist in meeting_user
-            meeting_user = get_meeting_user(
-                datastore, meeting_id, id_from_fqid(fqid), ["group_ids"]
-            )
-            if meeting_user and meeting_user.get("group_ids"):
                 continue
             errors.add(str(fqid))
         elif collection_from_fqid(fqid) == "mediafile":  # ooof, this whole check

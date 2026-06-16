@@ -103,20 +103,6 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
     meeting_id: int
     use_meeting_ids_for_archived_meeting_check = True
 
-    def get_meeting_id(self, instance: dict[str, Any]) -> int:
-        if origin_item_ids := instance.get("agenda_item_ids"):
-            return self.datastore.get(
-                fqid_from_collection_and_id("agenda_item", origin_item_ids[0]),
-                ["meeting_id"],
-            )["meeting_id"]
-        elif origin_item_ids == []:
-            raise ActionException(
-                "Cannot forward an agenda without the agenda_item_ids."
-            )
-        elif "id" in instance or "meeting_id" in instance:
-            return super().get_meeting_id(instance)
-        return self.meeting_id
-
     def check_permissions(self, instance: dict[str, Any]) -> None:
         meeting_ids = set(instance.get("meeting_ids", []))
         agenda_items = self.datastore.get_many(

@@ -653,9 +653,7 @@ class MeetingImport(
             replaced_id = self.replace_map["mediafile"][id_]
             self.media.upload_mediafile(blob, replaced_id, mimetype)
 
-    def create_events(
-        self, instance: dict[str, Any], pure_create_events: bool = False
-    ) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """Be careful, this method is also used by meeting.clone!"""
         json_data = instance["meeting"]
         meeting = self.get_meeting_from_json(json_data)
@@ -704,8 +702,6 @@ class MeetingImport(
                         )
                     )
 
-        if pure_create_events:
-            return events
         events.extend(update_events)
 
         # add meeting to committee/meeting_ids
