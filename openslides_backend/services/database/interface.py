@@ -168,3 +168,51 @@ class Database(Protocol):
         lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]: ...
+
+    @abstractmethod
+    def insert_model(
+        self,
+        collection: Collection,
+        instance: dict[str, Any],
+        return_fields: list[str] = ["id"],
+    ) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def update_model(
+        self,
+        collection: Collection,
+        id_: Id,
+        instance: dict[str, Any],
+        return_fields: list[str] = ["id"],
+    ) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def delete_model(self, collection: Collection, id_: Id) -> Id: ...
+
+    @abstractmethod
+    def insert_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        fields: list[str] | None = None,
+        return_fields: list[str] = ["id"],
+    ) -> list[dict[str, Any]]: ...
+
+    @abstractmethod
+    def update_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        fields: list[str] | None = None,
+        return_fields: list[str] = ["id"],
+        match_on: list[str] = ["id"],
+    ) -> list[dict[str, Any]]: ...
+
+    @abstractmethod
+    def delete_models(
+        self,
+        collection: Collection,
+        instances: list[dict[str, Any]],
+        return_fields: list[str] = ["id"],
+        match_on: list[str] = ["id"],
+    ) -> list[dict[str, Any]]: ...

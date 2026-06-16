@@ -1,9 +1,11 @@
 from typing import Any
 
+from ....action.util.typing import ActionData, ActionResults
 from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ...action import Action
+from ...ddaction import DDAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.action_type import ActionType
@@ -15,8 +17,9 @@ from ..motion_state.update import MotionStateUpdateAction
 MOTION_STATE_DEFAULT_NAME = "default"
 
 
-@register_action("motion_workflow.create")
-class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDependencies):
+class OldMotionWorkflowCreateAction(
+    SequentialNumbersMixin, CreateActionWithDependencies
+):
     """
     Action to create a motion workflow.
     """
@@ -37,6 +40,49 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
                 "first_state_of_workflow_id": instance["id"],
                 "set_workflow_timestamp": True,
             }
+        ]
+
+
+@register_action("motion_workflow.create")
+class MotionWorkflowCreateAction(DDAction):
+    """
+    Action to create a motion workflow.
+    """
+
+    model = MotionWorkflow()
+    schema = DefaultSchema(MotionWorkflow()).get_create_schema(["name", "meeting_id"])
+    permission = Permissions.Motion.CAN_MANAGE
+
+    def write_instances(self, action_data: ActionData) -> ActionResults | None:
+        instances = list(
+            self.database.insert_models(
+                self.model.collection,
+                list(action_data),
+                ["name", "meeting_id"],
+            )
+        )
+        created_states = self.execute_other_action(
+            MotionStateCreateAction, self.get_dependent_action_data(instances)
+        )
+        # self.database.update_models(
+        #     self.model.collection,
+        #     [{*model, "first_state_id": (state or {})["id"]} for model, state in zip(instances, created_states)],
+        #     ["first_state_id"],
+        # )
+        return list(instances)
+
+    def get_dependent_action_data(
+        self, instances: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": MOTION_STATE_DEFAULT_NAME,
+                "weight": 1,
+                "workflow_id": instance["id"],
+                "first_state_of_workflow_id": instance["id"],
+                "set_workflow_timestamp": True,
+            }
+            for instance in instances
         ]
 
 
