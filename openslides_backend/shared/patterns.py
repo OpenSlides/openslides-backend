@@ -111,11 +111,11 @@ def is_fqid(value: str) -> bool:
 
 
 def is_fqfield(value: str) -> bool:
-    return bool(FQFIELD_PATTERN.match(value))
+    return bool(FQFIELD_PATTERN.match(value))  # Maybe also use somewhere?
 
 
 def is_collectionfield(value: str) -> bool:
-    return bool(COLLECTIONFIELD_PATTERN.match(value))
+    return bool(COLLECTIONFIELD_PATTERN.match(value))  # Maybe also use somewhere?
 
 
 # Parse FQIDs
@@ -158,7 +158,7 @@ def field_from_fqfield(fqfield: str) -> str:
 
 def collection_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
     parts = fqfield.split(KEYSEPARATOR)
-    return parts[0], parts[2]
+    return parts[0], parts[2]  # also use in generate models
 
 
 def fqid_from_fqfield(fqfield: str) -> str:
@@ -201,14 +201,18 @@ def field_from_collectionfield(collectionfield: str) -> str:
 
 
 def collection_and_field_from_collectionfield(collectionfield: str) -> tuple[str, str]:
-    return cast(tuple[str, str], collectionfield.split(KEYSEPARATOR))
+    return cast(
+        tuple[str, str], collectionfield.split(KEYSEPARATOR)
+    )  # also use in generate models?
 
 
 # Build collection fields
 
 
 def collectionfield_from_collection_and_field(collection: str, field: str) -> str:
-    return f"{collection}{KEYSEPARATOR}{field}"
+    return (
+        f"{collection}{KEYSEPARATOR}{field}"  # Don't delete but use in generate models
+    )
 
 
 def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:

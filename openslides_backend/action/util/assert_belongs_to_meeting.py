@@ -36,7 +36,7 @@ def assert_belongs_to_meeting(
             if meeting_user and meeting_user.get("group_ids"):
                 continue
             errors.add(str(fqid))
-        elif collection_from_fqid(fqid) == "mediafile":
+        elif collection_from_fqid(fqid) == "mediafile":  # ooof, this whole check
             mediafile = datastore.get(fqid, ["owner_id"], lock_result=False)
             collection, id_ = mediafile["owner_id"].split(KEYSEPARATOR)
             if collection == "meeting":
