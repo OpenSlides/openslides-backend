@@ -12,12 +12,9 @@ from ...shared.patterns import (
 
 def assert_belongs_to_meeting(
     datastore: Database,
-    fqids: FullQualifiedId | list[FullQualifiedId],
+    fqids: list[FullQualifiedId],
     meeting_id: int,
 ) -> None:
-    if not isinstance(fqids, list):
-        fqids = [fqids]
-
     errors: set[str] = set()
     for fqid in fqids:
         if collection_from_fqid(fqid) == "meeting":
