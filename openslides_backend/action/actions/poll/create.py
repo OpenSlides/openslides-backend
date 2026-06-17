@@ -56,6 +56,7 @@ class PollCreateAction(
             "description",
             "min_votes_amount",
             "max_votes_amount",
+            "max_yes_votes_amount",
             "max_votes_per_option",
             "global_yes",
             "global_no",

@@ -2339,6 +2339,13 @@ class Poll(Model, PollModelMixin):
     )
     min_votes_amount = fields.IntegerField(default=1, constraints={"minimum": 1})
     max_votes_amount = fields.IntegerField(default=1, constraints={"minimum": 1})
+    max_yes_votes_amount = fields.IntegerField(
+        default=1,
+        constraints={
+            "minimum": 1,
+            "description": "Maximum number of yes votes per voter.",
+        },
+    )
     max_votes_per_option = fields.IntegerField(default=1, constraints={"minimum": 1})
     global_yes = fields.BooleanField(default=False)
     global_no = fields.BooleanField(default=False)
