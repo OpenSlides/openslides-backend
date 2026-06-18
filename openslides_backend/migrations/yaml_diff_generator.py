@@ -29,11 +29,23 @@ def main() -> None:
     prev_models = load_models(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0100"))
     curr_models = load_models(ROOT)
 
+    # leaf_names = []
+    # def collect_leaf_names(curr_models):
+    #     for key, curr_value in curr_models.items():
+    #         if isinstance(curr_value, dict):
+    #             collect_leaf_names(curr_value)
+    #         else:
+    #             if key not in leaf_names:
+    #                 leaf_names.append(key)
+    # collect_leaf_names(curr_models)
+    # print(leaf_names)
+
     validate_renames(prev_models, curr_models, renames)
     diff = {
         "rename": renames, 
         "remove": create_remove_recursive(prev_models, curr_models, renames),
-        "add":  create_add_recursive(prev_models, curr_models, renames)
+        "add":  create_add_recursive(prev_models, curr_models, renames),
+        "edit":  create_edit_recursive(prev_models, curr_models, renames),
     }
 
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0101", "diff.out.json"), "w") as f:
@@ -78,20 +90,48 @@ def create_remove_recursive(prev_models: dict[str, Any], curr_models:dict[str, A
     else:
         return None
 
-def create_add_recursive(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> dict[str, Any] | None:
+def create_add_recursive(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """
+    Returns the additional entries on pos 0 and the sub trees on pos 1.
+    """
+    additional_entries = {}
     tree = {}
     for key, curr_value in curr_models.items():
         if key in list(renames_dict.values()):
             print(key + " renamed -> skip for add")
             continue
-        if key not in prev_models or not isinstance(curr_value, dict) and curr_value != prev_models[key]:
-            tree[key] = curr_value
+        if key not in prev_models:
+            additional_entries[key] = curr_models[key]
         elif isinstance(curr_value, dict):
             result = create_add_recursive(prev_models[key], curr_value, renames_dict.get(key, {}))
-            if result:
+            if result is not None:
                 tree[key] = result
-    if tree:
-        return tree
+    if additional_entries or tree:
+        return (additional_entries, tree)
+    else:
+        return None
+
+def create_edit_recursive(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """
+    Returns the edited entries on pos 0 and the sub trees on pos 1.
+    TODO This has a very similar structure to the add recursive function. Maybe combine with use of lambda or passing additional dict.
+    """
+    edited_entries = {}
+    tree = {}
+    for key, curr_value in curr_models.items():
+        if key in list(renames_dict.values()):
+            print(key + " renamed -> skip for edit")
+            continue
+        if key not in prev_models:
+            pass
+        elif not isinstance(curr_value, dict) and curr_value != prev_models[key]:
+            edited_entries[key] = curr_models[key]
+        elif isinstance(curr_value, dict):
+            result = create_edit_recursive(prev_models[key], curr_value, renames_dict.get(key, {}))
+            if result is not None:
+                tree[key] = result
+    if edited_entries or tree:
+        return (edited_entries, tree)
     else:
         return None
     
