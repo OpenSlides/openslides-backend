@@ -45,13 +45,8 @@ check-all: validate-models-yml check-models check-initial-data-json check-exampl
 
 # Models
 
-generate-schema:
-	make -C meta/dev generate-relational-schema
-
 join-models-yml:
 	make -C meta/dev join-models-yml
-
-generate-db: | generate-schema create-database-with-schema
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -162,14 +157,21 @@ pip-check: | deprecation-warning
 extract-translations:
 	pybabel extract --no-location --sort-output -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
+# Database
+
 drop-database:
 	make -C meta/dev drop-database
 
 create-database:
 	make -C meta/dev create-database
 
-generate-relational-schema:
-	make -C meta/dev generate-relational-schema
+generate-schema:
+	make -C meta/dev generate-schema
+
+generate-db: | generate-schema recreate-database
+
+generate-migration-diff:
+	python openslides_backend/migrations/yaml_diff_generator.py
 
 apply-db-schema:
 	make -C meta/dev apply-db-schema
@@ -182,6 +184,10 @@ recreate-database:
 
 run-psql:
 	make -C meta/dev run-psql
+
+# General
+
+generate-files: | generate-permissions generate-models generate-schema generate-migration-diff 
 
 # Build and run production docker container (not usable inside the docker container)
 
