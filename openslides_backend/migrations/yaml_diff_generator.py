@@ -6,7 +6,8 @@ from meta.dev.src.helper_get_names import (
     TableFieldType,
 )
 from typing import Any
-from meta.dev.src.helper_get_names import build_models_yaml_content, ROOT
+from meta.dev.src.helper_get_names import build_models_yaml_content, ROOT, HelperGetNames
+from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 import os
 import simplejson as json
 import sys
@@ -51,25 +52,82 @@ def main() -> None:
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0101", "diff.out.json"), "w") as f:
         f.write(json.dumps(diff, indent=4))
 
-    # with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0101", "schema_diff.sql"), "w") as f:
-    #     # TODO create generate diff content functions in schema generator. Esp. constraints as those reappear.
-    #     for collection_name, collection_def in diff["add"].items():
-    #         for field_name, field_def in collection_def.items():
-    #             sql = f"ALTER TABLE {collection_name}_t ADD COLUMN {collection_def};"
-    #             f.write(sql)
+    def generate_constraints_sql(field_def) -> str:
+        constraints_sql = ""
+        for constraint, value in field_def.items():
+            """
+            TODO other constraints type etc
+            This is a full list of leaf types we have. Including _meta.
+            languages
+            ballot_paper_selection
+            poll_backends
+            onehundred_percent_bases
+            type
+            restriction_mode
+            constant
+            required
+            enum
+            description
+            default
+            minimum
+            read_only
+            reference
+            collections
+            field
+            equal_fields
+            to
+            on_delete
+            sequence_scope
+            unique_together
+            constant_legacy
+            unique
+            sql
+            log_triggers
+            unique_together_strict
+            maxLength
+            maximum
+            deferred
+            calculated
+            minLength
+            """
+            match constraint:
+                case "default":
+                    constraints_sql += Helper.get_inline_default_constraint(table_name,field_name, value)
+                case "description":
+                    # TODO this needs to be removed as this is only used for development example code
+                    constraints_sql += Helper.get_inline_default_constraint(table_name,field_name, value)
+        return constraints_sql
+
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0101", "schema_diff.sql"), "w") as f:
+        # TODO create generate diff content functions in schema generator.
+        for collection_name, collection_def in diff["add"][1].items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            for field_name, field_def in collection_def[1]["fields"][0].items():
+                sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def)};\n"
+                f.write(sql)
+            for field_name, field_def in collection_def[1]["fields"][1].items():
+                sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def[0])};\n"
+                f.write(sql)
+        for collection_name, collection_def in diff["edit"][1].items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            for field_name, field_def in collection_def[1]["fields"][1].items():
+                for constraint, value in field_def[0].items():
+                    sql = f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP CONSTRAINT {HelperGetNames.get_default_constraint_name(table_name, field_name)};\n"
+                    sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{Helper.get_inline_default_constraint(table_name,field_name, value)};\n"
+                f.write(sql)
 
 def validate_renames(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> dict[str, Any] | None:
     for key, rena_value in renames_dict.items():
         if isinstance(rena_value, dict):
             validate_renames(prev_models[key], curr_models[key], rena_value)
         elif key not in prev_models:
-            raise Exception(f"Faulty renames or collection yml files. '{key}' not in old yml files.")
+            raise Exception(f"Faulty renames or collection yml files. {key} not in old yml files.")
         elif rena_value not in curr_models:
-            raise Exception(f"Faulty renames or collection yml files. '{rena_value}' not in new yml files.")
+            raise Exception(f"Faulty renames or collection yml files. {rena_value} not in new yml files.")
         elif rena_value in prev_models:
-            raise Exception(f"Faulty renames or collection yml files. '{rena_value}' already existed in old yml files.")
+            raise Exception(f"Faulty renames or collection yml files. {rena_value} already existed in old yml files.")
         elif key in curr_models:
-            raise Exception(f"Faulty renames or collection yml files. '{key}' already existed in new yml files.")
+            raise Exception(f"Faulty renames or collection yml files. {key} already existed in new yml files.")
 
 def create_remove_recursive(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> list[list[str], dict[str, Any]] | None:
     missing_entries = []
@@ -115,6 +173,7 @@ def create_edit_recursive(prev_models: dict[str, Any], curr_models:dict[str, Any
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
     TODO This has a very similar structure to the add recursive function. Maybe combine with use of lambda or passing additional dict.
+    TODO This should only generate diffs for the leafs. Thus the structure should be reconsidered. Maybe flatter or integrating rename info.
     """
     edited_entries = {}
     tree = {}
