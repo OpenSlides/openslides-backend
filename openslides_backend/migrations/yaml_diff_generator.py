@@ -48,6 +48,22 @@ def main() -> None:
         "add":  create_add_recursive(prev_models, curr_models, renames),
         "edit":  create_edit_recursive(prev_models, curr_models, renames),
     }
+    def deep_copy(diff):
+        if isinstance(diff, dict):
+            result = {}
+            for k,v in diff.items():
+                result[k] = deep_copy(v)
+        elif isinstance(diff, list):
+            result = []
+            for item in diff:
+                result.append(deep_copy(item))
+        elif isinstance(diff,  tuple):
+            result = tuple(deep_copy(item) for item in diff)
+        else:
+            result = diff
+        return result
+        
+    diff_control = deep_copy(diff)
 
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0101", "diff.out.json"), "w") as f:
         f.write(json.dumps(diff, indent=4))
@@ -93,7 +109,9 @@ def main() -> None:
             match constraint:
                 case "default":
                     constraints_sql += Helper.get_inline_default_constraint(table_name,field_name, value)
+                    del diff_control_part["default"]
                 case "description":
+                    del diff_control_part["description"]
                     # TODO this needs to be removed as this is only used for development example code
                     constraints_sql += Helper.get_inline_default_constraint(table_name,field_name, value)
         return constraints_sql
@@ -103,18 +121,42 @@ def main() -> None:
         for collection_name, collection_def in diff["add"][1].items():
             table_name = HelperGetNames.get_table_name(collection_name)
             for field_name, field_def in collection_def[1]["fields"][0].items():
+                diff_control_part = diff_control["add"][1][collection_name][1]["fields"][0][field_name]
                 sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def)};\n"
                 f.write(sql)
+                if not any(diff_control["add"][1][collection_name][1]["fields"][0][field_name]):
+                    del diff_control["add"][1][collection_name][1]["fields"][0][field_name]
             for field_name, field_def in collection_def[1]["fields"][1].items():
+                diff_control_part = diff_control["add"][1][collection_name][1]["fields"][1][field_name][0]
                 sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def[0])};\n"
                 f.write(sql)
+                if not any(diff_control["add"][1][collection_name][1]["fields"][1][field_name]):
+                    del diff_control["add"][1][collection_name][1]["fields"][1][field_name]
+            if not any( diff_control["add"][1][collection_name][1]["fields"]):
+                del diff_control["add"][1][collection_name][1]["fields"]
+            if not any (diff_control["add"][1][collection_name]):
+                del diff_control["add"][1][collection_name]
         for collection_name, collection_def in diff["edit"][1].items():
             table_name = HelperGetNames.get_table_name(collection_name)
             for field_name, field_def in collection_def[1]["fields"][1].items():
                 for constraint, value in field_def[0].items():
                     sql = f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP CONSTRAINT {HelperGetNames.get_default_constraint_name(table_name, field_name)};\n"
-                    sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{Helper.get_inline_default_constraint(table_name,field_name, value)};\n"
+                    sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{Helper.get_inline_default_constraint(table_name, field_name, value)};\n"
+                    del diff_control["edit"][1][collection_name][1]["fields"][1][field_name][0][constraint]
                 f.write(sql)
+                if not any(diff_control["edit"][1][collection_name][1]["fields"][1][field_name]):
+                    del diff_control["edit"][1][collection_name][1]["fields"][1][field_name]
+            if not any( diff_control["edit"][1][collection_name][1]["fields"]):
+                del diff_control["edit"][1][collection_name][1]["fields"]
+            if not any (diff_control["edit"][1][collection_name]):
+                del diff_control["edit"][1][collection_name]
+
+    for dict_name in ["rename", "remove", "add", "edit"]:
+        if not any (diff_control[dict_name]):
+            del diff_control[dict_name]
+    # assert not diff, f"Diff control still contains:\n{diff}"
+    if diff_control:
+        print( f"Diff control still contains:\n{diff_control}")
 
 def validate_renames(prev_models: dict[str, Any], curr_models:dict[str, Any], renames_dict:dict[str, Any]) -> dict[str, Any] | None:
     for key, rena_value in renames_dict.items():
