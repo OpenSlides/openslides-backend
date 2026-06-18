@@ -122,5 +122,5 @@ class ProjectorPrevious(UpdateAction):
         pivot = history_projections[0]
         for projection in history_projections:
             if pivot.get("weight", 10000) < projection.get("weight", 10000):
-                pivot = projection
+                pivot = projection  #
         return pivot["id"]

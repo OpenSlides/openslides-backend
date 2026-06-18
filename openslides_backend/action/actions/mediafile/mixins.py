@@ -115,7 +115,9 @@ class MediafileMixin(Action):
             return id_
         elif "meeting_id" in instance:
             return instance["meeting_id"]
-        raise ActionException("Try to get a meeting id from a organization mediafile.")
+        raise ActionException(
+            "Try to get a meeting id from a organization mediafile."
+        )  #
 
     def get_owner_data(self, instance: dict[str, Any]) -> tuple[str, int]:
         owner_id = instance.get("owner_id")

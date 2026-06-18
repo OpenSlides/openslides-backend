@@ -283,7 +283,7 @@ class MotionUpdate(
         if field in instance:
             value = instance.pop(field)
             if value is None:
-                return [verbose_collection + " removed"]
+                return [verbose_collection + " removed"]  #
             else:
                 return [
                     verbose_collection + " set to {}",

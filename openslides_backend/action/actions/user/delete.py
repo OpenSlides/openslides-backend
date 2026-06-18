@@ -34,7 +34,7 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
         self.check_permissions_for_scope(instance["id"])
 
     def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
-        return 0
+        return 0  #
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -45,7 +45,7 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
 
     def check_meeting_admin_integrity(self, delete_data: list[int] = []) -> None:
         if not len(delete_data):
-            return
+            return  #
         meeting_ids_to_user_ids: dict[int, list[int]] = {}
         users = self.datastore.get_many(
             [GetManyRequest("user", delete_data, ["meeting_ids", "meeting_user_ids"])]

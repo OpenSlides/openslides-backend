@@ -71,7 +71,7 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         return action_data
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        super().check_permissions(instance)
+        super().check_permissions(instance)  # this whole method
 
         # check if origin motion is normal or statute_amendment
         origin = self.datastore.get(

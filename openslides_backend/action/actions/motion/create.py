@@ -105,9 +105,9 @@ class MotionCreate(
             raise ActionException(error_messages[0]["message"])
         if instance.get("lead_motion_id"):
             if instance.get("text") and "amendment_paragraphs" in instance:
-                del instance["amendment_paragraphs"]
+                del instance["amendment_paragraphs"]  #
             if instance.get("amendment_paragraphs") and "text" in instance:
-                del instance["text"]
+                del instance["text"]  #
         if amendment_paragraphs := instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
             instance["amendment_paragraphs"] = Jsonb(amendment_paragraphs)

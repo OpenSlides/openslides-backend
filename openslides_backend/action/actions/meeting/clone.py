@@ -143,7 +143,7 @@ class MeetingClone(MeetingImport):
         for meeting_user in meeting_json.get("meeting_user", {}).values():
             if (value := meeting_user.get("vote_weight")) is not None:
                 if Decimal(value) < vote_weight_min:
-                    meeting_user["vote_weight"] = "0.000001"
+                    meeting_user["vote_weight"] = "0.000001"  #
             else:
                 user_id = meeting_user.get("user_id", 0)
                 value = (
@@ -152,13 +152,13 @@ class MeetingClone(MeetingImport):
                     .get("default_vote_weight")
                 )
                 if value is not None and Decimal(value) < vote_weight_min:
-                    meeting_user["vote_weight"] = "0.000001"
+                    meeting_user["vote_weight"] = "0.000001"  #
 
         # Necessary, because the check otherwise raise exception, even if user will not be imported
         for user in meeting_json.get("user", {}).values():
             if (value := user.get("default_vote_weight")) is not None:
                 if Decimal(value) < vote_weight_min:
-                    user["default_vote_weight"] = "0.000001"
+                    user["default_vote_weight"] = "0.000001"  #
 
         # check datavalidation
         checker = Checker(

@@ -43,7 +43,7 @@ class PermissionMixin(Action):
         else:
             permission = Permissions.Assignment.CAN_NOMINATE_OTHER
         if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-            missing_permission = permission
+            missing_permission = permission  #
 
         if missing_permission:
-            raise MissingPermission(missing_permission)
+            raise MissingPermission(missing_permission)  #

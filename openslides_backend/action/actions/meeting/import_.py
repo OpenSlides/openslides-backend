@@ -517,7 +517,7 @@ class MeetingImport(
     ) -> None:
         model_field = model_registry[collection].try_get_field(field)
         if model_field is None:
-            raise ActionException(f"{collection}/{field} is not allowed.")
+            raise ActionException(f"{collection}/{field} is not allowed.")  #
         if isinstance(model_field, BaseRelationField):
             if isinstance(model_field, BaseGenericRelationField):
                 content_list = (

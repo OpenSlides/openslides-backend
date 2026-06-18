@@ -67,7 +67,9 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
                     instance["inherited_access_group_ids"],
                 )
             else:
-                raise ActionException("Cannot update access groups without meeting_id")
+                raise ActionException(
+                    "Cannot update access groups without meeting_id"
+                )  #
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
