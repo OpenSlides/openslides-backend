@@ -168,10 +168,10 @@ create-database:
 generate-schema:
 	make -C meta/dev generate-schema
 
-generate-db: | generate-schema recreate-database
-
 generate-migration-diff:
-	python openslides_backend/migrations/yaml_diff_generator.py
+	python openslides_backend/migrations/yaml_diff_generator.py $(ARGS)
+
+generate-db: | generate-schema recreate-database
 
 apply-db-schema:
 	make -C meta/dev apply-db-schema
