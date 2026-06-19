@@ -191,9 +191,18 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-
-        self.set_user_enable_status(instance, instance.get("is_active"))
-        self.logout_user(instance)
+        
+        # Keycloak Changes
+        if user.get("username") != instance.get("username"):
+            self.update_username(instance, instance.get("username"))
+        
+        if is_active := instance.get("is_active"):
+            if not user.get("is_active"):
+                self.set_user_enable_status(instance, instance.get("is_active"))
+                self.logout_user(instance)
+        elif is_active is False and user.get("is_active"):
+            self.set_user_enable_status(instance, instance.get("is_active"))
+            self.logout_user(instance)
         # TODO: What was this about?
         #if is_active := instance.get("is_active"):
             #if not user.get("is_active"):

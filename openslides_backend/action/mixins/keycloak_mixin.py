@@ -181,37 +181,6 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}")
 
-    # Updates email of user
-    def update_email(self, instance, email):
-        self.update_keycloak_email(self.get_keycloak_id_from_datastore(instance), email)
-
-    def update_keycloak_email(self, keycloak_id, email):
-
-        if keycloak_id is None or keycloak_id == "":
-            self.logger.error(f"Updating email of keycloak user couldn't be done: no keycloak ID")
-            return
-
-        if email is None or email == "":
-            self.logger.error(f"Updating email of keycloak user couldn't be done: no email")
-            return
-
-        keycloak_admin_key = self._get_admin_key()
-
-        try:
-            ## Change email of Keycloak user
-            response = requests.put(self.keycloak_admin_route + "users/" + keycloak_id,
-                json={
-                    'email': email,
-                },
-                headers={
-                    'Authorization': f'Bearer {keycloak_admin_key}',
-                }
-            )
-            if response.status_code != 204:
-                raise ActionException(f"{response.status_code} {json_response}")
-        except Exception as e:
-            raise ActionException(f"Error updating email of user: {e}")
-
     # Logs user out and thereby revokes any active session of user
     def logout_user(self, instance):
         self.logout_keycloak_user(self.get_keycloak_id_from_datastore(instance))
@@ -298,6 +267,68 @@ class KeycloakMixin(Action):
         except Exception as e:
             raise ActionException(f"Error sending password reset email to user {keycloak_id}: {e}")
 
+    # Updates email of user
+    def update_email(self, instance, email):
+        self.update_keycloak_email(self.get_keycloak_id_from_datastore(instance), email)
+
+    def update_keycloak_email(self, keycloak_id, email):
+
+        if keycloak_id is None or keycloak_id == "":
+            self.logger.error(f"Updating email of keycloak user couldn't be done: no keycloak ID")
+            return
+
+        if email is None or email == "":
+            self.logger.error(f"Updating email of keycloak user couldn't be done: no email")
+            return
+
+        keycloak_admin_key = self._get_admin_key()
+
+        try:
+            ## Change email of Keycloak user
+            response = requests.put(self.keycloak_admin_route + "users/" + keycloak_id,
+                json={
+                    'email': email,
+                },
+                headers={
+                    'Authorization': f'Bearer {keycloak_admin_key}',
+                }
+            )
+            if response.status_code != 204:
+                raise ActionException(f"{response.status_code} {response.json()}")
+        except Exception as e:
+            raise ActionException(f"Error updating email of user: {e}")
+    
+    # Updates username of user
+    def update_username(self, instance, username):
+        self.update_keycloak_username(self.get_keycloak_id_from_datastore(instance), username)
+
+    def update_keycloak_username(self, keycloak_id, username):
+
+        if keycloak_id is None or keycloak_id == "":
+            self.logger.error(f"Updating username of keycloak user couldn't be done: no keycloak ID")
+            return
+
+        if username is None or username == "":
+            self.logger.error(f"Updating username of keycloak user couldn't be done: no email")
+            return
+
+        keycloak_admin_key = self._get_admin_key()
+
+        try:
+            ## Change username of Keycloak user
+            response = requests.put(self.keycloak_admin_route + "users/" + keycloak_id,
+                json={
+                    'username': username,
+                },
+                headers={
+                    'Authorization': f'Bearer {keycloak_admin_key}',
+                }
+            )
+            if response.status_code != 204:
+                raise ActionException(f"{response.status_code} {response.json()}")
+        except Exception as e:
+            raise ActionException(f"Error updating username of user: {e}")
+    
     # This adds '=' for argon2 padding at the end of a password or salt. It needs to pad until the length of the string is divisible by 4
     def hash_padding(self, to_pad):
         return to_pad + '=' * (-len(to_pad) % 4)
