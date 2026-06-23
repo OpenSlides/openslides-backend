@@ -1,4 +1,4 @@
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from openslides_backend.models.models import Meeting
