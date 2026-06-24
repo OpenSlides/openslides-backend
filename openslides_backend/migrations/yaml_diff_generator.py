@@ -1,6 +1,7 @@
 import os
 import sys
 from argparse import ArgumentParser
+from copy import deepcopy
 from typing import Any
 
 import simplejson as json
@@ -33,17 +34,6 @@ def main() -> int:
     )
     curr_models = load_models(ROOT)
 
-    # leaf_names = []
-    # def collect_leaf_names(curr_models):
-    #     for key, curr_value in curr_models.items():
-    #         if isinstance(curr_value, dict):
-    #             collect_leaf_names(curr_value)
-    #         else:
-    #             if key not in leaf_names:
-    #                 leaf_names.append(key)
-    # collect_leaf_names(curr_models)
-    # print(leaf_names)
-
     validate_renames(prev_models, curr_models, renames)
     diff = {
         "rename": renames,
@@ -52,17 +42,7 @@ def main() -> int:
         "edit": create_edit_recursive(prev_models, curr_models, renames),
     }
 
-    def deep_copy(diff: Any) -> Any:
-        if isinstance(diff, dict):
-            return {k: deep_copy(v) for k, v in diff.items()}
-        elif isinstance(diff, list):
-            return [deep_copy(item) for item in diff]
-        elif isinstance(diff, tuple):
-            return tuple(deep_copy(item) for item in diff)
-        else:
-            return diff
-
-    diff_control = deep_copy(diff)
+    diff_control: dict[str, Any] = deepcopy(diff)
 
     if args.dumpjson:
         with open(
