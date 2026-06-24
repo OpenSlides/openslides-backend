@@ -337,6 +337,7 @@ class MeetingClone(BaseActionTestCase):
                 "description": "blablabla",
                 "start_time": 1641370959,
                 "end_time": 1641370959,
+                "time_zone": "Europe/Vienna",
                 "location": "Testraum",
                 "organization_tag_ids": [1],
                 "name": "name_ORnVFSQJ",
@@ -354,12 +355,36 @@ class MeetingClone(BaseActionTestCase):
                 "organization_tag_ids": [1],
                 "start_time": datetime.fromtimestamp(1641370959, tz=ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1641370959, tz=ZoneInfo("UTC")),
+                "time_zone": "Europe/Vienna",
                 "name": "name_ORnVFSQJ",
                 "external_id": "external_id",
                 "template_for_organization_id": None,
             },
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
+
+    def test_clone_with_bad_time_zone(self) -> None:
+        self.set_test_data_with_admin()
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "welcome_title": "Modifizierte Name",
+                "description": "blablabla",
+                "start_time": 1641370959,
+                "end_time": 1641370959,
+                "time_zone": "Mars/Chryse_Planitia",
+                "location": "Testraum",
+                "organization_tag_ids": [1],
+                "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+            response.json["message"],
+        )
 
     def test_clone_with_differing_external_id(self) -> None:
         external_id = "external_id"
@@ -2358,3 +2383,63 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1101, "admin_ids": [1]})
         self.assert_status_code(response, 200)
+
+    def test_clone_with_non_empty_motion_comment(self) -> None:
+        self.set_test_data_with_admin()
+        self.create_motion(1)
+        self.set_models(
+            {
+                "motion_comment_section/2": {
+                    "name": "The fighting pits",
+                    "read_group_ids": [1, 2, 3],
+                    "write_group_ids": [1, 2, 3],
+                    "meeting_id": 1,
+                },
+                "motion_comment/21": {
+                    "comment": "U wanna go m8? HUH??? U wanna GO?",
+                    "motion_id": 1,
+                    "section_id": 2,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_clone_with_empty_motion_comment(self) -> None:
+        self.set_test_data_with_admin()
+        self.create_motion(1)
+        self.set_models(
+            {
+                "motion_comment_section/2": {
+                    "name": "The fighting pits",
+                    "read_group_ids": [1, 2, 3],
+                    "write_group_ids": [1, 2, 3],
+                    "meeting_id": 1,
+                },
+                "motion_comment/21": {
+                    "comment": "",
+                    "motion_id": 1,
+                    "section_id": 2,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_comment/22",
+            {"comment": "", "motion_id": 2, "section_id": 3, "meeting_id": 2},
+        )
