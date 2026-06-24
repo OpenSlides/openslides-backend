@@ -2443,3 +2443,55 @@ class MeetingClone(BaseActionTestCase):
             "motion_comment/22",
             {"comment": "", "motion_id": 2, "section_id": 3, "meeting_id": 2},
         )
+
+    def test_with_empty_votes(self) -> None:
+        self.set_test_data_with_admin()
+        self.create_motion(1)
+        self.set_models(
+            {
+                "poll/1": {
+                    "title": "a",
+                    "type": "pseudoanonymous",
+                    "backend": "fast",
+                    "pollmethod": "YNA",
+                    "state": "published",
+                    "onehundred_percent_base": "valid",
+                    "votesvalid": "1.000000",
+                    "votescast": "1.000000",
+                    "content_object_id": "motion/1",
+                    "entitled_group_ids": [3],
+                    "meeting_id": 1,
+                },
+                "option/2": {
+                    "weight": 0,
+                    "poll_id": 1,
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                },
+                "vote/3": {
+                    "weight": "0.000000",
+                    "value": "Y",
+                    "user_token": "ABC",
+                    "option_id": 2,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "vote/4",
+            {
+                "weight": Decimal("0.000000"),
+                "value": "Y",
+                "user_token": "ABC",
+                "option_id": 3,
+                "meeting_id": 2,
+            },
+        )
