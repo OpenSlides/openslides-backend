@@ -43,14 +43,18 @@ def main() -> int:
     ) as f:
         f.write(sql)
 
-    for dict_name in ["rename", "remove", "add", "edit"]:
-        if not any(diff_control[dict_name]):
-            del diff_control[dict_name]
+    for dict_name in diff:
+        remove_empty(diff_control, dict_name)
     # assert not diff, f"Diff control still contains:\n{diff}"
     if diff_control:
         print(f"Diff control still contains:\n{diff_control}")
         return 1
     return 0
+
+
+def remove_empty(dictionary: dict[str, tuple], key: str) -> None:
+    if not any(dictionary[key]):
+        del dictionary[key]
 
 
 def generate_constraints_sql(
@@ -130,8 +134,9 @@ def handle_add_tree(
             sql += (
                 f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
             )
-            if not any(dc_add_tree_dict[collection_name][1]["fields"][0][field_name]):
-                del dc_add_tree_dict[collection_name][1]["fields"][0][field_name]
+            remove_empty(
+                dc_add_tree_dict[collection_name][1]["fields"][0], field_name
+            )
         for field_name, field_def in collection_def[1]["fields"][1].items():
             diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][1][
                 field_name
@@ -142,12 +147,11 @@ def handle_add_tree(
             sql += (
                 f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
             )
-            if not any(dc_add_tree_dict[collection_name][1]["fields"][1][field_name]):
-                del dc_add_tree_dict[collection_name][1]["fields"][1][field_name]
-        if not any(dc_add_tree_dict[collection_name][1]["fields"]):
-            del dc_add_tree_dict[collection_name][1]["fields"]
-        if not any(dc_add_tree_dict[collection_name]):
-            del dc_add_tree_dict[collection_name]
+            remove_empty(
+                dc_add_tree_dict[collection_name][1]["fields"][1], field_name
+            )
+        remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+        remove_empty(dc_add_tree_dict, collection_name)
     return sql
 
 
@@ -171,12 +175,11 @@ def handle_edit_tree(
                 del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name][0][
                     constraint
                 ]
-            if not any(dc_edit_tree_dict[collection_name][1]["fields"][1][field_name]):
-                del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name]
-        if not any(dc_edit_tree_dict[collection_name][1]["fields"]):
-            del dc_edit_tree_dict[collection_name][1]["fields"]
-        if not any(dc_edit_tree_dict[collection_name]):
-            del dc_edit_tree_dict[collection_name]
+            remove_empty(
+                dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
+            )
+        remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
+        remove_empty(dc_edit_tree_dict, collection_name)
     return sql
 
 
