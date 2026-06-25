@@ -1697,6 +1697,10 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
 
     def test_clone_with_forwarded_motion(self) -> None:
+        """
+        Also checks if the clone code can handle falsy (bot not none)
+        values for vote.weight and motion_comment.comment
+        """
         self.set_test_data_with_admin()
         self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_models(
@@ -1707,6 +1711,44 @@ class MeetingClone(BaseActionTestCase):
                     "list_of_speakers_id": 1,
                     "title": "motion1",
                     "state_id": 1,
+                },
+                "motion_comment_section/2": {
+                    "name": "The fighting pits",
+                    "read_group_ids": [1, 2, 3],
+                    "write_group_ids": [1, 2, 3],
+                    "meeting_id": 1,
+                },
+                "motion_comment/21": {
+                    "comment": "",
+                    "motion_id": 1,
+                    "section_id": 2,
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "title": "a",
+                    "type": "pseudoanonymous",
+                    "backend": "fast",
+                    "pollmethod": "YNA",
+                    "state": "published",
+                    "onehundred_percent_base": "valid",
+                    "votesvalid": "1.000000",
+                    "votescast": "1.000000",
+                    "content_object_id": "motion/1",
+                    "entitled_group_ids": [3],
+                    "meeting_id": 1,
+                },
+                "option/2": {
+                    "weight": 0,
+                    "poll_id": 1,
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                },
+                "vote/3": {
+                    "weight": "0.000000",
+                    "value": "Y",
+                    "user_token": "ABC",
+                    "option_id": 2,
+                    "meeting_id": 1,
                 },
                 "motion/2": {
                     "meeting_id": 4,
@@ -1764,6 +1806,20 @@ class MeetingClone(BaseActionTestCase):
                 "derived_motion_ids": None,
             },
         )
+        self.assert_model_exists(
+            "motion_comment/22",
+            {"comment": "", "motion_id": 5, "section_id": 3, "meeting_id": 5},
+        )
+        self.assert_model_exists(
+            "vote/4",
+            {
+                "weight": Decimal("0.000000"),
+                "value": "Y",
+                "user_token": "ABC",
+                "option_id": 3,
+                "meeting_id": 5,
+            },
+        )
 
     def test_clone_with_underscore_attributes(self) -> None:
         self.set_test_data_with_admin()
@@ -1777,8 +1833,28 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_vote_delegation(self) -> None:
+        """
+        Also tests if properly constructed motion_comments work.
+        """
         self.set_test_data_with_admin()
         self.create_user("vote_receiver", [1])
+        self.create_motion(1)
+        self.set_models(
+            {
+                "motion_comment_section/2": {
+                    "name": "The fighting pits",
+                    "read_group_ids": [1, 2, 3],
+                    "write_group_ids": [1, 2, 3],
+                    "meeting_id": 1,
+                },
+                "motion_comment/21": {
+                    "comment": "U wanna go m8? HUH??? U wanna GO?",
+                    "motion_id": 1,
+                    "section_id": 2,
+                    "meeting_id": 1,
+                },
+            }
+        )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"user_ids": [1, 2]})
@@ -2383,115 +2459,3 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1101, "admin_ids": [1]})
         self.assert_status_code(response, 200)
-
-    def test_clone_with_non_empty_motion_comment(self) -> None:
-        self.set_test_data_with_admin()
-        self.create_motion(1)
-        self.set_models(
-            {
-                "motion_comment_section/2": {
-                    "name": "The fighting pits",
-                    "read_group_ids": [1, 2, 3],
-                    "write_group_ids": [1, 2, 3],
-                    "meeting_id": 1,
-                },
-                "motion_comment/21": {
-                    "comment": "U wanna go m8? HUH??? U wanna GO?",
-                    "motion_id": 1,
-                    "section_id": 2,
-                    "meeting_id": 1,
-                },
-            }
-        )
-        response = self.request(
-            "meeting.clone",
-            {
-                "meeting_id": 1,
-                "external_id": "external_id",
-            },
-        )
-        self.assert_status_code(response, 200)
-
-    def test_clone_with_empty_motion_comment(self) -> None:
-        self.set_test_data_with_admin()
-        self.create_motion(1)
-        self.set_models(
-            {
-                "motion_comment_section/2": {
-                    "name": "The fighting pits",
-                    "read_group_ids": [1, 2, 3],
-                    "write_group_ids": [1, 2, 3],
-                    "meeting_id": 1,
-                },
-                "motion_comment/21": {
-                    "comment": "",
-                    "motion_id": 1,
-                    "section_id": 2,
-                    "meeting_id": 1,
-                },
-            }
-        )
-        response = self.request(
-            "meeting.clone",
-            {
-                "meeting_id": 1,
-                "external_id": "external_id",
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion_comment/22",
-            {"comment": "", "motion_id": 2, "section_id": 3, "meeting_id": 2},
-        )
-
-    def test_with_empty_votes(self) -> None:
-        self.set_test_data_with_admin()
-        self.create_motion(1)
-        self.set_models(
-            {
-                "poll/1": {
-                    "title": "a",
-                    "type": "pseudoanonymous",
-                    "backend": "fast",
-                    "pollmethod": "YNA",
-                    "state": "published",
-                    "onehundred_percent_base": "valid",
-                    "votesvalid": "1.000000",
-                    "votescast": "1.000000",
-                    "content_object_id": "motion/1",
-                    "entitled_group_ids": [3],
-                    "meeting_id": 1,
-                },
-                "option/2": {
-                    "weight": 0,
-                    "poll_id": 1,
-                    "content_object_id": "motion/1",
-                    "meeting_id": 1,
-                },
-                "vote/3": {
-                    "weight": "0.000000",
-                    "value": "Y",
-                    "user_token": "ABC",
-                    "option_id": 2,
-                    "meeting_id": 1,
-                },
-            }
-        )
-        response = self.request(
-            "meeting.clone",
-            {
-                "meeting_id": 1,
-                "external_id": "external_id",
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "vote/4",
-            {
-                "weight": Decimal("0.000000"),
-                "value": "Y",
-                "user_token": "ABC",
-                "option_id": 3,
-                "meeting_id": 2,
-            },
-        )
