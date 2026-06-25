@@ -14,7 +14,6 @@ from meta.dev.src.helper_get_names import (
     build_models_yaml_content,
 )
 
-# TODO move this to migration module
 # renames can only happen in the leaves
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
@@ -56,62 +55,18 @@ def main() -> int:
         ) as f:
             f.write(json.dumps(diff, indent=4))
 
-    diff_control_part: dict[str, Any]
-    table_name: str
-    field_name: str
-    value: str
-
-    def generate_constraints_sql(field_def: dict[str, Any]) -> str:
-        constraints_sql = ""
-        for constraint, value in field_def.items():
-            """
-            TODO other constraints type etc
-            This is a full list of leaf types we have. Including _meta.
-            languages
-            ballot_paper_selection
-            poll_backends
-            onehundred_percent_bases
-            type
-            restriction_mode
-            constant
-            required
-            enum
-            description
-            default
-            minimum
-            read_only
-            reference
-            collections
-            field
-            equal_fields
-            to
-            on_delete
-            sequence_scope
-            unique_together
-            constant_legacy
-            unique
-            sql
-            log_triggers
-            unique_together_strict
-            maxLength
-            maximum
-            deferred
-            calculated
-            minLength
-            """
-            match constraint:
-                case "default":
-                    constraints_sql += Helper.get_inline_default_constraint(
-                        table_name, field_name, value
-                    )
-                    del diff_control_part["default"]
-                case "description":
-                    del diff_control_part["description"]
-                    # TODO this needs to be removed as this is only used for development example code
-                    constraints_sql += Helper.get_inline_default_constraint(
-                        table_name, field_name, value
-                    )
-        return constraints_sql
+    sql = ""
+    # TODO create generate diff content functions in schema generator.
+    add = diff["add"]
+    if isinstance(add, tuple) and isinstance(add[0], dict):
+        # TODO write table creation here
+        pass
+    if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
+        # This if is just for pleasing mypy
+        sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     with open(
         os.path.join(
@@ -122,68 +77,7 @@ def main() -> int:
         ),
         "w",
     ) as f:
-        # TODO create generate diff content functions in schema generator.
-        add = diff["add"]
-        if isinstance(add, tuple) and isinstance(add[0], dict):
-            # TODO write table creation here
-            pass
-        if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
-            dc_add_tree_dict = diff_control["add"][1]
-            # This if is just for pleasing mypy
-            for collection_name, collection_def in add_tree_dict.items():
-                table_name = HelperGetNames.get_table_name(collection_name)
-                for field_name, field_def in collection_def[1]["fields"][0].items():
-                    diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][
-                        0
-                    ][field_name]
-                    sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def)};\n"
-                    f.write(sql)
-                    if not any(
-                        dc_add_tree_dict[collection_name][1]["fields"][0][field_name]
-                    ):
-                        del dc_add_tree_dict[collection_name][1]["fields"][0][
-                            field_name
-                        ]
-                for field_name, field_def in collection_def[1]["fields"][1].items():
-                    diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][
-                        1
-                    ][field_name][0]
-                    sql = f"ALTER TABLE {table_name} ADD COLUMN {field_name}{generate_constraints_sql(field_def[0])};\n"
-                    f.write(sql)
-                    if not any(
-                        dc_add_tree_dict[collection_name][1]["fields"][1][field_name]
-                    ):
-                        del dc_add_tree_dict[collection_name][1]["fields"][1][
-                            field_name
-                        ]
-                if not any(dc_add_tree_dict[collection_name][1]["fields"]):
-                    del dc_add_tree_dict[collection_name][1]["fields"]
-                if not any(dc_add_tree_dict[collection_name]):
-                    del dc_add_tree_dict[collection_name]
-
-        edit = diff["edit"]
-        if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-            dc_edit_tree_dict = diff_control["edit"][1]
-            for collection_name, collection_def in edit_dict.items():
-                table_name = HelperGetNames.get_table_name(collection_name)
-                for field_name, field_def in collection_def[1]["fields"][1].items():
-                    for constraint, value in field_def[0].items():
-                        sql = f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP CONSTRAINT {HelperGetNames.get_default_constraint_name(table_name, field_name)};\n"
-                        sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{Helper.get_inline_default_constraint(table_name, field_name, value)};\n"
-                        del dc_edit_tree_dict[collection_name][1]["fields"][1][
-                            field_name
-                        ][0][constraint]
-                    f.write(sql)
-                    if not any(
-                        dc_edit_tree_dict[collection_name][1]["fields"][1][field_name]
-                    ):
-                        del dc_edit_tree_dict[collection_name][1]["fields"][1][
-                            field_name
-                        ]
-                if not any(dc_edit_tree_dict[collection_name][1]["fields"]):
-                    del dc_edit_tree_dict[collection_name][1]["fields"]
-                if not any(dc_edit_tree_dict[collection_name]):
-                    del dc_edit_tree_dict[collection_name]
+        f.write(sql)
 
     for dict_name in ["rename", "remove", "add", "edit"]:
         if not any(diff_control[dict_name]):
@@ -193,6 +87,133 @@ def main() -> int:
         print(f"Diff control still contains:\n{diff_control}")
         return 1
     return 0
+
+
+def generate_constraints_sql(
+    table_name: str,
+    field_name: str,
+    field_def: dict[str, Any],
+    diff_control_part: dict[str, Any],
+) -> str:
+    constraints_sql = ""
+    for constraint, value in field_def.items():
+        """
+        TODO other constraints type etc
+        This is a full list of leaf types we have. (Including _meta.)
+        Some of which aren't constraints but need to be implemented/considered elsewhere.
+
+        languages
+        ballot_paper_selection
+        poll_backends
+        onehundred_percent_bases
+        type
+        restriction_mode
+        constant
+        required
+        enum
+        description
+        default
+        minimum
+        read_only
+        reference
+        collections
+        field
+        equal_fields
+        to
+        on_delete
+        sequence_scope
+        unique_together
+        constant_legacy
+        unique
+        sql
+        log_triggers
+        unique_together_strict
+        maxLength
+        maximum
+        deferred
+        calculated
+        minLength
+        """
+        match constraint:
+            case "default":
+                constraints_sql += Helper.get_inline_default_constraint(
+                    table_name, field_name, value
+                )
+                del diff_control_part["default"]
+            case "description":
+                del diff_control_part["description"]
+                # TODO this needs to be removed as this is only used for development example code
+                constraints_sql += Helper.get_inline_default_constraint(
+                    table_name, field_name, value
+                )
+    return constraints_sql
+
+
+def handle_add_tree(
+    add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+) -> str:
+    sql = ""
+    for collection_name, collection_def in add_tree_dict.items():
+        table_name = HelperGetNames.get_table_name(collection_name)
+        for field_name, field_def in collection_def[1]["fields"][0].items():
+            diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][0][
+                field_name
+            ]
+            constraints_sql = generate_constraints_sql(
+                table_name, field_name, field_def, diff_control_part
+            )
+            sql += (
+                f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+            )
+            if not any(dc_add_tree_dict[collection_name][1]["fields"][0][field_name]):
+                del dc_add_tree_dict[collection_name][1]["fields"][0][field_name]
+        for field_name, field_def in collection_def[1]["fields"][1].items():
+            diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][1][
+                field_name
+            ][0]
+            constraints_sql = generate_constraints_sql(
+                table_name, field_name, field_def[0], diff_control_part
+            )
+            sql += (
+                f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+            )
+            if not any(dc_add_tree_dict[collection_name][1]["fields"][1][field_name]):
+                del dc_add_tree_dict[collection_name][1]["fields"][1][field_name]
+        if not any(dc_add_tree_dict[collection_name][1]["fields"]):
+            del dc_add_tree_dict[collection_name][1]["fields"]
+        if not any(dc_add_tree_dict[collection_name]):
+            del dc_add_tree_dict[collection_name]
+    return sql
+
+
+def handle_edit_tree(
+    edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+) -> str:
+    sql = ""
+    for collection_name, collection_def in edit_tree_dict.items():
+        table_name = HelperGetNames.get_table_name(collection_name)
+        for field_name, field_def in collection_def[1]["fields"][1].items():
+            for constraint, value in field_def[0].items():
+                constraint_name = HelperGetNames.get_default_constraint_name(
+                    table_name, field_name
+                )
+                default_constraint = Helper.get_inline_default_constraint(
+                    table_name, field_name, value
+                )
+                sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP CONSTRAINT {constraint_name};\n"
+                sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{default_constraint};\n"
+                del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name][0][
+                    constraint
+                ]
+            if not any(dc_edit_tree_dict[collection_name][1]["fields"][1][field_name]):
+                del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name]
+        if not any(dc_edit_tree_dict[collection_name][1]["fields"]):
+            del dc_edit_tree_dict[collection_name][1]["fields"]
+        if not any(dc_edit_tree_dict[collection_name]):
+            del dc_edit_tree_dict[collection_name]
+    return sql
 
 
 def validate_renames(
