@@ -169,7 +169,7 @@ generate-schema:
 	make -C meta/dev generate-schema
 
 generate-migration-diff:
-	python openslides_backend/migrations/yaml_diff_generator.py $(ARGS)
+	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)
 
 generate-db: | generate-schema recreate-database
 
