@@ -32,6 +32,7 @@ updatable_fields = [
     "organization_tag_ids",
     "name",
     "external_id",
+    "time_zone",
 ]
 
 
