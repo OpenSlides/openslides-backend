@@ -8,11 +8,12 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .password_mixins import ClearSessionsMixin
+from ...mixins.keycloak_mixin import KeycloakMixin
 
 
 @register_action("user.set_password_self")
 class UserSetPasswordSelf(
-    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin, KeycloakMixin
 ):
     """
     Action to update the own password.
@@ -23,6 +24,7 @@ class UserSetPasswordSelf(
         additional_required_fields={
             "old_password": {"type": "string", "minLength": 1},
             "new_password": {"type": "string", "minLength": 1},
+            "keycloak_id": {"type": "string", "minLength": 1},
         }
     )
 
@@ -43,6 +45,9 @@ class UserSetPasswordSelf(
             raise ActionException("Wrong password")
 
         instance["password"] = self.auth.hash(new_pw)
+
+        self.update_password(instance, instance["password"])
+
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

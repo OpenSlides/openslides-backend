@@ -145,14 +145,6 @@ The action component listens to port 9002. The presenter component listens to po
   `DATABASE_NAME`
   Name of database. Default: `openslides`
 
-* `AUTH_HOST`
-
-  Host of auth service. Used by the `osauthlib` package. Default: `localhost`
-
-* `AUTH_PORT`
-
-  Port of auth service. Used by the `osauthlib` package. Default: `9004`
-
 
 # Some curl examples
 

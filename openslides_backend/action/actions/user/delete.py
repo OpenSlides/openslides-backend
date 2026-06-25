@@ -8,6 +8,7 @@ from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator, Or
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
+from ...mixins.keycloak_mixin import KeycloakMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -15,7 +16,12 @@ from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
+class UserDelete(
+    UserScopeMixin,
+    DeleteAction,
+    AdminIntegrityCheckMixin,
+    KeycloakMixin,
+):
     """
     Action to delete a user.
     """
@@ -28,6 +34,10 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance["id"] == self.user_id:
             raise ActionException("You cannot delete yourself.")
+
+        # Delete keycloak account
+        self.delete_user(instance)
+
         return super().update_instance(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

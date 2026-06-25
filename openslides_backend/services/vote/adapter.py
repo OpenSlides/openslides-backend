@@ -35,7 +35,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
             return response.json()
 
     def make_request(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
-        if not self.access_token or not self.refresh_id:
+        if not self.access_token:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
@@ -45,8 +45,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
                 headers={
                     "Content-Type": "application/json",
                     **self.get_auth_header(),
-                },
-                cookies=self.get_auth_cookie(),
+                }
             )
         except requests.exceptions.ConnectionError as e:
             self.logger.error(

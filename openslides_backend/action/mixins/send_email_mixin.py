@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
+from .keycloak_mixin import KeycloakMixin
 from typing import Any
 
 from openslides_backend.shared.interfaces.logging import Logger
@@ -183,7 +184,7 @@ class EmailUtils:
         return False, {}
 
 
-class EmailCheckMixin(Action):
+class EmailCheckMixin(KeycloakMixin):
     check_email_field: str
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -191,6 +192,9 @@ class EmailCheckMixin(Action):
             instance[self.check_email_field] = instance[self.check_email_field].strip()
             if not EmailUtils.check_email(instance[self.check_email_field]):
                 raise ActionException(f"{self.check_email_field} must be valid email.")
+
+            self.update_email(instance, instance.get(self.check_email_field))
+
         return super().update_instance(instance)
 
 
