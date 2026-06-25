@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, cast
 
@@ -130,7 +130,7 @@ class MeetingClone(MeetingImport):
         # Set proper types for TimestampFields
         for field_name in ["start_time", "end_time"]:
             if (value := instance.get(field_name)) and isinstance(value, int):
-                instance[field_name] = datetime.fromtimestamp(value)
+                instance[field_name] = datetime.fromtimestamp(value, tz=timezone.utc)
 
         meeting.pop("external_id", "")
         for field in updatable_fields:
