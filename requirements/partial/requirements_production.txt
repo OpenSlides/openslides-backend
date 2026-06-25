@@ -19,10 +19,10 @@ pyyaml==6.0.3
 sqlfluff==4.2.1
 
 # opentelemetry
-opentelemetry-api==1.42.1
-opentelemetry-exporter-otlp==1.42.1
-opentelemetry-instrumentation-flask==0.63b1
-opentelemetry-instrumentation-redis==0.63b1
-opentelemetry-instrumentation-requests==0.63b1
-opentelemetry-sdk==1.42.1
-opentelemetry-semantic-conventions==0.63b1
+opentelemetry-api==1.43.0
+opentelemetry-exporter-otlp==1.43.0
+opentelemetry-instrumentation-flask==0.64b0
+opentelemetry-instrumentation-redis==0.64b0
+opentelemetry-instrumentation-requests==0.64b0
+opentelemetry-sdk==1.43.0
+opentelemetry-semantic-conventions==0.64b0
