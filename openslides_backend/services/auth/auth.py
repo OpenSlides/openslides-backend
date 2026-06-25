@@ -62,7 +62,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         if not payload or not payload.sub or not payload.os_id:
             return (0, "")
 
-        return (int(payload.os_id), payload.sub)
+        return (int(payload.os_id), header_value)
 
     def _extract_payload(self, token_string: str) -> KeycloakPayload:
         try:
@@ -139,20 +139,6 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == self.ANONYMOUS_USER
-
-    def create_authorization_token(self, user_id: int, email: str) -> str:
-        try:
-            response = self.auth_handler.create_authorization_token(user_id, email)
-        except AuthenticateException as e:
-            raise AuthenticationException(e.message)
-        return response.headers.get("Authorization", "")
-
-    def verify_authorization_token(self, user_id: int, token: str) -> bool:
-        try:
-            found_user_id, _ = self.auth_handler.verify_authorization_token(token)
-        except (AuthenticateException, AuthorizationException) as e:
-            raise AuthenticationException(e.message)
-        return user_id == found_user_id
 
     def clear_all_sessions(self) -> None:
         self.auth_handler.clear_all_sessions(

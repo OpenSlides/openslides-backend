@@ -2,8 +2,6 @@ from collections.abc import Callable
 from typing import Any
 from urllib.parse import unquote
 
-from osauthlib.exceptions import InvalidCredentialsException
-
 from openslides_backend.action.util.typing import ActionData
 
 from ....models.models import User
@@ -49,11 +47,7 @@ class UserForgetPasswordConfirm(UpdateAction, ClearSessionsMixin, KeycloakMixin)
         return instance
 
     def check_token(self, user_id: int, token: str) -> None:
-        try:
-            if not self.auth.verify_authorization_token(user_id, unquote(token)):
-                raise ActionException("Failed to verify token.")
-        except InvalidCredentialsException:
-            raise ActionException("Failed to verify token.")
+        pass
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         pass

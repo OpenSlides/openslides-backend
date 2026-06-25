@@ -2,7 +2,6 @@ from collections.abc import Callable
 from typing import Any, TypedDict, cast
 
 import simplejson as json
-from osauthlib import AuthenticateException
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
@@ -59,8 +58,6 @@ class Client(WerkzeugClient):
                     payload=json.dumps({"username": username, "password": password}),
                     headers={"Content-Type": "application/json"},
                 )
-            except AuthenticateException as e:
-                raise AuthenticationException(str(e))
             except Exception as e:
                 raise AuthenticationException(str(e))
             if response.status_code == 500 and retries < 10:

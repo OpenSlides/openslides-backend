@@ -21,7 +21,6 @@ services:
             - ../requirements:/app/requirements
             - ../scripts:/app/scripts
         environment:
-            - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
             - DATABASE_HOST=postgres
@@ -60,7 +59,6 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
             - MESSAGING=redis
-            - AUTH_HOST=auth
             - DATABASE_HOST=postgres
             - VOTE_DATABASE_HOST=postgres
             - MESSAGE_BUS_HOST=redis

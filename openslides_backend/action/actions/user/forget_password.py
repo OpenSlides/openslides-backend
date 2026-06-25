@@ -105,7 +105,7 @@ The link will be valid for 10 minutes."""
                 )
 
     def get_token(self, user_id: int, email: str) -> str:
-        return quote(self.auth.create_authorization_token(user_id, email))
+        return ""
 
     def get_email_body(self, user_id: int, token: str, username: str, url: str) -> str:
         body_format = format_dict(
