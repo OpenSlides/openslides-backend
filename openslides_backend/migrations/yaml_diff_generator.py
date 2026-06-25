@@ -125,6 +125,7 @@ def main() -> int:
         # TODO create generate diff content functions in schema generator.
         add = diff["add"]
         if isinstance(add, tuple) and isinstance(add[0], dict):
+            # TODO write table creation here
             pass
         if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
             dc_add_tree_dict = diff_control["add"][1]
@@ -290,16 +291,15 @@ def create_edit_recursive(
         if key in list(renames_dict.values()):
             print(key + " renamed -> skip for edit")
             continue
-        if key not in prev_models:
-            pass
-        elif not isinstance(curr_value, dict) and curr_value != prev_models[key]:
-            edited_entries[key] = curr_models[key]
-        elif isinstance(curr_value, dict):
-            result = create_edit_recursive(
-                prev_models[key], curr_value, renames_dict.get(key, {})
-            )
-            if result is not None:
-                tree[key] = result
+        if key in prev_models:
+            if not isinstance(curr_value, dict) and curr_value != prev_models[key]:
+                edited_entries[key] = curr_models[key]
+            elif isinstance(curr_value, dict):
+                result = create_edit_recursive(
+                    prev_models[key], curr_value, renames_dict.get(key, {})
+                )
+                if result is not None:
+                    tree[key] = result
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
