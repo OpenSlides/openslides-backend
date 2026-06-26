@@ -134,9 +134,7 @@ def handle_add_tree(
             sql += (
                 f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
             )
-            remove_empty(
-                dc_add_tree_dict[collection_name][1]["fields"][0], field_name
-            )
+            remove_empty(dc_add_tree_dict[collection_name][1]["fields"][0], field_name)
         for field_name, field_def in collection_def[1]["fields"][1].items():
             diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][1][
                 field_name
@@ -147,9 +145,7 @@ def handle_add_tree(
             sql += (
                 f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
             )
-            remove_empty(
-                dc_add_tree_dict[collection_name][1]["fields"][1], field_name
-            )
+            remove_empty(dc_add_tree_dict[collection_name][1]["fields"][1], field_name)
         remove_empty(dc_add_tree_dict[collection_name][1], "fields")
         remove_empty(dc_add_tree_dict, collection_name)
     return sql
@@ -175,9 +171,7 @@ def handle_edit_tree(
                 del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name][0][
                     constraint
                 ]
-            remove_empty(
-                dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
-            )
+            remove_empty(dc_edit_tree_dict[collection_name][1]["fields"][1], field_name)
         remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
         remove_empty(dc_edit_tree_dict, collection_name)
     return sql
