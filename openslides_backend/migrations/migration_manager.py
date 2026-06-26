@@ -136,12 +136,19 @@ class MigrationManager:
                     mi
                 ).items()
             }
+            all_tables = {
+                row["table_name"]
+                for row in self.cursor.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
+                ).fetchall()
+            }
             stats = {
                 collection: {
                     "count": amount,
                     "migrated": count(migration_table, self.cursor),
                 }
                 for collection, migration_table in unmigrated_collections.items()
+                if collection in all_tables
                 if (amount := count(collection + "_t", self.cursor))
             }
 
@@ -177,6 +184,9 @@ class MigrationManager:
         """
         if not (command := payload.get("cmd")):
             raise View400Exception("No command provided")
+        elif command not in iter(MigrationCommand):
+            raise View400Exception("Unknown command: " + command)
+
         self.logger.info(f"Migration command: {command}")
         with get_new_os_conn() as conn:
             conn.transaction()
@@ -191,12 +201,7 @@ class MigrationManager:
                 match MigrationHelper.get_migration_state(curs):
                     case MigrationState.MIGRATION_RUNNING:
                         process = "Migration"
-                    case MigrationState.FINALIZATION_RUNNING:
-                        process = "Finalization"
-                    case (
-                        MigrationState.MIGRATION_FAILED
-                        | MigrationState.FINALIZATION_FAILED
-                    ):
+                    case MigrationState.MIGRATION_FAILED:
                         raise MigrationException(
                             f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
                         )
@@ -208,29 +213,26 @@ class MigrationManager:
                     )
 
                 verbose = payload.get("verbose", False)
-                if command in iter(MigrationCommand):
-                    MigrationHelper.migrate_thread_stream = StringIO()
-                    MigrationHelper.migrate_thread_stream_read_pos = (
-                        MigrationHelper.migrate_thread_stream.tell()
-                    )
-                    MigrationHelper.migrate_thread = thread = Thread(
-                        target=self.execute_migrate_command, args=[command, verbose]
-                    )
-                    thread.start()
-                    thread.join(THREAD_WAIT_TIME)
-                    if thread.is_alive():
-                        # Read isolation would prevent seeing the newest status otherwise.
-                        self.cursor.connection.commit()
-                        # Migration still running. Report current progress and return
-                        return {
-                            "status": MigrationHelper.get_migration_state(self.cursor),
-                            "output": MigrationHelper.read_stream(),
-                        }
-                    else:
-                        # Migration already finished/had nothing to do
-                        return self.get_migration_result()
+                MigrationHelper.migrate_thread_stream = StringIO()
+                MigrationHelper.migrate_thread_stream_read_pos = (
+                    MigrationHelper.migrate_thread_stream.tell()
+                )
+                MigrationHelper.migrate_thread = thread = Thread(
+                    target=self.execute_migrate_command, args=[command, verbose]
+                )
+                thread.start()
+                thread.join(THREAD_WAIT_TIME)
+                if thread.is_alive():
+                    # Read isolation would prevent seeing the newest migration state otherwise.
+                    curs.connection.commit()
+                    # Migration still running. Report current progress and return
+                    return {
+                        "status": MigrationHelper.get_migration_state(curs),
+                        "output": MigrationHelper.read_stream(),
+                    }
                 else:
-                    raise View400Exception("Unknown command: " + command)
+                    # Migration already finished/had nothing to do
+                    return self.get_migration_result()
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         """

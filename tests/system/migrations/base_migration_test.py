@@ -1,10 +1,80 @@
-from unittest import TestCase
+import os
+import re
+from datetime import datetime
+from decimal import Decimal
+from json import dumps as json_dumps
+from typing import Any
+from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
+from psycopg import Cursor
+from psycopg.rows import DictRow
+
+from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
-from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_helper import (
+    MIGRATIONS_PATH,
+    MIN_NON_REL_MIGRATION,
+    MigrationHelper,
+)
+from openslides_backend.migrations.migration_manager import MigrationManager
+from openslides_backend.models.fields import (
+    DecimalField,
+    Field,
+    JSONField,
+    TimestampField,
+)
+from openslides_backend.services.postgresql.create_schema import create_schema
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
+from tests.conftest import get_rel_db_table_names
+from tests.conftest_helper import (
+    deactivate_notify_triggers,
+    generate_sql_for_test_initiation,
+)
+from tests.system.base import BaseSystemTestCase
+from tests.system.util import get_route_path
+
+DEPR_SQL_PATH = os.path.realpath(
+    os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
+)
+MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 
 
-class BaseMigrationTestCase(TestCase):
+class BaseMigrationTestCase(BaseSystemTestCase):
+    # has to be set by subclass
+    migration_file: str
+
+    def setUp(self) -> None:
+        """
+        Does not call super class to prevent usage of client and so forth.
+        """
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
+        self.used_collections: set[str] = set()
+        self.created_fqids: set[str] = set()
+        self.deleted_fqids: set[str] = set()
+
+        self.apply_test_relational_schema()
+
+        # Migrate to state before tested migration.
+        migration_number = int(self.migration_file[:4])
+        filenames = [
+            f
+            for f in os.listdir(MIGRATIONS_PATH)
+            if re.match("\\d+", f[:4]) and int(f[:4]) < migration_number
+        ]
+        with patch("os.listdir", return_value=filenames):
+            self.migrate_previous()
+            with self.connection.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
+
+        # Only migrate tested migration in following test.
+        patcher = patch("os.listdir", return_value=[self.migration_file])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def tearDown(self) -> None:
         MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
@@ -13,6 +83,83 @@ class BaseMigrationTestCase(TestCase):
             MigrationHandler.close_migrate_thread_stream()
         super().tearDown()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.apply_fresh_relational_schema()
+        super().tearDownClass()
+
+    @staticmethod
+    def apply_test_relational_schema() -> None:
+        """
+        Creates old idempotent key-value-store schema and relational schema on top.
+        Also deactivates notify triggers.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("DROP SCHEMA public CASCADE;")
+                curs.execute("CREATE SCHEMA public;")
+                curs.execute(open(DEPR_SQL_PATH).read())
+
+                # Write migration index like legacy migrations expected to apply initial schema correctly.
+                curs.execute(
+                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2026-06-04', 1, {MIN_NON_REL_MIGRATION + 1})"
+                )
+        create_schema()
+
+    @staticmethod
+    def apply_fresh_relational_schema() -> None:
+        """
+        Creates fresh relational schema and deactivates notify triggers.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("DROP SCHEMA public CASCADE;")
+                curs.execute("CREATE SCHEMA public;")
+        # Uses current schema because schema is fresh.
+        create_schema()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                table_names = get_rel_db_table_names(curs)
+                curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
+                # TODO test without
+                deactivate_notify_triggers(curs)
+
+    def migrate_previous(self) -> dict[str, Any]:
+        """
+        Executes the `migrate` command using a MigrationManager.
+        Waits for thread execution.
+        """
+        manager = MigrationManager(Mock(), Mock(), Mock())
+        result = manager.handle_request({"cmd": "migrate", "verbose": True})
+        self.wait_for_migration_thread(15)
+        # mimik reset or similar mechanism
+        MigrationHelper.migrate_thread_stream.close()
+        MigrationHelper.migrate_thread_stream = None
+        MigrationHelper.migrate_thread_stream_can_be_closed = False
+        MigrationHelper.migrate_thread_exception = None
+
+        return result
+
+    def assert_content_not_none(
+        self,
+        cur: Cursor[DictRow],
+        query: str,
+        value: dict[str, Any] | None = None,
+        error_message: str = "",
+    ) -> None:
+        """
+        Checks whether the first element of the result for `query` matches `value`.
+        `value` should be None if the expected result is just not None.
+        Because of this behavior, it can't be compared to an expected result of None.
+        """
+        result = cur.execute(query).fetchone()
+        if error_message:
+            assert result, error_message
+        else:
+            assert result, f"Database did not contain a result for this query.\n{query}"
+        if value is not None:
+            assert result == value
+
     def wait_for_migration_thread(self, for_seconds: int) -> None:
         """
         Waits for the thread to terminate and asserts the thread is not alive.
@@ -20,3 +167,29 @@ class BaseMigrationTestCase(TestCase):
         assert MigrationHelper.migrate_thread
         MigrationHelper.migrate_thread.join(for_seconds)
         assert not MigrationHelper.migrate_thread.is_alive()
+
+    @staticmethod
+    def transform_data(data: Any, field: Field | None = None) -> Any:
+        """
+        Purpose:
+            Casts data so it is psycopg friendly in case it is not parsable by psycopg.
+            Known and implemented cases:
+                - Decimals
+                - json (mostly Dictionaries)
+                - Timestamps
+        Input:
+            - data: python formatted data
+        Returns:
+            - data: psycopg friendly data
+        """
+        if isinstance(field, DecimalField):
+            data = Decimal(data)
+        elif isinstance(field, TimestampField):
+            data = datetime.fromtimestamp(data, ZoneInfo("UTC"))
+        elif isinstance(field, JSONField):
+            data = json_dumps(data)
+
+        return data
+
+    def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
+        """Overwrite for disabling checks as it conflicts with changing model_registry."""
