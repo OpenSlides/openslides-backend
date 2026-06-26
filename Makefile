@@ -37,9 +37,10 @@ test-file:
 # f= to pass the file name
 # k= to pass a test name
 # v=1 to run verbose test output
+# now=1 no wait for execution for attach. In other words: execute now.
 # cap=1 to capture print to system out
 # cov=1 to run coverage report
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
+	python -m debugpy --listen 0.0.0.0:5678 $(if $(now),,--wait-for-client) /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 

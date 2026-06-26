@@ -124,28 +124,26 @@ def handle_add_tree(
     sql = ""
     for collection_name, collection_def in add_tree_dict.items():
         table_name = HelperGetNames.get_table_name(collection_name)
-        for field_name, field_def in collection_def[1]["fields"][0].items():
-            diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][0][
-                field_name
-            ]
-            constraints_sql = generate_constraints_sql(
-                table_name, field_name, field_def, diff_control_part
-            )
-            sql += (
-                f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
-            )
-            remove_empty(dc_add_tree_dict[collection_name][1]["fields"][0], field_name)
-        for field_name, field_def in collection_def[1]["fields"][1].items():
-            diff_control_part = dc_add_tree_dict[collection_name][1]["fields"][1][
-                field_name
-            ][0]
-            constraints_sql = generate_constraints_sql(
-                table_name, field_name, field_def[0], diff_control_part
-            )
-            sql += (
-                f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
-            )
-            remove_empty(dc_add_tree_dict[collection_name][1]["fields"][1], field_name)
+        for fields_idx in [0, 1]:
+            fields = collection_def[1]["fields"][fields_idx]
+            dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
+            for field_name, field_def in fields.items():
+                if fields_idx == 0:
+                    # field added
+                    constraints_sql = generate_constraints_sql(
+                        table_name, field_name, field_def, dc_fields[field_name]
+                    )
+                else:
+                    # field altered
+                    # TODO This needs ALTER COLUMN instead
+                    constraints_sql = generate_constraints_sql(
+                        table_name, field_name, field_def[0], dc_fields[field_name][0]
+                    )
+                sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+                remove_empty(
+                    dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
+                    field_name,
+                )
         remove_empty(dc_add_tree_dict[collection_name][1], "fields")
         remove_empty(dc_add_tree_dict, collection_name)
     return sql
