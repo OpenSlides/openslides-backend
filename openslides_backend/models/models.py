@@ -538,9 +538,10 @@ class HistoryEntry(Model):
     original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={
-            "user": "history_entry_ids",
-            "motion": "history_entry_ids",
             "assignment": "history_entry_ids",
+            "motion": "history_entry_ids",
+            "poll": "history_entry_ids",
+            "user": "history_entry_ids",
         }
     )
     position_id = fields.RelationField(
@@ -2407,6 +2408,9 @@ class Poll(Model, PollModelMixin):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "poll_ids"}, required=True, constant=True
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
     )
 
 

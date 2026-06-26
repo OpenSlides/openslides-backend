@@ -180,6 +180,7 @@ def test_types_str_list(db_connection: Connection) -> None:
             "model_id": "user/1",
             "model_id_assignment_id": None,
             "model_id_motion_id": None,
+            "model_id_poll_id": None,
             "model_id_user_id": 1,
             "original_model_id": None,
             "position_id": 1,

@@ -1,3 +1,4 @@
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -58,6 +59,45 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assertEqual(
             response.json["message"], "You cannot delete a group with users."
         )
+
+    def base_test_delete_with_poll(self, poll_state: str, fail: bool) -> None:
+        self.create_motion(22, 30)
+        self.set_models(
+            {
+                "poll/71": {
+                    "meeting_id": 22,
+                    "title": "Poll 71",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "config_id": "poll_config_approval/34",
+                    "state": poll_state,
+                    "content_object_id": "motion/30",
+                },
+                "poll_config_approval/34": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "group/24": {"poll_ids": [71]},
+            }
+        )
+        response = self.request("group.delete", {"id": 24})
+
+        if fail:
+            self.assert_status_code(response, 400)
+            self.assertEqual(
+                response.json["message"],
+                "You cannot delete a group with a running poll.",
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_not_exists("group/24")
+
+    def test_delete_with_poll_created(self) -> None:
+        self.base_test_delete_with_poll(Poll.STATE_CREATED, False)
+
+    def test_delete_with_poll_started(self) -> None:
+        self.base_test_delete_with_poll(Poll.STATE_STARTED, True)
+
+    def test_delete_with_poll_finished(self) -> None:
+        self.base_test_delete_with_poll(Poll.STATE_FINISHED, False)
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
