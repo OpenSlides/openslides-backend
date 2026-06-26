@@ -349,17 +349,17 @@ class MigrationHelper:
         return getattr(import_module(f"{MODULE_PATH}{module_name}"), "Migration")
 
     @staticmethod
-    def get_public_tables(curs: Cursor[DictRow]) -> list[str]:
+    def get_public_tables(curs: Cursor[DictRow]) -> set[str]:
         """Returns all tables of the schema 'public' except for version and notify table"""
         curs.execute(
             "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
         ).fetchone()
-        return [
+        return {
             name
             for row in curs.fetchall()
             if (name := row["tablename"])
             not in ("version", "os_notify_log_t", "truncate_tables")
-        ]
+        }
 
     @staticmethod
     def get_replace_tables(

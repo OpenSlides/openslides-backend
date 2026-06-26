@@ -10,11 +10,7 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
-from openslides_backend.migrations.migration_helper import (
-    OLD_TABLES,
-    MigrationHelper,
-    MigrationState,
-)
+from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
 from openslides_backend.migrations.migrations.base import BaseMigration
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
@@ -375,13 +371,6 @@ class Migration(BaseMigration):
         for command, values in insert_intermediate_t_commands:
             curs.execute(command, values)
 
-        # clear replace tables as this migration writes the tables directly
-        MigrationHelper.set_database_migration_info(
-            curs,
-            100,
-            MigrationState.FINALIZATION_REQUIRED,
-        )
-
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:
         """
@@ -397,7 +386,6 @@ class Migration(BaseMigration):
             i_read_code = None
         if i_read_code is not None:
             if is_truthy(i_read_code):
-                print("(┛◉Д◉)┛彡┻━┻")
                 MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
 
         for table_name in OLD_TABLES:

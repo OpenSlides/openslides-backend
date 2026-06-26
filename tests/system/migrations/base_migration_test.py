@@ -58,17 +58,7 @@ class BaseMigrationTestCase(BaseSystemTestCase):
 
         self.apply_test_relational_schema()
 
-        # Migrate to state before tested migration.
-        migration_number = int(self.migration_file[:4])
-        filenames = [
-            f
-            for f in os.listdir(MIGRATIONS_PATH)
-            if re.match("\\d+", f[:4]) and int(f[:4]) < migration_number
-        ]
-        with patch("os.listdir", return_value=filenames):
-            self.migrate_previous()
-            with self.connection.cursor() as curs:
-                MigrationHelper.assert_migration_index(curs)
+        self.migrate_previous()
 
         # Only migrate tested migration in following test.
         patcher = patch("os.listdir", return_value=[self.migration_file])
@@ -129,11 +119,25 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         Executes the `migrate` command using a MigrationManager.
         Waits for thread execution.
         """
-        manager = MigrationManager(Mock(), Mock(), Mock())
-        result = manager.handle_request({"cmd": "migrate", "verbose": True})
-        self.wait_for_migration_thread(15)
+        # Migrate to state before tested migration.
+        migration_number = int(self.migration_file[:4])
+        if filenames := [
+            f
+            for f in os.listdir(MIGRATIONS_PATH)
+            if re.match("\\d+", f[:4]) and int(f[:4]) < migration_number
+        ]:
+            with patch("os.listdir", return_value=filenames):
+                manager = MigrationManager(Mock(), Mock(), Mock())
+                result = manager.handle_request({"cmd": "migrate", "verbose": True})
+                self.wait_for_migration_thread(15)
+                with self.connection.cursor() as curs:
+                    MigrationHelper.assert_migration_index(curs)
+        else:
+            return {}
+
         # mimik reset or similar mechanism
-        MigrationHelper.migrate_thread_stream.close()
+        if MigrationHelper.migrate_thread_stream:
+            MigrationHelper.migrate_thread_stream.close()
         MigrationHelper.migrate_thread_stream = None
         MigrationHelper.migrate_thread_stream_can_be_closed = False
         MigrationHelper.migrate_thread_exception = None
@@ -191,5 +195,5 @@ class BaseMigrationTestCase(BaseSystemTestCase):
 
         return data
 
-    def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
-        """Overwrite for disabling checks as it conflicts with changing model_registry."""
+    # def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
+    #     """This is just an overwrite for disabling checks as it conflicts with changing model_registry."""

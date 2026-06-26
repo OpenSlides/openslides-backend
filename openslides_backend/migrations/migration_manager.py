@@ -93,30 +93,26 @@ class MigrationManager:
         migratable_models: Rough amounts per collection to be migrated.
             Doesn't respect initial migration if executed on a higher target migration index.
         """
+        current_migration_index = MigrationHelper.get_database_migration_index(
+            self.cursor
+        )
+        if current_migration_index >= 100:
+            all_tables = MigrationHelper.get_public_tables(self.cursor)
+        else:
+            all_tables = set()
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
-                if table.endswith("_m"):
-                    # initial migration uses the original table_t instead of migration table_m
-                    # to count migrated models.
-                    statement_part = sql.SQL("{table}").format(
-                        table=sql.Identifier(table[:-2] + "_t")
-                    )
-                else:
-                    # initial migration uses the models instead of table_t to count models
-                    statement_part = sql.SQL(
-                        "models WHERE fqid LIKE '{collection}/%' and deleted = false"
-                    ).format(collection=sql.SQL(table[:-2]))
-            else:
-                statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
+                # initial migration uses the models instead of table_t to count models
+                statement_part = sql.SQL(
+                    "models WHERE fqid LIKE '{collection}/%' and deleted = false"
+                ).format(collection=sql.SQL(table[:-2]))
+            elif table not in all_tables:
+                return 0
             response = self.cursor.execute(
                 sql.SQL("SELECT COUNT(*) FROM ") + statement_part
             ).fetchone()
             return (response or {}).get("count", 0)
-
-        current_migration_index = MigrationHelper.get_database_migration_index(
-            self.cursor
-        )
 
         if not MigrationHelper.migrate_thread_exception:
             migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
@@ -136,22 +132,14 @@ class MigrationManager:
                     mi
                 ).items()
             }
-            all_tables = {
-                row["table_name"]
-                for row in self.cursor.execute(
-                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
-                ).fetchall()
-            }
             stats = {
-                collection: {
-                    "count": amount,
-                    "migrated": count(migration_table, self.cursor),
-                }
+                collection: amount
                 for collection, migration_table in unmigrated_collections.items()
-                if collection in all_tables
                 if (amount := count(collection + "_t", self.cursor))
             }
 
+        if exc := MigrationHelper.migrate_thread_exception:
+            module_name = getattr(exc, "__module__", "")
         return {
             # stats returns all output without disturbing concurrent progress calls
             # -> all=True
@@ -159,8 +147,10 @@ class MigrationManager:
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             **(
-                {"exception": str(MigrationHelper.migrate_thread_exception)}
-                if MigrationHelper.migrate_thread_exception
+                {
+                    "exception": f"{module_name}{'.' if module_name else ''}{type(exc).__qualname__}: {exc}"
+                }
+                if exc
                 else {"migratable_models": stats}
             ),
         }
