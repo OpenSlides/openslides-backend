@@ -158,7 +158,7 @@ class MotionSupporterMergeMixin(BaseMergeMixin):
             if fqid not in information:
                 information[fqid] = ["Supporters merged"]
             else:
-                information[fqid].append("Supporters merged")
+                information[fqid].append("Supporters merged")  #
         return information
 
 

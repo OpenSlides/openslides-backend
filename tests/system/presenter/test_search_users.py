@@ -546,3 +546,8 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 400)
         assert data["message"] == "Oooh! He said it again! Oooh!..."
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("search_users")
+        assert status_code == 400
+        assert "No data given." == data["message"]

@@ -118,6 +118,47 @@ class ProjectorToggle(BaseActionTestCase):
             },
         )
 
+    def test_content_object_id_not_in_meeting_1(self) -> None:
+        self.create_meeting(4)
+        self.create_motion(4, 30)
+        response = self.request(
+            "projector.toggle",
+            {
+                "ids": [1],
+                "content_object_id": "motion/30",
+                "meeting_id": 1,
+                "stable": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "The following models do not belong to meeting 1: ['motion/30']",
+            response.json["message"],
+        )
+        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("motion/30", {"projection_ids": None})
+        self.assert_model_not_exists("projection/1")
+
+    def test_content_object_id_not_in_meeting_2(self) -> None:
+        self.create_meeting(4)
+        response = self.request(
+            "projector.toggle",
+            {
+                "ids": [1],
+                "content_object_id": "meeting/4",
+                "meeting_id": 1,
+                "stable": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "The following models do not belong to meeting 1: ['meeting/4']",
+            response.json["message"],
+        )
+        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("meeting/4", {"projection_ids": None})
+        self.assert_model_not_exists("projection/1")
+
     def test_toggle_no_permissions(self) -> None:
         self.base_permission_test(
             {},

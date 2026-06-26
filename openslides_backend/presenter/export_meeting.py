@@ -57,7 +57,7 @@ class Export(BasePresenter):
         ):
             raise PresenterException(f"Cannot export: meeting {id_} is locked.")
         self.exclude_organization_tags_and_default_meeting_for_committee(export_data)
-        if self.data.get("old_db_compatibility"):
+        if self.data.get("old_db_compatibility") and "meeting_mediafile" in export_data:
             self.add_missing_mm_inherited_access_group_ids(export_data)
         return export_data
 
@@ -72,8 +72,6 @@ class Export(BasePresenter):
     def add_missing_mm_inherited_access_group_ids(
         self, export_data: dict[str, Any]
     ) -> None:
-        if "meeting_mediafile" not in export_data:
-            return
         for meeting_mediafile_data in export_data["meeting_mediafile"].values():
             if "inherited_access_group_ids" not in meeting_mediafile_data:
                 meeting_mediafile_data["inherited_access_group_ids"] = []

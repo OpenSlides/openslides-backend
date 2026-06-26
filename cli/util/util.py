@@ -23,7 +23,7 @@ def parse_arguments(default: str) -> Namespace:
     return parser.parse_args()
 
 
-def open_yml_file(file: str) -> Any:
+def open_yml_file(file: str) -> Any:  # Maybe could be used somewhere else?
     print(os.path.abspath(file))
     if os.path.isfile(file):
         with open(file, "rb") as x:
@@ -33,18 +33,20 @@ def open_yml_file(file: str) -> Any:
     return yaml.safe_load(models_yml)
 
 
-def get_collection_names_and_filenames() -> dict[str, str]:
+def get_collection_names_and_filenames() -> (
+    dict[str, str]
+):  # Not used. But maybe could?
     filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
     return {os.path.splitext(filename)[0]: filename for filename in filenames}
 
 
-def load_fields(filename: str) -> dict[str, Any]:
+def load_fields(filename: str) -> dict[str, Any]:  # Not used. But maybe could?
     path = f"{SOURCE_COLLECTIONS}/{filename}"
     content = get_file_content_text(path)
     return yaml.safe_load(content)
 
 
-def get_file_content_text(file: str) -> str:
+def get_file_content_text(file: str) -> str:  # Not used. But maybe could?
     if os.path.isfile(file):
         with open(file) as x:
             return x.read()

@@ -451,3 +451,8 @@ class TestGetUSerEditable(BasePresenterTestCase):
             "message": "Need at least one field name to check editability.",
             "success": False,
         }
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_user_editable")
+        assert status_code == 400
+        assert "No data given." == data["message"]

@@ -46,7 +46,7 @@ class MeetingModelMixin:
 
     @classmethod
     def all_logo_places(cls) -> list[str]:
-        return [f"logo_{place}_id" for place in cls.LOGO_PLACES]
+        return [f"logo_{place}_id" for place in cls.LOGO_PLACES]  # can be used?
 
     @classmethod
     def reverse_logo_places(cls) -> list[str]:
@@ -54,7 +54,7 @@ class MeetingModelMixin:
 
     @classmethod
     def all_font_places(cls) -> list[str]:
-        return [f"font_{place}_id" for place in cls.FONT_PLACES]
+        return [f"font_{place}_id" for place in cls.FONT_PLACES]  # can be used?
 
     @classmethod
     def reverse_font_places(cls) -> list[str]:

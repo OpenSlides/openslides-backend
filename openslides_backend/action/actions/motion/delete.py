@@ -74,13 +74,13 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
     def get_history_information(self) -> HistoryInformation | None:
         information = super().get_history_information()
         if self.history_information is None:
-            return information
+            return information  #
         # generate the history informations for the deleted amendments
         fqids = [
             fqid_from_collection_and_id("motion", id_) for id_ in self.all_motion_ids
         ]
         if not information:
-            information = {fqid: [self.history_information] for fqid in fqids}
+            information = {fqid: [self.history_information] for fqid in fqids}  #
         else:
             for fqid in fqids:
                 information[fqid] = [self.history_information]

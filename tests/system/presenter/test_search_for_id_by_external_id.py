@@ -138,3 +138,8 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"id": 3})
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("search_for_id_by_external_id")
+        assert status_code == 400
+        assert "No data given." == data["message"]

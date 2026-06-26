@@ -223,7 +223,7 @@ class BaseMotionCreateForwarded(
                 if instance.get("additional_submitter"):
                     instance["additional_submitter"] += ", " + text_submitter
                 else:
-                    instance["additional_submitter"] = text_submitter
+                    instance["additional_submitter"] = text_submitter  #
         else:
             name = committee.get("name", f"Committee {committee['id']}")
             instance["additional_submitter"] = name
