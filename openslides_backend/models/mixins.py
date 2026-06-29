@@ -21,6 +21,8 @@ DEFAULT_PROJECTOR_OPTIONS = (
     "poll",
 )
 
+POLL_TYPES = ("assignment", "motion", "topic")
+
 
 class MeetingModelMixin:
     LOGO_PLACES = (
@@ -72,6 +74,12 @@ class MeetingModelMixin:
             f"used_as_default_projector_for_{option}_in_meeting_id"
             for option in DEFAULT_PROJECTOR_OPTIONS
         ]
+
+
+class MeetingPollDefaultModelMixin:
+    POLL_TYPE_FIELDS = [
+        f"used_as_{poll_type}_poll_config_in_meeting_id" for poll_type in POLL_TYPES
+    ]
 
 
 class PollModelMixin:
