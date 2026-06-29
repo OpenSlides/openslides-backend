@@ -73,8 +73,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [3],
                 "motion_poll_default_group_ids": [3],
                 "topic_poll_default_group_ids": [3],
-                "motion_poll_projection_name_order_first": "last_name",
-                "motion_poll_projection_max_columns": 6,
+                "poll_projection_name_order_first": "last_name",
+                "poll_projection_max_columns": 6,
                 **{field: [1] for field in Meeting.all_default_projectors()},
             },
         )

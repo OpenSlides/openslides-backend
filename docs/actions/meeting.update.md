@@ -123,8 +123,8 @@
     motion_poll_default_type: string;
     motion_poll_default_onehundred_percent_base: string;
     motion_poll_default_group_ids: Id[];
-    motion_poll_projection_name_order_first: string;
-    motion_poll_projection_max_columns: number;
+    poll_projection_name_order_first: string;
+    poll_projection_max_columns: number;
 
     users_enable_presence_view: boolean;
     users_enable_vote_weight: boolean;
@@ -150,7 +150,7 @@
     assignment_poll_ballot_paper_selection: string;
     assignment_poll_ballot_paper_number: number;
     assignment_poll_add_candidates_to_list_of_speakers: boolean;
-    assignment_poll_enable_max_votes_per_option: boolean;
+    poll_enable_max_votes_per_option: boolean;
     assignment_poll_sort_poll_result_by_votes: boolean;
     assignment_poll_default_type: string;
     assignment_poll_default_method: string;
@@ -180,7 +180,7 @@
     default_projector_countdown_ids: Ids;
     default_projector_assignment_poll_ids: Ids;
     default_projector_motion_poll_ids: Ids;
-    default_projector_poll_ids: Ids;
+    default_projector_topic_poll_ids: Ids;
 
 // Group D
     external_id: string; // unique in org

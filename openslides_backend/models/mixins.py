@@ -18,7 +18,7 @@ DEFAULT_PROJECTOR_OPTIONS = (
     "countdown",
     "assignment_poll",
     "motion_poll",
-    "poll",
+    "topic_poll",
 )
 
 POLL_TYPES = ("assignment", "motion", "topic")

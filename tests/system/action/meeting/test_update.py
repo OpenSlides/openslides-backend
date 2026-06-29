@@ -74,8 +74,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_motion_poll_projection(self) -> None:
         data = {
-            "motion_poll_projection_name_order_first": "first_name",
-            "motion_poll_projection_max_columns": 5,
+            "poll_projection_name_order_first": "first_name",
+            "poll_projection_max_columns": 5,
         }
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
@@ -83,12 +83,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
     def test_update_motion_poll_projection_invalid_data_error(self) -> None:
         response_message = self.basic_test(
             {
-                "motion_poll_projection_name_order_first": "best_name",
+                "poll_projection_name_order_first": "best_name",
             },
             check_200=False,
         )
         self.assertEqual(
-            "Action meeting.update: data.motion_poll_projection_name_order_first must be one of ['first_name', 'last_name']",
+            "Action meeting.update: data.poll_projection_name_order_first must be one of ['first_name', 'last_name']",
             response_message,
         )
 
