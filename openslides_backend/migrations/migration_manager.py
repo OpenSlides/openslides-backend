@@ -3,7 +3,7 @@ from io import StringIO
 from threading import Thread
 from typing import Any, cast
 
-from psycopg import Cursor, sql
+from psycopg import Cursor, sql, IsolationLevel
 from psycopg.rows import DictRow
 
 from openslides_backend.migrations.exceptions import (
@@ -261,6 +261,7 @@ class MigrationManager:
             self.logger.exception(e)
             # TODO catch this on a lower level and set it for specific faulty migration index
             with get_new_os_conn() as conn:
+                conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
                 with conn.cursor() as curs:
                     relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
                     match command:

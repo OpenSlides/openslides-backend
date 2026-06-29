@@ -377,7 +377,7 @@ class Migration(BaseMigration):
 
         # clear replace tables as this migration writes the tables directly
         MigrationHelper.set_database_migration_info(
-            curs,
+            None,
             100,
             MigrationState.FINALIZATION_REQUIRED,
         )

@@ -3,12 +3,16 @@ import string
 from importlib import import_module
 from typing import Any
 
-from psycopg import Cursor, sql
+from psycopg import Cursor, sql, IsolationLevel
+# from psycopg.extensions import IsolationLevel.READ_COMMITTED
 from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
 from openslides_backend.shared.exceptions import CommandNotImplemented
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 
 from ..migrations.exceptions import (
     InvalidMigrationCommand,
@@ -300,7 +304,7 @@ class MigrationHandler(BaseHandler):
             mig_class.data_manipulation(self.cursor)
 
             MigrationHelper.set_database_migration_info(
-                self.cursor, index, MigrationState.FINALIZATION_REQUIRED
+                None, index, MigrationState.FINALIZATION_REQUIRED
             )
 
     def migrate(self) -> None:
@@ -312,17 +316,20 @@ class MigrationHandler(BaseHandler):
         match state:
             case MigrationState.MIGRATION_REQUIRED:
                 # Block other migration requests by setting state to preparing.
-                if minimum_required_index := self.cursor.execute(
-                    sql.SQL(
-                        "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
-                    ),
-                    (MigrationState.MIGRATION_REQUIRED,),
-                ).fetchone():
-                    MigrationHelper.set_database_migration_info(
-                        self.cursor,
-                        minimum_required_index["min"],
-                        MigrationState.MIGRATION_RUNNING,
-                    )
+                with get_new_os_conn() as conn:
+                    conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+                    with conn.cursor() as cursor:
+                        if minimum_required_index := cursor.execute(
+                            sql.SQL(
+                                "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
+                            ),
+                            (MigrationState.MIGRATION_REQUIRED,),
+                        ).fetchone():
+                            MigrationHelper.set_database_migration_info(
+                                cursor,
+                                minimum_required_index["min"],
+                                MigrationState.MIGRATION_RUNNING,
+                            )
                 # Check prerequisites
                 for index, module_name in MigrationHelper.migrations.items():
                     mig_class = getattr(
@@ -332,7 +339,7 @@ class MigrationHandler(BaseHandler):
                     if errors := mig_class.check_prerequisites(self.cursor):
                         if minimum_required_index:
                             MigrationHelper.set_database_migration_info(
-                                self.cursor,
+                                None,
                                 minimum_required_index["min"],
                                 MigrationState.MIGRATION_REQUIRED,
                             )
@@ -453,10 +460,13 @@ class MigrationHandler(BaseHandler):
         unified_replace_tables, relevant_mis = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
         )
-        for mi in relevant_mis:
-            MigrationHelper.set_database_migration_info(
-                self.cursor, mi, MigrationState.FINALIZATION_RUNNING
-            )
+        with get_new_os_conn() as conn:
+            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+            with conn.cursor() as curs:
+                for mi in relevant_mis:
+                    MigrationHelper.set_database_migration_info(
+                        curs, mi, MigrationState.FINALIZATION_RUNNING
+                    )
 
         im_tables = set()
         # Do the general replacement
@@ -560,10 +570,13 @@ class MigrationHandler(BaseHandler):
         self.update_sequences()
 
         MigrationHelper.write_line("finalization finished")
-        for mi in relevant_mis:
-            MigrationHelper.set_database_migration_info(
-                self.cursor, mi, MigrationState.FINALIZED
-            )
+        with get_new_os_conn() as conn:
+            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+            with conn.cursor() as curs:
+                for mi in relevant_mis:
+                    MigrationHelper.set_database_migration_info(
+                        curs, mi, MigrationState.FINALIZED
+                    )
         self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
 
     def reset(self) -> None:
@@ -583,12 +596,16 @@ class MigrationHandler(BaseHandler):
             ).items()
             if state != MigrationState.FINALIZED
         ]
-        self.cursor.execute(
-            sql.SQL("DELETE from version WHERE migration_index = ANY(")
-            + sql.Placeholder()
-            + sql.SQL(");"),
-            (to_delete_indices,),
-        )
+        with get_new_os_conn() as conn:
+            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    sql.SQL("DELETE from version WHERE migration_index = ANY(")
+                    + sql.Placeholder()
+                    + sql.SQL(");"),
+                    (to_delete_indices,),
+                )
+                cursor.connection.commit()
 
         self.unset_tables_read_only()
 
