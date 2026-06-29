@@ -18,6 +18,7 @@ from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
     AgendaItemModelMixin,
     MeetingModelMixin,
+    MeetingPollDefaultMixin,
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
@@ -60,6 +61,7 @@ MODEL_MIXINS: dict[str, type] = {
     "agenda_item": AgendaItemModelMixin,
     "meeting": MeetingModelMixin,
     "poll": PollModelMixin,
+    "meeting_poll_default": MeetingPollDefaultMixin,
 }
 
 FILE_TEMPLATE = dedent("""\

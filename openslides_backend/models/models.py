@@ -2,7 +2,12 @@
 
 from . import fields
 from .base import Model
-from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
+from .mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+    MeetingPollDefaultMixin,
+)
 
 
 class ActionWorker(Model):
@@ -1444,7 +1449,7 @@ class MeetingMediafile(Model):
     )
 
 
-class MeetingPollDefault(Model):
+class MeetingPollDefault(Model, MeetingPollDefaultMixin):
     collection = "meeting_poll_default"
     verbose_name = "meeting poll default"
     managed_by = "backend"

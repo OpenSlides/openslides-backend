@@ -74,6 +74,14 @@ class MeetingModelMixin:
         ]
 
 
+class MeetingPollDefaultMixin:
+    POLL_TYPE_FIELDS = [
+        "used_as_assignment_poll_config_in_meeting_id",
+        "used_as_motion_poll_config_in_meeting_id",
+        "used_as_topic_poll_config_in_meeting_id",
+    ]
+
+
 class PollModelMixin:
     STATE_CREATED = "created"
     STATE_STARTED = "started"
