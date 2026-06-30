@@ -81,6 +81,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 ## Meeting poll defaults
 
 - [meeting_poll_default.create](actions/meeting_poll_default.create.md)
+- [meeting_poll_default.update](actions/meeting_poll_default.delete.md)
 - [meeting_poll_default.update](actions/meeting_poll_default.update.md)
 
 ## Motions
