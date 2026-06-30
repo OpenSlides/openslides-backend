@@ -1,8 +1,9 @@
 from typing import Any
 
+import re
 from openslides_backend.shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....models.models import MeetingPollDefault
+from ....models.models import MeetingPollDefault, Poll
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -44,6 +45,24 @@ class MeetingPollDefaultCreate(CreateAction):
         self.check_exactly_one_of(instance, poll_types_fields)
         self.check_equal_fields(instance, poll_types_fields)
         self.check_prevent_updates(instance, poll_types_fields)
+
+        poll_type_field_name, poll_type_field_value = next(
+            iter(poll_types_fields.items())
+        )
+
+        pattern = re.compile(r"used_as_([a-z]+)_poll_config_in_meeting_id")
+        poll_type = pattern.findall(poll_type_field_name)[0]
+
+        if "visibility" not in instance:
+            instance["visibility"] = (
+                Poll.VISIBILITY_MANUALLY
+                if poll_type == "topic"
+                else Poll.VISIBILITY_SECRET
+            )
+
+        if poll_type == "topic" and "display_chart" not in instance:
+            instance["display_chart"] = "pie"
+
         return super().update_instance(instance)
 
     def check_exactly_one_of(self, instance, poll_types_fields):

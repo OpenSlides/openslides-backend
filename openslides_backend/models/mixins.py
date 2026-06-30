@@ -75,10 +75,9 @@ class MeetingModelMixin:
 
 
 class MeetingPollDefaultMixin:
+    POLL_TYPES = ["assignment", "motion", "topic"]
     POLL_TYPE_FIELDS = [
-        "used_as_assignment_poll_config_in_meeting_id",
-        "used_as_motion_poll_config_in_meeting_id",
-        "used_as_topic_poll_config_in_meeting_id",
+        f"used_as_{poll_type}_poll_config_in_meeting_id" for poll_type in POLL_TYPES
     ]
 
 

@@ -1,4 +1,5 @@
 from tests.system.action.base import BaseActionTestCase
+from openslides_backend.models.models import Poll
 
 
 class MeetingPollDefaultCreateActionTest(BaseActionTestCase):
@@ -6,7 +7,34 @@ class MeetingPollDefaultCreateActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting(17)
 
-    def test_create_simple(self) -> None:
+    def test_create_simple_config_assignment(self) -> None:
+        response = self.request(
+            "meeting_poll_default.create",
+            {"meeting_id": 17, "used_as_assignment_poll_config_in_meeting_id": 17},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_poll_default/1",
+            {
+                "meeting_id": 17,
+                "used_as_assignment_poll_config_in_meeting_id": 17,
+                "ballot_paper_selection": "custom_number",
+                "ballot_paper_number": 8,
+                "sort_result_by_votes": True,
+                "allow_abstain": True,
+                "allow_nota": False,
+                "strike_out": False,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "group_ids": None,
+                "display_chart": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/17", {"poll_default_ids": [1], "assignment_poll_config_id": 1}
+        )
+
+    def test_create_simple_config_motion(self) -> None:
         response = self.request(
             "meeting_poll_default.create",
             {"meeting_id": 17, "used_as_motion_poll_config_in_meeting_id": 17},
@@ -23,14 +51,41 @@ class MeetingPollDefaultCreateActionTest(BaseActionTestCase):
                 "allow_abstain": True,
                 "allow_nota": False,
                 "strike_out": False,
-                "onehundred_percent_base": "valid",
-                "visibility": None,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "visibility": Poll.VISIBILITY_SECRET,
                 "group_ids": None,
                 "display_chart": None,
             },
         )
         self.assert_model_exists(
             "meeting/17", {"poll_default_ids": [1], "motion_poll_config_id": 1}
+        )
+
+    def test_create_simple_config_topic(self) -> None:
+        response = self.request(
+            "meeting_poll_default.create",
+            {"meeting_id": 17, "used_as_topic_poll_config_in_meeting_id": 17},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_poll_default/1",
+            {
+                "meeting_id": 17,
+                "used_as_topic_poll_config_in_meeting_id": 17,
+                "ballot_paper_selection": "custom_number",
+                "ballot_paper_number": 8,
+                "sort_result_by_votes": True,
+                "allow_abstain": True,
+                "allow_nota": False,
+                "strike_out": False,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "visibility": Poll.VISIBILITY_MANUALLY,
+                "group_ids": None,
+                "display_chart": "pie",
+            },
+        )
+        self.assert_model_exists(
+            "meeting/17", {"poll_default_ids": [1], "topic_poll_config_id": 1}
         )
 
     def test_create_set_all_fields(self) -> None:
