@@ -118,8 +118,6 @@
     motions_enable_restricted_editor_for_manager: boolean;
     motions_enable_restricted_editor_for_non_manager: boolean;
 
-    motion_poll_ballot_paper_selection: string;
-    motion_poll_ballot_paper_number: number;
     motion_poll_default_type: string;
     motion_poll_default_onehundred_percent_base: string;
     motion_poll_default_group_ids: Id[];
@@ -147,8 +145,6 @@
     assignments_export_title: string;
     assignments_export_preamble: string;
 
-    assignment_poll_ballot_paper_selection: string;
-    assignment_poll_ballot_paper_number: number;
     assignment_poll_add_candidates_to_list_of_speakers: boolean;
     poll_enable_max_votes_per_option: boolean;
     assignment_poll_sort_poll_result_by_votes: boolean;

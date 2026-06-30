@@ -437,6 +437,8 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
             self.assert_model_not_exists(f"motion_state/{i+1}")
         for i in range(2):
             self.assert_model_not_exists(f"motion_workflow/{i+1}")
+        for i in range(3):
+            self.assert_model_not_exists(f"meeting_poll_default/{i+1}")
         for i in range(5):
             self.assert_model_not_exists(f"poll/{i+1}")
         for i in range(10):

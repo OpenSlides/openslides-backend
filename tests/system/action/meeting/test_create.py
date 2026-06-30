@@ -187,7 +187,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_check_action_data_fields(self) -> None:
-        """Also checks defaults for assignment_poll and motion_poll."""
+        """Also checks defaults for polls."""
         external_id = "external"
         self.basic_test(
             {
@@ -206,9 +206,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "start_time": datetime.fromtimestamp(1608120653, ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1608121653, ZoneInfo("UTC")),
                 "external_id": external_id,
-                "assignment_poll_default_type": Poll.VISIBILITY_SECRET,
                 "assignment_poll_default_method": Poll.METHOD_SELECTION,
-                "motion_poll_default_type": Poll.VISIBILITY_SECRET,
+                "topic_poll_default_method": Poll.METHOD_SELECTION,
+                "poll_default_live_voting_enabled": False,
+                "poll_default_allow_invalid": False,
+                "poll_default_allow_vote_split": False,
             },
         )
 
