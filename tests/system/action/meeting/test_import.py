@@ -367,9 +367,7 @@ class MeetingImport(BaseActionTestCase):
             "read_chat_group_ids": [],
             "write_chat_group_ids": [],
             "poll_ids": [],
-            "used_as_motion_poll_default_id": None,
-            "used_as_assignment_poll_default_id": None,
-            "used_as_poll_default_id": None,
+            "used_in_meeting_poll_default_ids": [],
             **data,
         }
 
