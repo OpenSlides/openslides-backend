@@ -8,12 +8,12 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .password_mixins import ClearSessionsMixin
-from ...mixins.keycloak_mixin import KeycloakMixin
+from ...mixins.idp_mixin import IDPMixin
 
 
 @register_action("user.set_password_self")
 class UserSetPasswordSelf(
-    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin, KeycloakMixin
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin, IDPMixin
 ):
     """
     Action to update the own password.
@@ -24,7 +24,7 @@ class UserSetPasswordSelf(
         additional_required_fields={
             "old_password": {"type": "string", "minLength": 1},
             "new_password": {"type": "string", "minLength": 1},
-            "keycloak_id": {"type": "string", "minLength": 1},
+            "idp_id": {"type": "string", "minLength": 1},
         }
     )
 

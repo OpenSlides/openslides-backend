@@ -13,7 +13,7 @@ from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
-from ...mixins.keycloak_mixin import KeycloakMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -33,7 +33,7 @@ class UserCreate(
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
-    KeycloakMixin,
+    IDPMixin,
 ):
     """
     Action to create a user.
@@ -44,7 +44,7 @@ class UserCreate(
         optional_properties=[
             "title",
             "username",
-            "keycloak_id",
+            "idp_id",
             "pronoun",
             "first_name",
             "last_name",

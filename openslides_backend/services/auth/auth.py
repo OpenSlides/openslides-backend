@@ -15,7 +15,7 @@ from ...shared.env import Environment
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import AuthenticationService
 
-class KeycloakPayload:
+class IDPPayload:
     def __init__(self, claims: dict):
         self.sub = claims.get("sub", "")                               # User ID
         self.sid = claims.get("sid", "")                               # Session ID
@@ -64,7 +64,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         return (int(payload.os_id), header_value)
 
-    def _extract_payload(self, token_string: str) -> KeycloakPayload:
+    def _extract_payload(self, token_string: str) -> IDPPayload:
         try:
             unverified_header = jwt.get_unverified_header(token_string)
         except jwt.exceptions.DecodeError as e:
@@ -72,7 +72,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         kid = unverified_header.get("kid")
         if not kid:
-            raise AuthenticationException("No keycloak id in auth headers")
+            raise AuthenticationException("No IDP id in auth headers")
 
         public_key = self._get_key(kid)
 
@@ -88,7 +88,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         except jwt.exceptions.InvalidTokenError as e:
             raise AuthenticationException(f"Validating JWT token: {e}")
 
-        return KeycloakPayload(claims)
+        return IDPPayload(claims)
 
     def _get_key(self, kid: str):
         if kid in self._keys and time.time() < self._keys_expires_at:
