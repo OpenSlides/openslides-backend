@@ -2,7 +2,12 @@
 
 from . import fields
 from .base import Model
-from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
+from .mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+    MeetingPollDefaultMixin,
+)
 
 
 class ActionWorker(Model):
@@ -511,17 +516,16 @@ class Group(Model):
         is_primary=True,
         write_fields=("nm_group_poll_ids_poll_t", "group_id", "poll_id", []),
     )
-    used_as_motion_poll_default_id = fields.RelationField(
-        to={"meeting": "motion_poll_default_group_ids"}
-    )
-    used_as_assignment_poll_default_id = fields.RelationField(
-        to={"meeting": "assignment_poll_default_group_ids"}
-    )
-    used_as_topic_poll_default_id = fields.RelationField(
-        to={"meeting": "topic_poll_default_group_ids"}
-    )
-    used_as_poll_default_id = fields.RelationField(
-        to={"meeting": "poll_default_group_ids"}
+    used_in_meeting_poll_default_ids = fields.RelationListField(
+        to={"meeting_poll_default": "group_ids"},
+        is_view_field=True,
+        is_primary=True,
+        write_fields=(
+            "nm_group_uimpdi_meeting_poll_default_t",
+            "group_id",
+            "meeting_poll_default_id",
+            [],
+        ),
     )
     meeting_id = fields.RelationField(
         to={"meeting": "group_ids"}, required=True, constant=True
@@ -876,41 +880,6 @@ class Meeting(Model, MeetingModelMixin):
     motions_export_follow_recommendation = fields.BooleanField(default=False)
     motions_enable_restricted_editor_for_manager = fields.BooleanField()
     motions_enable_restricted_editor_for_non_manager = fields.BooleanField(default=True)
-    motion_poll_ballot_paper_selection = fields.CharField(
-        default="CUSTOM_NUMBER",
-        constraints={
-            "enum": [
-                "NUMBER_OF_DELEGATES",
-                "NUMBER_OF_ALL_PARTICIPANTS",
-                "CUSTOM_NUMBER",
-            ]
-        },
-    )
-    motion_poll_ballot_paper_number = fields.IntegerField(default=8)
-    motion_poll_default_type = fields.CharField(default="secret")
-    motion_poll_default_allow_abstain = fields.BooleanField(default=True)
-    motion_poll_default_onehundred_percent_base = fields.CharField(
-        default="valid",
-        constraints={
-            "enum": [
-                "yes_no",
-                "valid",
-                "cast",
-                "entitled",
-                "entitled_present",
-                "disabled",
-            ]
-        },
-    )
-    motion_poll_default_group_ids = fields.RelationListField(
-        to={"group": "used_as_motion_poll_default_id"}, is_view_field=True
-    )
-    motion_poll_projection_name_order_first = fields.CharField(
-        required=True,
-        default="last_name",
-        constraints={"enum": ["first_name", "last_name"]},
-    )
-    motion_poll_projection_max_columns = fields.IntegerField(required=True, default=6)
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -941,70 +910,43 @@ class Meeting(Model, MeetingModelMixin):
     users_forbid_delegator_to_vote = fields.BooleanField()
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
-    assignment_poll_ballot_paper_selection = fields.CharField(
-        default="CUSTOM_NUMBER",
-        constraints={
-            "enum": [
-                "NUMBER_OF_DELEGATES",
-                "NUMBER_OF_ALL_PARTICIPANTS",
-                "CUSTOM_NUMBER",
-            ]
-        },
-    )
-    assignment_poll_ballot_paper_number = fields.IntegerField(default=8)
     assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField(
         default=False
     )
-    assignment_poll_enable_max_votes_per_option = fields.BooleanField(default=False)
-    assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
-    assignment_poll_default_type = fields.CharField(default="secret")
-    assignment_poll_default_method = fields.CharField(default="selection")
-    assignment_poll_default_onehundred_percent_base = fields.CharField(
-        default="valid",
+    assignment_poll_default_method = fields.CharField(
+        default="selection",
         constraints={
             "enum": [
-                "no_general",
-                "yes_no",
-                "valid",
-                "cast",
-                "entitled",
-                "entitled_present",
-                "disabled",
+                "approval",
+                "selection",
+                "rating_score",
+                "rating_approval",
+                "stv_scottish",
             ]
         },
     )
-    assignment_poll_default_group_ids = fields.RelationListField(
-        to={"group": "used_as_assignment_poll_default_id"}, is_view_field=True
+    assignment_poll_config_id = fields.RelationField(
+        to={"meeting_poll_default": "used_as_assignment_poll_config_in_meeting_id"}
     )
-    poll_ballot_paper_selection = fields.CharField(
+    motion_poll_config_id = fields.RelationField(
+        to={"meeting_poll_default": "used_as_motion_poll_config_in_meeting_id"}
+    )
+    topic_poll_default_method = fields.CharField(
+        default="selection",
         constraints={
             "enum": [
-                "NUMBER_OF_DELEGATES",
-                "NUMBER_OF_ALL_PARTICIPANTS",
-                "CUSTOM_NUMBER",
-            ]
-        }
-    )
-    poll_ballot_paper_number = fields.IntegerField()
-    poll_sort_poll_result_by_votes = fields.BooleanField()
-    poll_default_type = fields.CharField(default="analog")
-    poll_default_method = fields.CharField()
-    poll_default_onehundred_percent_base = fields.CharField(
-        default="valid",
-        constraints={
-            "enum": [
-                "no_general",
-                "valid",
-                "cast",
-                "entitled",
-                "entitled_present",
-                "disabled",
+                "approval",
+                "selection",
+                "rating_score",
+                "rating_approval",
+                "stv_scottish",
             ]
         },
     )
-    poll_default_group_ids = fields.RelationListField(
-        to={"group": "used_as_poll_default_id"}, is_view_field=True
+    topic_poll_config_id = fields.RelationField(
+        to={"meeting_poll_default": "used_as_topic_poll_config_in_meeting_id"}
     )
+    poll_enable_max_votes_per_option = fields.BooleanField(default=False)
     poll_default_live_voting_enabled = fields.BooleanField(
         default=False,
         constraints={
@@ -1014,19 +956,22 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_allow_invalid = fields.BooleanField(
         default=False,
         constraints={
-            "description": "Defines defaut `poll.allow_invalid` option suggested to user."
+            "description": "Defines default `poll.allow_invalid` option suggested to user."
         },
     )
     poll_default_allow_vote_split = fields.BooleanField(
         default=False,
         constraints={
-            "description": "Defines defaut `poll.allow_vote_split` option suggested to user."
+            "description": "Defines default `poll.allow_vote_split` option suggested to user."
         },
     )
     poll_couple_countdown = fields.BooleanField(default=True)
-    topic_poll_default_group_ids = fields.RelationListField(
-        to={"group": "used_as_topic_poll_default_id"}, is_view_field=True
+    poll_projection_name_order_first = fields.CharField(
+        required=True,
+        default="last_name",
+        constraints={"enum": ["first_name", "last_name"]},
     )
+    poll_projection_max_columns = fields.IntegerField(required=True, default=6)
     projector_ids = fields.RelationListField(
         to={"projector": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -1165,6 +1110,11 @@ class Meeting(Model, MeetingModelMixin):
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
+    )
+    poll_default_ids = fields.RelationListField(
+        to={"meeting_poll_default": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
     assignment_ids = fields.RelationListField(
         to={"assignment": "meeting_id"},
@@ -1496,6 +1446,56 @@ class MeetingMediafile(Model):
     )
     used_as_font_projector_h2_in_meeting_id = fields.RelationField(
         to={"meeting": "font_projector_h2_id"}, is_view_field=True
+    )
+
+
+class MeetingPollDefault(Model, MeetingPollDefaultMixin):
+    collection = "meeting_poll_default"
+    verbose_name = "meeting poll default"
+    managed_by = "backend"
+
+    id = fields.IntegerField(required=True, constant=True)
+    ballot_paper_selection = fields.CharField(
+        default="custom_number",
+        constraints={
+            "enum": [
+                "number_of_delegates",
+                "number_of_all_participants",
+                "custom_number",
+            ]
+        },
+    )
+    ballot_paper_number = fields.IntegerField(default=8)
+    sort_result_by_votes = fields.BooleanField(default=True)
+    visibility = fields.CharField(
+        constraints={"enum": ["manually", "named", "open", "secret"]}
+    )
+    allow_abstain = fields.BooleanField(default=True)
+    allow_nota = fields.BooleanField(default=False)
+    strike_out = fields.BooleanField(default=False)
+    onehundred_percent_base = fields.CharField(default="valid")
+    group_ids = fields.RelationListField(
+        to={"group": "used_in_meeting_poll_default_ids"},
+        is_view_field=True,
+        write_fields=(
+            "nm_group_uimpdi_meeting_poll_default_t",
+            "meeting_poll_default_id",
+            "group_id",
+            [],
+        ),
+    )
+    display_chart = fields.CharField()
+    used_as_assignment_poll_config_in_meeting_id = fields.RelationField(
+        to={"meeting": "assignment_poll_config_id"}, is_view_field=True, constant=True
+    )
+    used_as_motion_poll_config_in_meeting_id = fields.RelationField(
+        to={"meeting": "motion_poll_config_id"}, is_view_field=True, constant=True
+    )
+    used_as_topic_poll_config_in_meeting_id = fields.RelationField(
+        to={"meeting": "topic_poll_config_id"}, is_view_field=True, constant=True
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "poll_default_ids"}, required=True, constant=True
     )
 
 
@@ -2470,6 +2470,7 @@ class PollConfigRatingApproval(Model):
     )
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
+    max_yes_amount = fields.IntegerField()
     allow_abstain = fields.BooleanField(default=True)
     onehundred_percent_base = fields.CharField(
         required=True,

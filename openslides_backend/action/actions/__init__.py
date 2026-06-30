@@ -19,6 +19,7 @@ def prepare_actions_map() -> None:
         list_of_speakers,
         mediafile,
         meeting,
+        meeting_poll_default,
         meeting_mediafile,
         meeting_user,
         motion,

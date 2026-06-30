@@ -20,6 +20,7 @@ from tests.system.util import (
 from tests.util import Client
 
 
+# Add tests with defaults
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -137,7 +138,6 @@ class MeetingImport(BaseActionTestCase):
                         "motions_export_preamble": "an export preamble",
                         "motions_export_submitter_recommendation": True,
                         "motions_export_follow_recommendation": True,
-                        "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
                         "motion_poll_default_onehundred_percent_base": "valid",
@@ -160,7 +160,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "assignment_poll_ballot_paper_number": 8,
                         "assignment_poll_add_candidates_to_list_of_speakers": True,
-                        "assignment_poll_enable_max_votes_per_option": None,
+                        "poll_enable_max_votes_per_option": None,
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
@@ -367,9 +367,7 @@ class MeetingImport(BaseActionTestCase):
             "read_chat_group_ids": [],
             "write_chat_group_ids": [],
             "poll_ids": [],
-            "used_as_motion_poll_default_id": None,
-            "used_as_assignment_poll_default_id": None,
-            "used_as_poll_default_id": None,
+            "used_in_meeting_poll_default_ids": [],
             **data,
         }
 
@@ -2774,12 +2772,11 @@ class MeetingImport(BaseActionTestCase):
                     "motions_supporters_min_amount": 0,
                     "motions_export_submitter_recommendation": True,
                     "motions_export_follow_recommendation": False,
-                    "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                     "motion_poll_ballot_paper_number": 8,
                     "motion_poll_default_type": "pseudoanonymous",
                     "motion_poll_default_onehundred_percent_base": "valid",
-                    "motion_poll_projection_name_order_first": "last_name",
-                    "motion_poll_projection_max_columns": 6,
+                    "poll_projection_name_order_first": "last_name",
+                    "poll_projection_max_columns": 6,
                     "users_enable_presence_view": False,
                     "users_enable_vote_weight": False,
                     "users_enable_vote_delegations": True,
@@ -2793,7 +2790,7 @@ class MeetingImport(BaseActionTestCase):
                     "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                     "assignment_poll_ballot_paper_number": 8,
                     "assignment_poll_add_candidates_to_list_of_speakers": False,
-                    "assignment_poll_enable_max_votes_per_option": False,
+                    "poll_enable_max_votes_per_option": False,
                     "assignment_poll_sort_poll_result_by_votes": True,
                     "assignment_poll_default_type": "pseudoanonymous",
                     "assignment_poll_default_method": "Y",
