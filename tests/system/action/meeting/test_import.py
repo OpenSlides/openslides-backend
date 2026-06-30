@@ -20,6 +20,7 @@ from tests.system.util import (
 from tests.util import Client
 
 
+# Add tests with defaults
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -137,7 +138,6 @@ class MeetingImport(BaseActionTestCase):
                         "motions_export_preamble": "an export preamble",
                         "motions_export_submitter_recommendation": True,
                         "motions_export_follow_recommendation": True,
-                        "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
                         "motion_poll_default_onehundred_percent_base": "valid",
@@ -2772,7 +2772,6 @@ class MeetingImport(BaseActionTestCase):
                     "motions_supporters_min_amount": 0,
                     "motions_export_submitter_recommendation": True,
                     "motions_export_follow_recommendation": False,
-                    "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                     "motion_poll_ballot_paper_number": 8,
                     "motion_poll_default_type": "pseudoanonymous",
                     "motion_poll_default_onehundred_percent_base": "valid",

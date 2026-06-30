@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Any, cast
+import re
+from collections import defaultdict
 
 from psycopg.types.json import Jsonb
 
@@ -24,7 +26,10 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
+from ..meeting_poll_default.create import MeetingPollDefaultCreate
+from ..meeting_poll_default.update import MeetingPollDefaultUpdate
 from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
+from ..meeting_poll_default.helper_mixin import meeting_poll_default_schema
 
 meeting_settings_keys = [
     "welcome_title",
@@ -200,6 +205,7 @@ class MeetingUpdate(
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
+            **meeting_poll_default_schema,
         },
     )
     check_email_field = "users_email_replyto"
@@ -334,6 +340,48 @@ class MeetingUpdate(
 
         if (translations := instance.get("custom_translations")) is not None:
             instance["custom_translations"] = Jsonb(translations)
+
+        poll_default_config_field_name_pattern = re.compile(
+            r"([a-z]+)_poll_default_([a-z_]+[a-z]+)"
+        )
+        poll_default_data = defaultdict(dict)
+        for field in meeting_poll_default_schema.keys():
+            if (value := instance.pop(field, None)) is not None:
+                poll_type, field_name = poll_default_config_field_name_pattern.findall(
+                    field
+                )[0]
+                poll_default_data[poll_type][field_name] = value
+
+        if poll_default_data:
+            changed_poll_defaults = {
+                poll_type: f"{poll_type}_poll_config_id"
+                for poll_type in poll_default_data.keys()
+            }
+            result = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                changed_poll_defaults.values(),
+                lock_result=False,
+            )
+            action_data_create = []
+            action_data_update = []
+
+            for poll_type, data in poll_default_data.items():
+                if existing_id := result.get(changed_poll_defaults[poll_type]):
+                    action_data_update.append({"id": existing_id, **data})
+                else:
+                    action_data_create.append(
+                        {
+                            "meeting_id": instance["id"],
+                            f"used_as_{poll_type}_poll_config_in_meeting_id": instance[
+                                "id"
+                            ],
+                            **data,
+                        }
+                    )
+            if action_data_create:
+                self.execute_other_action(MeetingPollDefaultCreate, action_data_create)
+            if action_data_update:
+                self.execute_other_action(MeetingPollDefaultUpdate, action_data_update)
 
         instance = super().update_instance(instance)
         return instance

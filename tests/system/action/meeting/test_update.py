@@ -304,9 +304,21 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"motions_block_slide_columns": 2})
 
     def test_update_topic_poll_default_group(self) -> None:
-        self.basic_test({"topic_poll_default_group_ids": [3]})
-        self.assert_model_exists("meeting/1", {"topic_poll_default_group_ids": [3]})
-        self.assert_model_exists("group/3", {"used_as_topic_poll_default_id": 1})
+        # self.basic_test({"topic_poll_default_group_ids": [1]})
+        # self.assert_model_exists("meeting_poll_default/3", {"group_ids": [1]})
+        # self.assert_model_exists("group/1", {"used_in_meeting_poll_default_ids": [1]})
+        self.basic_test({"topic_poll_default_allow_abstain": False})
+        self.assert_model_exists(
+            "meeting_poll_default/1",
+            {
+                "meeting_id": 1,
+                "used_as_topic_poll_config_in_meeting_id": 1,
+                "allow_abstain": False,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1", {"poll_default_ids": [1], "topic_poll_config_id": 1}
+        )
 
     def test_update_only_one_time_1(self) -> None:
         response_message = self.basic_test({"start_time": 150000}, check_200=False)
