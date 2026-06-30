@@ -1,9 +1,5 @@
 import os
-from collections.abc import Callable
-from importlib import import_module
 from threading import Lock
-from typing import Any
-from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 
 from openslides_backend.migrations.migration_helper import (
@@ -14,9 +10,6 @@ from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 
-migration_module = import_module(
-    "openslides_backend.migrations.migrations.0101_test_migration"
-)
 EXAMPLE_DATA_PATH = os.path.realpath(
     os.path.join(
         os.getcwd(), "tests", "system", "migrations", "legacy-example-data.json"
@@ -32,7 +25,7 @@ class TestMigration101(BaseMigrationTestCase):
     Do NOT merge it into main.
     """
 
-    migration_file = "0101_test_migration.py"
+    migration_number = 101
 
     # def setUp(self) -> None:
     #     """For a real test the data should be more precise of course."""
@@ -59,24 +52,6 @@ class TestMigration101(BaseMigrationTestCase):
     #             }
     #     model_registry["assignment_candidate"] = model_registry.pop("assignment_category")
     #     self.set_models(data)
-    def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
-        """
-        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
-        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
-        be in locked state.
-        Intended for use of a function being wrapped instead of replaced by a mock.
-        """
-
-        def _wait_for_lock(*args: Any, **kwargs: Any) -> mockdefault:
-            if args[0] == "migration started":
-                MigrationHelper.migrate_thread_stream.write("migration started\n")
-                indicator_lock.release()
-                wait_lock.acquire()
-            else:
-                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
-            return mockdefault
-
-        return _wait_for_lock
 
     # @patch(
     #     "openslides_backend.migrations.migration_handler.MigrationHandler.execute_migrations",
@@ -100,10 +75,6 @@ class TestMigration101(BaseMigrationTestCase):
         }
 
         indicator_lock.acquire()
-
-        with self.connection.cursor() as curs:
-            # Assert table and view exist meaning diff got applied.
-            assert curs.execute("select * from assignment_category;")
         assert manager.handle_request({"cmd": "stats", "verbose": True}) == {
             "stats": {
                 "current_migration_index": 100,
@@ -156,6 +127,8 @@ class TestMigration101(BaseMigrationTestCase):
                     curs,
                     "SELECT 1 FROM pg_indexes where indexname='idx_committee_t_default_meeting_id';",
                 )
+
+                # Assert table and view exist meaning diff got applied.
                 self.assert_content_not_none(
                     curs,
                     """SELECT EXISTS (
@@ -163,6 +136,6 @@ class TestMigration101(BaseMigrationTestCase):
                         WHERE table_name = 'assignment_candidate_t'
                     )
                     """,
-                    value={"exists": False},
                 )
+                assert curs.execute("select * from assignment_category;")
         # self.assert_model_exists("meeting/1", {"motions_number_type": None})

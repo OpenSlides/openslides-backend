@@ -10,8 +10,8 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
+from openslides_backend.migrations.base import BaseMigration
 from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
-from openslides_backend.migrations.migrations.base import BaseMigration
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
     DecimalField,
@@ -157,8 +157,6 @@ class Sql_helper:
         intermediate_table = field.write_fields[0]
         field1 = field.write_fields[1]
         field2 = field.write_fields[2]
-
-        intermediate_table = HelperGetNames.get_table_name(intermediate_table, True)
 
         # 1) Add sql command
         for data_item in values:
@@ -308,7 +306,7 @@ class Migration(BaseMigration):
             for data_row in data_chunk:
                 collection = data_row["fqid"].split("/")[0]
                 found_collections.add(collection)
-                table_name = HelperGetNames.get_table_name(collection, True)
+                table_name = HelperGetNames.get_table_name(collection)
                 data = data_row["data"]
 
                 match collection:

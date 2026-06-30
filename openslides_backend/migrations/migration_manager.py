@@ -81,7 +81,7 @@ class MigrationManager:
             MigrationState.FINALIZATION_FAILED,
         ):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
-
+        MigrationHelper.close_migrate_thread_stream()
         return result
 
     def get_stats(self) -> dict[str, Any]:
@@ -109,6 +109,8 @@ class MigrationManager:
                 ).format(collection=sql.SQL(table[:-2]))
             elif table not in all_tables:
                 return 0
+            else:
+                statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
             response = self.cursor.execute(
                 sql.SQL("SELECT COUNT(*) FROM ") + statement_part
             ).fetchone()
@@ -188,25 +190,23 @@ class MigrationManager:
                     return {"stats": self.get_stats()}
                 self.assert_valid_migration_index(curs)
 
+                # MigrationCommand.MIGRATE or MigrationCommand.RESET
                 match MigrationHelper.get_migration_state(curs):
                     case MigrationState.MIGRATION_RUNNING:
-                        process = "Migration"
+                        raise View400Exception(
+                            "Migration is running, only 'stats' or 'progress' commands are allowed."
+                        )
                     case MigrationState.MIGRATION_FAILED:
                         raise MigrationException(
                             f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
                         )
-                    case _:
-                        process = ""
-                if process:
-                    raise View400Exception(
-                        f"{process} is running, only 'stats' command is allowed."
-                    )
 
                 verbose = payload.get("verbose", False)
-                MigrationHelper.migrate_thread_stream = StringIO()
-                MigrationHelper.migrate_thread_stream_read_pos = (
-                    MigrationHelper.migrate_thread_stream.tell()
-                )
+                if not MigrationHelper.migrate_thread_stream:
+                    MigrationHelper.migrate_thread_stream = StringIO()
+                    MigrationHelper.migrate_thread_stream_read_pos = (
+                        MigrationHelper.migrate_thread_stream.tell()
+                    )
                 MigrationHelper.migrate_thread = thread = Thread(
                     target=self.execute_migrate_command, args=[command, verbose]
                 )

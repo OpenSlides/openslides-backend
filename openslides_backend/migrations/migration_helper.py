@@ -55,7 +55,7 @@ class MigrationCommand(StrEnum):
 
 
 # relative path to the migrations
-MIGRATIONS_PATH = "openslides_backend/migrations/migrations/"
+MIGRATIONS_PATH = "openslides_backend/migrations/"
 MODULE_PATH = MIGRATIONS_PATH.replace("/", ".")
 MIN_NON_REL_MIGRATION = 73
 
@@ -99,6 +99,21 @@ class MigrationHelper:
         return result
 
     @staticmethod
+    def close_migrate_thread_stream() -> None:
+        """
+        Closes the migration threads io stream. Also deletes all possible migrate thread exceptions
+        """
+        if (
+            MigrationHelper.migrate_thread_stream_can_be_closed
+            and MigrationHelper.migrate_thread_stream
+        ):
+            MigrationHelper.migrate_thread_stream.close()
+            MigrationHelper.migrate_thread_stream = None
+            MigrationHelper.migrate_thread_stream_can_be_closed = False
+            MigrationHelper.migrate_thread_stream_read_pos = 0
+            MigrationHelper.migrate_thread_exception = None
+
+    @staticmethod
     def load_migrations() -> None:
         """
         Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
@@ -108,22 +123,23 @@ class MigrationHelper:
         Returns:
         - None
         """
-        migration_modules: list
-        migration_file: str
+        files_and_folders: list
+        migration_name: str
         migration_number: int
         migration_dict = {}
         reMatch: Match[str] | None
 
-        migration_modules = os.listdir(MIGRATIONS_PATH)
+        files_and_folders = os.listdir(MIGRATIONS_PATH)
 
-        for migration in migration_modules:
-            reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
-            # \d{4}_.*\.py : 4 digits, 1 underscore, any characters, [dot]py
-            if reMatch is not None:
-                migration_file = reMatch.groupdict()["migration"]
-                migration_number = int(migration_file[:4])
-                if migration_number >= 100:
-                    migration_dict[migration_number] = migration[:-3]
+        for file_or_folder in files_and_folders:
+            if os.path.isdir(os.path.join(MIGRATIONS_PATH, file_or_folder)):
+                reMatch = match(r"mig_(?P<migration>\d{4}_.*)", file_or_folder)
+                # mig_ matches literaly and \d{4}_.*\.py : 4 digits, 1 underscore, any characters
+                if reMatch is not None:
+                    migration_name = reMatch.groupdict()["migration"]
+                    migration_number = int(migration_name[:4])
+                    if migration_number >= 100:
+                        migration_dict[migration_number] = file_or_folder
         MigrationHelper.migrations = dict(sorted(migration_dict.items()))
 
     @staticmethod
@@ -342,11 +358,13 @@ class MigrationHelper:
         raise MigrationException("No such State implemented.")
 
     @staticmethod
-    def get_migration_class(module_name: str) -> Any:
+    def get_migration_class(package_name: str) -> Any:
         """
         Returns the class Migration within the specified module.
         """
-        return getattr(import_module(f"{MODULE_PATH}{module_name}"), "Migration")
+        return getattr(
+            import_module(f"{MODULE_PATH}{package_name}.migration"), "Migration"
+        )
 
     @staticmethod
     def get_public_tables(curs: Cursor[DictRow]) -> set[str]:

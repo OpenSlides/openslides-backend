@@ -1,7 +1,7 @@
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
-from openslides_backend.migrations.migrations.base import BaseMigration
+from openslides_backend.migrations.base import BaseMigration
 
 
 class Migration(BaseMigration):

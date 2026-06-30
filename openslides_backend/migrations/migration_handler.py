@@ -1,13 +1,12 @@
 import os
-from importlib import import_module
 from typing import Any
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
-    MODULE_PATH,
     MigrationHelper,
     MigrationState,
 )
@@ -237,33 +236,34 @@ class MigrationHandler(BaseHandler):
     #     sql_text = "".join(replaced_blocks)
     #     self.cursor.execute(sql_text)
 
-    # def update_sequence(self, name: str, maximum: int) -> None:
-    #     self.cursor.execute(
-    #         sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
-    #             sequence_name=sql.SQL(name),
-    #             maximum=maximum,
-    #         )
-    #     )
+    def update_sequence(self, name: str, maximum: int) -> None:
+        self.cursor.execute(
+            sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
+                sequence_name=sql.SQL(name),
+                maximum=maximum,
+            )
+        )
 
-    # def update_sequences(self) -> None:
-    #     """
-    #     Updates all primary keys and sequential_number fields.
-    #     """
-    #     unified_repl_tables, _ = (
-    #         MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
-    #     )
-    #     for collection in unified_repl_tables:
-    #         table_name = HelperGetNames.get_table_name(collection)
-    #         table = sql.Identifier(table_name)
-    #         # update primary keys.
-    #         result = self.cursor.execute(
-    #             sql.SQL("SELECT MAX(id) FROM {table_name};").format(table_name=table)
-    #         ).fetchone()
-    #         if result:
-    #             self.update_sequence(
-    #                 table_name + "_id_seq",
-    #                 result["max"],
-    #             )
+    def update_sequences(self) -> None:
+        """
+        Updates all primary keys and sequential_number fields.
+        """
+        unified_repl_tables, _ = (
+            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
+        )
+        for collection in unified_repl_tables:
+            table_name = HelperGetNames.get_table_name(collection)
+            table = sql.Identifier(table_name)
+            # update primary keys.
+            result = self.cursor.execute(
+                sql.SQL("SELECT MAX(id) FROM {table_name};").format(table_name=table)
+            ).fetchone()
+            if result:
+                self.update_sequence(
+                    table_name + "_id_seq",
+                    result["max"],
+                )
+
     #         # update sequential_numbers.
     #         if model_registry[collection]().try_get_field("sequential_number"):
     #             results = self.cursor.execute(
@@ -285,32 +285,41 @@ class MigrationHandler(BaseHandler):
         """Applies the sql diff for the given migration if it exists."""
         try:
             with open(
-                os.path.join(MIGRATIONS_PATH, str(migration_number), "schema_diff.sql")
+                os.path.join(
+                    MIGRATIONS_PATH,
+                    MigrationHelper.migrations[migration_number],
+                    "schema_diff.sql",
+                )
             ) as f:
                 self.cursor.execute(f.read())
         except FileNotFoundError:
-            pass
+            self.logger.warning(
+                f"Couldn't find an SQL diff for {migration_number}. This can be intentional."
+            )
+        except Exception as e:
+            raise MigrationException(f"Error applying schema diff: {e}")
 
     def execute_migrations(self) -> None:
         """
         Executes the data_definition and data_manipulation methods of the migrations
         stored in MigrationHelper.migrations.
         """
-        for index, module_name in MigrationHelper.migrations.items():
-            mig_class = getattr(
-                import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-            )
-            self.logger.info("Executing migration: " + module_name)
+        for index, package_name in MigrationHelper.migrations.items():
+            mig_class = MigrationHelper.get_migration_class(package_name)
+            self.logger.info("Executing migration: " + package_name)
 
             self.apply_schema_diff(index)
             # Execute user defined functions or super classes noop.
             mig_class.data_definition(self.cursor)
             mig_class.data_manipulation(self.cursor)
+            mig_class.cleanup(self.cursor)
 
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.FINALIZATION_REQUIRED
             )
 
+        # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
+        self.update_sequences()
         for migration_number in MigrationHelper.migrations:
             MigrationHelper.set_database_migration_info(
                 self.cursor, migration_number, MigrationState.FINALIZED
@@ -340,11 +349,10 @@ class MigrationHandler(BaseHandler):
                         MigrationState.MIGRATION_RUNNING,
                     )
                 # Check prerequisites
-                for index, module_name in MigrationHelper.migrations.items():
-                    mig_class = getattr(
-                        import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-                    )
-                    self.logger.info("Pre check: " + module_name + " ...")
+                for index, package_name in MigrationHelper.migrations.items():
+                    mig_class = MigrationHelper.get_migration_class(package_name)
+                    mig_name = package_name[4:]
+                    self.logger.info("Pre check: " + mig_name + " ...")
                     if errors := mig_class.check_prerequisites(self.cursor):
                         if minimum_required_index:
                             MigrationHelper.set_database_migration_info(
@@ -352,9 +360,7 @@ class MigrationHandler(BaseHandler):
                                 minimum_required_index["min"],
                                 MigrationState.MIGRATION_REQUIRED,
                             )
-                        errors = (
-                            f"Pre check for migration {module_name} failed.\n{errors}"
-                        )
+                        errors = f"Pre check for migration {mig_name} failed.\n{errors}"
                         self.logger.info(errors)
                         raise MigrationSetupException(errors)
                 MigrationHelper.write_line("migration started")
@@ -425,19 +431,6 @@ class MigrationHandler(BaseHandler):
     #                     table=sql.SQL(table)
     #                 )
     #             )
-
-    @classmethod
-    def close_migrate_thread_stream(cls) -> None:
-        """
-        Closes the migration threads io stream.
-        """
-        assert MigrationHelper.migrate_thread_stream
-
-        MigrationHelper.migrate_thread_stream.close()
-        MigrationHelper.migrate_thread_stream = None
-        MigrationHelper.migrate_thread_stream_can_be_closed = False
-        MigrationHelper.migrate_thread_exception = None
-
     # def finalize(self) -> None:
     #     """
     #     Executes the cleanup method and copies tables into place.
@@ -586,7 +579,7 @@ class MigrationHandler(BaseHandler):
         """
         raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
-        self.close_migrate_thread_stream()
+        MigrationHelper.close_migrate_thread_stream()
         self._clean_migration_data()
         indices = MigrationHelper.get_indices_from_database(self.cursor)
         # Remove unfinalized migration indices from version table

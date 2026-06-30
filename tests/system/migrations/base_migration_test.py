@@ -1,9 +1,12 @@
 import os
 import re
+from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
+from threading import Lock
 from typing import Any
+from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
@@ -11,7 +14,6 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from openslides_backend.http.views import ActionView
-from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MIN_NON_REL_MIGRATION,
@@ -46,6 +48,28 @@ class BaseMigrationTestCase(BaseSystemTestCase):
     # has to be set by subclass
     migration_file: str
 
+    def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
+        """
+        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
+        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
+        be in locked state.
+        Intended for replacing MigrationHelper.write_line by a mock.
+        """
+
+        def _wait_for_lock(*args: Any, **kwargs: Any) -> mockdefault:
+            assert (
+                MigrationHelper.migrate_thread_stream
+            ), "migrate_thread_stream not initialized by migration framework."
+            if args[0] == "migration started":
+                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
+                indicator_lock.release()
+                wait_lock.acquire()
+            else:
+                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
+            return mockdefault
+
+        return _wait_for_lock
+
     def setUp(self) -> None:
         """
         Does not call super class to prevent usage of client and so forth.
@@ -60,17 +84,20 @@ class BaseMigrationTestCase(BaseSystemTestCase):
 
         self.migrate_previous()
 
+        MigrationHelper.load_migrations()
         # Only migrate tested migration in following test.
-        patcher = patch("os.listdir", return_value=[self.migration_file])
+        patcher = patch(
+            "os.listdir",
+            return_value=[MigrationHelper.migrations[self.migration_number]],
+        )
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def tearDown(self) -> None:
         MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
-        MigrationHelper.migrate_thread_stream_read_pos = 0
         if MigrationHelper.migrate_thread_stream:
-            MigrationHandler.close_migrate_thread_stream()
+            MigrationHelper.close_migrate_thread_stream()
         super().tearDown()
 
     @classmethod
@@ -120,11 +147,10 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         Waits for thread execution.
         """
         # Migrate to state before tested migration.
-        migration_number = int(self.migration_file[:4])
         if filenames := [
             f
             for f in os.listdir(MIGRATIONS_PATH)
-            if re.match("\\d+", f[:4]) and int(f[:4]) < migration_number
+            if re.match("mig_\\d+", f[:8]) and int(f[4:8]) < self.migration_number
         ]:
             with patch("os.listdir", return_value=filenames):
                 manager = MigrationManager(Mock(), Mock(), Mock())
@@ -133,7 +159,7 @@ class BaseMigrationTestCase(BaseSystemTestCase):
                 with self.connection.cursor() as curs:
                     MigrationHelper.assert_migration_index(curs)
         else:
-            return {}
+            result = {}
 
         # mimik reset or similar mechanism
         if MigrationHelper.migrate_thread_stream:
@@ -155,14 +181,17 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         Checks whether the first element of the result for `query` matches `value`.
         `value` should be None if the expected result is just not None.
         Because of this behavior, it can't be compared to an expected result of None.
+        If a certain debug error message should be displayed provide error_message.
         """
         result = cur.execute(query).fetchone()
         if error_message:
             assert result, error_message
         else:
             assert result, f"Database did not contain a result for this query.\n{query}"
-        if value is not None:
-            assert result == value
+        if value is not None and result != value:
+            raise Exception(
+                f"Database did not contain the expected result '{value} vs {result}' for this query.\n{query}"
+            )
 
     def wait_for_migration_thread(self, for_seconds: int) -> None:
         """
