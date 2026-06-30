@@ -202,6 +202,27 @@ def migrate_email(keycloak_admin_key, keycloak_id, email):
         logger.error(f"Error migrating password for keycloak user {keycloak_id}: {e}")
     return
 
+def user_stress_test(users_to_add) -> None:
+    for i in range(users_to_add):
+        username = "user-" + str(i)
+        password = "fsafasf"
+        email = "user-" + str(i) + "@email.com"
+        existing_keycloak_id = ""
+        os_id = i
+
+        keycloak_user_id = migrate_and_create_user(keycloak_admin_key, username, os_id)
+
+        if keycloak_user_id == None:
+            raise Exception(f"Error migrating or finding user {username}")
+
+        ## Migrate Data
+        migrate_email(keycloak_admin_key, keycloak_user_id, email)
+
+        migrate_password(keycloak_admin_key, keycloak_user_id, password)
+
+        ## Link username with keycloak id for later use
+        user_keycloak_map[username] = keycloak_user_id
+
 def main() -> None:
     conn = create_connection()
 
