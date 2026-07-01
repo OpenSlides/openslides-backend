@@ -8,6 +8,13 @@ from meta.dev.src.generate_sql_schema import Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.yaml_diff_generator import dumpjson, generate_diff
 
+"""
+This script works in conjunction with the yaml_diff_generator.py.
+To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
+It will generate the sql diff comparing it to the changes made to the model definitions present in the meta.
+The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'. TODO
+"""
+
 
 def main() -> int:
     parser = ArgumentParser()
@@ -35,8 +42,7 @@ def main() -> int:
     with open(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "0101",
+            "migrations",
             "schema_diff.sql",
         ),
         "w",
@@ -164,6 +170,7 @@ def handle_edit_tree(
                 default_constraint = Helper.get_inline_default_constraint(
                     table_name, field_name, value
                 )
+                # TODO DEFAULT, NOT NULL and GENERATE ALWAYS need to be set with SET and DROP and without using a name.
                 sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP CONSTRAINT {constraint_name};\n"
                 sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} ADD{default_constraint};\n"
                 del dc_edit_tree_dict[collection_name][1]["fields"][1][field_name][0][

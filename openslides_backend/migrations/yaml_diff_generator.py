@@ -11,11 +11,20 @@ from meta.dev.src.helper_get_names import ROOT, build_models_yaml_content
 # renames can only happen in the leaves
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
-# TODO pull this from a migration module instead
+# TODO pull this from the last migration module instead
 renames = {
     "organization": "chaos",
     "meeting": {"fields": {"motions_number_type": "motions_assignments_number_type"}},
 }
+
+"""
+To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
+It will generate the diff comparing it to the changes made to the model definitions present in the meta.
+The json diff will be written to 'previous_models/diff.json' if --dumpjson is given as an argument.
+"""
+PREVIOUS_MODELS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "previous_models"
+)
 
 
 def main() -> int:
@@ -29,22 +38,12 @@ def main() -> int:
 
 
 def dumpjson(diff: dict[str, Any]) -> None:
-    with open(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "0101",
-            "diff.out.json",
-        ),
-        "w",
-    ) as f:
+    with open(os.path.join(PREVIOUS_MODELS_DIR, "diff.json"), "w") as f:
         f.write(json.dumps(diff, indent=4))
 
 
 def generate_diff() -> dict[str, Any]:
-    prev_models = load_models(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "0100")
-    )
+    prev_models = load_models(PREVIOUS_MODELS_DIR)
     curr_models = load_models(ROOT)
 
     validate_renames(prev_models, curr_models, renames)
