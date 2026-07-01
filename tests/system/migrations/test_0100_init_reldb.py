@@ -115,6 +115,8 @@ For more information, see
 
     @staticmethod
     def apply_test_relational_schema() -> None:
+        # TODO:  CREATE SCHEMA SCHEINT DAS SCHEMA NICHT ZU APPLIZIEREN
+        # HANNES PR ANSCHAUEN; DER HAT DA ÄNDERUNGEN DRIN DIE DAS FIXEN KÖNNTEN
         create_schema()
         with get_unpooled_db_connection("openslides") as conn:
             with conn.cursor() as curs:
@@ -392,15 +394,17 @@ For more information, see
     def test_migration_handler(self) -> None:
         # Prepare what manager would.
         MigrationHelper.load_migrations()
-        MigrationHelper.add_new_migrations_to_version()
-        MigrationHelper.migrate_thread_stream = StringIO()
         # 5) Call data_manipulation of module
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging)
-                handler.execute_command("migrate")
-                self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
-                handler.execute_command("finalize")
+        with get_new_os_conn() as version_conn:
+            with version_conn.cursor() as cursor:
+                MigrationHelper.add_new_migrations_to_version(cursor)
+            MigrationHelper.migrate_thread_stream = StringIO()
+            with get_new_os_conn() as conn:
+                with conn.cursor() as curs:
+                    handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging, version_conn)
+                    handler.execute_command("migrate")
+                    self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
+                    handler.execute_command("finalize")
 
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()

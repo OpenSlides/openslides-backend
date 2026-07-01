@@ -128,38 +128,33 @@ class MigrationHelper:
         MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
     @staticmethod
-    def add_new_migrations_to_version() -> None:
+    def add_new_migrations_to_version(curs: Cursor) -> None:
         """
         Adds new migrations to the version table with state MIGRATION_REQUIRED if the index didn't exist yet.
         """
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                database_indices = MigrationHelper.get_indices_from_database(curs)
-                for migration_index in MigrationHelper.migrations:
-                    if migration_index not in database_indices:
-                        replace_tables = MigrationHelper.get_replace_tables(
-                            migration_index
-                        )
-                        MigrationHelper.set_database_migration_info(
-                            curs,
-                            migration_index,
-                            MigrationState.MIGRATION_REQUIRED,
-                            replace_tables,
-                        )
+        database_indices = MigrationHelper.get_indices_from_database(curs)
+        for migration_index in MigrationHelper.migrations:
+            if migration_index not in database_indices:
+                replace_tables = MigrationHelper.get_replace_tables(
+                    migration_index
+                )
+                MigrationHelper.set_database_migration_info(
+                    curs,
+                    migration_index,
+                    MigrationState.MIGRATION_REQUIRED,
+                    replace_tables,
+                )
 
     @staticmethod
     def get_unfinalized_indices(curs: Cursor[DictRow]) -> list[int]:
         """
         Gets all indices stored in the version table.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                if tmp := cursor.execute(
-                    "SELECT migration_index FROM version WHERE migration_state != %s;",
-                    (MigrationState.FINALIZED,),
-                ).fetchall():
-                    return [elem.get("migration_index", 0) for elem in tmp]
+        if tmp := curs.execute(
+            "SELECT migration_index FROM version WHERE migration_state != %s;",
+            (MigrationState.FINALIZED,),
+        ).fetchall():
+            return [elem.get("migration_index", 0) for elem in tmp]
         raise MigrationException(
             "No unfinalized migration index could be acquired from database."
         )
@@ -169,11 +164,8 @@ class MigrationHelper:
         """
         Gets all indices stored in the version table.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as curs:
-                if tmp := curs.execute("SELECT migration_index FROM version;").fetchall():
-                    return [elem.get("migration_index", 0) for elem in tmp]
+        if tmp := curs.execute("SELECT migration_index FROM version;").fetchall():
+            return [elem.get("migration_index", 0) for elem in tmp]
         raise MigrationException("No migration index could be acquired from database.")
 
     @staticmethod
@@ -183,39 +175,33 @@ class MigrationHelper:
         """
         Gets the states per passed migration index.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                if tmp := cursor.execute(
-                    sql.SQL(
-                        "SELECT migration_index, migration_state FROM version WHERE migration_index = ANY("
-                    )
-                    + sql.Placeholder()
-                    + sql.SQL(");"),
-                    (indices,),
-                ).fetchall():
-                    return {
-                        elem.get("migration_index", 0): elem.get("migration_state", "")
-                        for elem in tmp
-                    }
-                else:
-                    raise MigrationException(
-                        "Requested migration indices are not available in version table."
-                    )
+        if tmp := curs.execute(
+            sql.SQL(
+                "SELECT migration_index, migration_state FROM version WHERE migration_index = ANY("
+            )
+            + sql.Placeholder()
+            + sql.SQL(");"),
+            (indices,),
+        ).fetchall():
+            return {
+                elem.get("migration_index", 0): elem.get("migration_state", "")
+                for elem in tmp
+            }
+        else:
+            raise MigrationException(
+                "Requested migration indices are not available in version table."
+            )
 
     @staticmethod
     def get_database_migration_index(curs: Cursor[DictRow]) -> int:
         """
         Returns the maximum migration index which is in state FINALIZED.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                if tmp := cursor.execute(
-                    "SELECT MAX(migration_index) FROM version WHERE migration_state = %s;",
-                    (MigrationState.FINALIZED,),
-                ).fetchone():
-                    return tmp.get("max", MIN_NON_REL_MIGRATION)
+        if tmp := curs.execute(
+            "SELECT MAX(migration_index) FROM version WHERE migration_state = %s;",
+            (MigrationState.FINALIZED,),
+        ).fetchone():
+            return tmp.get("max", MIN_NON_REL_MIGRATION)
         raise MigrationException(
             "Requested migration indices are not available in version table."
         )
@@ -245,7 +231,7 @@ class MigrationHelper:
 
     @staticmethod
     def set_database_migration_info(
-        curs: Cursor[DictRow] | None,
+        curs: Cursor[DictRow],
         migration_index: int,
         state: str,
         replace_tables: dict[str, dict[str, str | list[str]]] | None = None,
@@ -272,15 +258,8 @@ class MigrationHelper:
             values=sql.SQL(", ").join(sql.Placeholder() for _ in range(len(params))),
             updates=sql.SQL(", ").join(updates),
         )
-        if curs:
-            curs.execute(statement, tuple(params.values()))
-            curs.connection.commit()
-        else:
-            with get_new_os_conn() as conn:
-                conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-                with conn.cursor() as cursor:
-                    cursor.execute(statement, tuple(params.values()))
-                    cursor.connection.commit()
+        curs.execute(statement, tuple(params.values()))
+        curs.connection.commit()
 
 
     @staticmethod
@@ -298,7 +277,7 @@ class MigrationHelper:
         return version_table_exists["exists"]
 
     @staticmethod
-    def pull_migration_index_from_db(curs: Cursor[DictRow]) -> int:
+    def pull_migration_index_from_db(curs: Cursor[DictRow], ver_curs: Cursor|None=None) -> int:
         """
         Reads the current migration_index from the psql database.
         1. MAX(migration_index) of positions while position is still used for the index
@@ -308,13 +287,10 @@ class MigrationHelper:
         - migration_index : integer the migration index or 0 if this must be a fresh install.
         """
         migration_index: int
-        if MigrationHelper.table_exists(curs, "version"):
-            migration_index = MigrationHelper.get_database_migration_index(curs)
+        if MigrationHelper.table_exists(ver_curs, "version"):
+            migration_index = MigrationHelper.get_database_migration_index(ver_curs)
         elif MigrationHelper.table_exists(curs, "positions"):
-            with get_new_os_conn() as conn:
-                conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-                with conn.cursor() as cursor:
-                    row = cursor.execute("SELECT MAX(migration_index) FROM positions;").fetchone()
+            row = (ver_curs or curs).execute("SELECT MAX(migration_index) FROM positions;").fetchone()
             assert row, "No migration_index could be found."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
@@ -332,15 +308,12 @@ class MigrationHelper:
         Returns the highest MigrationState among all migrations in the ascending order of
         FINALIZED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                states_and_indices = cursor.execute(
-                    sql.SQL(
-                        "SELECT migration_index, migration_state FROM version WHERE migration_state != %s"
-                    ),
-                    (MigrationState.FINALIZED,),
-                ).fetchall()
+        states_and_indices = curs.execute(
+            sql.SQL(
+                "SELECT migration_index, migration_state FROM version WHERE migration_state != %s"
+            ),
+            (MigrationState.FINALIZED,),
+        ).fetchall()
         if not states_and_indices:
             return MigrationState.FINALIZED
         states = {elem.get("migration_state") for elem in states_and_indices}
@@ -400,13 +373,10 @@ class MigrationHelper:
         Returns the migration indexes replace tables, mapping the collection to its
         migration copies, stored in the database.
         """
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                if replace_tables := cursor.execute(
-                    f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
-                ).fetchone():
-                    return replace_tables["replace_tables"]
+        if replace_tables := curs.execute(
+            f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
+        ).fetchone():
+            return replace_tables["replace_tables"]
         raise MigrationException("Could not retrieve replace tables from database.")
 
     @staticmethod

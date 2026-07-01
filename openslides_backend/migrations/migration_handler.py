@@ -4,14 +4,13 @@ from importlib import import_module
 from typing import Any
 
 from psycopg import Cursor, sql, IsolationLevel
-# from psycopg.extensions import IsolationLevel.READ_COMMITTED
 from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
 from openslides_backend.shared.exceptions import CommandNotImplemented
 from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
+    get_new_os_conn, ConnectionContext
 )
 
 from ..migrations.exceptions import (
@@ -39,9 +38,11 @@ class MigrationHandler(BaseHandler):
         env: Env,
         services: Services,
         logging: LoggingModule,
+        version_connection: Any
     ) -> None:
         super().__init__(env, services, logging)
         self.cursor = curs
+        self.ver_conn = version_connection
         self.replace_tables: dict[str, Any]
 
     def copy_table(self, table_name: str) -> None:
@@ -80,9 +81,10 @@ class MigrationHandler(BaseHandler):
 
     def setup_migration_relations(self) -> None:
         """Sets the tables and views used within the migration and copies their data."""
-        unified_replace_tables, _ = (
-            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
-        )
+        with self.ver_conn.cursor() as cursor:
+            unified_replace_tables, _ = (
+                MigrationHelper.get_unified_replace_tables_from_database(cursor)
+            )
         im_tables = set()
         # COPY collection tables
         for collection, r_tables in unified_replace_tables.items():
@@ -256,9 +258,10 @@ class MigrationHandler(BaseHandler):
         """
         Updates all primary keys and sequential_number fields.
         """
-        unified_repl_tables, _ = (
-            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
-        )
+        with self.ver_conn.cursor() as cursor:
+            unified_repl_tables, _ = (
+                MigrationHelper.get_unified_replace_tables_from_database(cursor)
+            )
         for collection in unified_repl_tables:
             table_name = HelperGetNames.get_table_name(collection)
             table = sql.Identifier(table_name)
@@ -301,69 +304,69 @@ class MigrationHandler(BaseHandler):
 
             # checks wether the methods are available and executes them.
             mig_class.data_definition(self.cursor)
-            mig_class.data_manipulation(self.cursor)
+            mig_class.data_manipulation(self.cursor, version_connection=self.ver_conn)
 
-            MigrationHelper.set_database_migration_info(
-                None, index, MigrationState.FINALIZATION_REQUIRED
-            )
+            with self.ver_conn.cursor() as curs:
+                MigrationHelper.set_database_migration_info(
+                    curs, index, MigrationState.FINALIZATION_REQUIRED
+                )
 
     def migrate(self) -> None:
         """
         Starts the migration process.
         """
         self.logger.info("Preparing migrations ...")
-        state = MigrationHelper.get_migration_state(self.cursor)
-        match state:
-            case MigrationState.MIGRATION_REQUIRED:
-                # Block other migration requests by setting state to preparing.
-                with get_new_os_conn() as conn:
-                    conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-                    with conn.cursor() as cursor:
-                        if minimum_required_index := cursor.execute(
-                            sql.SQL(
-                                "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
-                            ),
-                            (MigrationState.MIGRATION_REQUIRED,),
-                        ).fetchone():
-                            MigrationHelper.set_database_migration_info(
-                                cursor,
-                                minimum_required_index["min"],
-                                MigrationState.MIGRATION_RUNNING,
-                            )
-                # Check prerequisites
-                for index, module_name in MigrationHelper.migrations.items():
-                    mig_class = getattr(
-                        import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-                    )
-                    self.logger.info("Pre check: " + module_name + " ...")
-                    if errors := mig_class.check_prerequisites(self.cursor):
-                        if minimum_required_index:
-                            MigrationHelper.set_database_migration_info(
-                                None,
-                                minimum_required_index["min"],
-                                MigrationState.MIGRATION_REQUIRED,
-                            )
-                        errors = (
-                            f"Pre check for migration {module_name} failed.\n{errors}"
+        with self.ver_conn.cursor() as cursor:
+            state = MigrationHelper.get_migration_state(cursor)
+            match state:
+                case MigrationState.MIGRATION_REQUIRED:
+                    # Block other migration requests by setting state to preparing.
+                    if minimum_required_index := cursor.execute(
+                        sql.SQL(
+                            "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
+                        ),
+                        (MigrationState.MIGRATION_REQUIRED,),
+                    ).fetchone():
+                        MigrationHelper.set_database_migration_info(
+                            cursor,
+                            minimum_required_index["min"],
+                            MigrationState.MIGRATION_RUNNING,
                         )
-                        self.logger.info(errors)
-                        raise MigrationSetupException(errors)
-                MigrationHelper.write_line("migration started")
-                self.set_public_tables_read_only()
-                self.setup_migration_relations()
-                self.execute_migrations()
-                MigrationHelper.write_line("migration finished")
-                MigrationHelper.migrate_thread_stream_can_be_closed = True
-            case MigrationState.FINALIZATION_REQUIRED:
-                self.logger.info("Done. Finalizing is still needed.")
-            case MigrationState.FINALIZED:
-                self.logger.info("No migration needed.")
-            case MigrationState.MIGRATION_RUNNING:
-                self.logger.info("There is already a migration running.")
-            case _:
-                raise MigrationException(
-                    f"{state} not allowed when executing migrate command."
-                )
+                    # Check prerequisites
+                    for index, module_name in MigrationHelper.migrations.items():
+                        mig_class = getattr(
+                            import_module(f"{MODULE_PATH}{module_name}"), "Migration"
+                        )
+                        self.logger.info("Pre check: " + module_name + " ...")
+                        if errors := mig_class.check_prerequisites(self.cursor):
+                            if minimum_required_index:
+                                with self.ver_conn.cursor() as curs:
+                                    MigrationHelper.set_database_migration_info(
+                                        curs,
+                                        minimum_required_index["min"],
+                                        MigrationState.MIGRATION_REQUIRED,
+                                    )
+                            errors = (
+                                f"Pre check for migration {module_name} failed.\n{errors}"
+                            )
+                            self.logger.info(errors)
+                            raise MigrationSetupException(errors)
+                    MigrationHelper.write_line("migration started")
+                    self.set_public_tables_read_only()
+                    self.setup_migration_relations()
+                    self.execute_migrations()
+                    MigrationHelper.write_line("migration finished")
+                    MigrationHelper.migrate_thread_stream_can_be_closed = True
+                case MigrationState.FINALIZATION_REQUIRED:
+                    self.logger.info("Done. Finalizing is still needed.")
+                case MigrationState.FINALIZED:
+                    self.logger.info("No migration needed.")
+                case MigrationState.MIGRATION_RUNNING:
+                    self.logger.info("There is already a migration running.")
+                case _:
+                    raise MigrationException(
+                        f"{state} not allowed when executing migrate command."
+                    )
 
     def execute_command(self, command: str) -> None:
         """
@@ -411,13 +414,14 @@ class MigrationHandler(BaseHandler):
                 )
             )
         # Support reset on initial migration.
-        if MigrationHelper.get_database_migration_index(self.cursor) < 100:
-            for table in OLD_TABLES:
-                self.cursor.execute(
-                    sql.SQL("DROP TRIGGER IF EXISTS tr_lock_{table}").format(
-                        table=sql.SQL(table)
+        with self.ver_conn.cursor() as cursor:
+            if MigrationHelper.get_database_migration_index(cursor) < 100:
+                for table in OLD_TABLES:
+                    self.cursor.execute(
+                        sql.SQL("DROP TRIGGER IF EXISTS tr_lock_{table}").format(
+                            table=sql.SQL(table)
+                        )
                     )
-                )
 
     @classmethod
     def close_migrate_thread_stream(cls) -> None:
@@ -436,7 +440,8 @@ class MigrationHandler(BaseHandler):
         Executes the cleanup method and copies tables into place.
         Also sets the migration info accordingly.
         """
-        state = MigrationHelper.get_migration_state(self.cursor)
+        with self.ver_conn.cursor() as cursor:
+            state = MigrationHelper.get_migration_state(cursor)
         match state:
             case MigrationState.FINALIZED:
                 return
@@ -457,16 +462,14 @@ class MigrationHandler(BaseHandler):
             )
             mig_class.cleanup(self.cursor)
 
-        unified_replace_tables, relevant_mis = (
-            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
-        )
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as curs:
-                for mi in relevant_mis:
-                    MigrationHelper.set_database_migration_info(
-                        curs, mi, MigrationState.FINALIZATION_RUNNING
-                    )
+        with self.ver_conn.cursor() as curs:
+            unified_replace_tables, relevant_mis = (
+                MigrationHelper.get_unified_replace_tables_from_database(curs)
+            )
+            for mi in relevant_mis:
+                MigrationHelper.set_database_migration_info(
+                    curs, mi, MigrationState.FINALIZATION_RUNNING
+                )
 
         im_tables = set()
         # Do the general replacement
@@ -570,13 +573,11 @@ class MigrationHandler(BaseHandler):
         self.update_sequences()
 
         MigrationHelper.write_line("finalization finished")
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as curs:
-                for mi in relevant_mis:
-                    MigrationHelper.set_database_migration_info(
-                        curs, mi, MigrationState.FINALIZED
-                    )
+        with self.ver_conn.cursor() as curs:
+            for mi in relevant_mis:
+                MigrationHelper.set_database_migration_info(
+                    curs, mi, MigrationState.FINALIZED
+                )
         self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
 
     def reset(self) -> None:
@@ -587,25 +588,23 @@ class MigrationHandler(BaseHandler):
         self.logger.info("Reset migrations.")
         self.close_migrate_thread_stream()
         self._clean_migration_data()
-        indices = MigrationHelper.get_indices_from_database(self.cursor)
-        # Remove unfinalized migration indices from version table
-        to_delete_indices = [
-            idx
-            for idx, state in MigrationHelper.get_database_migration_states(
-                self.cursor, indices
-            ).items()
-            if state != MigrationState.FINALIZED
-        ]
-        with get_new_os_conn() as conn:
-            conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    sql.SQL("DELETE from version WHERE migration_index = ANY(")
-                    + sql.Placeholder()
-                    + sql.SQL(");"),
-                    (to_delete_indices,),
-                )
-                cursor.connection.commit()
+        with self.ver_conn.cursor as cursor:
+            indices = MigrationHelper.get_indices_from_database(cursor)
+            # Remove unfinalized migration indices from version table
+            to_delete_indices = [
+                idx
+                for idx, state in MigrationHelper.get_database_migration_states(
+                    cursor, indices
+                ).items()
+                if state != MigrationState.FINALIZED
+            ]
+            cursor.execute(
+                sql.SQL("DELETE from version WHERE migration_index = ANY(")
+                + sql.Placeholder()
+                + sql.SQL(");"),
+                (to_delete_indices,),
+            )
+            cursor.connection.commit()
 
         self.unset_tables_read_only()
 
@@ -615,18 +614,19 @@ class MigrationHandler(BaseHandler):
         """
         self.logger.info("Clean up migration data...")
         assert self.cursor, "Handlers cursor must be initialized."
-        indices = MigrationHelper.get_indices_from_database(self.cursor)
-        state_per_idx = MigrationHelper.get_database_migration_states(
-            self.cursor, indices
-        )
-        replace_tables = {
-            k: v
-            for idx, state in state_per_idx.items()
-            if state != MigrationState.FINALIZED
-            for k, v in MigrationHelper.get_replace_tables_from_database(
-                self.cursor, idx
-            ).items()
-        }
+        with self.ver_conn.cursor() as cursor:
+            indices = MigrationHelper.get_indices_from_database(cursor)
+            state_per_idx = MigrationHelper.get_database_migration_states(
+                cursor, indices
+            )
+            replace_tables = {
+                k: v
+                for idx, state in state_per_idx.items()
+                if state != MigrationState.FINALIZED
+                for k, v in MigrationHelper.get_replace_tables_from_database(
+                    cursor, idx
+                ).items()
+            }
         for collection in replace_tables:
             self.cursor.execute(f"DROP TABLE {collection}_m;")
         if any(mi > 100 for mi in indices):

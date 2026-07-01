@@ -283,7 +283,7 @@ class Migration(BaseMigration):
         return ""
 
     @staticmethod
-    def data_manipulation(curs: Cursor[DictRow]) -> None:
+    def data_manipulation(curs: Cursor[DictRow], **kwargs) -> None:
         """
         Purpose:
             Iterates over chunks of the DB table models and writes the data into the respective DB tables
@@ -376,11 +376,21 @@ class Migration(BaseMigration):
             curs.execute(command, values)
 
         # clear replace tables as this migration writes the tables directly
-        MigrationHelper.set_database_migration_info(
-            None,
-            100,
-            MigrationState.FINALIZATION_REQUIRED,
-        )
+        #TODO: Separate connection
+        ver_conn = kwargs.get("version_connection")
+        if ver_conn:
+            with ver_conn.cursor() as ver_curs:
+                MigrationHelper.set_database_migration_info(
+                    ver_curs,
+                    100,
+                    MigrationState.FINALIZATION_REQUIRED,
+                )
+        else:
+            MigrationHelper.set_database_migration_info(
+                curs,
+                100,
+                MigrationState.FINALIZATION_REQUIRED,
+            )
 
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:
