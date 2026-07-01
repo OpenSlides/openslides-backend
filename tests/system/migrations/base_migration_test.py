@@ -46,7 +46,7 @@ MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 
 class BaseMigrationTestCase(BaseSystemTestCase):
     # has to be set by subclass
-    migration_file: str
+    migration_number: str
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
