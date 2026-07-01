@@ -2470,6 +2470,7 @@ class PollConfigRatingApproval(Model):
     )
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
+    max_yes_amount = fields.IntegerField()
     allow_abstain = fields.BooleanField(default=True)
     onehundred_percent_base = fields.CharField(
         required=True,
