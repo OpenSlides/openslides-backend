@@ -50,7 +50,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
             content_object_collection, content_object_id = collection_and_id_from_fqid(
                 fqid_content_object
             )
-            if content_object_collection == "mediafile":  # TODO: Not possible I think
+            if content_object_collection == "mediafile":
                 meeting_mediafile = get_meeting_mediafile_id_or_create_payload(
                     self.datastore, meeting_id, content_object_id, lock_result=False
                 )

@@ -517,58 +517,24 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_committee_manager_add_and_remove_both(self) -> None:
         """test with 2 actions in 2 transaction"""
-        self.create_meeting(11)
-        self.create_meeting(22)
-        self.create_meeting(33)
         self.set_models(
             {
-                "committee/1": {
-                    "name": "remove user",
-                    "manager_ids": [123],
-                },
-                "committee/2": {
-                    "name": "remove cml from_user",
-                    "manager_ids": [123],
-                },
-                "committee/3": {"name": "add user", "meeting_ids": [33]},
+                "user/123": {"username": "username_Xcdfgee"},
+                "committee/1": {"name": "remove user", "manager_ids": [123]},
+                "committee/2": {"name": "remove cml from_user", "manager_ids": [123]},
+                "committee/3": {"name": "add user"},
                 "committee/4": {"name": "add user with cml"},
-                "meeting/11": {
-                    "group_ids": [111],
-                    "committee_id": 1,
-                },
-                "meeting/22": {
-                    "group_ids": [222],
-                    "committee_id": 2,
-                },
-                "meeting/33": {
-                    "group_ids": [333],
-                    "committee_id": 3,
-                },
-                "group/111": {
-                    "name": "the",
-                    "meeting_user_ids": [111],
-                    "meeting_id": 11,
-                },
-                "group/222": {
-                    "name": "dust",
-                    "meeting_user_ids": [112],
-                    "meeting_id": 22,
-                },
-                "group/333": {"name": "uh", "meeting_user_ids": [], "meeting_id": 33},
-                "user/123": {
-                    # "meeting_ids": [11, 22],
-                    "username": "username_Xcdfgee",
-                },
-                "meeting_user/111": {
-                    "meeting_id": 11,
-                    "user_id": 123,
-                    "group_ids": [111],
-                },
-                "meeting_user/112": {
-                    "meeting_id": 22,
-                    "user_id": 123,
-                    "group_ids": [222],
-                },
+            }
+        )
+        self.create_meeting(11, meeting_data={"committee_id": 1})
+        self.create_meeting(22, meeting_data={"committee_id": 2})
+        self.create_meeting(33, meeting_data={"committee_id": 3})
+        self.set_models(
+            {
+                "group/11": {"meeting_user_ids": [111]},
+                "group/22": {"meeting_user_ids": [112]},
+                "meeting_user/111": {"meeting_id": 11, "user_id": 123},
+                "meeting_user/112": {"meeting_id": 22, "user_id": 123},
             }
         )
 
@@ -581,7 +547,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                             "id": 123,
                             "committee_management_ids": [4],
                             "meeting_id": 33,
-                            "group_ids": [333],
+                            "group_ids": [33],
                         }
                     ],
                 },
@@ -1320,18 +1286,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         User is member of an archived meeting in the same committee, but this doesn't may affect the result.
         """
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(
+            4,
+            meeting_data={"is_active_in_organization_id": None, "committee_id": 60},
+        )
         self.set_user_groups(self.user_id, [2])
         self.set_user_groups(111, [1, 4])
-        self.set_models(
-            {
-                "meeting/4": {
-                    "is_active_in_organization_id": None,
-                    "committee_id": 60,
-                },
-                "group/2": {"permissions": [permission]},
-            }
-        )
+        self.set_models({"group/2": {"permissions": [permission]}})
         response = self.request(
             "user.update",
             {
@@ -1763,14 +1724,9 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_perm_group_C_user_can_update(self) -> None:
         """May update group C group_ids by user.can_update permission with admin group of all related meetings"""
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_user_groups(self.user_id, [2, 5])  # Admin-groups
         self.set_user_groups(111, [2, 3, 5, 6])
-        self.set_models(
-            {
-                "meeting/4": {"committee_id": 60},
-            }
-        )
 
         response = self.request(
             "user.update",
@@ -1940,11 +1896,10 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_perm_group_C_special_1(self) -> None:
         """group C group_ids adding meeting in same committee with committee permission"""
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_committee_management_level([60], self.user_id)
         self.set_models(
             {
-                "meeting/4": {"committee_id": 60},
                 "meeting_user/2": {"meeting_id": 1, "user_id": 111, "group_ids": [1]},
                 "group/1": {"meeting_user_ids": [1, 2]},
             }
@@ -1997,11 +1952,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         with meeting permission for both, which is allowed.
         """
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_user_groups(self.user_id, [2, 5])  # Admin groups meeting/1 and 4
         self.set_models(
             {
-                "meeting/4": {"committee_id": 60},
                 "meeting_user/3": {
                     "user_id": 111,
                     "meeting_id": 1,
@@ -2986,7 +2940,7 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_group_removal_with_speaker(self) -> None:
         self.create_meeting(4)
-        self.create_meeting(7)
+        self.create_meeting(7, meeting_data={"committee_id": 63})
         self.create_topic(1, 4)
         self.create_topic(2, 7)
         self.set_models(
@@ -3007,13 +2961,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "speaker_ids": [25],
                     "group_ids": [7],
                 },
-                "meeting/4": {
-                    "present_user_ids": [1234],
-                },
-                "meeting/7": {
-                    "committee_id": 63,
-                    "present_user_ids": [1234],
-                },
+                "meeting/4": {"present_user_ids": [1234]},
+                "meeting/7": {"present_user_ids": [1234]},
                 "speaker/14": {
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 4444,
@@ -3725,14 +3674,13 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_permission_as_locked_out(self) -> None:
         self.permission_setup()
-        self.create_meeting(base=4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         meeting_user_ids = self.set_user_groups(self.user_id, [3, 6])  # Admin-groups
         self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
         self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
         self.set_user_groups(111, [1, 4])
         self.set_models(
             {
-                "meeting/4": {"committee_id": 60},
                 **{
                     f"meeting_user/{m_user_id}": {"locked_out": True}
                     for m_user_id in meeting_user_ids

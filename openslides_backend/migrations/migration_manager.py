@@ -8,6 +8,7 @@ from psycopg.rows import DictRow
 
 from openslides_backend.migrations.exceptions import (
     MigrationException,
+    MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
 from openslides_backend.migrations.migration_helper import (
@@ -58,27 +59,29 @@ class MigrationManager:
 
     def handle_progress_command(self) -> dict[str, Any]:
         """
-        # TODO delete once tooling will handle the stats route instead.
+        Returns an intermediate result of the running migration, reading all
+        new output written since the last regular read (i.e. since last
+        progress call).
         """
         return self.get_migration_result()
 
-    def get_migration_result(self) -> dict[str, Any]:
+    def get_migration_result(self, all: bool = False) -> dict[str, Any]:
         """
-        Gets the 'status' and migration threads 'output' string. 'exception' if an exception occured.
+        Gets the 'status' and migration threads 'output' string. 'exception' if
+        an exception occured.
         """
         state = MigrationHelper.get_migration_state(self.cursor)
-        result = {"status": str(state)}
-        if MigrationHelper.migrate_thread_stream and (
-            output := MigrationHelper.migrate_thread_stream.getvalue()
-        ):
-            # The last line (index -1) will always be an empty string.
-            last_line = output.split("\n")[-2]
-            result["output"] = f"{last_line}\n"
+        result = {"status": str(state), "output": ""}
+
+        if MigrationHelper.migrate_thread_stream:
+            result["output"] = MigrationHelper.read_stream(all)
+
         if state in (
             MigrationState.MIGRATION_FAILED,
             MigrationState.FINALIZATION_FAILED,
         ):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
+
         return result
 
     def get_stats(self) -> dict[str, Any]:
@@ -115,36 +118,43 @@ class MigrationManager:
             self.cursor
         )
 
-        migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
-        state_per_mi = MigrationHelper.get_database_migration_states(
-            self.cursor, migration_indices
-        )
-        unmigrated_collections = {
-            collection: cast(str, r_tables["table"])
-            for mi in migration_indices
-            if mi > current_migration_index
-            if state_per_mi[mi]
-            in (MigrationState.MIGRATION_REQUIRED, MigrationState.MIGRATION_RUNNING)
-            for collection, r_tables in MigrationHelper.get_replace_tables(mi).items()
-        }
-        stats = {
-            collection: {
-                "count": amount,
-                "migrated": count(migration_table, self.cursor),
+        if not MigrationHelper.migrate_thread_exception:
+            migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
+            state_per_mi = MigrationHelper.get_database_migration_states(
+                self.cursor, migration_indices
+            )
+            unmigrated_collections = {
+                collection: cast(str, r_tables["table"])
+                for mi in migration_indices
+                if mi > current_migration_index
+                if state_per_mi[mi]
+                in (
+                    MigrationState.MIGRATION_REQUIRED,
+                    MigrationState.MIGRATION_RUNNING,
+                )
+                for collection, r_tables in MigrationHelper.get_replace_tables(
+                    mi
+                ).items()
             }
-            for collection, migration_table in unmigrated_collections.items()
-            if (amount := count(collection + "_t", self.cursor))
-        }
+            stats = {
+                collection: {
+                    "count": amount,
+                    "migrated": count(migration_table, self.cursor),
+                }
+                for collection, migration_table in unmigrated_collections.items()
+                if (amount := count(collection + "_t", self.cursor))
+            }
 
         return {
-            **self.get_migration_result(),
+            # stats returns all output without disturbing concurrent progress calls
+            # -> all=True
+            **self.get_migration_result(all=True),
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
-            "migratable_models": stats,
             **(
-                {"exception": MigrationHelper.migrate_thread_exception}
+                {"exception": str(MigrationHelper.migrate_thread_exception)}
                 if MigrationHelper.migrate_thread_exception
-                else {}
+                else {"migratable_models": stats}
             ),
         }
 
@@ -200,7 +210,10 @@ class MigrationManager:
                 verbose = payload.get("verbose", False)
                 if command in iter(MigrationCommand):
                     MigrationHelper.migrate_thread_stream = StringIO()
-                    thread = Thread(
+                    MigrationHelper.migrate_thread_stream_read_pos = (
+                        MigrationHelper.migrate_thread_stream.tell()
+                    )
+                    MigrationHelper.migrate_thread = thread = Thread(
                         target=self.execute_migrate_command, args=[command, verbose]
                     )
                     thread.start()
@@ -211,7 +224,7 @@ class MigrationManager:
                         # Migration still running. Report current progress and return
                         return {
                             "status": MigrationHelper.get_migration_state(self.cursor),
-                            "output": MigrationHelper.migrate_thread_stream.getvalue(),
+                            "output": MigrationHelper.read_stream(),
                         }
                     else:
                         # Migration already finished/had nothing to do
@@ -240,6 +253,9 @@ class MigrationManager:
                         curs, self.env, self.services, self.logging
                     )
                     return self.handler.execute_command(command)
+        except MigrationSetupException as e:
+            MigrationHelper.migrate_thread_exception = e
+            self.logger.exception(e)
         except Exception as e:
             MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)

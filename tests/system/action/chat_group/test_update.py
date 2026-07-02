@@ -45,7 +45,7 @@ class ChatGroupUpdate(BaseActionTestCase):
 
     def test_update_group_from_different_meeting(self) -> None:
         self.create_meeting()
-        self.create_meeting(2)
+        self.create_meeting(4)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},

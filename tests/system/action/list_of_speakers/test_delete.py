@@ -46,7 +46,7 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: Trigger tr_ud_topic_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for topic/42/list_of_speakers_id from relationship before list_of_speakers/111/content_object_id_topic_id",
+            "Relation violates required constraint: Trigger tr_ud_not_null_topic_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for topic/42/list_of_speakers_id from relationship before list_of_speakers/111/content_object_id_topic_id",
             response.json["message"],
         )
         self.assert_model_exists("list_of_speakers/111")

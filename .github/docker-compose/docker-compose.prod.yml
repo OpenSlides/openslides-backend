@@ -1,6 +1,6 @@
 services:
     backend-action:
-        build: 
+        build:
             context: ../..
             target: "prod"
             args:
@@ -17,7 +17,7 @@ services:
         secrets:
             - postgres_password
     backend-presenter:
-        build: 
+        build:
             context: ../..
             target: "prod"
             args:
@@ -34,7 +34,7 @@ services:
         secrets:
             - postgres_password
     postgres:
-        image: postgres:15
+        image: postgres:17
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
