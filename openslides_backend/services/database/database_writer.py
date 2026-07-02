@@ -600,7 +600,7 @@ class DatabaseWriter(SqlQueryHelper):
                     ids = [item.get("nextval", 0) for item in result]
                 else:
                     raise BadCodingException("db id sequence broken.")
-                self.logger.info(f"{len(ids)} ids reserved")
+                self.logger.debug(f"{len(ids)} ids reserved")
                 return ids
 
     @retry_on_db_failure
