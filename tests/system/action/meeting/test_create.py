@@ -70,9 +70,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "projector_countdown_warning_time": 0,
                 "organization_tag_ids": [3],
                 "is_active_in_organization_id": 1,
-                "assignment_poll_default_group_ids": [3],
-                "motion_poll_default_group_ids": [3],
-                "topic_poll_default_group_ids": [3],
+                "poll_default_ids": [1, 2, 3],
+                "assignment_poll_config_id": 1,
+                "motion_poll_config_id": 2,
+                "topic_poll_config_id": 3,
                 "poll_projection_name_order_first": "last_name",
                 "poll_projection_max_columns": 6,
                 **{field: [1] for field in Meeting.all_default_projectors()},
@@ -81,7 +82,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1]})
         self.assert_model_exists("group/1", {"name": "Default"})
         self.assert_model_exists("group/2", {"name": "Admin"})
-        self.assert_model_exists("group/3", {"name": "Delegates"})
+        self.assert_model_exists(
+            "group/3",
+            {"name": "Delegates", "used_in_meeting_poll_default_ids": [1, 2, 3]},
+        )
         self.assert_model_exists("group/4", {"name": "Staff"})
         self.assert_model_exists(
             "motion_workflow/1",
@@ -183,6 +187,57 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "used_as_poll_countdown_meeting_id": 1,
                 "default_time": 60,
                 "countdown_time": 60,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/1",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": 1,
+                "used_as_motion_poll_config_in_meeting_id": None,
+                "used_as_topic_poll_config_in_meeting_id": None,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "allow_abstain": True,
+                "allow_nota": False,
+                "strike_out": False,
+                "onehundred_percent_base": "valid",
+                "display_chart": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/2",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": None,
+                "used_as_motion_poll_config_in_meeting_id": 1,
+                "used_as_topic_poll_config_in_meeting_id": None,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "allow_abstain": True,
+                "allow_nota": False,
+                "strike_out": False,
+                "onehundred_percent_base": "valid",
+                "display_chart": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/3",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": None,
+                "used_as_motion_poll_config_in_meeting_id": None,
+                "used_as_topic_poll_config_in_meeting_id": 1,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_MANUALLY,
+                "allow_abstain": True,
+                "allow_nota": False,
+                "strike_out": False,
+                "onehundred_percent_base": "valid",
+                "display_chart": "pie",
             },
         )
 
