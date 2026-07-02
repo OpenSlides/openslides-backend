@@ -6,8 +6,9 @@ from decimal import Decimal
 from json import dumps as json_dumps
 from threading import Lock
 from typing import Any
+from unittest import TestCase, TestResult
 from unittest.mock import DEFAULT as mockdefault
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from zoneinfo import ZoneInfo
 
 from psycopg import Cursor
@@ -26,6 +27,7 @@ from openslides_backend.models.fields import (
     JSONField,
     TimestampField,
 )
+from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.create_schema import create_schema
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
@@ -35,7 +37,6 @@ from tests.conftest_helper import (
     deactivate_notify_triggers,
     generate_sql_for_test_initiation,
 )
-from tests.system.base import BaseSystemTestCase
 from tests.system.util import get_route_path
 
 DEPR_SQL_PATH = os.path.realpath(
@@ -44,9 +45,20 @@ DEPR_SQL_PATH = os.path.realpath(
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 
 
-class BaseMigrationTestCase(BaseSystemTestCase):
+class BaseMigrationTestCase(TestCase):
     # has to be set by subclass
     migration_number: int
+
+    def run(self, result: TestResult | None = None) -> TestResult | None:
+        """
+        Overrides the TestCases run method.
+        Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
+        Also stores its connection in self.connection.
+        """
+        with get_new_os_conn() as conn:
+            self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            self.connection = conn
+            return super().run(result)
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
@@ -223,6 +235,3 @@ class BaseMigrationTestCase(BaseSystemTestCase):
             data = json_dumps(data)
 
         return data
-
-    # def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
-    #     """This is just an overwrite for disabling checks as it conflicts with changing model_registry."""

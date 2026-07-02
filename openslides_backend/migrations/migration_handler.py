@@ -315,7 +315,7 @@ class MigrationHandler(BaseHandler):
             mig_class.cleanup(self.cursor)
 
             MigrationHelper.set_database_migration_info(
-                self.cursor, index, MigrationState.FINALIZATION_REQUIRED
+                self.cursor, index, MigrationState.MIGRATION_FINISHED
             )
 
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
@@ -369,8 +369,8 @@ class MigrationHandler(BaseHandler):
                 self.execute_migrations()
                 MigrationHelper.write_line("migration finished")
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
-            case MigrationState.FINALIZATION_REQUIRED:
-                self.logger.info("Done. Finalizing is still needed.")
+            case MigrationState.MIGRATION_FINISHED:
+                self.logger.info("Done. About to finish.")
             case MigrationState.FINALIZED:
                 self.logger.info("No migration needed.")
             case MigrationState.MIGRATION_RUNNING:

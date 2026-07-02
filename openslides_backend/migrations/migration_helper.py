@@ -40,15 +40,12 @@ class MigrationState(StrEnum):
     MIGRATION_REQUIRED = "migration_required"
     MIGRATION_RUNNING = "migration_running"
     MIGRATION_FAILED = "migration_failed"
-    FINALIZATION_REQUIRED = "finalization_required"
-    FINALIZATION_RUNNING = "finalization_running"
-    FINALIZATION_FAILED = "finalization_failed"
+    MIGRATION_FINISHED = "migration_finished"
     FINALIZED = "finalized"
 
 
 class MigrationCommand(StrEnum):
     MIGRATE = "migrate"
-    FINALIZE = "finalize"
     RESET = "reset"
     STATS = "stats"
     PROGRESS = "progress"
@@ -333,7 +330,7 @@ class MigrationHelper:
     def get_migration_state(curs: Cursor[DictRow]) -> MigrationState:
         """
         Returns the highest MigrationState among all migrations in the ascending order of
-        FINALIZED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
+        FINALIZED, MIGRATION_FINISHED, MIGRATION_REQUIRED, MIGRATION_RUNNING, MIGRATION_FAILED.
         """
         states_and_indices = curs.execute(
             sql.SQL(
@@ -349,9 +346,7 @@ class MigrationHelper:
             MigrationState.MIGRATION_FAILED,
             MigrationState.MIGRATION_RUNNING,
             MigrationState.MIGRATION_REQUIRED,
-            MigrationState.FINALIZATION_FAILED,
-            MigrationState.FINALIZATION_RUNNING,
-            MigrationState.FINALIZATION_REQUIRED,
+            MigrationState.MIGRATION_FINISHED,
         ]:
             if state in states:
                 return state
@@ -386,6 +381,7 @@ class MigrationHelper:
         """
         Returns the replace tables mapping origin table to its migration copy.
         """
+        # TODO revise this
         module_name = MigrationHelper.migrations[migration_number]
         migration_class = MigrationHelper.get_migration_class(module_name)
         return {

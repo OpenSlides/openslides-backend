@@ -76,10 +76,7 @@ class MigrationManager:
         if MigrationHelper.migrate_thread_stream:
             result["output"] = MigrationHelper.read_stream(all)
 
-        if state in (
-            MigrationState.MIGRATION_FAILED,
-            MigrationState.FINALIZATION_FAILED,
-        ):
+        if state in (MigrationState.MIGRATION_FAILED,):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
         MigrationHelper.close_migrate_thread_stream()
         return result
@@ -255,10 +252,7 @@ class MigrationManager:
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
                     relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
-                    match command:
-                        case MigrationCommand.MIGRATE:
-                            state = MigrationState.MIGRATION_FAILED
-                        case MigrationCommand.FINALIZE:
-                            state = MigrationState.FINALIZATION_FAILED
                     for mi in relevant_mis:
-                        MigrationHelper.set_database_migration_info(curs, mi, state)
+                        MigrationHelper.set_database_migration_info(
+                            curs, mi, MigrationState.MIGRATION_FAILED
+                        )
