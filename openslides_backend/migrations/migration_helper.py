@@ -6,7 +6,8 @@ from re import Match, match
 from threading import Thread
 from typing import Any
 
-from psycopg import Cursor, sql
+from psycopg import Cursor, sql, IsolationLevel
+# from psycopg.extensions import IsolationLevel.READ_COMMITTED
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
@@ -127,24 +128,22 @@ class MigrationHelper:
         MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
     @staticmethod
-    def add_new_migrations_to_version() -> None:
+    def add_new_migrations_to_version(curs: Cursor) -> None:
         """
         Adds new migrations to the version table with state MIGRATION_REQUIRED if the index didn't exist yet.
         """
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                database_indices = MigrationHelper.get_indices_from_database(curs)
-                for migration_index in MigrationHelper.migrations:
-                    if migration_index not in database_indices:
-                        replace_tables = MigrationHelper.get_replace_tables(
-                            migration_index
-                        )
-                        MigrationHelper.set_database_migration_info(
-                            curs,
-                            migration_index,
-                            MigrationState.MIGRATION_REQUIRED,
-                            replace_tables,
-                        )
+        database_indices = MigrationHelper.get_indices_from_database(curs)
+        for migration_index in MigrationHelper.migrations:
+            if migration_index not in database_indices:
+                replace_tables = MigrationHelper.get_replace_tables(
+                    migration_index
+                )
+                MigrationHelper.set_database_migration_info(
+                    curs,
+                    migration_index,
+                    MigrationState.MIGRATION_REQUIRED,
+                    replace_tables,
+                )
 
     @staticmethod
     def get_unfinalized_indices(curs: Cursor[DictRow]) -> list[int]:
@@ -262,6 +261,7 @@ class MigrationHelper:
         curs.execute(statement, tuple(params.values()))
         curs.connection.commit()
 
+
     @staticmethod
     def table_exists(curs: Cursor[DictRow], table_name: str) -> bool:
         """
@@ -277,7 +277,7 @@ class MigrationHelper:
         return version_table_exists["exists"]
 
     @staticmethod
-    def pull_migration_index_from_db(curs: Cursor[DictRow]) -> int:
+    def pull_migration_index_from_db(curs: Cursor[DictRow], ver_curs: Cursor|None=None) -> int:
         """
         Reads the current migration_index from the psql database.
         1. MAX(migration_index) of positions while position is still used for the index
@@ -287,10 +287,10 @@ class MigrationHelper:
         - migration_index : integer the migration index or 0 if this must be a fresh install.
         """
         migration_index: int
-        if MigrationHelper.table_exists(curs, "version"):
-            migration_index = MigrationHelper.get_database_migration_index(curs)
+        if MigrationHelper.table_exists(ver_curs or curs, "version"):
+            migration_index = MigrationHelper.get_database_migration_index(ver_curs)
         elif MigrationHelper.table_exists(curs, "positions"):
-            row = curs.execute("SELECT MAX(migration_index) FROM positions;").fetchone()
+            row = (ver_curs or curs).execute("SELECT MAX(migration_index) FROM positions;").fetchone()
             assert row, "No migration_index could be found."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
