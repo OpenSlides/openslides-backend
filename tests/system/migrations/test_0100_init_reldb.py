@@ -115,8 +115,6 @@ For more information, see
 
     @staticmethod
     def apply_test_relational_schema() -> None:
-        # TODO:  CREATE SCHEMA SCHEINT DAS SCHEMA NICHT ZU APPLIZIEREN
-        # HANNES PR ANSCHAUEN; DER HAT DA ÄNDERUNGEN DRIN DIE DAS FIXEN KÖNNTEN
         create_schema()
         with get_unpooled_db_connection("openslides") as conn:
             with conn.cursor() as curs:

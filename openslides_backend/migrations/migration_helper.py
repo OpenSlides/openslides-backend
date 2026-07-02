@@ -287,7 +287,7 @@ class MigrationHelper:
         - migration_index : integer the migration index or 0 if this must be a fresh install.
         """
         migration_index: int
-        if MigrationHelper.table_exists(ver_curs, "version"):
+        if MigrationHelper.table_exists(ver_curs or curs, "version"):
             migration_index = MigrationHelper.get_database_migration_index(ver_curs)
         elif MigrationHelper.table_exists(curs, "positions"):
             row = (ver_curs or curs).execute("SELECT MAX(migration_index) FROM positions;").fetchone()

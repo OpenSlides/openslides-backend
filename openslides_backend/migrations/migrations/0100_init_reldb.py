@@ -376,7 +376,6 @@ class Migration(BaseMigration):
             curs.execute(command, values)
 
         # clear replace tables as this migration writes the tables directly
-        #TODO: Separate connection
         ver_conn = kwargs.get("version_connection")
         if ver_conn:
             with ver_conn.cursor() as ver_curs:
