@@ -137,9 +137,6 @@ class MeetingImport(BaseActionTestCase):
                         "motions_export_preamble": "an export preamble",
                         "motions_export_submitter_recommendation": True,
                         "motions_export_follow_recommendation": True,
-                        "motion_poll_default_type": "pseudoanonymous",
-                        "motion_poll_default_onehundred_percent_base": "valid",
-                        "motion_poll_default_group_ids": [],
                         "users_enable_presence_view": True,
                         "users_enable_vote_weight": True,
                         "users_enable_vote_delegations": True,
@@ -157,16 +154,6 @@ class MeetingImport(BaseActionTestCase):
                         "assignments_export_preamble": "",
                         "assignment_poll_add_candidates_to_list_of_speakers": True,
                         "poll_enable_max_votes_per_option": None,
-                        "assignment_poll_sort_poll_result_by_votes": True,
-                        "assignment_poll_default_type": "pseudoanonymous",
-                        "assignment_poll_default_method": "votes",
-                        "assignment_poll_default_onehundred_percent_base": "valid",
-                        "assignment_poll_default_group_ids": [],
-                        "poll_sort_poll_result_by_votes": True,
-                        "poll_default_type": "pseudoanonymous",
-                        "poll_default_method": "votes",
-                        "poll_default_onehundred_percent_base": "valid",
-                        "poll_default_group_ids": [],
                         "poll_default_live_voting_enabled": False,
                         "poll_default_allow_invalid": False,
                         "poll_couple_countdown": True,
@@ -902,6 +889,65 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/3")
+
+    def test_with_poll_default_collections(self) -> None:
+        poll_defaults_data: dict[str, dict[str, Any]] = {
+            "meeting": {
+                "1": {
+                    "poll_default_ids": [1, 2, 3],
+                    "assignment_poll_config_id": 1,
+                    "motion_poll_config_id": 2,
+                    "topic_poll_config_id": 3,
+                }
+            },
+            "group": {"2": {"used_in_meeting_poll_default_ids": [1, 2, 3]}},
+            "meeting_poll_default": {
+                str(id_): {
+                    "id": id_,
+                    f"used_as_{poll_type}_poll_config_in_meeting_id": 1,
+                    "meeting_id": 1,
+                    "sort_result_by_votes": False,
+                    "visibility": "named",
+                    "allow_abstain": False,
+                    "allow_nota": True,
+                    "strike_out": True,
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_CAST,
+                    "group_ids": [2],
+                    "display_chart": "test",
+                }
+                for poll_type, id_ in {
+                    "assignment": 1,
+                    "motion": 2,
+                    "topic": 3,
+                }.items()
+            },
+        }
+        request_data = self.create_request_data(poll_defaults_data)
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "poll_default_ids": [1, 2, 3],
+                "assignment_poll_config_id": 1,
+                "motion_poll_config_id": 2,
+                "topic_poll_config_id": 3,
+            },
+        )
+        self.assert_model_exists(
+            "group/5",
+            {"used_in_meeting_poll_default_ids": [1, 2, 3]},
+        )
+        for poll_type, id_ in {"assignment": 1, "motion": 2, "topic": 3}.items():
+            self.assert_model_exists(
+                f"meeting_poll_default/{id_}",
+                {
+                    **poll_defaults_data["meeting_poll_default"][str(id_)],
+                    "meeting_id": 2,
+                    f"used_as_{poll_type}_poll_config_in_meeting_id": 2,
+                    "group_ids": [5],
+                },
+            )
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})
@@ -2766,8 +2812,6 @@ class MeetingImport(BaseActionTestCase):
                     "motions_supporters_min_amount": 0,
                     "motions_export_submitter_recommendation": True,
                     "motions_export_follow_recommendation": False,
-                    "motion_poll_default_type": "pseudoanonymous",
-                    "motion_poll_default_onehundred_percent_base": "valid",
                     "poll_projection_name_order_first": "last_name",
                     "poll_projection_max_columns": 6,
                     "users_enable_presence_view": False,
@@ -2782,12 +2826,8 @@ class MeetingImport(BaseActionTestCase):
                     "assignments_export_title": "Elections",
                     "assignment_poll_add_candidates_to_list_of_speakers": False,
                     "poll_enable_max_votes_per_option": False,
-                    "assignment_poll_sort_poll_result_by_votes": True,
-                    "assignment_poll_default_type": "pseudoanonymous",
-                    "assignment_poll_default_method": "Y",
-                    "assignment_poll_default_onehundred_percent_base": "valid",
-                    "poll_default_type": "analog",
-                    "poll_default_onehundred_percent_base": "valid",
+                    "assignment_poll_default_method": Poll.METHOD_APPROVAL,
+                    "topic_poll_default_method": Poll.METHOD_SELECTION,
                     "poll_default_live_voting_enabled": False,
                     "poll_couple_countdown": True,
                     **{field: [1] for field in Meeting.all_default_projectors()},
