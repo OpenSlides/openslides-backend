@@ -1,6 +1,6 @@
 import os
 
-from psycopg import Connection, rows, sql, Cursor
+from psycopg import Connection, Cursor, rows, sql
 
 from openslides_backend.migrations.exceptions import (
     MismatchingMigrationIndicesException,
@@ -36,7 +36,8 @@ def drop_db() -> None:
                 )
             )
 
-def fill_empty_version(curs: Cursor, mig_nmbr: int) -> None:
+
+def fill_empty_version(curs: Cursor[rows.DictRow], mig_nmbr: int) -> None:
     """
     If the version table is empty:
     Fills the version table with state 'finalized' from migration number 100 until backend_migration_index.
@@ -44,17 +45,14 @@ def fill_empty_version(curs: Cursor, mig_nmbr: int) -> None:
     """
     print("Migration info written:")
     if not MigrationHelper.get_database_migration_index(curs):
-        for nmbr in range(
-            100, MigrationHelper.get_backend_migration_index() + 1
-        ):
+        for nmbr in range(100, MigrationHelper.get_backend_migration_index() + 1):
             MigrationHelper.set_database_migration_info(
                 curs,
                 nmbr,
                 MigrationState.FINALIZED,
             )
-            print(
-                f"{nmbr} - {MigrationState.FINALIZED}"
-            )
+            print(f"{nmbr} - {MigrationState.FINALIZED}")
+
 
 def create_schema() -> None:
     """
@@ -74,7 +72,9 @@ def create_schema() -> None:
                 print(
                     "Assuming relational schema is applied, because table version exists.\n"
                 )
-                fill_empty_version(cursor, MigrationHelper.get_backend_migration_index())
+                fill_empty_version(
+                    cursor, MigrationHelper.get_backend_migration_index()
+                )
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not
