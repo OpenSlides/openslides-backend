@@ -53,13 +53,8 @@ class TestMigration101(BaseMigrationTestCase):
     #     model_registry["assignment_candidate"] = model_registry.pop("assignment_category")
     #     self.set_models(data)
 
-    # @patch(
-    #     "openslides_backend.migrations.migration_handler.MigrationHandler.execute_migrations",
-    #     wraps=MigrationHandler.execute_migrations,
-    # )
     @patch(
         "openslides_backend.migrations.migration_helper.MigrationHelper.write_line",
-        # wraps=MigrationHelper.write_line,
     )
     def test_simple(self, method_mock: Mock) -> None:
         wait_lock = Lock()

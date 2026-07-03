@@ -37,10 +37,7 @@ EXAMPLE_DATA_PATH = os.path.realpath(
         os.getcwd(), "tests", "system", "migrations", "legacy-example-data.json"
     )
 )
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin"
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
-data: dict[str, Any] = {}
 
 
 class TestMigration100(BaseMigrationTestCase):
@@ -61,12 +58,32 @@ class TestMigration100(BaseMigrationTestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
+    DATA: dict[str, Any] = {}
     MAX_WAIT = 15
     EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
 This migration will fundamentally restructure all data.
 For more information, see
   https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md
 \n"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+
+        raw_data: dict[str, any]
+
+        # 2) reading json data from file
+        with open(EXAMPLE_DATA_PATH) as file:
+            raw_data = json.loads(file.read())
+
+        # 2.1) fill data dictionary without meta_ fields and _migration_index
+        for collection, models in raw_data.items():
+            if collection == "_migration_index":
+                continue
+            for model_id, model in models.items():
+                cls.DATA[f"{collection}/{model_id}"] = {
+                    f: v for f, v in model.items() if not f.startswith("meta_")
+                }
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -106,22 +123,7 @@ For more information, see
         return response
 
     def setup_data(self) -> None:
-        raw_data: dict[str, any]
         json_blob: str
-
-        # 2) reading json data from file
-        with open(EXAMPLE_DATA_PATH) as file:
-            raw_data = json.loads(file.read())
-
-        # 2.1) fill data dictionary without meta_ fields and _migration_index
-        for collection, models in raw_data.items():
-            if collection == "_migration_index":
-                continue
-            self.used_collections.add(collection)
-            for model_id, model in models.items():
-                data[f"{collection}/{model_id}"] = {
-                    f: v for f, v in model.items() if not f.startswith("meta_")
-                }
 
         # 4) Write models into db table models
         with os_conn_pool.connection() as conn:
@@ -130,7 +132,7 @@ For more information, see
                 curs.execute("TRUNCATE TABLE models;")
 
                 # 4.1) Actual writing of models into table
-                for fqid, model in data.items():
+                for fqid, model in self.DATA.items():
                     json_blob = json.dumps(model)
                     curs.execute(
                         "INSERT INTO models VALUES (%s, %s, false, now());",

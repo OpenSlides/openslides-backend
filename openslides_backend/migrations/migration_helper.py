@@ -246,7 +246,7 @@ class MigrationHelper:
 
         if backend_migration_index > database_migration_index:
             raise ActionException(
-                f"Missing {backend_migration_index-database_migration_index} migrations to apply."
+                f"Missing {backend_migration_index-database_migration_index} migrations to be applied."
             )
 
         if backend_migration_index < database_migration_index:
@@ -280,7 +280,7 @@ class MigrationHelper:
             "ON CONFLICT (migration_index) DO UPDATE SET {updates}"
         ).format(
             fields=sql.SQL(", ").join(sql.Identifier(k) for k in params),
-            values=sql.SQL(", ").join(sql.Placeholder() for _ in range(len(params))),
+            values=sql.SQL(", ").join(sql.Placeholder() for _ in params),
             updates=sql.SQL(", ").join(updates),
         )
         curs.execute(statement, tuple(params.values()))
@@ -315,7 +315,9 @@ class MigrationHelper:
             migration_index = MigrationHelper.get_database_migration_index(curs)
         elif MigrationHelper.table_exists(curs, "positions"):
             row = curs.execute("SELECT MAX(migration_index) FROM positions;").fetchone()
-            assert row, "No migration_index could be found."
+            assert row and row.get(
+                "max"
+            ), "No migration_index could be could be found in positions."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
         else:
@@ -379,23 +381,11 @@ class MigrationHelper:
         migration_number: int,
     ) -> dict[str, dict[str, str | list[str]]]:
         """
-        Returns the replace tables mapping origin table to its migration copy.
+        Returns the replace tables. This is in its current state merely a collection of the migrated tables.
         """
-        # TODO revise this
         module_name = MigrationHelper.migrations[migration_number]
         migration_class = MigrationHelper.get_migration_class(module_name)
-        return {
-            col: {
-                "table": col + "_m",
-                "view": col + "vm",
-                # "im_tables": [
-                #     field.write_fields[0]
-                #     for field in model_registry[col]().get_relation_fields()
-                #     if field.write_fields
-                # ],
-            }
-            for col in set(migration_class.ORIGIN_COLLECTIONS)
-        }
+        return {col: {} for col in set(migration_class.ORIGIN_COLLECTIONS)}
 
     @staticmethod
     def get_replace_tables_from_database(
@@ -413,26 +403,24 @@ class MigrationHelper:
 
     @staticmethod
     def get_unified_replace_tables_from_database(
-        curs: Cursor[DictRow],
-    ) -> tuple[dict[str, Any], list[int]]:
+        curs: Cursor[DictRow], migration_state: MigrationState | None = None
+    ) -> dict[str, Any]:
         """
         Returns the replace tables, mapping the collection to its migration copies,
-        stored in the database unified for all -non- migrated indices.
-        Returns the list of used (unmigrated) migration indices as a side product.
+        stored in the database unified for all indices with `migration_state`.
+        If no `migration_state` was given: stored in the database unified for all -non- migrated indices.
         """
-        current_mi = MigrationHelper.get_database_migration_index(curs)
-        relevant_mis = [
-            mi
-            for mi in MigrationHelper.get_indices_from_database(curs)
-            if mi > current_mi
-        ]
-        return (
-            {
-                collection: r_tables
-                for migration_number in relevant_mis
-                for collection, r_tables in MigrationHelper.get_replace_tables_from_database(
-                    curs, migration_number
-                ).items()
-            },
-            relevant_mis,
+        if not migration_state:
+            migration_state = MigrationState.FINALIZED
+            operator = "!="
+        else:
+            operator = "="
+        rows = curs.execute(
+            f"SELECT replace_tables FROM version WHERE migration_state {operator} %s",
+            [migration_state],
         )
+        return {
+            collection: replace_tables
+            for row in rows
+            for collection, replace_tables in row["replace_tables"].items()
+        }

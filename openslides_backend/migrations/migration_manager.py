@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from io import StringIO
 from threading import Thread
-from typing import Any, cast
+from typing import Any
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
@@ -88,7 +88,6 @@ class MigrationManager:
         current_migration_index: The current migration index.
         target_migration_index: The current backend index that is targeted by the migrations.
         migratable_models: Rough amounts per collection to be migrated.
-            Doesn't respect initial migration if executed on a higher target migration index.
         """
         current_migration_index = MigrationHelper.get_database_migration_index(
             self.cursor
@@ -118,8 +117,8 @@ class MigrationManager:
             state_per_mi = MigrationHelper.get_database_migration_states(
                 self.cursor, migration_indices
             )
-            unmigrated_collections = {
-                collection: cast(str, r_tables["table"])
+            unmigrated_collections: dict[str, dict[str, dict]] = {
+                collection: {}  # cast(str, r_tables["table"])
                 for mi in migration_indices
                 if mi > current_migration_index
                 if state_per_mi[mi]
@@ -154,7 +153,7 @@ class MigrationManager:
             ),
         }
 
-    def assert_valid_migration_index(self, curs: Cursor[DictRow]) -> None:
+    def assert_valid_migration_index(self) -> None:
         """assert consistent migration index"""
         database_m_idx = MigrationHelper.get_database_migration_index(self.cursor)
         if database_m_idx > self.target_migration_index:
@@ -185,18 +184,17 @@ class MigrationManager:
                     return self.handle_progress_command()
                 elif command == MigrationCommand.STATS:
                     return {"stats": self.get_stats()}
-                self.assert_valid_migration_index(curs)
-
-                # MigrationCommand.MIGRATE or MigrationCommand.RESET
-                match MigrationHelper.get_migration_state(curs):
-                    case MigrationState.MIGRATION_RUNNING:
-                        raise View400Exception(
-                            "Migration is running, only 'stats' or 'progress' commands are allowed."
-                        )
-                    case MigrationState.MIGRATION_FAILED:
-                        raise MigrationException(
-                            f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
-                        )
+                elif command != MigrationCommand.RESET:
+                    self.assert_valid_migration_index()
+                    match MigrationHelper.get_migration_state(curs):
+                        case MigrationState.MIGRATION_RUNNING:
+                            raise View400Exception(
+                                "Migration is running, only 'stats' or 'progress' commands are allowed."
+                            )
+                        case MigrationState.MIGRATION_FAILED:
+                            raise MigrationException(
+                                f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
+                            )
 
                 verbose = payload.get("verbose", False)
                 if not MigrationHelper.migrate_thread_stream:
@@ -225,19 +223,12 @@ class MigrationManager:
         """
         Should be called as a new Thread.
         Should only be called if migration is in a correct state. Error handling in this is minimalistic.
+        If an exception occurs during execution for the first time,
+        it is stored in the MigrationHelper.migrate_thread_exception for read with MigrationCommand.STATS.
         """
         try:
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
-                    if (
-                        MigrationHelper.get_migration_state(curs)
-                        == MigrationState.MIGRATION_RUNNING
-                        and command != MigrationCommand.RESET
-                    ):
-                        raise MigrationException(
-                            f"Cannot {command} when migration is running."
-                        )
-
                     self.handler = MigrationHandler(
                         curs, self.env, self.services, self.logging
                     )
@@ -246,13 +237,14 @@ class MigrationManager:
             MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)
         except Exception as e:
-            MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)
             # TODO catch this on a lower level and set it for specific faulty migration index
-            with get_new_os_conn() as conn:
-                with conn.cursor() as curs:
-                    relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
-                    for mi in relevant_mis:
-                        MigrationHelper.set_database_migration_info(
-                            curs, mi, MigrationState.MIGRATION_FAILED
-                        )
+            if not MigrationHelper.migrate_thread_exception:
+                MigrationHelper.migrate_thread_exception = e
+                with get_new_os_conn() as conn:
+                    with conn.cursor() as curs:
+                        relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
+                        for mi in relevant_mis:
+                            MigrationHelper.set_database_migration_info(
+                                curs, mi, MigrationState.MIGRATION_FAILED
+                            )

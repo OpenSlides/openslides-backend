@@ -5,12 +5,9 @@ from psycopg import Connection
 from psycopg.rows import DictRow
 
 from openslides_backend.services.postgresql.db_connection_handling import (
-    env,
     get_new_os_conn,
 )
 
-openslides_db = env.DATABASE_NAME
-database_user = env.DATABASE_USER
 OLD_TABLES = (
     "models",
     "events",

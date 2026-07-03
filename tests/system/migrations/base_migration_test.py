@@ -6,7 +6,8 @@ from decimal import Decimal
 from json import dumps as json_dumps
 from threading import Lock
 from typing import Any
-from unittest import TestCase, TestResult
+from unittest import TestCase
+from unittest import TestResult as UnitTestResult
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import MagicMock, Mock, patch
 from zoneinfo import ZoneInfo
@@ -33,10 +34,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from tests.conftest import get_rel_db_table_names
-from tests.conftest_helper import (
-    deactivate_notify_triggers,
-    generate_sql_for_test_initiation,
-)
+from tests.conftest_helper import generate_sql_for_test_initiation
 from tests.system.util import get_route_path
 
 DEPR_SQL_PATH = os.path.realpath(
@@ -49,7 +47,7 @@ class BaseMigrationTestCase(TestCase):
     # has to be set by subclass
     migration_number: int
 
-    def run(self, result: TestResult | None = None) -> TestResult | None:
+    def run(self, result: UnitTestResult | None = None) -> UnitTestResult | None:
         """
         Overrides the TestCases run method.
         Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
@@ -60,37 +58,12 @@ class BaseMigrationTestCase(TestCase):
             self.connection = conn
             return super().run(result)
 
-    def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
-        """
-        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
-        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
-        be in locked state.
-        Intended for replacing MigrationHelper.write_line by a mock.
-        """
-
-        def _wait_for_lock(*args: Any, **kwargs: Any) -> mockdefault:
-            assert (
-                MigrationHelper.migrate_thread_stream
-            ), "migrate_thread_stream not initialized by migration framework."
-            if args[0] == "migration started":
-                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
-                indicator_lock.release()
-                wait_lock.acquire()
-            else:
-                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
-            return mockdefault
-
-        return _wait_for_lock
-
     def setUp(self) -> None:
         """
         Does not call super class to prevent usage of client and so forth.
         """
         os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
         os.environ["MIG0100_I_READ_DOCS"] = "YES"
-        self.used_collections: set[str] = set()
-        self.created_fqids: set[str] = set()
-        self.deleted_fqids: set[str] = set()
 
         self.apply_test_relational_schema()
 
@@ -150,8 +123,28 @@ class BaseMigrationTestCase(TestCase):
             with conn.cursor() as curs:
                 table_names = get_rel_db_table_names(curs)
                 curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
-                # TODO test without
-                deactivate_notify_triggers(curs)
+
+    def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
+        """
+        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
+        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
+        be in locked state.
+        Intended for replacing MigrationHelper.write_line by a mock.
+        """
+
+        def _wait_for_lock(*args: Any, **kwargs: Any) -> mockdefault:
+            assert (
+                MigrationHelper.migrate_thread_stream
+            ), "migrate_thread_stream not initialized by migration framework."
+            if args[0] == "migration started":
+                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
+                indicator_lock.release()
+                wait_lock.acquire()
+            else:
+                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
+            return mockdefault
+
+        return _wait_for_lock
 
     def migrate_previous(self) -> dict[str, Any]:
         """
