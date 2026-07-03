@@ -70,7 +70,7 @@ For more information, see
     def setUpClass(cls) -> None:
         super().setUpClass()
 
-        raw_data: dict[str, any]
+        raw_data: dict[str, Any]
 
         # 2) reading json data from file
         with open(EXAMPLE_DATA_PATH) as file:
