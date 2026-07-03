@@ -1,3 +1,5 @@
+import re
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, cast
 
@@ -5,6 +7,7 @@ from psycopg.types.json import Jsonb
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
+from ....models.mixins import POLL_TYPES
 from ....models.models import Meeting
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
@@ -24,6 +27,9 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
+from ..meeting_poll_default.create import MeetingPollDefaultCreate
+from ..meeting_poll_default.helper_mixin import meeting_poll_default_schema
+from ..meeting_poll_default.update import MeetingPollDefaultUpdate
 from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
 
 meeting_settings_keys = [
@@ -158,6 +164,12 @@ meeting_settings_keys = [
     "topic_poll_default_method",
 ]
 
+meeting_poll_default_fields = {
+    f"{poll_type}_poll_default_{field_name}": type_
+    for poll_type in POLL_TYPES
+    for field_name, type_ in meeting_poll_default_schema.items()
+}
+
 
 @register_action("meeting.update")
 class MeetingUpdate(
@@ -186,6 +198,7 @@ class MeetingUpdate(
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
+            **meeting_poll_default_fields,
         },
     )
     check_email_field = "users_email_replyto"
@@ -320,6 +333,51 @@ class MeetingUpdate(
 
         if (translations := instance.get("custom_translations")) is not None:
             instance["custom_translations"] = Jsonb(translations)
+
+        # Set poll defaults
+        poll_default_field_name_pattern = re.compile(
+            r"([a-z]+)_poll_default_([a-z_]+[a-z]+)"
+        )
+        poll_default_data: dict[str, dict[str, Any]] = defaultdict(dict)
+        for field in meeting_poll_default_fields.keys():
+            if (value := instance.pop(field, None)) is not None:
+                poll_type, field_name = poll_default_field_name_pattern.findall(field)[
+                    0
+                ]
+                poll_default_data[poll_type][field_name] = value
+
+        if poll_default_data:
+            poll_types_to_poll_defaults_fields: dict[str, str] = {
+                poll_type: f"{poll_type}_poll_config_id"
+                for poll_type in poll_default_data.keys()
+            }
+            db_poll_defaults = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                list(poll_types_to_poll_defaults_fields.values()),
+                lock_result=False,
+            )
+            action_data_create = []
+            action_data_update = []
+
+            for poll_type, data in poll_default_data.items():
+                if existing_id := db_poll_defaults.get(
+                    poll_types_to_poll_defaults_fields[poll_type]
+                ):
+                    action_data_update.append({"id": existing_id, **data})
+                else:
+                    action_data_create.append(
+                        {
+                            "meeting_id": instance["id"],
+                            f"used_as_{poll_type}_poll_config_in_meeting_id": instance[
+                                "id"
+                            ],
+                            **data,
+                        }
+                    )
+            if action_data_create:
+                self.execute_other_action(MeetingPollDefaultCreate, action_data_create)
+            if action_data_update:
+                self.execute_other_action(MeetingPollDefaultUpdate, action_data_update)
 
         instance = super().update_instance(instance)
         return instance

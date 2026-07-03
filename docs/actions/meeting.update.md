@@ -118,9 +118,6 @@
     motions_enable_restricted_editor_for_manager: boolean;
     motions_enable_restricted_editor_for_non_manager: boolean;
 
-    motion_poll_default_type: string;
-    motion_poll_default_onehundred_percent_base: string;
-    motion_poll_default_group_ids: Id[];
     poll_projection_name_order_first: string;
     poll_projection_max_columns: number;
 
@@ -146,17 +143,40 @@
     assignments_export_preamble: string;
 
     assignment_poll_add_candidates_to_list_of_speakers: boolean;
-    poll_enable_max_votes_per_option: boolean;
-    assignment_poll_sort_poll_result_by_votes: boolean;
-    assignment_poll_default_type: string;
     assignment_poll_default_method: string;
-    assignment_poll_default_onehundred_percent_base: string;
+    assignment_poll_default_allow_abstain: boolean;
+    assignment_poll_default_allow_nota: boolean;
+    assignment_poll_default_display_chart: string;
     assignment_poll_default_group_ids: Id[];
+    assignment_poll_default_onehundred_percent_base: string;
+    assignment_poll_default_sort_result_by_votes: boolean;
+    assignment_poll_default_strike_out: boolean;
+    assignment_poll_default_visibility: string;
 
+    motion_poll_default_allow_abstain: boolean;
+    motion_poll_default_allow_nota: boolean;
+    motion_poll_default_display_chart: string;
+    motion_poll_default_group_ids: Id[];
+    motion_poll_default_onehundred_percent_base: string;
+    motion_poll_default_sort_result_by_votes: boolean;
+    motion_poll_default_strike_out: boolean;
+    motion_poll_default_visibility: string;
+
+    topic_poll_default_method: string;
+    topic_poll_default_allow_abstain: boolean;
+    topic_poll_default_allow_nota: boolean;
+    topic_poll_default_display_chart: string;
     topic_poll_default_group_ids: Id[];
+    topic_poll_default_onehundred_percent_base: string;
+    topic_poll_default_sort_result_by_votes: boolean;
+    topic_poll_default_strike_out: boolean;
+    topic_poll_default_visibility: string;
 
+    poll_enable_max_votes_per_option: boolean;
     poll_default_live_voting_enabled: boolean;
     poll_default_allow_invalid: boolean;
+    poll_default_allow_vote_split: boolean;
+
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;
