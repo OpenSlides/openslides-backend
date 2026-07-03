@@ -76,7 +76,7 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT init_table_contents();")
-        conn.commit()
-        yield conn
-        conn.commit()
-        curs.execute("SELECT truncate_testdata_tables();")
+            conn.commit()
+            yield conn
+            conn.commit()
+            curs.execute("SELECT truncate_testdata_tables();")
