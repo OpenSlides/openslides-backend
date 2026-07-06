@@ -79,7 +79,9 @@ class BaseMigrationTestCase(TestCase):
         self.addCleanup(patcher.stop)
 
     def tearDown(self) -> None:
-        MigrationHelper.migrate_thread = None
+        if MigrationHelper.migrate_thread:
+            self.wait_for_migration_thread(15)
+            MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
         if MigrationHelper.migrate_thread_stream:
             MigrationHelper.close_migrate_thread_stream()

@@ -295,12 +295,10 @@ class Migration(BaseMigration):
 
         insert_intermediate_t_commands = []
 
-        result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
-        assert result
-        models_count = result["count"]
+        models_count = Sql_helper.get_row_count()
         found_collections = set()
         # 1) Chunkwise loop trough all data_rows for the models table
-        for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
+        for _ in range(0, ceil(models_count / Sql_helper.LIMIT)):
             data_chunk = Sql_helper.get_next_data_row_chunk()
 
             for data_row in data_chunk:
@@ -318,6 +316,7 @@ class Migration(BaseMigration):
                     case "organization" | "meeting":
                         data["time_zone"] = os.environ["MIG0100_TIMEZONE"]
 
+                # TODO model_registry is forbidden to be used in a module. Needs to be replaced with an initial version.
                 model = model_registry[collection]()
                 sql_fields = ""
                 sql_placeholder = ""

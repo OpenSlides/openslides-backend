@@ -89,7 +89,7 @@ def create_schema() -> None:
                         f"Migration index ({db_migration_index}) cannot be lower than {MIN_NON_REL_MIGRATION}. Please have a look at the migration documentation checkout the migration backend to a version that runs that migration. Then upgrade again."
                     )
                 print("Relational schema applied.\n", flush=True)
-                if MIN_NON_REL_MIGRATION < db_migration_index < 100:
+                if db_migration_index < 100:
                     # migration states for non-rel-db indices (migration 99 impossible) are aggregated into one (index: max - 1) of version table.
                     type_ = "legacy"
                     db_migration_index -= 1
@@ -109,7 +109,12 @@ def create_schema() -> None:
                     )
                 print(f"Assuming {type_} database.")
                 cursor.execute(open(path).read())
-                fill_empty_version(cursor, db_migration_index)
+                if db_migration_index < 100:
+                    MigrationHelper.set_database_migration_info(
+                        cursor, db_migration_index, MigrationState.FINALIZED
+                    )
+                else:
+                    fill_empty_version(cursor, db_migration_index)
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return

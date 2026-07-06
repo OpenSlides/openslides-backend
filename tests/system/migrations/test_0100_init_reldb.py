@@ -94,8 +94,8 @@ For more information, see
         super().tearDownClass()
 
     def tearDown(self) -> None:
-        Sql_helper.offset = 0
         super().tearDown()
+        Sql_helper.offset = 0
 
     def setUp(self) -> None:
         # 1.1) Create services and login.
