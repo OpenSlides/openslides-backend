@@ -19,8 +19,8 @@ db_database = get_config("DATABASE_NAME")
 db_user = get_config("DATABASE_USER")
 db_password = get_config("DATABASE_PASSWORD")
 
-idp_route = get_config("KEYCLOAK_URL_INTERNAL", "http://keycloak-server:8080")
-idp_realm = get_config("KEYCLOAK_OS_REALM", "openslides")
+idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
+idp_realm = get_config("IDP_OS_REALM", "openslides")
 
 idp_admin_route = f"{idp_route}/admin/realms/{idp_realm}/"
 

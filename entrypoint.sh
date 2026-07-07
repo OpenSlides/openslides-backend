@@ -13,10 +13,10 @@ if [ ! $ANONYMOUS_ONLY ]; then
   printf "DBMS is started.\n"
 
   # Wait for Keycloak
-  until curl -f "$KEYCLOAK_URL_INTERNAL/realms/openslides/.well-known/openid-configuration" > /dev/null 2>&1; do
-    printf "Waiting for keycloak\n"
-    sleep 3
-  done
+  #until curl -f "$KEYCLOAK_URL_INTERNAL/realms/openslides/.well-known/openid-configuration" > /dev/null 2>&1; do
+  #  printf "Waiting for keycloak\n"
+  #  sleep 3
+  #done
 fi
 
 printf "Creating schema ...\n"

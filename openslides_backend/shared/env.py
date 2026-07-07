@@ -44,7 +44,7 @@ class Environment(Env):
         "OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET": "false",
         "SUPERADMIN_PASSWORD_FILE": "/run/secrets/superadmin",
 	    "OIDC_ISSUER_URL": "http://localhost:8080/realms/openslides",
-	    "OIDC_ISSUER_URL_DOCKER": "http://keycloak-server:8080/realms/openslides",
+	    "OIDC_ISSUER_URL_DOCKER": "http://zitadel-idp:8080/realms/openslides",
 	    "OIDC_CLIENT_ID": "proxy-client",
 	    "OIDC_CLIENT_SECRET": "proxy-secret",
 	    "OIDC_SECRET": "qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK",
