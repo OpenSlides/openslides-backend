@@ -42,6 +42,7 @@ class MeetingPollDefaultCreate(CreateAction):
         }
         self.check_exactly_one_of(instance, poll_types_fields)
 
+        # Checks below are reachable only if exactly one poll type field is set
         poll_type_field_name, poll_type_field_value = next(
             iter(poll_types_fields.items())
         )
@@ -66,6 +67,12 @@ class MeetingPollDefaultCreate(CreateAction):
     def check_exactly_one_of(
         self, instance: dict[str, Any], poll_types_fields: dict[str, int]
     ) -> None:
+        """
+        Checks that exactly one of the poll type fields is defined for the instance:
+            - used_as_assignment_poll_config_in_meeting_id
+            - used_as_motion_poll_config_in_meeting_id
+            - used_as_topic_poll_config_in_meeting_id
+        """
         # TODO: replace with exactly_one_of constraint (https://github.com/OpenSlides/openslides-meta/issues/540)
         if not len(poll_types_fields):
             raise ActionException(
@@ -82,6 +89,9 @@ class MeetingPollDefaultCreate(CreateAction):
         poll_type_field_name: str,
         poll_type_field_value: int,
     ) -> None:
+        """
+        Checks that value in poll type field matches the meeting_id.
+        """
         # TODO: replace with the updated equal_fields constraint (https://github.com/OpenSlides/openslides-meta/issues/541)
         if poll_type_field_value != instance["meeting_id"]:
             raise ActionException(
@@ -91,6 +101,10 @@ class MeetingPollDefaultCreate(CreateAction):
     def check_prevent_updates(
         self, instance: dict[str, Any], poll_type_field_name: str
     ) -> None:
+        """
+        Prevents creating a new meeting_poll_default item if meeting already
+        contains meeting_poll_default for the same poll type.
+        """
         # TODO: replace with the updated prevent_updates constraint (https://github.com/OpenSlides/openslides-meta/issues/542)
         meeting_id = instance["meeting_id"]
         if self.datastore.filter(

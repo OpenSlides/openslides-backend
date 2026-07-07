@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, cast
@@ -335,15 +334,10 @@ class MeetingUpdate(
             instance["custom_translations"] = Jsonb(translations)
 
         # Set poll defaults
-        poll_default_field_name_pattern = re.compile(
-            r"([a-z]+)_poll_default_([a-z_]+[a-z]+)"
-        )
         poll_default_data: dict[str, dict[str, Any]] = defaultdict(dict)
         for field in meeting_poll_default_fields.keys():
             if (value := instance.pop(field, None)) is not None:
-                poll_type, field_name = poll_default_field_name_pattern.findall(field)[
-                    0
-                ]
+                poll_type, field_name = field.split("_poll_default_")
                 poll_default_data[poll_type][field_name] = value
 
         if poll_default_data:
