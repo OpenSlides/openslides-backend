@@ -641,20 +641,20 @@ class BaseMotionCreateForwarded(
         return instance
 
     def get_history_information(self) -> HistoryInformation | None:
-        forwarded_entries = defaultdict(list)
+        forwarded_entries: HistoryInformation = defaultdict(lambda: defaultdict(list))
         for instance in self.instances:
             forwarded_entries[
                 fqid_from_collection_and_id("motion", instance["origin_id"])
-            ].extend(
+            ]["entries"].extend(
                 [
                     "Forwarded to {}",
                     fqid_from_collection_and_id("meeting", instance["meeting_id"]),
                 ]
             )
         return forwarded_entries | {
-            fqid_from_collection_and_id("motion", instance["id"]): [
-                "Motion created (forwarded)"
-            ]
+            fqid_from_collection_and_id("motion", instance["id"]): {
+                "entries": ["Motion created (forwarded)"]
+            }
             for instance in self.instances
         }
 

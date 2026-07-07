@@ -94,9 +94,11 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
 
     def get_history_information(self) -> HistoryInformation | None:
         return {
-            fqid_from_collection_and_id(self.model.collection, instance["id"]): [
-                f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
-                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            ]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]): {
+                "entries": [
+                    f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
+                    fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+                ]
+            }
             for instance in self.action_data
         }

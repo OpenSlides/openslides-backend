@@ -76,7 +76,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
     def get_history_information(self) -> HistoryInformation | None:
-        information: dict[str, list[tuple[str, ...]]] = {}
+        information: dict[str, dict[str, list[tuple[str, ...]]]] = {}
 
         # Scan the instances and collect the info for the history information
         # Copy instances first since they are modified
@@ -97,7 +97,9 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
         return {
-            fqid: [string for entry in history for string in entry]
+            fqid: {
+                "entries": [string for entry in history["entries"] for string in entry]
+            }
             for fqid, history in information.items()
         }
 
@@ -105,7 +107,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         self,
         instance: dict[str, Any],
         db_instance: dict[str, Any],
-        information: dict[str, list[tuple[str, ...]]],
+        information: dict[str, dict[str, list[tuple[str, ...]]]],
     ) -> None:
         instance_information: list[tuple[str, ...]] = []
         user_id = db_instance["user_id"]
@@ -138,7 +140,9 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             )
 
     def add_created_meeting_user_history_information(
-        self, instance: dict[str, Any], information: dict[str, list[tuple[str, ...]]]
+        self,
+        instance: dict[str, Any],
+        information: dict[str, dict[str, list[tuple[str, ...]]]],
     ) -> None:
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -180,7 +184,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
     def add_entries_to_history_information(
         self,
-        information: dict[str, list[tuple[str, ...]]],
+        information: dict[str, dict[str, list[tuple[str, ...]]]],
         entries: list[tuple[str, ...]],
         for_user_id: int | None = None,
         for_meeting_user_id: int | None = None,
@@ -197,11 +201,11 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_id = for_user_id
         fqid = fqid_from_collection_and_id("user", user_id)
         if fqid not in information:
-            information[fqid] = entries
+            information[fqid] = {"entries": entries}
         else:
             for entry in entries:
-                if entry not in information[fqid]:
-                    information[fqid].append(entry)
+                if entry not in information[fqid]["entries"]:
+                    information[fqid]["entries"].append(entry)
 
     def compose_history_string(
         self, fqids_per_collection: list[tuple[str, list[str]]]
@@ -277,7 +281,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
     def handle_delegations(
         self,
-        information: dict[str, list[tuple[str, ...]]],
+        information: dict[str, dict[str, list[tuple[str, ...]]]],
         instance_information: list[tuple[str, ...]],
         instance: dict[str, Any],
         db_instance: dict[str, Any],

@@ -559,7 +559,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     fqid_from_collection_and_id(self.model.collection, instance["id"])
                 )
             for fqid in fqids:
-                information[fqid] = [self.history_information]
+                information[fqid] = {"entries": [self.history_information]}
         return information
 
     def get_instances_with_fields(
@@ -777,7 +777,9 @@ def merge_history_informations(
             b = {}
         for fqid, information in b.items():
             if fqid in a:
-                a[fqid].extend(information)
+                a[fqid]["entries"].extend(information["entries"])
+                if changed_fields := information.get("changed_fields"):
+                    a[fqid].setdefault("changed_fields", dict()).update(changed_fields)
             else:
                 a[fqid] = information
     return a

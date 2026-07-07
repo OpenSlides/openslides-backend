@@ -99,9 +99,9 @@ class AssignmentCandidateMergeMixin(BaseMergeMixin):
         ]:
             assignment_ids.add(data["assignment_id"])
         for assignment_id in assignment_ids:
-            information[fqid_from_collection_and_id("assignment", assignment_id)] = [
-                "Candidates merged"
-            ]
+            information[fqid_from_collection_and_id("assignment", assignment_id)] = {
+                "entries": ["Candidates merged"]
+            }
         return information
 
 
@@ -130,9 +130,9 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
         for motion_id in motion_ids:
             fqid = fqid_from_collection_and_id("motion", motion_id)
             if fqid not in information:
-                information[fqid] = ["Submitters merged"]
+                information[fqid] = {"entries": ["Submitters merged"]}
             else:
-                information[fqid].append("Submitters merged")
+                information[fqid]["entries"].append("Submitters merged")
         return information
 
 
@@ -157,9 +157,9 @@ class MotionSupporterMergeMixin(BaseMergeMixin):
         for motion_id in motion_ids:
             fqid = fqid_from_collection_and_id("motion", motion_id)
             if fqid not in information:
-                information[fqid] = ["Supporters merged"]
+                information[fqid] = {"entries": ["Supporters merged"]}
             else:
-                information[fqid].append("Supporters merged")
+                information[fqid]["entries"].append("Supporters merged")
         return information
 
 

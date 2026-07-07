@@ -449,12 +449,16 @@ class UserMergeTogether(
                     deleted_string = " and ".join(
                         ["{}" for i in range(len(deleted_fqids))]
                     )
-                information[main_fqid] = [
-                    "Updated with data from " + deleted_string,
-                    *deleted_fqids,
-                ]
+                information[main_fqid] = {
+                    "entries": [
+                        "Updated with data from " + deleted_string,
+                        *deleted_fqids,
+                    ]
+                }
                 for deleted_fqid in deleted_fqids:
-                    information[deleted_fqid] = ["Merged into {}", main_fqid]
+                    information[deleted_fqid] = {
+                        "entries": ["Merged into {}", main_fqid]
+                    }
             else:
                 raise BadCodingException("No id found for user history generation")
         return information

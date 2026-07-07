@@ -9,9 +9,13 @@ class MotionStateHistoryInformationMixin(Action):
         self, instance_field: str, verbose_model: str
     ) -> HistoryInformation:
         return {
-            fqid_from_collection_and_id(self.model.collection, instance["id"]): [
-                verbose_model + " set to {}",
-                fqid_from_collection_and_id("motion_state", instance[instance_field]),
-            ]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]): {
+                "entries": [
+                    verbose_model + " set to {}",
+                    fqid_from_collection_and_id(
+                        "motion_state", instance[instance_field]
+                    ),
+                ]
+            }
             for instance in self.instances
         }

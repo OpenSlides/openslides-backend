@@ -80,10 +80,15 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
             fqid_from_collection_and_id("motion", id_) for id_ in self.all_motion_ids
         ]
         if not information:
-            information = {fqid: [self.history_information] for fqid in fqids}
+            information = {
+                fqid: {"entries": [self.history_information]} for fqid in fqids
+            }
         else:
             for fqid in fqids:
-                information[fqid] = [self.history_information]
+                if fqid in information:
+                    information[fqid]["entries"] = [self.history_information]
+                else:
+                    information[fqid] = {"entries": [self.history_information]}
         return information
 
     def get_full_history_information(self) -> HistoryInformation | None:
@@ -97,12 +102,16 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         return merge_history_informations(
             information or {},
             {
-                fqid_from_collection_and_id("motion", id): ["Forwarded motion deleted"]
+                fqid_from_collection_and_id("motion", id): {
+                    "entries": ["Forwarded motion deleted"]
+                }
                 for instance in instances
                 for id in instance.get("all_origin_ids", [])
             },
             {
-                fqid_from_collection_and_id("motion", id): ["Origin motion deleted"]
+                fqid_from_collection_and_id("motion", id): {
+                    "entries": ["Origin motion deleted"]
+                }
                 for instance in instances
                 for id in instance.get("all_derived_motion_ids", [])
             },

@@ -103,12 +103,14 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         instances = self.get_instances_with_fields(["motion_id", "section_id"])
         _, action = self.name.split(".")
         return {
-            fqid_from_collection_and_id("motion", instance["motion_id"]): [
-                "Comment {} " + action + "d",
-                fqid_from_collection_and_id(
-                    "motion_comment_section", instance["section_id"]
-                ),
-            ]
+            fqid_from_collection_and_id("motion", instance["motion_id"]): {
+                "entries": [
+                    "Comment {} " + action + "d",
+                    fqid_from_collection_and_id(
+                        "motion_comment_section", instance["section_id"]
+                    ),
+                ]
+            }
             for instance in instances
         }
 
