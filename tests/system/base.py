@@ -209,7 +209,8 @@ class BaseSystemTestCase(TestCase):
             and response.json.get("message")
         ):
             print(response.json)
-        self.assertEqual(response.status_code, code, response.json["message"])
+            self.assertEqual(response.status_code, code, response.json["message"])
+        self.assertEqual(response.status_code, code)
 
     def create_model(self, fqid: str, data: dict[str, Any] = {}) -> None:
         create_events = self.get_create_events(fqid, data)
