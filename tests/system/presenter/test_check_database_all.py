@@ -275,7 +275,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         )
         status_code, data = self.request("check_database_all", {})
         assert status_code == 200
-        assert data["ok"] is True
+        assert data["ok"] is True, data
         assert "errors" not in data
 
     def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
@@ -616,9 +616,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         )
         status_code, data = self.request("check_database_all", {})
         assert status_code == 200
-        if not data["ok"]:
-            print(data)
-        assert data["ok"] is True
+        assert data["ok"] is True, data
         assert "errors" not in data
 
     def test_relation_2(self) -> None:
@@ -878,9 +876,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         )
         status_code, data = self.request("check_database_all", {})
         assert status_code == 200
-        if not data["ok"]:
-            print(data)
-        assert data["ok"] is True, data["errors"]
+        assert data["ok"] is True, data
         assert "errors" not in data
 
     def test_no_permissions(self) -> None:
