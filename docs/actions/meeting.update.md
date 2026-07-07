@@ -121,10 +121,8 @@
     motion_poll_ballot_paper_selection: string;
     motion_poll_ballot_paper_number: number;
     motion_poll_default_type: string;
-    motion_poll_default_method: string;
     motion_poll_default_onehundred_percent_base: string;
     motion_poll_default_group_ids: Id[];
-    motion_poll_default_backend: string;
     motion_poll_projection_name_order_first: string;
     motion_poll_projection_max_columns: number;
 
@@ -158,12 +156,11 @@
     assignment_poll_default_method: string;
     assignment_poll_default_onehundred_percent_base: string;
     assignment_poll_default_group_ids: Id[];
-    assignment_poll_default_backend: string;
 
     topic_poll_default_group_ids: Id[];
 
-    poll_default_backend: string;
     poll_default_live_voting_enabled: boolean;
+    poll_default_allow_invalid: boolean;
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;

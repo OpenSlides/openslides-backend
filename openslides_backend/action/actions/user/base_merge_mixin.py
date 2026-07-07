@@ -98,7 +98,8 @@ class BaseMergeMixin(Action):
         self._all_collection_fields[collection] = [
             i
             for i in Class.__dict__.keys()
-            if i[:1] != "_" and i not in ["collection", "verbose_name", "id"]
+            if i[:1] != "_"
+            and i not in ["collection", "verbose_name", "id", "managed_by"]
         ]
         if back_field:
             self._collection_back_fields[collection] = back_field

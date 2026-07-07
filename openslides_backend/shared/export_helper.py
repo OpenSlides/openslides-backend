@@ -22,8 +22,6 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
-NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candidate_ids"]
-
 HISTORY_FIELDS_PER_COLLECTION = {
     "meeting": ["relevant_history_entry_ids"],
     "user": ["history_entry_ids", "history_position_ids"],
@@ -210,6 +208,30 @@ def export_meeting(
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
 
+    # Get related configs, options and ballots
+    if polls := export.get("poll"):
+        related_collections: dict[str, list[int]] = {}
+        for poll in polls.values():
+            for collection_base_name in ["ballot", "option"]:
+                if ids := poll.get(f"{collection_base_name}_ids"):
+                    related_collections.setdefault(
+                        f"poll_{collection_base_name}", list()
+                    ).extend(ids)
+            config_collection, config_id = poll["config_id"].split("/")
+            related_collections.setdefault(config_collection, list()).append(
+                int(config_id)
+            )
+        related_models = datastore.get_many(
+            [
+                GetManyRequest(collection, ids, get_fields_for_export(collection))
+                for collection, ids in related_collections.items()
+            ]
+        )
+        for collection, data in related_models.items():
+            export.setdefault(collection, {}).update(
+                {str(id_): instance_data for id_, instance_data in data.items()}
+            )
+
     # Sort instances by id within each collection
     for collection, instances in export.items():
         if collection == "_migration_index":
@@ -290,15 +312,9 @@ def add_users(
             gender_dict = datastore.get_all("gender", ["name"], lock_result=False)
             user["gender"] = gender_dict.get(gender_id, {}).get("name")
         # limit user fields to exported objects
-        collection_field_tupels = [
-            ("meeting_user", "meeting_user_ids"),
-            ("poll", "poll_voted_ids"),
-            ("option", "option_ids"),
-            ("vote", "vote_ids"),
-            ("poll_candidate", "poll_candidate_ids"),
-            ("vote", "delegated_vote_ids"),
-        ]
-        for collection, fname in collection_field_tupels:
+        # Check voting related fields for mu
+        collection_field_tuples = [("meeting_user", "meeting_user_ids")]
+        for collection, fname in collection_field_tuples:
             user[fname] = [
                 id_
                 for id_ in user.get(fname, [])
@@ -332,11 +348,8 @@ def get_relation_fields() -> Iterable[RelationListField]:
             isinstance(field, RelationListField)
             and field not in HISTORY_FIELDS_PER_COLLECTION["meeting"]
             and (
-                (
-                    field.on_delete == OnDelete.CASCADE
-                    and field.get_own_field_name().endswith("_ids")
-                )
-                or field.get_own_field_name() in NON_CASCADING_MEETING_RELATION_LISTS
+                field.on_delete == OnDelete.CASCADE
+                and field.get_own_field_name().endswith("_ids")
             )
         ):
             yield field

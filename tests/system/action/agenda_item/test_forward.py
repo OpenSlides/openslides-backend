@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -3291,19 +3292,25 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "poll/1234": {
                     "meeting_id": 1,
                     "title": "Will not transfer",
-                    "type": "pseudoanonymous",
-                    "backend": "fast",
-                    "pollmethod": "Y",
-                    "state": "created",
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                    "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "config_id": "poll_config_rating_score/34",
+                    "state": Poll.STATE_CREATED,
                     "content_object_id": "topic/11",
                 },
-                "option/123": {"meeting_id": 1, "poll_id": 1234, "text": "Option A"},
-                "option/234": {"meeting_id": 1, "poll_id": 1234, "text": "Option B"},
+                "poll_config_rating_score/34": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                    "min_options_amount": 1,
+                    "max_options_amount": 1,
+                    "max_votes_per_option": 1,
+                },
+                "poll_option/123": {
+                    "poll_id": 1234,
+                    "text": "Option A",
+                },
+                "poll_option/234": {
+                    "poll_id": 1234,
+                    "text": "Option B",
+                },
                 # mediafiles
                 "mediafile/3": {
                     "create_timestamp": datetime.fromtimestamp(300, ZoneInfo("UTC")),
@@ -3480,7 +3487,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             "mediafile": 4,
             "meeting_mediafile": 36,
             "poll": 1235,
-            "option": 235,
+            "poll_config_approval": 35,
+            "poll_option": 235,
             "speaker": 38,
             "structure_level_list_of_speakers": 15,
             "point_of_order_category": 8,

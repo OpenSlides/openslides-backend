@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
@@ -93,9 +92,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_method": "YNA",
-            "motion_poll_default_onehundred_percent_base": "YNA",
-            "motion_poll_default_backend": "fast",
+            "motion_poll_default_onehundred_percent_base": "valid",
             "motion_poll_projection_name_order_first": "last_name",
             "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": False,
@@ -117,11 +114,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "Y",
             "assignment_poll_default_onehundred_percent_base": "valid",
-            "assignment_poll_default_backend": "fast",
             "poll_default_type": "analog",
-            "poll_default_onehundred_percent_base": "YNA",
-            "poll_default_backend": "fast",
+            "poll_default_onehundred_percent_base": "valid",
             "poll_default_live_voting_enabled": False,
+            "poll_default_allow_invalid": False,
             "poll_couple_countdown": True,
         }
 
@@ -381,8 +377,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_ids": [1],
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
-                    "vote_ids": [7],
-                    "option_ids": [8],
                     "assignment_candidate_ids": [9],
                     "assignment_ids": [10],
                     # relation fields.
@@ -438,14 +432,14 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 ),
                 "user/4": self.get_new_user(
                     "vote_user",
-                    {"meeting_user_ids": [14], "vote_ids": [7], "is_active": False},
+                    {
+                        "meeting_user_ids": [14],
+                        "is_active": False,
+                    },
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
-                    {
-                        "meeting_user_ids": [15],
-                        "delegated_vote_ids": [7],
-                    },
+                    {"meeting_user_ids": [15]},
                 ),
                 "user/6": self.get_new_user(
                     "candidate_user",
@@ -473,11 +467,13 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "user_id": 4,
                     "group_ids": [1],
+                    "acting_ballot_ids": [7],
                 },
                 "meeting_user/15": {
                     "meeting_id": 1,
                     "user_id": 5,
                     "group_ids": [1],
+                    "represented_ballot_ids": [7],
                 },
                 "meeting_user/16": {
                     "meeting_id": 1,
@@ -579,19 +575,21 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
-                "vote/7": {
-                    "user_token": "test",
-                    "option_id": 8,
-                    "user_id": 4,
-                    "delegated_user_id": 5,
+                "poll/7": {
+                    "title": "Poll 1",
                     "meeting_id": 1,
-                    "weight": Decimal("1.000000"),
-                    "value": "Y",
+                    "content_object_id": "motion/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_rating_approval/7",
+                    "state": Poll.STATE_STARTED,
                 },
-                "option/8": {
-                    "vote_ids": [7],
-                    "meeting_id": 1,
-                    "weight": 10000,
+                "poll_config_rating_approval/7": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_ballot/8": {
+                    "poll_id": 7,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 15,
                 },
                 "assignment_candidate/9": {
                     "weight": 10000,
