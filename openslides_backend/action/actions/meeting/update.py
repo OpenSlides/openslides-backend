@@ -1,5 +1,4 @@
-from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, cast
 
 from psycopg.types.json import Jsonb
@@ -328,7 +327,7 @@ class MeetingUpdate(
         for field in ["start_time", "end_time"]:
             raw_value = instance.get(field)
             if isinstance(raw_value, int):
-                instance[field] = datetime.fromtimestamp(raw_value)
+                instance[field] = datetime.fromtimestamp(raw_value, tz=timezone.utc)
 
         if (translations := instance.get("custom_translations")) is not None:
             instance["custom_translations"] = Jsonb(translations)
