@@ -318,14 +318,15 @@ class Checker:
         all_collection_fields = {
             field.get_own_field_name() for field in self.get_fields(collection)
         }
-        required_collection_fields = {
+        required_or_default_collection_fields = {
             field.get_own_field_name()
             for field in self.get_fields(collection)
-            if field.required and field.get_own_field_name() != "sequential_number"
+            if (field.required or field.default is not None and not self.repair)
+            and field.get_own_field_name() != "sequential_number"
         }
 
         errors = False
-        if diff := required_collection_fields - model_fields:
+        if diff := required_or_default_collection_fields - model_fields:
             if self.repair:
                 diff = self.fix_missing_default_values(model, collection, diff)
             if diff:
