@@ -28,7 +28,7 @@ class IDPMixin(Action):
     idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
     idp_realm = get_config("IDP_OS_REALM", "openslides")
 
-    idp_admin_route = f"{idp_route}/admin/realms/{idp_realm}/"
+    idp_admin_route = f"{idp_route}/v2/"
 
     _idp_admin_access_token = ""
 
@@ -36,30 +36,19 @@ class IDPMixin(Action):
         if self._idp_admin_access_token != "":
             return self._idp_admin_access_token
 
-        # Fetch key if empty
+        # Fetch key from admin file
+        # TODO
+
+    # Gets IDP id of given instance from the datastore
+    def get_idp_id_from_datastore(self, instance) -> str:
         try:
-            response = requests.post(f"{self.idp_route}/realms/master/protocol/openid-connect/token",
-                data={
-                    'client_id': "admin-cli",
-                    'username': self.admin_username,
-                    'password': self.admin_password,
-                    'grant_type': "password",
-                },
-                headers={
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            )
-
-            json_response = response.json()
-
-            if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
-
-            self._idp_admin_access_token = json_response["access_token"]
-            return self._idp_admin_access_token
+            return self.datastore.get(
+                fqid=f"user/{instance.get('id')}",
+                mapped_fields=["idp_id"]
+                )["idp_id"]
         except Exception as e:
-            raise ActionException(f"Error receiving idp admin token: {e}")
-        return ""
+            return ""
+
 
     def find_and_remove_similar_idp_users(self, user):
         ## Finds IDP users that share the same identifying keys in IDP and deletes them
@@ -91,20 +80,9 @@ class IDPMixin(Action):
                 if not 'id' in json_response[0]:
                     raise ActionException(f"No id in IDP JSON response: {json_response}")
 
-                self.delete_idp_user(json_response[0]['id'])
+                self.delete_user(json_response[0]['id'])
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
-
-    # Gets IDP id of given instance from the datastore
-    def get_idp_id_from_datastore(self, instance) -> str:
-        try:
-            return self.datastore.get(
-                fqid=f"user/{instance.get('id')}",
-                mapped_fields=["idp_id"]
-                )["idp_id"]
-        except Exception as e:
-            return ""
-
 
     def create_user(self, user, password = ""):
         idp_admin_access_token = self._get_admin_key()
@@ -122,21 +100,28 @@ class IDPMixin(Action):
 
             try:
                 ## Upload OS user to IDP
-                response = requests.post(self.idp_admin_route + "users",
+                response = requests.post(self.idp_admin_route + "users/new",
                     json={
                         'username': username,
-                        'email': email,
-                        'enabled': True,
-                        "attributes": {
-                            "os_id": os_id
+                        'human': {
+                            'hashedPassword': {
+                                'hash': password
+                            },
+                            'email': {
+                                'email': email,
+                                'isVerified': True
+                            }
                         },
+                        "metadata": {
+                            "os_id": os_id
+                        }
                     },
                     headers={
-                        'Authorization': f'Bearer {idp_admin_access_token}',
+                        'Authorization': f'Bearer {idp_admin_access_token}'
                     }
                 )
-                if response.status_code == 201:
-                    idp_id = response.headers.get('Location').split('/')[-1]
+                if response.status_code == 200:
+                    idp_id = response.json()["id"]
                 elif response.status_code == 409:
                     raise ActionException(f"A user named {username} already exists in IDP.")
                 elif idp_id == None:
@@ -151,7 +136,7 @@ class IDPMixin(Action):
 
         ## Update passowrd
         if password is not None and password != "":
-            self.update_idp_password(idp_id, password)
+            self.update_password(idp_id, password)
 
         ## Set
         user['idp_id'] = idp_id
@@ -159,9 +144,11 @@ class IDPMixin(Action):
     # Deletes the OIDC user belonging to the given os user.
     # Warning: This will not remove the idp_id from the os user in the database!
     def delete_user(self, instance):
-        self.delete_idp_user(self.get_idp_id_from_datastore(instance))
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
-    def delete_idp_user(self, idp_id):
         if idp_id is None or idp_id == "":
             self.logger.error(f"Deleting IDP user couldn't be done: no IDP ID")
             return
@@ -170,7 +157,7 @@ class IDPMixin(Action):
 
         try:
             ## Logout user
-            self.logout_idp_user(idp_id)
+            self.logout_user(idp_id)
 
             ## Delete OS user from IDP
             response = requests.delete(self.idp_admin_route + "users/" + idp_id,
@@ -179,16 +166,17 @@ class IDPMixin(Action):
                 }
             )
 
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}")
 
     # Logs user out and thereby revokes any active session of user
     def logout_user(self, instance):
-        self.logout_idp_user(self.get_idp_id_from_datastore(instance))
-
-    def logout_idp_user(self, idp_id):
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
         if idp_id is None or idp_id == "":
             self.logger.error(f"Logout of IDP user couldn't be done: no IDP ID")
@@ -212,9 +200,11 @@ class IDPMixin(Action):
 
     # Enables or disables login access in IDP for the user
     def set_user_enable_status(self, instance, enabled):
-        self.set_idp_user_enable_status(self.get_idp_id_from_datastore(instance), enabled)
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
-    def set_idp_user_enable_status(self, idp_id, enabled):
         if idp_id is None or idp_id == "":
             self.logger.error(f"Setting enable status of IDP user couldn't be done: no IDP ID")
             return
@@ -226,8 +216,13 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
+            if enabled:
+                command = "deactivate"
+            else:
+                command = "reactivate"
+
             ## Change enable status of IDP user
-            response = requests.put(self.idp_admin_route + "users/" + idp_id,
+            response = requests.post(self.idp_admin_route + "users/" + idp_id + "/" + command,
                 json={
                     'enabled': enabled,
                 },
@@ -235,7 +230,7 @@ class IDPMixin(Action):
                     'Authorization': f'Bearer {idp_admin_access_token}',
                 }
             )
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {json_response}")
         except Exception as e:
             raise ActionException(f"Error setting enable status of user: {e}")
@@ -243,38 +238,37 @@ class IDPMixin(Action):
     # Resets users password. User has to create new password. An email will be send with necessary information
     # User will be logged out
     def force_reset_password(self, instance):
-        self.reset_idp_password(self.get_idp_id_from_datastore(instance))
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
-    def force_reset_idp_password(self, idp_id):
         if not idp_id or idp_id == "":
             raise ActionException(f"Resetting password couldn't be done: no IDP ID")
 
         idp_admin_access_token = self._get_admin_key()
 
         try:
-            response = requests.put(self.idp_admin_route + "users/" + idp_id + "/execute-actions-email",
-                json=[
-                        'UPDATE_PASSWORD'
-                    ]
-                ,
+            response = requests.post(self.idp_admin_route + "users/" + idp_id + "/password_reset",
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                 }
             )
 
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code}, {response.json()}")
 
             # Logout user
-            self.logout_idp_user(idp_id)
+            self.logout_user(idp_id)
         except Exception as e:
             raise ActionException(f"Error sending password reset email to user {idp_id}: {e}")
 
     # Updates email of user
     def update_email(self, instance, email):
-        self.update_idp_email(self.get_idp_id_from_datastore(instance), email)
-
-    def update_idp_email(self, idp_id, email):
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
         if idp_id is None or idp_id == "":
             self.logger.error(f"Updating email of IDP user couldn't be done: no IDP ID")
@@ -288,24 +282,30 @@ class IDPMixin(Action):
 
         try:
             ## Change email of IDP user
-            response = requests.put(self.idp_admin_route + "users/" + idp_id,
+            response = requests.patch(self.idp_admin_route + "users",
                 json={
-                    'email': email,
+                    'human': {
+                        'email': {
+                            'email': email,
+                            'isVerified': True
+                        }
+                    }
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                 }
             )
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error updating email of user: {e}")
 
     # Updates username of user
     def update_username(self, instance, username):
-        self.update_idp_username(self.get_idp_id_from_datastore(instance), username)
-
-    def update_idp_username(self, idp_id, username):
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
         if idp_id is None or idp_id == "":
             self.logger.error(f"Updating username of IDP user couldn't be done: no IDP ID")
@@ -319,15 +319,15 @@ class IDPMixin(Action):
 
         try:
             ## Change username of IDP user
-            response = requests.put(self.idp_admin_route + "users/" + idp_id,
+            response = requests.patch(self.idp_admin_route + "users",
                 json={
-                    'username': username,
+                    'username': username
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                 }
             )
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error updating username of user: {e}")
@@ -337,9 +337,11 @@ class IDPMixin(Action):
         return to_pad + '=' * (-len(to_pad) % 4)
 
     def update_password(self, instance, password):
-        self.update_idp_password(self.get_idp_id_from_datastore(instance), password)
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
 
-    def update_idp_password(self, idp_id, password):
         if not idp_id or idp_id == "":
             raise ActionException(f"Updating password couldn't be done: no IDP ID")
 
@@ -350,6 +352,21 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
+
+            ## Change email of IDP user
+            response = requests.patch(self.idp_admin_route + "users",
+                json={
+                    'human': {
+                        'hashedPassword': {
+                            'hash': password
+                        }
+                    }
+                },
+                headers={
+                    'Authorization': f'Bearer {idp_admin_access_token}',
+                }
+            )
+            """
             response = requests.put(self.idp_admin_route + "users/" + idp_id,
                 json={
                     'credentials' : [{
@@ -374,9 +391,9 @@ class IDPMixin(Action):
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                 }
-            )
+            )"""
 
-            if response.status_code != 204:
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error updating password for IDP user directly {idp_id}: {e}")

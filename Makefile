@@ -88,10 +88,10 @@ open-gunicornc-action:
 open-gunicornc-presenter:
 	gunicornc -s "openslides-presenter.ctl"
 
-# Keycloak
+# IDP
 
-migrate-users-to-keycloak:
-	python cli/migrate_users_to_keycloak.py
+migrate-users-to-idp:
+	python cli/migrate_users_to_idp.py
 
 ########################## Deprecation List ##########################
 
