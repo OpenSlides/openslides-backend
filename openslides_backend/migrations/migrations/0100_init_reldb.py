@@ -378,6 +378,7 @@ class Migration(BaseMigration):
         # clear replace tables as this migration writes the tables directly
         ver_conn = kwargs.get("version_connection")
         if ver_conn:
+            curs.connection.commit()
             with ver_conn.cursor() as ver_curs:
                 MigrationHelper.set_database_migration_info(
                     ver_curs,

@@ -6,8 +6,7 @@ from re import Match, match
 from threading import Thread
 from typing import Any
 
-from psycopg import Cursor, sql, IsolationLevel
-# from psycopg.extensions import IsolationLevel.READ_COMMITTED
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 

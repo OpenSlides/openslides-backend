@@ -182,60 +182,70 @@ class MigrationManager:
         if not (command := payload.get("cmd")):
             raise View400Exception("No command provided")
         self.logger.info(f"Migration command: {command}")
-        with get_new_os_conn() as conn:
-            conn.transaction()
-            with conn.cursor() as curs:
-                self.cursor = curs
-                if command == MigrationCommand.PROGRESS:
-                    return self.handle_progress_command()
-                elif command == MigrationCommand.STATS:
-                    return {"stats": self.get_stats()}
-                with self.ver_conn.cursor() as cursor:
-                    self.assert_valid_migration_index(curs)
+        with get_new_os_conn() as version_conn:
+            version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+            # TODO: IDK if this is proper separation.
+            # - what to do? threading?
+            # threading: Use concurrent.futures to start two threads.
+            # have the version writing thread wait on the handle thread
+            # or have the main thread manually add version writing threads,
+            # then wait on them.
+            self.ver_conn = version_conn
+            with get_new_os_conn() as conn:
+                conn.transaction()
+                with conn.cursor() as curs:
+                    self.cursor = curs
+                    if command == MigrationCommand.PROGRESS:
+                        return self.handle_progress_command()
+                    elif command == MigrationCommand.STATS:
+                        return {"stats": self.get_stats()}
+                    with version_conn.cursor() as cursor:
+                        self.assert_valid_migration_index(curs)
 
-                    match MigrationHelper.get_migration_state(cursor):
-                        case MigrationState.MIGRATION_RUNNING:
-                            process = "Migration"
-                        case MigrationState.FINALIZATION_RUNNING:
-                            process = "Finalization"
-                        case (
-                            MigrationState.MIGRATION_FAILED
-                            | MigrationState.FINALIZATION_FAILED
-                        ):
-                            raise MigrationException(
-                                f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
+                        match MigrationHelper.get_migration_state(cursor):
+                            case MigrationState.MIGRATION_RUNNING:
+                                process = "Migration"
+                            case MigrationState.FINALIZATION_RUNNING:
+                                process = "Finalization"
+                            case (
+                                MigrationState.MIGRATION_FAILED
+                                | MigrationState.FINALIZATION_FAILED
+                            ):
+                                raise MigrationException(
+                                    f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
+                                )
+                            case _:
+                                process = ""
+                        if process:
+                            raise View400Exception(
+                                f"{process} is running, only 'stats' command is allowed."
                             )
-                        case _:
-                            process = ""
-                    if process:
-                        raise View400Exception(
-                            f"{process} is running, only 'stats' command is allowed."
-                        )
 
-                    verbose = payload.get("verbose", False)
-                    if command in iter(MigrationCommand):
-                        MigrationHelper.migrate_thread_stream = StringIO()
-                        MigrationHelper.migrate_thread_stream_read_pos = (
-                            MigrationHelper.migrate_thread_stream.tell()
-                        )
-                        MigrationHelper.migrate_thread = thread = Thread(
-                            target=self.execute_migrate_command, args=[command, verbose]
-                        )
-                        thread.start()
-                        thread.join(THREAD_WAIT_TIME)
-                        if thread.is_alive():
-                            # Read isolation would prevent seeing the newest status otherwise.
-                            self.cursor.connection.commit()
-                            # Migration still running. Report current progress and return
-                            return {
-                                "status": MigrationHelper.get_migration_state(cursor),
-                                "output": MigrationHelper.read_stream(),
-                            }
+                        verbose = payload.get("verbose", False)
+                        if command in iter(MigrationCommand):
+                            MigrationHelper.migrate_thread_stream = StringIO()
+                            MigrationHelper.migrate_thread_stream_read_pos = (
+                                MigrationHelper.migrate_thread_stream.tell()
+                            )
+                            MigrationHelper.migrate_thread = thread = Thread(
+                                target=self.execute_migrate_command, args=[command, verbose]
+                            )
+                            thread.start()
+                            thread.join(THREAD_WAIT_TIME)
+                            if thread.is_alive():
+                                # Read isolation would prevent seeing the newest status otherwise.
+                                cursor.connection.commit()
+                                self.cursor.connection.commit()
+                                # Migration still running. Report current progress and return
+                                return {
+                                    "status": MigrationHelper.get_migration_state(cursor),
+                                    "output": MigrationHelper.read_stream(),
+                                }
+                            else:
+                                # Migration already finished/had nothing to do
+                                return self.get_migration_result()
                         else:
-                            # Migration already finished/had nothing to do
-                            return self.get_migration_result()
-                    else:
-                        raise View400Exception("Unknown command: " + command)
+                            raise View400Exception("Unknown command: " + command)
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         """

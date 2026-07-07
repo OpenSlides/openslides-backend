@@ -306,6 +306,7 @@ class MigrationHandler(BaseHandler):
             mig_class.data_definition(self.cursor)
             mig_class.data_manipulation(self.cursor, version_connection=self.ver_conn)
 
+            self.cursor.connection.commit()
             with self.ver_conn.cursor() as curs:
                 MigrationHelper.set_database_migration_info(
                     curs, index, MigrationState.FINALIZATION_REQUIRED
@@ -341,6 +342,7 @@ class MigrationHandler(BaseHandler):
                         if errors := mig_class.check_prerequisites(self.cursor):
                             if minimum_required_index:
                                 with self.ver_conn.cursor() as curs:
+                                    self.cursor.connection.commit()
                                     MigrationHelper.set_database_migration_info(
                                         curs,
                                         minimum_required_index["min"],
@@ -466,6 +468,7 @@ class MigrationHandler(BaseHandler):
             unified_replace_tables, relevant_mis = (
                 MigrationHelper.get_unified_replace_tables_from_database(curs)
             )
+            self.cursor.connection.commit()
             for mi in relevant_mis:
                 MigrationHelper.set_database_migration_info(
                     curs, mi, MigrationState.FINALIZATION_RUNNING
@@ -573,6 +576,7 @@ class MigrationHandler(BaseHandler):
         self.update_sequences()
 
         MigrationHelper.write_line("finalization finished")
+        self.cursor.connection.commit()
         with self.ver_conn.cursor() as curs:
             for mi in relevant_mis:
                 MigrationHelper.set_database_migration_info(
