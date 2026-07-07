@@ -10,6 +10,10 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.services.postgresql.utils import (
+    activate_notify_triggers,
+    deactivate_notify_triggers,
+)
 from openslides_backend.shared.exceptions import CommandNotImplemented
 
 from ..migrations.exceptions import (
@@ -178,9 +182,9 @@ class MigrationHandler(BaseHandler):
                         self.logger.info(errors)
                         raise MigrationSetupException(errors)
                 MigrationHelper.write_line("migration started")
-                # self.set_public_tables_read_only()
-                # self.setup_migration_relations()
+                deactivate_notify_triggers(self.cursor)
                 self.execute_migrations()
+                activate_notify_triggers(self.cursor)
                 MigrationHelper.write_line("migration finished")
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
             case MigrationState.MIGRATION_FINISHED:
@@ -214,6 +218,7 @@ class MigrationHandler(BaseHandler):
         """
         raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
+        activate_notify_triggers(self.cursor)
         MigrationHelper.close_migrate_thread_stream()
         self._clean_migration_data()
         indices = MigrationHelper.get_indices_from_database(self.cursor)

@@ -8,8 +8,8 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     env,
     get_new_os_conn,
 )
+from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from tests.conftest_helper import (
-    deactivate_notify_triggers,
     generate_remove_all_test_functions,
     generate_sql_for_test_initiation,
 )

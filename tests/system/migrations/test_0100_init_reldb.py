@@ -337,7 +337,7 @@ For more information, see
         assert result == {
             "status": MigrationState.MIGRATION_RUNNING,
             "output": self.EXPECTED_INTRODUCTION
-            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n100 of 161 models written to tables.\n",
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
 
         self.wait_for_migration_thread(self.MAX_WAIT)

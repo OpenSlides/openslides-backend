@@ -880,7 +880,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert status_code == 200
         if not data["ok"]:
             print(data)
-        assert data["ok"] is True
+        assert data["ok"] is True, data["errors"]
         assert "errors" not in data
 
     def test_no_permissions(self) -> None:
