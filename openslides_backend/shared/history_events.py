@@ -19,8 +19,13 @@ def calculate_history_event_payloads(
     timestamp: int | None = None,
 ) -> list[EventPayload]:
     transformed_information = [
-        (model_fqid_to_entry_id[fqid], fqid, entries)
-        for fqid, entries in information.items()
+        (
+            model_fqid_to_entry_id[fqid],
+            fqid,
+            data["entries"],
+            data.get("changed_fields"),
+        )
+        for fqid, data in information.items()
     ]
     create_events: list[EventPayload] = [
         (
@@ -28,13 +33,14 @@ def calculate_history_event_payloads(
             {
                 "id": id_,
                 "entries": entries,
+                "changed_fields": changed_fields,
                 "position_id": position_id,
                 "original_model_id": fqid,
                 "model_id": (fqid if fqid in existing_fqids else None),
                 "meeting_id": model_fqid_to_meeting_id.get(fqid, None),
             },
         )
-        for id_, fqid, entries in transformed_information
+        for id_, fqid, entries, changed_fields in transformed_information
     ]
     create_events.append(
         (
