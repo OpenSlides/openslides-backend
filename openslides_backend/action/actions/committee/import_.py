@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from openslides_backend.action.actions.meeting.clone import MeetingClone
@@ -192,7 +192,9 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     if (value := action_data.get(field_name)) and isinstance(
                         value, int
                     ):
-                        action_data[field_name] = datetime.fromtimestamp(value)
+                        action_data[field_name] = datetime.fromtimestamp(
+                            value, tz=timezone.utc
+                        )
                 if template_id := entry.get("meeting_template"):
                     action_data["meeting_id"] = template_id
                     clone_meeting_data.append(action_data)
