@@ -88,8 +88,13 @@ def create_schema() -> None:
                     raise MismatchingMigrationIndicesException(
                         f"Migration index ({db_migration_index}) cannot be lower than {MIN_NON_REL_MIGRATION}. Please have a look at the migration documentation checkout the migration backend to a version that runs that migration. Then upgrade again."
                     )
-                print("Relational schema applied.\n", flush=True)
-                if db_migration_index < 100:
+                if db_migration_index == 0:
+                    type_ = "fresh"
+                    db_migration_index = MigrationHelper.get_backend_migration_index()
+                    path = os.path.realpath(
+                        os.path.join("meta", "dev", "sql", "schema_relational.sql")
+                    )
+                elif db_migration_index < 100:
                     # migration states for non-rel-db indices (migration 99 impossible) are aggregated into one (index: max - 1) of version table.
                     type_ = "legacy"
                     db_migration_index -= 1
@@ -102,13 +107,12 @@ def create_schema() -> None:
                         )
                     )
                 else:
-                    type_ = "fresh"
-                    db_migration_index = MigrationHelper.get_backend_migration_index()
-                    path = os.path.realpath(
-                        os.path.join("meta", "dev", "sql", "schema_relational.sql")
+                    raise MismatchingMigrationIndicesException(
+                        f"Migration index ({db_migration_index}) cannot be higher than 100. You are trying to reapply the schema on top of itself."
                     )
                 print(f"Assuming {type_} database.")
                 cursor.execute(open(path).read())
+                print("Relational schema applied.\n")
                 if db_migration_index < 100:
                     MigrationHelper.set_database_migration_info(
                         cursor, db_migration_index, MigrationState.FINALIZED
