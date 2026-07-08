@@ -360,7 +360,7 @@ class DatabaseWriter(SqlQueryHelper):
                 self.execute_sql(
                     statement,
                     {
-                        **{str(id_): val for id_, val in enumerate(values)},
+                        **{str(nmbr): val for nmbr, val in enumerate(values)},
                         "own_id": id_,
                     },
                     collection,

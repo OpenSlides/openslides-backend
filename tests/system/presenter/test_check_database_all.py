@@ -456,34 +456,28 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 "meeting_user/11": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
                 },
                 "meeting_user/12": {
                     "meeting_id": 1,
                     "user_id": 2,
-                    "group_ids": [1],
                 },
                 "meeting_user/13": {
                     "meeting_id": 1,
                     "user_id": 3,
                     "motion_submitter_ids": [5],
-                    "group_ids": [1],
                 },
                 "meeting_user/14": {
                     "meeting_id": 1,
                     "user_id": 4,
-                    "group_ids": [1],
                 },
                 "meeting_user/15": {
                     "meeting_id": 1,
                     "user_id": 5,
-                    "group_ids": [1],
                 },
                 "meeting_user/16": {
                     "meeting_id": 1,
                     "user_id": 6,
                     "assignment_candidate_ids": [9],
-                    "group_ids": [1],
                 },
                 "motion_workflow/1": {
                     "meeting_id": 1,
