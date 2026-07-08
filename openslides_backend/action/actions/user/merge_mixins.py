@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.services.database.interface import PartialModel
+from openslides_backend.shared.history_events import update_history_information
 
 from ....models.models import (
     AssignmentCandidate,
@@ -99,9 +100,11 @@ class AssignmentCandidateMergeMixin(BaseMergeMixin):
         ]:
             assignment_ids.add(data["assignment_id"])
         for assignment_id in assignment_ids:
-            information[fqid_from_collection_and_id("assignment", assignment_id)] = {
-                "entries": ["Candidates merged"]
-            }
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("assignment", assignment_id),
+                ["Candidates merged"],
+            )
         return information
 
 
@@ -128,11 +131,11 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
         ]:
             motion_ids.add(data["motion_id"])
         for motion_id in motion_ids:
-            fqid = fqid_from_collection_and_id("motion", motion_id)
-            if fqid not in information:
-                information[fqid] = {"entries": ["Submitters merged"]}
-            else:
-                information[fqid]["entries"].append("Submitters merged")
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("motion", motion_id),
+                ["Submitters merged"],
+            )
         return information
 
 
@@ -155,11 +158,11 @@ class MotionSupporterMergeMixin(BaseMergeMixin):
         ]:
             motion_ids.add(data["motion_id"])
         for motion_id in motion_ids:
-            fqid = fqid_from_collection_and_id("motion", motion_id)
-            if fqid not in information:
-                information[fqid] = {"entries": ["Supporters merged"]}
-            else:
-                information[fqid]["entries"].append("Supporters merged")
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("motion", motion_id),
+                ["Supporters merged"],
+            )
         return information
 
 

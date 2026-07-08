@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
@@ -94,11 +95,13 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
 
     def get_history_information(self) -> HistoryInformation | None:
         return {
-            fqid_from_collection_and_id(self.model.collection, instance["id"]): {
-                "entries": [
+            fqid_from_collection_and_id(
+                self.model.collection, instance["id"]
+            ): build_history_information_data(
+                [
                     f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
                     fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-                ]
-            }
+                ],
+            )
             for instance in self.action_data
         }

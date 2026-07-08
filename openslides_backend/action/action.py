@@ -9,6 +9,7 @@ import fastjsonschema
 from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
+from openslides_backend.shared.history_events import update_history_information_multi
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseRelationField, GenericRelationField
@@ -540,7 +541,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         if self.history_information is None:
             return None
 
-        information = {}
+        information: HistoryInformation = {}
         instances = (
             self.get_instances_with_fields(["id", self.history_relation_field])
             if self.history_relation_field
@@ -558,8 +559,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 fqids.append(
                     fqid_from_collection_and_id(self.model.collection, instance["id"])
                 )
-            for fqid in fqids:
-                information[fqid] = {"entries": [self.history_information]}
+            update_history_information_multi(
+                information, fqids, [self.history_information]
+            )
         return information
 
     def get_instances_with_fields(

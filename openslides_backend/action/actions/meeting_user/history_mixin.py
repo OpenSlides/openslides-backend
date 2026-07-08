@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.interfaces.event import Event, EventType
 
 from ....services.database.interface import GetManyRequest
@@ -97,9 +98,9 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
         return {
-            fqid: {
-                "entries": [string for entry in history["entries"] for string in entry]
-            }
+            fqid: build_history_information_data(
+                [string for entry in history["entries"] for string in entry]
+            )
             for fqid, history in information.items()
         }
 

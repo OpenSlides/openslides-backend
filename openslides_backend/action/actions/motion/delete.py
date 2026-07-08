@@ -2,6 +2,10 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.action import merge_history_informations
+from openslides_backend.shared.history_events import (
+    build_history_information_data,
+    update_history_information_multi,
+)
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -76,19 +80,16 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         if self.history_information is None:
             return information
         # generate the history informations for the deleted amendments
-        fqids = [
+        if not information:
+            information = {}
+        all_fqids = [
             fqid_from_collection_and_id("motion", id_) for id_ in self.all_motion_ids
         ]
-        if not information:
-            information = {
-                fqid: {"entries": [self.history_information]} for fqid in fqids
-            }
-        else:
-            for fqid in fqids:
-                if fqid in information:
-                    information[fqid]["entries"] = [self.history_information]
-                else:
-                    information[fqid] = {"entries": [self.history_information]}
+        update_history_information_multi(
+            information,
+            [fqid for fqid in all_fqids if fqid not in information],
+            [self.history_information],
+        )
         return information
 
     def get_full_history_information(self) -> HistoryInformation | None:
@@ -102,16 +103,20 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         return merge_history_informations(
             information or {},
             {
-                fqid_from_collection_and_id("motion", id): {
-                    "entries": ["Forwarded motion deleted"]
-                }
+                fqid_from_collection_and_id(
+                    "motion", id
+                ): build_history_information_data(
+                    ["Forwarded motion deleted"],
+                )
                 for instance in instances
                 for id in instance.get("all_origin_ids", [])
             },
             {
-                fqid_from_collection_and_id("motion", id): {
-                    "entries": ["Origin motion deleted"]
-                }
+                fqid_from_collection_and_id(
+                    "motion", id
+                ): build_history_information_data(
+                    ["Origin motion deleted"],
+                )
                 for instance in instances
                 for id in instance.get("all_derived_motion_ids", [])
             },

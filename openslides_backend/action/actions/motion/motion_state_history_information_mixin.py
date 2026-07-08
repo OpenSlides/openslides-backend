@@ -1,3 +1,4 @@
+from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -9,13 +10,15 @@ class MotionStateHistoryInformationMixin(Action):
         self, instance_field: str, verbose_model: str
     ) -> HistoryInformation:
         return {
-            fqid_from_collection_and_id(self.model.collection, instance["id"]): {
-                "entries": [
+            fqid_from_collection_and_id(
+                self.model.collection, instance["id"]
+            ): build_history_information_data(
+                [
                     verbose_model + " set to {}",
                     fqid_from_collection_and_id(
                         "motion_state", instance[instance_field]
                     ),
-                ]
-            }
+                ],
+            )
             for instance in self.instances
         }

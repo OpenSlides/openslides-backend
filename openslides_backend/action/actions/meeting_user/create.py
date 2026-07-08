@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -73,7 +74,9 @@ class MeetingUserCreate(
             entries.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
-            information[fqid_from_collection_and_id("user", instance["user_id"])] = {
-                "entries": entries
-            }
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("user", instance["user_id"]),
+                entries,
+            )
         return information

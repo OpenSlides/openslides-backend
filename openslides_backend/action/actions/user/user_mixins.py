@@ -4,6 +4,7 @@ from typing import Any
 
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.services.database.interface import PartialModel
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -204,9 +205,11 @@ class UpdateHistoryMixin(Action):
                     entries.append("Set inactive")
 
             if entries:
-                information[fqid_from_collection_and_id("user", instance["id"])] = {
-                    "entries": entries
-                }
+                update_history_information(
+                    information,
+                    fqid_from_collection_and_id("user", instance["id"]),
+                    entries,
+                )
         return information
 
 

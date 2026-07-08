@@ -4,6 +4,7 @@ from typing import Any
 
 from psycopg.types.json import Jsonb
 
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -264,9 +265,11 @@ class MotionUpdate(
                 entries.append("Motion updated")
 
             if entries:
-                information[
-                    fqid_from_collection_and_id(self.model.collection, instance["id"])
-                ] = {"entries": entries}
+                update_history_information(
+                    information,
+                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                    entries,
+                )
 
         return information
 
