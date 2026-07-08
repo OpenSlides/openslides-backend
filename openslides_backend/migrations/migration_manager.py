@@ -3,7 +3,7 @@ from io import StringIO
 from threading import Thread
 from typing import Any, cast
 
-from psycopg import Cursor, sql, IsolationLevel
+from psycopg import Cursor, IsolationLevel, sql
 from psycopg.rows import DictRow
 
 from openslides_backend.migrations.exceptions import (
@@ -57,7 +57,9 @@ class MigrationManager:
         with get_new_os_conn() as conn:
             with conn.cursor() as cursor:
                 MigrationHelper.add_new_migrations_to_version(cursor)
-                self.target_migration_index = MigrationHelper.get_backend_migration_index()
+                self.target_migration_index = (
+                    MigrationHelper.get_backend_migration_index()
+                )
 
     def handle_progress_command(self) -> dict[str, Any]:
         """
@@ -97,27 +99,30 @@ class MigrationManager:
             Doesn't respect initial migration if executed on a higher target migration index.
         """
 
-        def count(table: str, curs: Cursor[DictRow]) -> int:
-            if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
-                if table.endswith("_m"):
-                    # initial migration uses the original table_t instead of migration table_m
-                    # to count migrated models.
-                    statement_part = sql.SQL("{table}").format(
-                        table=sql.Identifier(table[:-2] + "_t")
-                    )
-                else:
-                    # initial migration uses the models instead of table_t to count models
-                    statement_part = sql.SQL(
-                        "models WHERE fqid LIKE '{collection}/%' and deleted = false"
-                    ).format(collection=sql.SQL(table[:-2]))
-            else:
-                statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
-            response = self.cursor.execute(
-                sql.SQL("SELECT COUNT(*) FROM ") + statement_part
-            ).fetchone()
-            return (response or {}).get("count", 0)
-
         with self.ver_conn.cursor() as cursor:
+
+            def count(table: str, curs: Cursor[DictRow]) -> int:
+                if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
+                    if table.endswith("_m"):
+                        # initial migration uses the original table_t instead of migration table_m
+                        # to count migrated models.
+                        statement_part = sql.SQL("{table}").format(
+                            table=sql.Identifier(table[:-2] + "_t")
+                        )
+                    else:
+                        # initial migration uses the models instead of table_t to count models
+                        statement_part = sql.SQL(
+                            "models WHERE fqid LIKE '{collection}/%' and deleted = false"
+                        ).format(collection=sql.SQL(table[:-2]))
+                else:
+                    statement_part = sql.SQL("{table}").format(
+                        table=sql.Identifier(table)
+                    )
+                response = cursor.execute(
+                    sql.SQL("SELECT COUNT(*) FROM ") + statement_part
+                ).fetchone()
+                return (response or {}).get("count", 0)
+
             current_migration_index = MigrationHelper.get_database_migration_index(
                 cursor
             )
@@ -143,10 +148,10 @@ class MigrationManager:
                 stats = {
                     collection: {
                         "count": amount,
-                        "migrated": count(migration_table, self.cursor),
+                        "migrated": count(migration_table, cursor),
                     }
                     for collection, migration_table in unmigrated_collections.items()
-                    if (amount := count(collection + "_t", self.cursor))
+                    if (amount := count(collection + "_t", cursor))
                 }
 
         return {
@@ -184,68 +189,55 @@ class MigrationManager:
         self.logger.info(f"Migration command: {command}")
         with get_new_os_conn() as version_conn:
             version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-            # TODO: IDK if this is proper separation.
-            # - what to do? threading?
-            # threading: Use concurrent.futures to start two threads.
-            # have the version writing thread wait on the handle thread
-            # or have the main thread manually add version writing threads,
-            # then wait on them.
             self.ver_conn = version_conn
-            with get_new_os_conn() as conn:
-                conn.transaction()
-                with conn.cursor() as curs:
-                    self.cursor = curs
-                    if command == MigrationCommand.PROGRESS:
-                        return self.handle_progress_command()
-                    elif command == MigrationCommand.STATS:
-                        return {"stats": self.get_stats()}
-                    with version_conn.cursor() as cursor:
-                        self.assert_valid_migration_index(curs)
+            if command == MigrationCommand.PROGRESS:
+                return self.handle_progress_command()
+            elif command == MigrationCommand.STATS:
+                return {"stats": self.get_stats()}
+            with version_conn.cursor() as cursor:
+                self.assert_valid_migration_index(cursor)
 
-                        match MigrationHelper.get_migration_state(cursor):
-                            case MigrationState.MIGRATION_RUNNING:
-                                process = "Migration"
-                            case MigrationState.FINALIZATION_RUNNING:
-                                process = "Finalization"
-                            case (
-                                MigrationState.MIGRATION_FAILED
-                                | MigrationState.FINALIZATION_FAILED
-                            ):
-                                raise MigrationException(
-                                    f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
-                                )
-                            case _:
-                                process = ""
-                        if process:
-                            raise View400Exception(
-                                f"{process} is running, only 'stats' command is allowed."
-                            )
+                match MigrationHelper.get_migration_state(cursor):
+                    case MigrationState.MIGRATION_RUNNING:
+                        process = "Migration"
+                    case MigrationState.FINALIZATION_RUNNING:
+                        process = "Finalization"
+                    case (
+                        MigrationState.MIGRATION_FAILED
+                        | MigrationState.FINALIZATION_FAILED
+                    ):
+                        raise MigrationException(
+                            f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
+                        )
+                    case _:
+                        process = ""
+                if process:
+                    raise View400Exception(
+                        f"{process} is running, only 'stats' command is allowed."
+                    )
 
-                        verbose = payload.get("verbose", False)
-                        if command in iter(MigrationCommand):
-                            MigrationHelper.migrate_thread_stream = StringIO()
-                            MigrationHelper.migrate_thread_stream_read_pos = (
-                                MigrationHelper.migrate_thread_stream.tell()
-                            )
-                            MigrationHelper.migrate_thread = thread = Thread(
-                                target=self.execute_migrate_command, args=[command, verbose]
-                            )
-                            thread.start()
-                            thread.join(THREAD_WAIT_TIME)
-                            if thread.is_alive():
-                                # Read isolation would prevent seeing the newest status otherwise.
-                                cursor.connection.commit()
-                                self.cursor.connection.commit()
-                                # Migration still running. Report current progress and return
-                                return {
-                                    "status": MigrationHelper.get_migration_state(cursor),
-                                    "output": MigrationHelper.read_stream(),
-                                }
-                            else:
-                                # Migration already finished/had nothing to do
-                                return self.get_migration_result()
-                        else:
-                            raise View400Exception("Unknown command: " + command)
+                verbose = payload.get("verbose", False)
+                if command in iter(MigrationCommand):
+                    MigrationHelper.migrate_thread_stream = StringIO()
+                    MigrationHelper.migrate_thread_stream_read_pos = (
+                        MigrationHelper.migrate_thread_stream.tell()
+                    )
+                    MigrationHelper.migrate_thread = thread = Thread(
+                        target=self.execute_migrate_command, args=[command, verbose]
+                    )
+                    thread.start()
+                    thread.join(THREAD_WAIT_TIME)
+                    if thread.is_alive():
+                        # Migration still running. Report current progress and return
+                        return {
+                            "status": MigrationHelper.get_migration_state(cursor),
+                            "output": MigrationHelper.read_stream(),
+                        }
+                    else:
+                        # Migration already finished/had nothing to do
+                        return self.get_migration_result()
+                else:
+                    raise View400Exception("Unknown command: " + command)
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         """
@@ -255,10 +247,9 @@ class MigrationManager:
         try:
             with get_new_os_conn() as version_conn:
                 version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-                self.ver_conn = version_conn
                 with get_new_os_conn() as conn:
                     with conn.cursor() as curs:
-                        with self.ver_conn.cursor() as cursor:
+                        with version_conn.cursor() as cursor:
                             if (
                                 MigrationHelper.get_migration_state(cursor)
                                 == MigrationState.MIGRATION_RUNNING
@@ -279,12 +270,14 @@ class MigrationManager:
             MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)
             # TODO catch this on a lower level and set it for specific faulty migration index
-            with self.ver_conn.cursor() as cursor:
-                relevant_mis = MigrationHelper.get_unfinalized_indices(cursor)
-                match command:
-                    case MigrationCommand.MIGRATE:
-                        state = MigrationState.MIGRATION_FAILED
-                    case MigrationCommand.FINALIZE:
-                        state = MigrationState.FINALIZATION_FAILED
-                for mi in relevant_mis:
-                    MigrationHelper.set_database_migration_info(cursor, mi, state)
+            with get_new_os_conn() as version_conn:
+                version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+                with version_conn.cursor() as cursor:
+                    relevant_mis = MigrationHelper.get_unfinalized_indices(cursor)
+                    match command:
+                        case MigrationCommand.MIGRATE:
+                            state = MigrationState.MIGRATION_FAILED
+                        case MigrationCommand.FINALIZE:
+                            state = MigrationState.FINALIZATION_FAILED
+                    for mi in relevant_mis:
+                        MigrationHelper.set_database_migration_info(cursor, mi, state)

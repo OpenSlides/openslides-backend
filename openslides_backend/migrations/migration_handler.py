@@ -3,15 +3,12 @@ import string
 from importlib import import_module
 from typing import Any
 
-from psycopg import Cursor, sql, IsolationLevel
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
 from openslides_backend.shared.exceptions import CommandNotImplemented
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn, ConnectionContext
-)
 
 from ..migrations.exceptions import (
     InvalidMigrationCommand,
@@ -38,7 +35,7 @@ class MigrationHandler(BaseHandler):
         env: Env,
         services: Services,
         logging: LoggingModule,
-        version_connection: Any
+        version_connection: Any,
     ) -> None:
         super().__init__(env, services, logging)
         self.cursor = curs
@@ -341,20 +338,17 @@ class MigrationHandler(BaseHandler):
                         self.logger.info("Pre check: " + module_name + " ...")
                         if errors := mig_class.check_prerequisites(self.cursor):
                             if minimum_required_index:
-                                with self.ver_conn.cursor() as curs:
-                                    self.cursor.connection.commit()
-                                    MigrationHelper.set_database_migration_info(
-                                        curs,
-                                        minimum_required_index["min"],
-                                        MigrationState.MIGRATION_REQUIRED,
-                                    )
-                            errors = (
-                                f"Pre check for migration {module_name} failed.\n{errors}"
-                            )
+                                self.cursor.connection.commit()
+                                MigrationHelper.set_database_migration_info(
+                                    cursor,
+                                    minimum_required_index["min"],
+                                    MigrationState.MIGRATION_REQUIRED,
+                                )
+                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
                             self.logger.info(errors)
                             raise MigrationSetupException(errors)
                     MigrationHelper.write_line("migration started")
-                    self.set_public_tables_read_only()
+                    # self.set_public_tables_read_only()
                     self.setup_migration_relations()
                     self.execute_migrations()
                     MigrationHelper.write_line("migration finished")
@@ -430,12 +424,15 @@ class MigrationHandler(BaseHandler):
         """
         Closes the migration threads io stream.
         """
-        assert MigrationHelper.migrate_thread_stream
-
-        MigrationHelper.migrate_thread_stream.close()
-        MigrationHelper.migrate_thread_stream = None
-        MigrationHelper.migrate_thread_stream_can_be_closed = False
-        MigrationHelper.migrate_thread_exception = None
+        if (
+            MigrationHelper.migrate_thread_stream_can_be_closed
+            and MigrationHelper.migrate_thread_stream
+        ):
+            MigrationHelper.migrate_thread_stream.close()
+            MigrationHelper.migrate_thread_stream = None
+            MigrationHelper.migrate_thread_stream_can_be_closed = False
+            MigrationHelper.migrate_thread_stream_read_pos = 0
+            MigrationHelper.migrate_thread_exception = None
 
     def finalize(self) -> None:
         """

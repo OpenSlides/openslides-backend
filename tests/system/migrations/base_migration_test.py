@@ -6,6 +6,8 @@ from openslides_backend.migrations.migration_helper import MigrationHelper
 
 class BaseMigrationTestCase(TestCase):
     def tearDown(self) -> None:
+        if MigrationHelper.migrate_thread:
+            self.wait_for_migration_thread(15)
         MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
         MigrationHelper.migrate_thread_stream_read_pos = 0

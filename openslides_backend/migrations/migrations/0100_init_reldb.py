@@ -10,11 +10,7 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
-from openslides_backend.migrations.migration_helper import (
-    OLD_TABLES,
-    MigrationHelper,
-    MigrationState,
-)
+from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
 from openslides_backend.migrations.migrations.base import BaseMigration
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
@@ -376,21 +372,21 @@ class Migration(BaseMigration):
             curs.execute(command, values)
 
         # clear replace tables as this migration writes the tables directly
-        ver_conn = kwargs.get("version_connection")
-        if ver_conn:
-            curs.connection.commit()
-            with ver_conn.cursor() as ver_curs:
-                MigrationHelper.set_database_migration_info(
-                    ver_curs,
-                    100,
-                    MigrationState.FINALIZATION_REQUIRED,
-                )
-        else:
-            MigrationHelper.set_database_migration_info(
-                curs,
-                100,
-                MigrationState.FINALIZATION_REQUIRED,
-            )
+        # ver_conn = kwargs.get("version_connection")
+        # if ver_conn:
+        #     curs.connection.commit()
+        #     with ver_conn.cursor() as ver_curs:
+        #         MigrationHelper.set_database_migration_info(
+        #             ver_curs,
+        #             100,
+        #             MigrationState.FINALIZATION_REQUIRED,
+        #         )
+        # else:
+        #     MigrationHelper.set_database_migration_info(
+        #         curs,
+        #         100,
+        #         MigrationState.FINALIZATION_REQUIRED,
+        # )
 
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:

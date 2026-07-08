@@ -399,7 +399,9 @@ For more information, see
             MigrationHelper.migrate_thread_stream = StringIO()
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
-                    handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging, version_conn)
+                    handler = MigrationHandler(
+                        curs, Mock(), Mock(), self.app.logging, version_conn
+                    )
                     handler.execute_command("migrate")
                     self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
                     handler.execute_command("finalize")
@@ -501,6 +503,8 @@ For more information, see
         response = self.request("migrate")
         assert response.json == {
             "success": True,
+            # 'output': '',
+            # 'status': 'migration_required'
             "status": MigrationState.MIGRATION_RUNNING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",

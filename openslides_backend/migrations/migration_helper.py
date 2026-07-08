@@ -12,9 +12,6 @@ from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.models.base import model_registry
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 
 from ..shared.exceptions import ActionException
 
@@ -134,9 +131,7 @@ class MigrationHelper:
         database_indices = MigrationHelper.get_indices_from_database(curs)
         for migration_index in MigrationHelper.migrations:
             if migration_index not in database_indices:
-                replace_tables = MigrationHelper.get_replace_tables(
-                    migration_index
-                )
+                replace_tables = MigrationHelper.get_replace_tables(migration_index)
                 MigrationHelper.set_database_migration_info(
                     curs,
                     migration_index,
@@ -260,7 +255,6 @@ class MigrationHelper:
         curs.execute(statement, tuple(params.values()))
         curs.connection.commit()
 
-
     @staticmethod
     def table_exists(curs: Cursor[DictRow], table_name: str) -> bool:
         """
@@ -276,7 +270,7 @@ class MigrationHelper:
         return version_table_exists["exists"]
 
     @staticmethod
-    def pull_migration_index_from_db(curs: Cursor[DictRow], ver_curs: Cursor|None=None) -> int:
+    def pull_migration_index_from_db(curs: Cursor[DictRow]) -> int:
         """
         Reads the current migration_index from the psql database.
         1. MAX(migration_index) of positions while position is still used for the index
@@ -286,10 +280,12 @@ class MigrationHelper:
         - migration_index : integer the migration index or 0 if this must be a fresh install.
         """
         migration_index: int
-        if MigrationHelper.table_exists(ver_curs or curs, "version"):
-            migration_index = MigrationHelper.get_database_migration_index(ver_curs)
+        if MigrationHelper.table_exists(curs, "version"):
+            migration_index = MigrationHelper.get_database_migration_index(curs)
         elif MigrationHelper.table_exists(curs, "positions"):
-            row = (ver_curs or curs).execute("SELECT MAX(migration_index) FROM positions;").fetchone()
+            row = (
+                (curs).execute("SELECT MAX(migration_index) FROM positions;").fetchone()
+            )
             assert row, "No migration_index could be found."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
