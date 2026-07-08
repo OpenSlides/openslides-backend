@@ -424,3 +424,39 @@ class MigrationHelper:
             for row in rows
             for collection, replace_tables in row["replace_tables"].items()
         }
+
+    @staticmethod
+    def copy_table(
+        curs: Cursor[DictRow], table_name: str, target_table_name: str
+    ) -> None:
+        """
+        Copies the table with its definition and rows. Does not copy triggers and foreign key constraints.
+        For use in data_preparation step of migration.
+        """
+        target_table = sql.Identifier(target_table_name)
+        table_t = sql.Identifier(table_name)
+        curs.execute(
+            sql.SQL(
+                "CREATE TABLE {target_table} (LIKE {table_t} INCLUDING ALL);"
+            ).format(target_table=target_table, table_t=table_t)
+        )
+
+        fields = curs.execute(sql.SQL("""
+                SELECT *
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                AND table_name = {table};
+                """).format(table=table_name)).fetchall()
+        curs.execute(
+            sql.SQL(
+                "INSERT INTO {target_table} ({fields}) SELECT {fields} FROM {table_t};"
+            ).format(
+                target_table=target_table,
+                table_t=table_t,
+                fields=sql.SQL(", ").join(
+                    sql.SQL(data["column_name"])
+                    for data in fields
+                    if data["is_generated"] != "ALWAYS"
+                ),
+            )
+        )

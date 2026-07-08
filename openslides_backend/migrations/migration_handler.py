@@ -40,37 +40,6 @@ class MigrationHandler(BaseHandler):
         self.cursor = curs
         self.replace_tables: dict[str, Any]
 
-    # TODO This might still be relevant inside the module code for stowing away information dropped by schema alterations
-    # def copy_table(self, table_name: str, target_table_name: str) -> None:
-    #     """Copies the table with its definition and rows. Does not copy trigger."""
-    #     target_table = sql.Identifier(target_table_name)
-    #     table_t = sql.Identifier(table_name)
-    #     self.cursor.execute(
-    #         sql.SQL("CREATE TABLE {target_table} (LIKE {table_t} INCLUDING ALL);").format(
-    #             target_table=target_table, table_t=table_t
-    #         )
-    #     )
-
-    #     fields = self.cursor.execute(sql.SQL("""
-    #             SELECT *
-    #             FROM information_schema.columns
-    #             WHERE table_schema = 'public'
-    #             AND table_name = {table};
-    #             """).format(table=table_name)).fetchall()
-    #     self.cursor.execute(
-    #         sql.SQL(
-    #             "INSERT INTO {target_table} ({fields}) SELECT {fields} FROM {table_t};"
-    #         ).format(
-    #             target_table=target_table,
-    #             table_t=table_t,
-    #             fields=sql.SQL(", ").join(
-    #                 sql.SQL(data["column_name"])
-    #                 for data in fields
-    #                 if data["is_generated"] != "ALWAYS"
-    #             ),
-    #         )
-    #     )
-
     def update_sequence(self, name: str, maximum: int) -> None:
         self.cursor.execute(
             sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
