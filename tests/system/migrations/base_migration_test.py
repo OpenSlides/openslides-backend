@@ -11,6 +11,7 @@ from unittest import TestResult as UnitTestResult
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import MagicMock, Mock, patch
 from zoneinfo import ZoneInfo
+from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -125,6 +126,7 @@ class BaseMigrationTestCase(TestCase):
             with conn.cursor() as curs:
                 table_names = get_rel_db_table_names(curs)
                 curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
+                deactivate_notify_triggers(curs)
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
