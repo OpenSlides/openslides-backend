@@ -11,7 +11,6 @@ from unittest import TestResult as UnitTestResult
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import MagicMock, Mock, patch
 from zoneinfo import ZoneInfo
-from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -34,6 +33,7 @@ from openslides_backend.services.postgresql.create_schema import create_schema
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
 from tests.system.util import get_route_path
