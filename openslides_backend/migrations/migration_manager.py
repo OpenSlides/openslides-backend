@@ -117,8 +117,8 @@ class MigrationManager:
             state_per_mi = MigrationHelper.get_database_migration_states(
                 self.cursor, migration_indices
             )
-            unmigrated_collections: dict[str, dict[str, dict]] = {
-                collection: {}  # cast(str, r_tables["table"])
+            unmigrated_collections = {
+                collection
                 for mi in migration_indices
                 if mi > current_migration_index
                 if state_per_mi[mi]
@@ -126,13 +126,11 @@ class MigrationManager:
                     MigrationState.MIGRATION_REQUIRED,
                     MigrationState.MIGRATION_RUNNING,
                 )
-                for collection, r_tables in MigrationHelper.get_replace_tables(
-                    mi
-                ).items()
+                for collection in MigrationHelper.get_replace_tables(mi)
             }
             stats = {
                 collection: amount
-                for collection, migration_table in unmigrated_collections.items()
+                for collection in unmigrated_collections
                 if (amount := count(collection + "_t", self.cursor))
             }
 
@@ -238,7 +236,7 @@ class MigrationManager:
             self.logger.exception(e)
         except Exception as e:
             self.logger.exception(e)
-            # TODO catch this on a lower level and set it for specific faulty migration index
+            # This is a fallback in case an error is not attributable to a certain migration
             if not MigrationHelper.migrate_thread_exception:
                 MigrationHelper.migrate_thread_exception = e
                 with get_new_os_conn() as conn:

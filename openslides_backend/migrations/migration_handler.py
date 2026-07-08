@@ -92,18 +92,25 @@ class MigrationHandler(BaseHandler):
         stored in MigrationHelper.migrations.
         """
         for index, package_name in MigrationHelper.migrations.items():
-            mig_class = MigrationHelper.get_migration_class(package_name)
-            self.logger.info("Executing migration: " + package_name)
+            try:
+                mig_class = MigrationHelper.get_migration_class(package_name)
+                self.logger.info("Executing migration: " + package_name)
 
-            self.apply_schema_diff(index)
-            # Execute user defined functions or super classes noop.
-            mig_class.data_definition(self.cursor)
-            mig_class.data_manipulation(self.cursor)
-            mig_class.cleanup(self.cursor)
+                self.apply_schema_diff(index)
+                # Execute user defined functions or super classes noop.
+                mig_class.data_definition(self.cursor)
+                mig_class.data_manipulation(self.cursor)
+                mig_class.cleanup(self.cursor)
 
-            MigrationHelper.set_database_migration_info(
-                self.cursor, index, MigrationState.MIGRATION_FINISHED
-            )
+                MigrationHelper.set_database_migration_info(
+                    self.cursor, index, MigrationState.MIGRATION_FINISHED
+                )
+            except Exception as e:
+                # TODO needs to be the ver_conn cursor
+                MigrationHelper.set_database_migration_info(
+                    self.cursor, index, MigrationState.MIGRATION_FAILED
+                )
+                raise e
 
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
         self.update_sequences()
