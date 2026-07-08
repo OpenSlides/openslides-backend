@@ -41,6 +41,7 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         add meeting_id if present is True.
         remove meeting_id if present is False.
         """
+        self.base_history_information = {}
         for instance in action_data:
             meeting_id = instance.pop("meeting_id")
             present = instance.pop("present")
@@ -48,17 +49,28 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["is_present_in_meeting_ids"],
             )
+            self.base_history_information[instance["id"]] = {
+                "present": present,
+                "meeting_id": meeting_id,
+            }
             if present:
                 if meeting_id not in user.get("is_present_in_meeting_ids", []):
-                    instance["is_present_in_meeting_ids"] = user.get(
-                        "is_present_in_meeting_ids", []
-                    ) + [meeting_id]
+                    is_present = user.get("is_present_in_meeting_ids", []) + [
+                        meeting_id
+                    ]
+                    instance["is_present_in_meeting_ids"] = is_present
+                    self.base_history_information[instance["id"]][
+                        "is_present_in_meeting_ids"
+                    ] = is_present
                     yield instance
             elif present is False:
                 is_present = user.get("is_present_in_meeting_ids", [])
                 if meeting_id in is_present:
                     is_present.remove(meeting_id)
                     instance["is_present_in_meeting_ids"] = is_present
+                    self.base_history_information[instance["id"]][
+                        "is_present_in_meeting_ids"
+                    ] = is_present
                     yield instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -96,12 +108,13 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
     def get_history_information(self) -> HistoryInformation | None:
         return {
             fqid_from_collection_and_id(
-                self.model.collection, instance["id"]
+                self.model.collection, id_
             ): build_history_information_data(
                 [
-                    f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
-                    fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+                    f"Set {'not ' if not data['present'] else ''}present in meeting {{}}",
+                    fqid_from_collection_and_id("meeting", data["meeting_id"]),
                 ],
+                {"is_present_in_meeting_ids": data["is_present_in_meeting_ids"]},
             )
-            for instance in self.action_data
+            for id_, data in self.base_history_information.items()
         }

@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
+
 from .interfaces.event import ListFields
 from .patterns import FullQualifiedId, fqid_from_collection_and_id
 from .typing import HistoryInformation, HistoryInformationData
@@ -73,7 +75,7 @@ def calculate_history_event_payloads(
             {
                 "id": id_,
                 "entries": entries,
-                "changed_fields": changed_fields,
+                "changed_fields": Jsonb(changed_fields),
                 "position_id": position_id,
                 "original_model_id": fqid,
                 "model_id": (fqid if fqid in existing_fqids else None),
