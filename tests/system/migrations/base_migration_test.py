@@ -140,12 +140,10 @@ class BaseMigrationTestCase(TestCase):
             assert (
                 MigrationHelper.migrate_thread_stream
             ), "migrate_thread_stream not initialized by migration framework."
+            MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
             if args[0] == "migration started":
-                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
                 indicator_lock.release()
                 wait_lock.acquire()
-            else:
-                MigrationHelper.migrate_thread_stream.write(args[0] + "\n")
             return mockdefault
 
         return _wait_for_lock
@@ -159,7 +157,7 @@ class BaseMigrationTestCase(TestCase):
         if filenames := [
             f
             for f in os.listdir(MIGRATIONS_PATH)
-            if re.match("mig_\\d+", f[:8]) and int(f[4:8]) < self.migration_number
+            if re.match("mig_\\d{4}", f[:8]) and int(f[4:8]) < self.migration_number
         ]:
             with patch("os.listdir", return_value=filenames):
                 manager = MigrationManager(Mock(), Mock(), Mock())

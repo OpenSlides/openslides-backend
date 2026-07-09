@@ -41,8 +41,8 @@ def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
 def activate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
     """Activates all notify triggers present in the database."""
     for table in MigrationHelper.get_public_tables(cursor):
-        to_disable_triggers = get_notify_names(cursor, table)
-        for trigger_dict in to_disable_triggers:
+        to_enable_triggers = get_notify_names(cursor, table)
+        for trigger_dict in to_enable_triggers:
             cursor.execute(
                 sql.SQL("ALTER TABLE {table} ENABLE TRIGGER {trigger};").format(
                     table=sql.Identifier(trigger_dict["table_name"]),

@@ -124,16 +124,16 @@ class MigrationHelper:
         migration_name: str
         migration_number: int
         migration_dict = {}
-        reMatch: Match[str] | None
+        re_match: Match[str] | None
 
         files_and_folders = os.listdir(MIGRATIONS_PATH)
 
         for file_or_folder in files_and_folders:
             if os.path.isdir(os.path.join(MIGRATIONS_PATH, file_or_folder)):
-                reMatch = match(r"mig_(?P<migration>\d{4}_.*)", file_or_folder)
-                # mig_ matches literaly and \d{4}_.*\.py : 4 digits, 1 underscore, any characters
-                if reMatch is not None:
-                    migration_name = reMatch.groupdict()["migration"]
+                re_match = match(r"mig_(?P<migration>\d{4}_.*)", file_or_folder)
+                # mig_ matches literaly and \d{4}_.* : 4 digits, 1 underscore, any characters
+                if re_match is not None:
+                    migration_name = re_match.groupdict()["migration"]
                     migration_number = int(migration_name[:4])
                     if migration_number >= 100:
                         migration_dict[migration_number] = file_or_folder
