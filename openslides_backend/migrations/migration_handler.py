@@ -301,7 +301,7 @@ class MigrationHandler(BaseHandler):
 
             # checks wether the methods are available and executes them.
             mig_class.data_definition(self.cursor)
-            mig_class.data_manipulation(self.cursor, version_connection=self.ver_conn)
+            mig_class.data_manipulation(self.cursor)
 
             self.cursor.connection.commit()
             with self.ver_conn.cursor() as curs:

@@ -124,7 +124,7 @@ class MigrationHelper:
         MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
     @staticmethod
-    def add_new_migrations_to_version(curs: Cursor) -> None:
+    def add_new_migrations_to_version(curs: Cursor[DictRow]) -> None:
         """
         Adds new migrations to the version table with state MIGRATION_REQUIRED if the index didn't exist yet.
         """
