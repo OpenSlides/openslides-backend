@@ -52,30 +52,13 @@ def get_admin_key() -> str:
         logger.error(f"Error reading admin pat file: {e}")
     return ""
 
-# Returns idp id of an existing idp user with matching username
-def get_idp_id_by_username(idp_admin_key, username):
-    try:
-        response = requests.get(idp_admin_route + "users?username=" + username,
-            headers={
-                'Authorization': f'Bearer {idp_admin_key}'
-            }
-        )
-
-        json_response = response.json()
-
-        if response.status_code != 200:
-            raise Exception(f"{response.status_code} {json_response}")
-
-        return json_response[0]['id']
-    except Exception as e:
-        logger.error(f"Error getting idp user by username: {e}")
-    return None
-
-def get_name_of_idp_user(idp_admin_key, idp_id):
+# Returns IDP user data
+def get_name_of_idp_user(idp_admin_access_token, idp_id) -> str:
     try:
         response = requests.get(idp_admin_route + "users/" + idp_id,
             headers={
-                'Authorization': f'Bearer {idp_admin_key}'
+                'Authorization': f'Bearer {idp_admin_access_token}',
+                'Host': f'{external_route}'
             }
         )
 
@@ -86,17 +69,16 @@ def get_name_of_idp_user(idp_admin_key, idp_id):
         elif response.status_code != 200:
             raise Exception(f"{response.status_code} {json_response}")
 
-        return json_response['username']
+        return json_response['user']['username']
     except Exception as e:
         logger.error(f"Error getting idp user: {e}")
     return None
 
 # Creates an IDP user for given OS user. Returns idp id of newly created user.
 # Returns existing idp users id, if a idp user of given username already exists
-def migrate_and_create_user(idp_admin_access_token, username, os_id, email, password):
+def migrate_and_create_user(idp_admin_access_token, username, os_id, email, password) -> int:
     try:
-        response = requests.post(
-        f"{idp_admin_route}organizations/_search",
+        response = requests.post(idp_admin_route + "organizations/_search",
             headers={
                 'Authorization': f'Bearer {idp_admin_access_token}',
                 'Content-Type': 'application/json',
@@ -276,10 +258,11 @@ def main() -> None:
                 # A IDP ID already exists. Check if it points to the correct OS User
                 idp_username = get_name_of_idp_user(idp_admin_access_token, existing_idp_id)
 
-                if idp_username is None:
+                if idp_username is None or idp_username == "None":
                     # No user with that id exists at all, create new one
-                    idp_user_id = migrate_and_create_user(idp_admin_access_token, username, os_id, email)
+                    idp_user_id = migrate_and_create_user(idp_admin_access_token, username, os_id, email, password)
 
+                    logger.warning(f"ID: {idp_user_id}")
                     if idp_user_id == None:
                         raise Exception(f"Error migrating or finding user {username}")
                 elif idp_username != username:
