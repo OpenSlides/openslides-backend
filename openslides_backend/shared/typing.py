@@ -10,7 +10,7 @@ Schema = dict[str, Any]
 
 
 class HistoryInformationData(TypedDict):
-    entries: list[str]
+    entries: NotRequired[list[str]]
     changed_fields: NotRequired[dict[Field, Any]]
 
 

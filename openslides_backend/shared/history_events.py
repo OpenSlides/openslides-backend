@@ -12,10 +12,12 @@ EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
 
 
 def build_history_information_data(
-    entries: list[str],
+    entries: list[str] | None = None,
     changed_fields: dict[str, Any] | None = None,
 ) -> HistoryInformationData:
-    data: HistoryInformationData = {"entries": entries}
+    data: HistoryInformationData = {}
+    if entries is not None:
+        data["entries"] = entries
     if changed_fields is not None:
         data["changed_fields"] = changed_fields
     return data
@@ -24,14 +26,15 @@ def build_history_information_data(
 def update_history_information(
     information: HistoryInformation,
     fqid: FullQualifiedId,
-    entries: list[str],
+    entries: list[str] | None = None,
     changed_fields: dict[str, Any] | None = None,
 ) -> None:
     """Updates history information for fqid"""
     if fqid not in information:
         information[fqid] = build_history_information_data(entries, changed_fields)
     else:
-        information[fqid]["entries"].extend(entries)
+        if entries:
+            information[fqid].setdefault("entries", list()).extend(entries)
         if changed_fields:
             information[fqid].setdefault("changed_fields", dict()).update(
                 changed_fields
@@ -41,7 +44,7 @@ def update_history_information(
 def update_history_information_multi(
     information: HistoryInformation,
     fqids: list[FullQualifiedId],
-    entries: list[str],
+    entries: list[str] | None = None,
     changed_fields: dict[str, Any] | None = None,
 ) -> None:
     """
@@ -75,7 +78,7 @@ def calculate_history_event_payloads(
             {
                 "id": id_,
                 "entries": entries,
-                "changed_fields": Jsonb(changed_fields),
+                "changed_fields": Jsonb(changed_fields) if changed_fields else None,
                 "position_id": position_id,
                 "original_model_id": fqid,
                 "model_id": (fqid if fqid in existing_fqids else None),
