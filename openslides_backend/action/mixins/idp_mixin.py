@@ -2,6 +2,7 @@ import logging
 import os
 import requests
 import json
+import base64
 
 from ..action import Action
 from openslides_backend.shared.exceptions import ActionException
@@ -19,11 +20,15 @@ class IDPMixin(Action):
     admin_username="admin"
     admin_password="admin"
 
+    admin_token_path = "/zitadel/bootstrap/admin.pat"
+
     db_host = get_config("DATABASE_HOST")
     db_port = get_config("DATABASE_PORT")
     db_database = get_config("DATABASE_NAME")
     db_user = get_config("DATABASE_USER")
     db_password = get_config("DATABASE_PASSWORD")
+
+    external_route = get_config("IDP_URL_EXTERNAL", "localhost:8080")
 
     idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
     idp_realm = get_config("IDP_OS_REALM", "openslides")
@@ -31,13 +36,37 @@ class IDPMixin(Action):
     idp_admin_route = f"{idp_route}/v2/"
 
     _idp_admin_access_token = ""
+    _idp_organisation_id = ""
 
     def _get_admin_key(self):
         if self._idp_admin_access_token != "":
             return self._idp_admin_access_token
 
         # Fetch key from admin file
-        # TODO
+        try:
+            with open(self.admin_token_path) as file:
+                self._idp_admin_access_token = file.read().replace("\n","")
+        except Exception as e:
+            raise ActionException(f"Error reading admin pat file: {e}")
+
+    def _get_organisation_id(self):
+        if self._idp_organisation_id != "":
+            return self._idp_organisation_id
+
+        idp_admin_access_token = self._get_admin_key()
+
+        try:
+            response = requests.post(self.idp_admin_route + "organizations/_search",
+                headers={
+                    'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Content-Type': 'application/json',
+                    'Host': 'localhost:8080'
+                },
+                json={}
+            )
+            self._idp_organisation_id = response.json()["result"][0]["id"]
+        except Exception as e:
+            raise ActionException(f"Error reading admin pat file: {e}")
 
     # Gets IDP id of given instance from the datastore
     def get_idp_id_from_datastore(self, instance) -> str:
@@ -96,28 +125,37 @@ class IDPMixin(Action):
             # No IDP ID set. This OS User likely has no IDP Account yet
 
             # Check if there is already a IDP User with the identifying keys and delete those accounts
-            self.find_and_remove_similar_idp_users(user)
+            # self.find_and_remove_similar_idp_users(user)
 
             try:
                 ## Upload OS user to IDP
                 response = requests.post(self.idp_admin_route + "users/new",
                     json={
                         'username': username,
+                        'organizationId': self._get_organisation_id(),
                         'human': {
                             'hashedPassword': {
                                 'hash': password
+                            },
+                            'profile': {
+                                'givenName': username,
+                                'familyName': username,
                             },
                             'email': {
                                 'email': email,
                                 'isVerified': True
                             }
                         },
-                        "metadata": {
-                            "os_id": os_id
-                        }
+                        'metadata': [
+                            {
+                                'key': 'os_id',
+                                'value': base64.b64encode(str(os_id).encode("utf-8")).decode("ascii")
+                            },
+                        ]
                     },
                     headers={
-                        'Authorization': f'Bearer {idp_admin_access_token}'
+                        'Authorization': f'Bearer {idp_admin_access_token}',
+                        'Host': f'{self.external_route}'
                     }
                 )
                 if response.status_code == 200:
@@ -125,7 +163,7 @@ class IDPMixin(Action):
                 elif response.status_code == 409:
                     raise ActionException(f"A user named {username} already exists in IDP.")
                 elif idp_id == None:
-                    raise ActionException(f"ID returned by IDP is empty")
+                    raise ActionException(f"ID returned by IDP is empty. Response: {response.json()}")
             except Exception as e:
                 raise ActionException(f"Error creating user: {e}")
 
