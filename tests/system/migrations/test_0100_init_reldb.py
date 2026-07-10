@@ -23,6 +23,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
     os_conn_pool,
 )
+from openslides_backend.services.postgresql.utils import get_notify_names
 from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.action.util import get_internal_auth_header
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
@@ -334,15 +335,89 @@ For more information, see
         # 5) Call data_manipulation of module
         manager = MigrationManager(Mock(), Mock(), self.app.logging)
         result = manager.handle_request({"cmd": "migrate", "verbose": True})
-        assert result == {
-            "status": MigrationState.MIGRATION_RUNNING,
-            "output": self.EXPECTED_INTRODUCTION
+        self.assertEqual(result["status"], MigrationState.MIGRATION_RUNNING)
+        self.assertIn(
+            self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
-        }
+            result["output"],
+        )
 
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
+
+    @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
+    def test_migration_reset(self, method_mock: Mock) -> None:
+        """Uses migrate command first and then reset on failed migration."""
+
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+
+        response = self.request("migrate")
+        assert response.json == {
+            "success": True,
+            "status": MigrationState.MIGRATION_RUNNING,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
+        }
+        indicator_lock.acquire()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                # This will lead the migration to crash because these tables were edited on a different transaction.
+                curs.execute(
+                    "INSERT INTO organization_t (id, theme_id) VALUES (1, 1);"
+                    "INSERT INTO theme_t (id, name, accent_500, primary_500, warn_500)"
+                    "   VALUES (1, 'a curious theme', '#affe42', '#777fee', '#ac23dc');"
+                )
+        wait_lock.release()
+        self.wait_for_migration_thread(15)
+
+        assert self.request("stats").json["stats"] == {
+            "current_migration_index": 73,
+            "target_migration_index": 100,
+            "status": MigrationState.MIGRATION_FAILED,
+            "exception": 'psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "organization_t_pkey"\nDETAIL:  Key (id)=(1) already exists.',
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n100 of 161 models written to tables.\n",
+        }
+
+        response = self.request("reset")
+        assert response.json == {
+            "success": True,
+            "status": MigrationState.MIGRATION_REQUIRED,
+            "output": "",
+        }
+        self.wait_for_migration_thread(15)
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                assert (
+                    MigrationHelper.get_database_migration_states(curs, [100])[100]
+                    == MigrationState.MIGRATION_REQUIRED
+                )
+                assert get_notify_names(curs, "organization_t") == [
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "notify_transaction_end",
+                        "is_enabled": True,
+                    },
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "tr_log_organization",
+                        "is_enabled": True,
+                    },
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "tr_log_organization_t_theme_id",
+                        "is_enabled": True,
+                    },
+                ]
+
+        assert MigrationHelper.migrate_thread_exception is None
+        assert MigrationHelper.migrate_thread_stream is None
 
     @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
     def test_migration_route(self, method_mock: Mock) -> None:

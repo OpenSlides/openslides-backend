@@ -277,7 +277,7 @@ class Migration(BaseMigration):
         return ""
 
     @staticmethod
-    def data_manipulation(curs: Cursor[DictRow]) -> None:
+    def data_manipulation(curs: Cursor[DictRow], stash: dict[str, Any] | None) -> None:
         """
         Purpose:
             Iterates over chunks of the DB table models and writes the data into the respective DB tables
