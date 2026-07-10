@@ -1,6 +1,6 @@
-from typing import Any, Union
+from typing import Any, NotRequired, TypedDict, Union
 
-from .patterns import Collection, Id
+from .patterns import Collection, Field, FullQualifiedId, Id
 
 PartialModel = dict[str, Any]
 Model = dict[str, Any]
@@ -8,7 +8,13 @@ ModelMap = dict[Collection, dict[Id, PartialModel]]
 
 Schema = dict[str, Any]
 
-HistoryInformation = dict[str, list[str]]
+
+class HistoryInformationData(TypedDict):
+    entries: NotRequired[list[str]]
+    changed_fields: NotRequired[dict[Field, Any]]
+
+
+HistoryInformation = dict[FullQualifiedId, HistoryInformationData]
 
 JSON = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 

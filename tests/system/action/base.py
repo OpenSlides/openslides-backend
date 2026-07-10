@@ -15,6 +15,7 @@ from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.patterns import (
@@ -297,7 +298,9 @@ class BaseActionTestCase(BaseSystemTestCase):
             True,
         )
 
-    def get_last_history_information(self, fqid: FullQualifiedId) -> list[str] | None:
+    def get_last_history_information(
+        self, fqid: FullQualifiedId
+    ) -> PartialModel | None:
         entry_id = self.datastore.max(
             "history_entry",
             FilterOperator("original_model_id", "=", fqid),
@@ -305,37 +308,44 @@ class BaseActionTestCase(BaseSystemTestCase):
             lock_result=False,
         )
         if entry_id:
-            history_entry = self.datastore.get(
+            return self.datastore.get(
                 fqid_from_collection_and_id("history_entry", entry_id),
-                ["entries"],
+                ["entries", "changed_fields"],
                 lock_result=False,
             )
-            return history_entry.get("entries")
         else:
             return None
 
     def assert_history_information(
-        self, fqid: FullQualifiedId, information: list[str] | None
+        self,
+        fqid: FullQualifiedId,
+        entries: list[str] | None,
+        changed_fields: dict[str, Any] | None = None,
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
         last_information = self.get_last_history_information(fqid)
-        if information is None:
-            assert not last_information
+        if entries is None and changed_fields is None:
+            assert (
+                not last_information
+            ), f"Expected no history information to be generated for {fqid}. Got:\n{last_information}"
         else:
-            assert last_information
-            self.assertEqual(last_information, information)
+            assert (
+                last_information
+            ), f"No history information was be generated for {fqid}."
+            self.assertEqual(last_information.get("entries"), entries)
+            self.assertEqual(last_information.get("changed_fields"), changed_fields)
 
     def assert_history_information_contains(
-        self, fqid: FullQualifiedId, information: str
+        self, fqid: FullQualifiedId, entry: str
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
         last_information = self.get_last_history_information(fqid)
-        assert last_information
-        assert information in last_information
+        assert last_information, f"No history information was be generated for {fqid}."
+        self.assertIn(entry, last_information["entries"])
 
     def assert_logged_in(self) -> None:
         self.auth.authenticate()  # assert that no exception is thrown
