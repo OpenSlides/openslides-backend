@@ -11,18 +11,16 @@ openslides_db = env.DATABASE_NAME
 def get_notify_names(
     cursor: Cursor[dict[str, Any]], table: str
 ) -> list[dict[str, str]]:
-    return cursor.execute(
-        sql.SQL("""SELECT
+    return cursor.execute(sql.SQL("""SELECT
                 tgname AS trigger_name,
-                tgrelid::regclass AS table_name
+                tgrelid::regclass AS table_name,
+                tgenabled = 'O' AS is_enabled
             FROM
                 pg_trigger
             WHERE
                 tgrelid = {table_name}::regclass AND
-                tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';""").format(
-            table_name=table
-        )
-    ).fetchall()
+                (tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%')
+            ORDER BY tgname;""").format(table_name=table)).fetchall()
 
 
 def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:

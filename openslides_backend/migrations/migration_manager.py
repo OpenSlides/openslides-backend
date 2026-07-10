@@ -76,9 +76,8 @@ class MigrationManager:
         if MigrationHelper.migrate_thread_stream:
             result["output"] = MigrationHelper.read_stream(all)
 
-        if state in (MigrationState.MIGRATION_FAILED,):
+        if state == MigrationState.MIGRATION_FAILED:
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
-        MigrationHelper.close_migrate_thread_stream()
         return result
 
     def get_stats(self) -> dict[str, Any]:
@@ -224,6 +223,7 @@ class MigrationManager:
         If an exception occurs during execution for the first time,
         it is stored in the MigrationHelper.migrate_thread_exception for read with MigrationCommand.STATS.
         """
+        caught_exception: None | Exception = None
         try:
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
@@ -232,10 +232,9 @@ class MigrationManager:
                     )
                     return self.handler.execute_command(command)
         except MigrationSetupException as e:
-            MigrationHelper.migrate_thread_exception = e
-            self.logger.exception(e)
+            caught_exception = MigrationHelper.migrate_thread_exception = e
         except Exception as e:
-            self.logger.exception(e)
+            caught_exception = e
             # This is a fallback in case an error is not attributable to a certain migration
             if not MigrationHelper.migrate_thread_exception:
                 MigrationHelper.migrate_thread_exception = e
@@ -246,3 +245,7 @@ class MigrationManager:
                             MigrationHelper.set_database_migration_info(
                                 curs, mi, MigrationState.MIGRATION_FAILED
                             )
+        finally:
+            if caught_exception:
+                MigrationHelper.migrate_thread_stream_can_be_closed = True
+                self.logger.exception(caught_exception)

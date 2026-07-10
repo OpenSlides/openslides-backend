@@ -10,11 +10,13 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.services.postgresql.utils import (
     activate_notify_triggers,
     deactivate_notify_triggers,
 )
-from openslides_backend.shared.exceptions import CommandNotImplemented
 
 from ..migrations.exceptions import (
     InvalidMigrationCommand,
@@ -98,18 +100,22 @@ class MigrationHandler(BaseHandler):
 
                 self.apply_schema_diff(index)
                 # Execute user defined functions or super classes noop.
+                stash = mig_class.data_preparation(self.cursor)
                 mig_class.data_definition(self.cursor)
-                mig_class.data_manipulation(self.cursor)
+                mig_class.data_manipulation(self.cursor, stash)
                 mig_class.cleanup(self.cursor)
 
                 MigrationHelper.set_database_migration_info(
                     self.cursor, index, MigrationState.MIGRATION_FINISHED
                 )
             except Exception as e:
-                # TODO needs to be the ver_conn cursor
-                MigrationHelper.set_database_migration_info(
-                    self.cursor, index, MigrationState.MIGRATION_FAILED
-                )
+                # TODO needs to be the ver_conn
+                MigrationHelper.migrate_thread_exception = e
+                with get_new_os_conn() as conn:
+                    with conn.cursor() as curs:
+                        MigrationHelper.set_database_migration_info(
+                            curs, index, MigrationState.MIGRATION_FAILED
+                        )
                 raise e
 
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
@@ -192,50 +198,16 @@ class MigrationHandler(BaseHandler):
         """
         Resets the migrations currently in progress and restores the state before the migration.
         """
-        raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
         activate_notify_triggers(self.cursor)
         MigrationHelper.close_migrate_thread_stream()
-        self._clean_migration_data()
-        indices = MigrationHelper.get_indices_from_database(self.cursor)
+        MigrationHelper.migrate_thread_exception = None
         # Remove unfinalized migration indices from version table
-        to_delete_indices = [
-            idx
-            for idx, state in MigrationHelper.get_database_migration_states(
-                self.cursor, indices
-            ).items()
-            if state != MigrationState.FINALIZED
-        ]
+        to_reset_indices = MigrationHelper.get_unfinalized_indices(self.cursor)
         self.cursor.execute(
-            sql.SQL("DELETE from version WHERE migration_index = ANY(")
-            + sql.Placeholder()
-            + sql.SQL(");"),
-            (to_delete_indices,),
+            sql.SQL(
+                "UPDATE version SET migration_state = %s "
+                "WHERE migration_index = ANY(%s)"
+            ),
+            (MigrationState.MIGRATION_REQUIRED, to_reset_indices),
         )
-
-        self.unset_tables_read_only()
-
-    def _clean_migration_data(self) -> None:
-        """
-        Removes migration tables and views
-        """
-        self.logger.info("Clean up migration data...")
-        assert self.cursor, "Handlers cursor must be initialized."
-        indices = MigrationHelper.get_indices_from_database(self.cursor)
-        state_per_idx = MigrationHelper.get_database_migration_states(
-            self.cursor, indices
-        )
-        replace_tables = {
-            k: v
-            for idx, state in state_per_idx.items()
-            if state != MigrationState.FINALIZED
-            for k, v in MigrationHelper.get_replace_tables_from_database(
-                self.cursor, idx
-            ).items()
-        }
-        for collection in replace_tables:
-            self.cursor.execute(f"DROP TABLE {collection}_m;")
-        if any(mi > 100 for mi in indices):
-            for table_view in replace_tables.values():
-                self.cursor.execute(f"DROP TABLE {table_view['table']};")
-                self.cursor.execute(f"DROP VIEW {table_view['view']};")
