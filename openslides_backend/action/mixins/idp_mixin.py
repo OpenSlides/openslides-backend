@@ -21,6 +21,7 @@ class IDPMixin(Action):
     admin_password="admin"
 
     admin_token_path = "/zitadel/bootstrap/admin.pat"
+    organization_id_path = "/zitadel/bootstrap/org-id"
 
     db_host = get_config("DATABASE_HOST")
     db_port = get_config("DATABASE_PORT")
@@ -46,6 +47,7 @@ class IDPMixin(Action):
         try:
             with open(self.admin_token_path) as file:
                 self._idp_admin_access_token = file.read().replace("\n","")
+                return self._idp_admin_access_token
         except Exception as e:
             raise ActionException(f"Error reading admin pat file: {e}")
 
@@ -53,20 +55,13 @@ class IDPMixin(Action):
         if self._idp_organisation_id != "":
             return self._idp_organisation_id
 
-        idp_admin_access_token = self._get_admin_key()
-
+        # Fetch key from organization file
         try:
-            response = requests.post(self.idp_admin_route + "organizations/_search",
-                headers={
-                    'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Content-Type': 'application/json',
-                    'Host': 'localhost:8080'
-                },
-                json={}
-            )
-            self._idp_organisation_id = response.json()["result"][0]["id"]
+            with open(self.organization_id_path) as file:
+                self._idp_organisation_id = file.read().replace("\n","")
+                return self._idp_admin_access_token
         except Exception as e:
-            raise ActionException(f"Error reading admin pat file: {e}")
+            raise ActionException(f"Error reading organization id file: {e}")
 
     # Gets IDP id of given instance from the datastore
     def get_idp_id_from_datastore(self, instance) -> str:
@@ -83,33 +78,55 @@ class IDPMixin(Action):
         ## Finds IDP users that share the same identifying keys in IDP and deletes them
         idp_admin_access_token = self._get_admin_key()
 
-        # Database Key - IDP Query
-        identifyingKeys = [["id", "q=os_id:{0}"], ["username", "username={0}"]]
-
         try:
-            for idKey in identifyingKeys:
-                ## Construct query
-                query = idKey[1].format(str(user[idKey[0]]))
-
-                ## Find OS User
-                response = requests.get(self.idp_admin_route + "users?" + query + "&exact=true&briefRepresentation=false",
-                    headers={
-                        'Authorization': f'Bearer {idp_admin_access_token}',
+            response = requests.post(self.idp_admin_route + "users/search",
+                json={
+                    'queries': [
+                    {
+                        'orQuery': {
+                            'queries': [
+                                {
+                                    'loginNameQuery': {
+                                        'loginName': user['username'],
+                                        'method': 'TEXT_QUERY_METHOD_EQUALS',
+                                    }
+                                },
+                                {
+                                    'metadataQuery': {
+                                        'key': 'os-id',
+                                        'value': base64.b64encode(str(user['os_id']).encode("utf-8")).decode("ascii"),
+                                        'method': 'TEXT_QUERY_METHOD_EQUALS',
+                                    }
+                                },
+                            ]
+                        }
                     }
-                )
-                json_response = response.json()
+                ]
+                },
+                headers={
+                    'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
+                }
+            )
+            
+            if response.status_code != 200:
+                raise ActionException(f"{response.status_code} {json_response}")
 
-                if response.status_code != 200:
-                    raise ActionException(f"{response.status_code} {json_response}")
+            json_response = response.json()
 
-                if len(json_response) == 0:
-                    # User does not exist
-                    continue
+            if len(json_response) == 0:
+                # User does not exist
+                return
 
-                if not 'id' in json_response[0]:
-                    raise ActionException(f"No id in IDP JSON response: {json_response}")
+            found_users = json_response['result']
 
-                self.delete_user(json_response[0]['id'])
+            logger.warning(json_response)
+            logger.warning(f"--- {found_users}")
+            for user in found_users:
+                logger.warning(f"Found user: {user}")
+
+                self.delete_user(user['id'])
+            
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
 
@@ -123,9 +140,8 @@ class IDPMixin(Action):
 
         if idp_id is None or idp_id == "":
             # No IDP ID set. This OS User likely has no IDP Account yet
-
             # Check if there is already a IDP User with the identifying keys and delete those accounts
-            # self.find_and_remove_similar_idp_users(user)
+            self.find_and_remove_similar_idp_users(user)
 
             try:
                 ## Upload OS user to IDP
@@ -201,6 +217,7 @@ class IDPMixin(Action):
             response = requests.delete(self.idp_admin_route + "users/" + idp_id,
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
 
@@ -227,6 +244,7 @@ class IDPMixin(Action):
             response = requests.post(self.idp_admin_route + "users/" + idp_id + "/logout",
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
 
@@ -266,6 +284,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
             if response.status_code != 200:
@@ -290,6 +309,7 @@ class IDPMixin(Action):
             response = requests.post(self.idp_admin_route + "users/" + idp_id + "/password_reset",
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
 
@@ -331,6 +351,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
             if response.status_code != 200:
@@ -363,6 +384,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
             if response.status_code != 200:
@@ -402,6 +424,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_route}'
                 }
             )
             """
