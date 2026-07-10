@@ -1,7 +1,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import pytest
 from psycopg.types.json import Jsonb
 
 from openslides_backend.models.models import Poll
@@ -233,7 +232,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
 
-    @pytest.mark.skip()
     def test_delete_with_poll_candidates_and_speakers(self) -> None:
         self.set_committee_management_level([60])
         self.create_user("user/2", [3])
@@ -387,7 +385,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("mediafile/1", {"meeting_mediafile_ids": None})
 
 
-@pytest.mark.skip()
 class MeetingDeleteActionFullDataTest(BaseActionTestCase):
     def test_delete_full_meeting(self) -> None:
         self.load_example_data()
