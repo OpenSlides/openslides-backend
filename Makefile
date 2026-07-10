@@ -167,7 +167,7 @@ create-database:
 	make -C meta/dev create-database
 
 generate-schema:
-	make -C meta/dev generate-schema
+	make -C meta/dev generate-relational-schema
 
 generate-migration-diff:
 	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)

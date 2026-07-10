@@ -1,7 +1,7 @@
+import os
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
-from os import listdir
 from re import Match, match
 from threading import Thread
 from typing import Any
@@ -11,7 +11,6 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations.exceptions import MigrationException
-from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
@@ -41,22 +40,19 @@ class MigrationState(StrEnum):
     MIGRATION_REQUIRED = "migration_required"
     MIGRATION_RUNNING = "migration_running"
     MIGRATION_FAILED = "migration_failed"
-    FINALIZATION_REQUIRED = "finalization_required"
-    FINALIZATION_RUNNING = "finalization_running"
-    FINALIZATION_FAILED = "finalization_failed"
+    MIGRATION_FINISHED = "migration_finished"
     FINALIZED = "finalized"
 
 
 class MigrationCommand(StrEnum):
     MIGRATE = "migrate"
-    FINALIZE = "finalize"
     RESET = "reset"
     STATS = "stats"
     PROGRESS = "progress"
 
 
 # relative path to the migrations
-MIGRATIONS_PATH = "openslides_backend/migrations/migrations/"
+MIGRATIONS_PATH = "openslides_backend/migrations/"
 MODULE_PATH = MIGRATIONS_PATH.replace("/", ".")
 MIN_NON_REL_MIGRATION = 73
 
@@ -100,6 +96,21 @@ class MigrationHelper:
         return result
 
     @staticmethod
+    def close_migrate_thread_stream() -> None:
+        """
+        Closes the migration threads io stream. Also deletes all possible migrate thread exceptions
+        """
+        if (
+            MigrationHelper.migrate_thread_stream_can_be_closed
+            and MigrationHelper.migrate_thread_stream
+        ):
+            MigrationHelper.migrate_thread_stream.close()
+            MigrationHelper.migrate_thread_stream = None
+            MigrationHelper.migrate_thread_stream_can_be_closed = False
+            MigrationHelper.migrate_thread_stream_read_pos = 0
+            MigrationHelper.migrate_thread_exception = None
+
+    @staticmethod
     def load_migrations() -> None:
         """
         Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
@@ -109,22 +120,24 @@ class MigrationHelper:
         Returns:
         - None
         """
-        migrations: list
-        migration_file: str
+        files_and_folders: list
+        migration_name: str
         migration_number: int
-        reMatch: Match[str] | None
+        migration_dict = {}
+        re_match: Match[str] | None
 
-        migrations = listdir(MIGRATIONS_PATH)
+        files_and_folders = os.listdir(MIGRATIONS_PATH)
 
-        for migration in migrations:
-            reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
-            # \d{4}_.*\.py : 4 digits, 1 underscore, any characters, [dot]py
-            if reMatch is not None:
-                migration_file = reMatch.groupdict()["migration"]
-                migration_number = int(migration_file[:4])
-                if migration_number >= 100:
-                    MigrationHelper.migrations[migration_number] = migration[:-3]
-        MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
+        for file_or_folder in files_and_folders:
+            if os.path.isdir(os.path.join(MIGRATIONS_PATH, file_or_folder)):
+                re_match = match(r"mig_(?P<migration>\d{4}_.*)", file_or_folder)
+                # mig_ matches literaly and \d{4}_.* : 4 digits, 1 underscore, any characters
+                if re_match is not None:
+                    migration_name = re_match.groupdict()["migration"]
+                    migration_number = int(migration_name[:4])
+                    if migration_number >= 100:
+                        migration_dict[migration_number] = file_or_folder
+        MigrationHelper.migrations = dict(sorted(migration_dict.items()))
 
     @staticmethod
     def add_new_migrations_to_version() -> None:
@@ -213,16 +226,27 @@ class MigrationHelper:
         return max(MigrationHelper.migrations)
 
     @staticmethod
+    def assert_failed_state(curs: Cursor[DictRow]) -> None:
+        if tmp := curs.execute(
+            "SELECT migration_index FROM version WHERE migration_state = %s;",
+            (MigrationState.MIGRATION_FAILED,),
+        ).fetchall():
+            raise MigrationException(
+                f"Migration has failed for {', '.join(str(d['migration_index']) for d in tmp)}."
+            )
+
+    @staticmethod
     def assert_migration_index(curs: Cursor[DictRow]) -> None:
         """
         Asserts that backend and database migration indices are identical.
         """
+        MigrationHelper.assert_failed_state(curs)
         database_migration_index = MigrationHelper.get_database_migration_index(curs)
         backend_migration_index = MigrationHelper.get_backend_migration_index()
 
         if backend_migration_index > database_migration_index:
             raise ActionException(
-                f"Missing {backend_migration_index-database_migration_index} migrations to apply."
+                f"Missing {backend_migration_index-database_migration_index} migrations to be applied."
             )
 
         if backend_migration_index < database_migration_index:
@@ -256,7 +280,7 @@ class MigrationHelper:
             "ON CONFLICT (migration_index) DO UPDATE SET {updates}"
         ).format(
             fields=sql.SQL(", ").join(sql.Identifier(k) for k in params),
-            values=sql.SQL(", ").join(sql.Placeholder() for _ in range(len(params))),
+            values=sql.SQL(", ").join(sql.Placeholder() for _ in params),
             updates=sql.SQL(", ").join(updates),
         )
         curs.execute(statement, tuple(params.values()))
@@ -291,7 +315,9 @@ class MigrationHelper:
             migration_index = MigrationHelper.get_database_migration_index(curs)
         elif MigrationHelper.table_exists(curs, "positions"):
             row = curs.execute("SELECT MAX(migration_index) FROM positions;").fetchone()
-            assert row, "No migration_index could be found."
+            assert row and row.get(
+                "max"
+            ), "No migration_index could be could be found in positions."
             # the row consists of only the column max, but it's presented as dictionary anyways
             migration_index = row["max"]
         else:
@@ -306,7 +332,7 @@ class MigrationHelper:
     def get_migration_state(curs: Cursor[DictRow]) -> MigrationState:
         """
         Returns the highest MigrationState among all migrations in the ascending order of
-        FINALIZED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
+        FINALIZED, MIGRATION_FINISHED, MIGRATION_REQUIRED, MIGRATION_RUNNING, MIGRATION_FAILED.
         """
         states_and_indices = curs.execute(
             sql.SQL(
@@ -322,48 +348,44 @@ class MigrationHelper:
             MigrationState.MIGRATION_FAILED,
             MigrationState.MIGRATION_RUNNING,
             MigrationState.MIGRATION_REQUIRED,
-            MigrationState.FINALIZATION_FAILED,
-            MigrationState.FINALIZATION_RUNNING,
-            MigrationState.FINALIZATION_REQUIRED,
+            MigrationState.MIGRATION_FINISHED,
         ]:
             if state in states:
                 return state
         raise MigrationException("No such State implemented.")
 
     @staticmethod
-    def get_public_tables(curs: Cursor[DictRow]) -> list[str]:
+    def get_migration_class(package_name: str) -> Any:
+        """
+        Returns the class Migration within the specified module.
+        """
+        return getattr(
+            import_module(f"{MODULE_PATH}{package_name}.migration"), "Migration"
+        )
+
+    @staticmethod
+    def get_public_tables(curs: Cursor[DictRow]) -> set[str]:
         """Returns all tables of the schema 'public' except for version and notify table"""
         curs.execute(
             "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
         ).fetchone()
-        return [
+        return {
             name
             for row in curs.fetchall()
             if (name := row["tablename"])
             not in ("version", "os_notify_log_t", "truncate_tables")
-        ]
+        }
 
     @staticmethod
     def get_replace_tables(
         migration_number: int,
     ) -> dict[str, dict[str, str | list[str]]]:
         """
-        Returns the replace tables mapping origin table to its migration copy.
+        Returns the replace tables. This is in its current state merely a collection of the migrated tables.
         """
         module_name = MigrationHelper.migrations[migration_number]
-        migration_module = import_module(f"{MODULE_PATH}{module_name}")
-        return {
-            col: {
-                "table": col + "_m",
-                "view": col + "vm",
-                "im_tables": [
-                    field.write_fields[0]
-                    for field in model_registry[col]().get_relation_fields()
-                    if field.write_fields
-                ],
-            }
-            for col in migration_module.ORIGIN_COLLECTIONS
-        }
+        migration_class = MigrationHelper.get_migration_class(module_name)
+        return {col: {} for col in set(migration_class.ORIGIN_COLLECTIONS)}
 
     @staticmethod
     def get_replace_tables_from_database(
@@ -381,26 +403,60 @@ class MigrationHelper:
 
     @staticmethod
     def get_unified_replace_tables_from_database(
-        curs: Cursor[DictRow],
-    ) -> tuple[dict[str, Any], list[int]]:
+        curs: Cursor[DictRow], migration_state: MigrationState | None = None
+    ) -> dict[str, Any]:
         """
         Returns the replace tables, mapping the collection to its migration copies,
-        stored in the database unified for all -non- migrated indices.
-        Returns the list of used (unmigrated) migration indices as a side product.
+        stored in the database unified for all indices with `migration_state`.
+        If no `migration_state` was given: stored in the database unified for all -non- migrated indices.
         """
-        current_mi = MigrationHelper.get_database_migration_index(curs)
-        relevant_mis = [
-            mi
-            for mi in MigrationHelper.get_indices_from_database(curs)
-            if mi > current_mi
-        ]
-        return (
-            {
-                collection: r_tables
-                for migration_number in relevant_mis
-                for collection, r_tables in MigrationHelper.get_replace_tables_from_database(
-                    curs, migration_number
-                ).items()
-            },
-            relevant_mis,
+        if not migration_state:
+            migration_state = MigrationState.FINALIZED
+            operator = "!="
+        else:
+            operator = "="
+        rows = curs.execute(
+            f"SELECT replace_tables FROM version WHERE migration_state {operator} %s",
+            [migration_state],
+        )
+        return {
+            collection: replace_tables
+            for row in rows
+            for collection, replace_tables in row["replace_tables"].items()
+        }
+
+    @staticmethod
+    def copy_table(
+        curs: Cursor[DictRow], table_name: str, target_table_name: str
+    ) -> None:
+        """
+        Copies the table with its definition and rows. Does not copy triggers and foreign key constraints.
+        For use in data_preparation step of migration.
+        """
+        target_table = sql.Identifier(target_table_name)
+        table_t = sql.Identifier(table_name)
+        curs.execute(
+            sql.SQL(
+                "CREATE TABLE {target_table} (LIKE {table_t} INCLUDING ALL);"
+            ).format(target_table=target_table, table_t=table_t)
+        )
+
+        fields = curs.execute(sql.SQL("""
+                SELECT *
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                AND table_name = {table};
+                """).format(table=table_name)).fetchall()
+        curs.execute(
+            sql.SQL(
+                "INSERT INTO {target_table} ({fields}) SELECT {fields} FROM {table_t};"
+            ).format(
+                target_table=target_table,
+                table_t=table_t,
+                fields=sql.SQL(", ").join(
+                    sql.SQL(data["column_name"])
+                    for data in fields
+                    if data["is_generated"] != "ALWAYS"
+                ),
+            )
         )

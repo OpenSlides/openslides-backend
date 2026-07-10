@@ -354,7 +354,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             with conn.cursor() as curs:
                 MigrationHelper.assert_migration_index(curs)
         manager = MigrationManager(self.env, self.services, logging)
-        manager.execute_migrate_command("finalize", verbose=True)
+        manager.execute_migrate_command("migrate", verbose=True)
 
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
