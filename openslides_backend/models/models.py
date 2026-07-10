@@ -1517,25 +1517,18 @@ class MeetingUser(Model):
     vote_delegations_from_ids = fields.RelationListField(
         to={"meeting_user": "vote_delegated_to_id"}, is_view_field=True
     )
-    poll_voted_ids = fields.RelationListField(
-        to={"poll": "voted_ids"},
-        is_view_field=True,
-        is_primary=True,
-        write_fields=(
-            "nm_meeting_user_poll_voted_ids_poll_t",
-            "meeting_user_id",
-            "poll_id",
-            [],
-        ),
-    )
     poll_option_ids = fields.RelationListField(
         to={"poll_option": "meeting_user_id"}, is_view_field=True, is_primary=True
     )
     acting_ballot_ids = fields.RelationListField(
-        to={"poll_ballot": "acting_meeting_user_id"}, is_view_field=True
+        to={"poll_ballot_user": "acting_meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
     represented_ballot_ids = fields.RelationListField(
-        to={"poll_ballot": "represented_meeting_user_id"}, is_view_field=True
+        to={"poll_ballot_user": "represented_meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_user_id"}, is_view_field=True
@@ -2342,15 +2335,11 @@ class Poll(Model, PollModelMixin):
         is_view_field=True,
         is_primary=True,
     )
-    voted_ids = fields.RelationListField(
-        to={"meeting_user": "poll_voted_ids"},
+    ballot_user_ids = fields.RelationListField(
+        to={"poll_ballot_user": "poll_id"},
+        on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        write_fields=(
-            "nm_meeting_user_poll_voted_ids_poll_t",
-            "poll_id",
-            "meeting_user_id",
-            [],
-        ),
+        is_primary=True,
     )
     entitled_group_ids = fields.RelationListField(
         to={"group": "poll_ids"},
@@ -2381,11 +2370,27 @@ class PollBallot(Model):
     poll_id = fields.RelationField(
         to={"poll": "ballot_ids"}, required=True, constant=True
     )
+    poll_ballot_user_id = fields.RelationField(
+        to={"poll_ballot_user": "poll_ballot_id"}
+    )
+
+
+class PollBallotUser(Model):
+    collection = "poll_ballot_user"
+    verbose_name = "poll ballot user"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(
+        to={"poll": "ballot_user_ids"}, required=True, constant=True
+    )
+    poll_ballot_id = fields.RelationField(
+        to={"poll_ballot": "poll_ballot_user_id"}, is_view_field=True
+    )
     acting_meeting_user_id = fields.RelationField(
-        to={"meeting_user": "acting_ballot_ids"}
+        to={"meeting_user": "acting_ballot_ids"}, required=True
     )
     represented_meeting_user_id = fields.RelationField(
-        to={"meeting_user": "represented_ballot_ids"}
+        to={"meeting_user": "represented_ballot_ids"}, required=True
     )
 
 
