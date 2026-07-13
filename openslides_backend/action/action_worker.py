@@ -34,6 +34,24 @@ class ActionWorkerState(StrEnum):
     ABORTED = "aborted"
 
 
+def concatenate_action_names(payload: Payload) -> str:
+    action_names = [elem.get("action", "") for elem in payload]
+    action_worker_name = ",".join(action_names)
+    if len(action_worker_name) > 255:
+        action_worker_name = ""
+        prev_action_name = action_names[0]
+        counter = 1
+        for action_name in action_names[1:]:
+            if action_name == prev_action_name:
+                counter += 1
+            else:
+                action_worker_name += f"{prev_action_name}_{counter}, "
+                prev_action_name = action_name
+                counter = 1
+        action_worker_name += f"{prev_action_name}_{counter}"
+    return action_worker_name
+
+
 def handle_action_in_worker_thread(
     payload: Payload,
     user_id: int,
@@ -44,9 +62,9 @@ def handle_action_in_worker_thread(
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
-        action_names = [elem.get("action", "") for elem in payload]
+        action_names = concatenate_action_names(payload)
     except Exception:
-        action_names = ["Cannot be determined"]
+        action_names = "Cannot be determined"
     action_worker_writing = ActionWorkerWriting(user_id, handler.logging, action_names)
     action_worker_thread = ActionWorker(
         payload,
@@ -93,7 +111,7 @@ def handle_action_in_worker_thread(
             [
                 {
                     "fqid": action_worker_writing.fqid,
-                    "name": action_worker_writing.get_action_worker_name(),
+                    "name": action_worker_writing.action_names,
                     "written": action_worker_writing.written,
                 }
             ]
@@ -106,7 +124,7 @@ class ActionWorkerWriting:
         self,
         user_id: int,
         logging: LoggingModule,
-        action_names: list[str],
+        action_names: str,
     ) -> None:
         self.user_id = user_id
         self.start_time = datetime.now(ZoneInfo("UTC"))
@@ -116,22 +134,6 @@ class ActionWorkerWriting:
         self.new_id: int | None = None
         self.fqid: str = "Still not set"
         self.written: bool = False
-
-    def get_action_worker_name(self) -> str:
-        action_worker_name = ",".join(self.action_names)
-        if len(action_worker_name) > 255:
-            action_worker_name = ""
-            prev_action_name = self.action_names[0]
-            counter = 1
-            for action_name in self.action_names[1:]:
-                if action_name == prev_action_name:
-                    counter += 1
-                else:
-                    action_worker_name += f"{prev_action_name}_{counter}, "
-                    prev_action_name = action_name
-                    counter = 1
-            action_worker_name += f"{prev_action_name}_{counter}"
-        return action_worker_name
 
     def initial_action_worker_write(self, extended_db: ExtendedDatabase) -> str:
         current_time = datetime.now(ZoneInfo("UTC"))
@@ -147,7 +149,7 @@ class ActionWorkerWriting:
                             fqid=self.fqid,
                             fields={
                                 "id": self.new_id,
-                                "name": self.get_action_worker_name(),
+                                "name": self.action_names,
                                 "state": ActionWorkerState.RUNNING,
                                 "created": self.start_time,
                                 "timestamp": current_time,
@@ -160,10 +162,10 @@ class ActionWorkerWriting:
                 )
             )
             extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
-            message = f"Action ({self.get_action_worker_name()}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
+            message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
             self.written = True
         except DatabaseException as e:
-            message = f"Action ({self.get_action_worker_name()}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
+            message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
         self.logger.info(f"action_worker: {message}")
         return message
 
@@ -185,7 +187,7 @@ class ActionWorkerWriting:
             )
         )
         self.logger.debug(
-            f"running action_worker '{self.fqid} {self.get_action_worker_name()}': {current_time}"
+            f"running action_worker '{self.fqid} {self.action_names}': {current_time}"
         )
 
     def final_action_worker_write(
@@ -200,12 +202,12 @@ class ActionWorkerWriting:
                 exception = ActionException(str(action_worker_thread.exception))
             response = exception.get_json()
             self.logger.error(
-                f"finish action_worker '{self.fqid}' ({self.get_action_worker_name()}) {current_time} with exception: {exception.message}"
+                f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
             )
         elif hasattr(action_worker_thread, "response"):
             response = action_worker_thread.response
             self.logger.info(
-                f"finish action_worker '{self.fqid}' ({self.get_action_worker_name()}): {current_time}"
+                f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
             )
         else:
             exception = ActionException(
@@ -214,7 +216,7 @@ class ActionWorkerWriting:
             state = ActionWorkerState.ABORTED
             response = exception.get_json()
             self.logger.error(
-                f"aborted action_worker '{self.fqid}' ({self.get_action_worker_name()}) {current_time}: {exception.message}"
+                f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
             )
 
         extended_db.write(
