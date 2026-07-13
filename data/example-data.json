@@ -550,7 +550,8 @@
                 2,
                 3,
                 4,
-                5
+                5,
+                6
             ],
             "assignment_ids": [
                 1,
@@ -2044,7 +2045,7 @@
     "poll_config_stv_scottish": {
         "1": {
             "id": 1,
-            "poll_id": 5,
+            "poll_id": 6,
             "posts": 4
         }
     },
