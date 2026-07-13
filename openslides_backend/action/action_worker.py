@@ -35,21 +35,21 @@ class ActionWorkerState(StrEnum):
 
 
 def concatenate_action_names(payload: Payload) -> str:
-    action_names = [elem.get("action", "") for elem in payload]
-    action_worker_name = ",".join(action_names)
-    if len(action_worker_name) > 255:
-        action_worker_name = ""
+    result = ",".join(elem.get("action", "") for elem in payload)
+    if len(result) > 255:
+        action_names = result.split(",")
+        result = ""
         prev_action_name = action_names[0]
         counter = 1
         for action_name in action_names[1:]:
             if action_name == prev_action_name:
                 counter += 1
             else:
-                action_worker_name += f"{prev_action_name}_{counter}, "
+                result += f"{prev_action_name}_{counter}, "
                 prev_action_name = action_name
                 counter = 1
-        action_worker_name += f"{prev_action_name}_{counter}"
-    return action_worker_name
+        result += f"{prev_action_name}_{counter}"
+    return result
 
 
 def handle_action_in_worker_thread(
