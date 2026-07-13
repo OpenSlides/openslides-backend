@@ -7,9 +7,8 @@ from json import dumps as json_dumps
 from threading import Lock
 from typing import Any
 from unittest import TestCase
-from unittest import TestResult as UnitTestResult
 from unittest.mock import DEFAULT as mockdefault
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 from psycopg import Cursor
@@ -28,7 +27,6 @@ from openslides_backend.models.fields import (
     JSONField,
     TimestampField,
 )
-from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.create_schema import create_schema
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
@@ -47,17 +45,6 @@ MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 class BaseMigrationTestCase(TestCase):
     # has to be set by subclass
     migration_number: int
-
-    def run(self, result: UnitTestResult | None = None) -> UnitTestResult | None:
-        """
-        Overrides the TestCases run method.
-        Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
-        Also stores its connection in self.connection.
-        """
-        with get_new_os_conn() as conn:
-            self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
-            self.connection = conn
-            return super().run(result)
 
     def setUp(self) -> None:
         """
@@ -163,8 +150,9 @@ class BaseMigrationTestCase(TestCase):
                 manager = MigrationManager(Mock(), Mock(), Mock())
                 result = manager.handle_request({"cmd": "migrate", "verbose": True})
                 self.wait_for_migration_thread(15)
-                with self.connection.cursor() as curs:
-                    MigrationHelper.assert_migration_index(curs)
+                with get_new_os_conn() as conn:
+                    with conn.cursor() as curs:
+                        MigrationHelper.assert_migration_index(curs)
         else:
             result = {}
 
