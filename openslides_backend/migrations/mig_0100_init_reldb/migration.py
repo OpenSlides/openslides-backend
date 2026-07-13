@@ -12,7 +12,6 @@ from psycopg.rows import DictRow
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.migrations.base import BaseMigration
 from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
-from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
     DecimalField,
     Field,
@@ -22,8 +21,9 @@ from openslides_backend.models.fields import (
     RelationListField,
     TimestampField,
 )
-from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.shared.env import is_truthy
+
+from .deprecated_models import MigrationModel, migration_model_registry
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 
@@ -288,7 +288,7 @@ class Migration(BaseMigration):
         collection: str
         table_name: str
         data: dict[str, Any]
-        model: Model
+        model: MigrationModel
         insert_intermediate_t_commands: list
         sql_fields: str
         sql_values: list
@@ -316,8 +316,7 @@ class Migration(BaseMigration):
                     case "organization" | "meeting":
                         data["time_zone"] = os.environ["MIG0100_TIMEZONE"]
 
-                # TODO model_registry is forbidden to be used in a module. Needs to be replaced with an initial version.
-                model = model_registry[collection]()
+                model = migration_model_registry[collection]()
                 sql_fields = ""
                 sql_placeholder = ""
                 sql_values = []
