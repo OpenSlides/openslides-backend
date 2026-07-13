@@ -10,7 +10,10 @@ from zoneinfo import ZoneInfo
 
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
-from openslides_backend.migrations.mig_0100_init_reldb.migration import Sql_helper
+from openslides_backend.migrations.mig_0100_init_reldb.migration import (
+    ORIGIN_COLLECTION_LIST,
+    Sql_helper,
+)
 from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.migrations.migration_helper import (
     MIN_NON_REL_MIGRATION,
@@ -350,6 +353,19 @@ For more information, see
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
+    def get_all_data(self) -> dict[str, list[dict[str, Any]]]:
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'"
+                )
+                tables: list[str] = [x["table_name"] for x in curs.fetchall()]
+                table_to_data = {}
+                for tablename in tables:
+                    curs.execute(f"SELECT * FROM {tablename};")
+                    table_to_data[tablename] = curs.fetchall()
+        return table_to_data
+
     @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
     def test_migration_reset(self, method_mock: Mock) -> None:
         """Uses migrate command first and then reset on failed migration."""
@@ -359,6 +375,9 @@ For more information, see
         indicator_lock = Lock()
         indicator_lock.acquire()
         method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+
+        # load all data from db to check what's been written later
+        prev_data = self.get_all_data()
 
         response = self.request("migrate")
         assert response.json == {
@@ -388,6 +407,66 @@ For more information, see
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n100 of 161 models written to tables.\n",
         }
 
+        # load all data in db again and check if there are any changes
+        # that happened since the last load,
+        # which are not due to the custom inserts
+        failed_data = self.get_all_data()
+        all_tables = sorted(prev_data)
+        assert sorted(prev_data) == all_tables
+        for tablename in all_tables:
+            prev = prev_data[tablename]
+            fail = failed_data[tablename]
+            match tablename:
+                case "version":
+                    assert len(prev) == 1
+                    assert len(fail) == 2
+                    assert prev[0] == fail[0]
+                    assert fail[1] == {
+                        "migration_index": 100,
+                        "migration_state": MigrationState.MIGRATION_FAILED,
+                        "replace_tables": {k: {} for k in ORIGIN_COLLECTION_LIST},
+                    }
+                case "organization_t":
+                    assert len(prev) == 0
+                    assert len(fail) == 1
+                    for key, val in {"id": 1, "theme_id": 1}.items():
+                        assert fail[0][key] == val
+                case "theme_t":
+                    assert len(prev) == 0
+                    assert len(fail) == 1
+                    for key, value in {
+                        "id": 1,
+                        "name": "a curious theme",
+                        "accent_500": "#affe42",
+                        "primary_500": "#777fee",
+                        "warn_500": "#ac23dc",
+                    }.items():
+                        assert fail[0][key] == value
+                case "os_notify_log_t":
+                    assert len(prev) == 0
+                    assert len(fail) == 4
+                    has = {
+                        (fqid, op)
+                        for fqid in ["theme/1", "organization/1"]
+                        for op in ["insert", "update"]
+                    }
+                    for id_, date in enumerate(fail, 1):
+                        fqid = date["fqid"]
+                        op = date["operation"]
+                        assert date["id"] == id_
+                        assert (fqid, op) in has
+                        has.remove((fqid, op))
+                        if op == "insert":
+                            assert date["updated_fields"] is None
+                        elif fqid == "organization/1":
+                            assert date["updated_fields"] == ["theme_ids"]
+                        else:
+                            assert date["updated_fields"] == [
+                                "theme_for_organization_id"
+                            ]
+                case _:
+                    self.assertEqual(prev, fail, f"Failed for {tablename}")
+
         response = self.request("reset")
         assert response.json == {
             "success": True,
@@ -396,12 +475,27 @@ For more information, see
         }
         self.wait_for_migration_thread(15)
 
+        # load all data in db again and check if there are
+        # any changes to any table, except setting the last version back
+        # to migration_required, since the last load
+        reset_data = self.get_all_data()
+        for tablename in all_tables:
+            prev = failed_data[tablename]
+            reset = reset_data[tablename]
+            if tablename == "version":
+                assert len(prev) == 2
+                assert len(reset) == 2
+                assert prev[0] == reset[0]
+                assert reset[1] == {
+                    "migration_index": 100,
+                    "migration_state": MigrationState.MIGRATION_REQUIRED,
+                    "replace_tables": {k: {} for k in ORIGIN_COLLECTION_LIST},
+                }
+            else:
+                self.assertEqual(prev, reset, f"Failed for {tablename}")
+
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                assert (
-                    MigrationHelper.get_database_migration_states(curs, [100])[100]
-                    == MigrationState.MIGRATION_REQUIRED
-                )
                 assert get_notify_names(curs, "organization_t") == [
                     {
                         "table_name": "organization_t",
