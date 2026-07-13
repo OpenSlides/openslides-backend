@@ -2326,6 +2326,7 @@ class Poll(Model, PollModelMixin):
             "poll_config_selection": "poll_id",
             "poll_config_approval": "poll_id",
         },
+        on_delete=fields.OnDelete.CASCADE,
         required=True,
     )
     option_ids = fields.RelationListField(
