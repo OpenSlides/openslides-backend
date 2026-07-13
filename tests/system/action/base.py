@@ -319,7 +319,7 @@ class BaseActionTestCase(BaseSystemTestCase):
     def assert_history_information(
         self,
         fqid: FullQualifiedId,
-        entries: list[str] | None,
+        entries: list[str] | None = None,
         changed_fields: dict[str, Any] | None = None,
     ) -> None:
         """

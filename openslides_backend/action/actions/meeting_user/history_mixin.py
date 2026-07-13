@@ -14,7 +14,7 @@ from ...action import Action
 
 
 class ActionHistoryInformationData(TypedDict):
-    entries: list[tuple[str, ...]]
+    entries: NotRequired[list[tuple[str, ...]]]
     changed_fields: NotRequired[dict[Field, Any]]
 
 
@@ -120,8 +120,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         db_instance: dict[str, Any],
         information: ActionHistoryInformation,
     ) -> None:
-        instance_entries: list[tuple[str, ...]] = []
-        instance_changed_fields: dict[str, list[int]] = {}
+        user_entries: list[tuple[str, ...]] = []
+        meeting_user_changed_fields: dict[str, dict[str, list[int]]] = {}
         user_id = db_instance["user_id"]
         meeting_id = db_instance["meeting_id"]
 
@@ -134,7 +134,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         # meeting specific data
         update_fields = ["structure_level_ids", "number", "vote_weight"]
         if any(field in instance for field in update_fields):
-            instance_entries.append(
+            user_entries.append(
                 (
                     "Participant data updated in meeting {}",
                     fqid_from_collection_and_id("meeting", meeting_id),
@@ -142,20 +142,23 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             )
 
         self.handle_group_updates(
-            instance_entries,
-            instance_changed_fields,
+            user_entries,
+            meeting_user_changed_fields,
             instance,
             db_instance,
         )
-        self.handle_delegations(information, instance_entries, instance, db_instance)
+        self.handle_delegations(information, user_entries, instance, db_instance)
 
-        if instance_entries or instance_changed_fields:
+        if user_entries:
             self.add_entries_to_history_information(
                 information,
-                instance_entries,
+                user_entries,
                 for_user_id=user_id,
-                changed_fields=instance_changed_fields,
             )
+        if meeting_user_changed_fields:
+            information[
+                fqid_from_collection_and_id("meeting_user", db_instance["id"])
+            ] = {"changed_fields": meeting_user_changed_fields}
 
     def add_created_meeting_user_history_information(
         self,
@@ -200,15 +203,26 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 information,
                 instance_information,
                 for_user_id=db_instance["user_id"],
-                changed_fields={
-                    "group_ids": self.get_changed_group_ids(db_instance["user_id"])
-                },
             )
+        if "group_ids" in instance:
+            changed_fields: dict[str, dict[str, list[int]] | bool] = {
+                "group_ids": {"added": instance["group_ids"]}
+            }
+            is_present_in_meeting_ids = self.datastore.get(
+                fqid_from_collection_and_id("user", db_instance["user_id"]),
+                ["is_present_in_meeting_ids"],
+                lock_result=False,
+            ).get("is_present_in_meeting_ids", [])
+            if db_instance["meeting_id"] in is_present_in_meeting_ids:
+                changed_fields["is_present"] = True
+            information[fqid_from_collection_and_id("meeting_user", instance["id"])] = {
+                "changed_fields": changed_fields
+            }
 
     def add_entries_to_history_information(
         self,
         information: ActionHistoryInformation,
-        entries: list[tuple[str, ...]],
+        entries: list[tuple[str, ...]] = [],
         for_user_id: int | None = None,
         for_meeting_user_id: int | None = None,
         changed_fields: dict[Field, Any] | None = None,
@@ -225,7 +239,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_id = for_user_id
         fqid = fqid_from_collection_and_id("user", user_id)
         if fqid not in information:
-            information[fqid] = {"entries": entries}
+            if entries:
+                information[fqid] = {"entries": entries}
             if changed_fields:
                 information[fqid]["changed_fields"] = changed_fields
         else:
@@ -266,7 +281,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
     def handle_group_updates(
         self,
         entries: list[tuple[str, ...]],
-        changed_fields: dict[str, list[int]],
+        meeting_user_changed_fields: dict[str, dict[str, list[int]]],
         instance: dict[str, Any],
         db_instance: dict[str, Any],
     ) -> None:
@@ -277,9 +292,12 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             added = instance_group_ids - db_group_ids
             removed = db_group_ids - instance_group_ids
 
-            if added or removed:
-                changed_fields["group_ids"] = self.get_changed_group_ids(
-                    db_instance["user_id"], {meeting_id: instance["group_ids"]}
+            # Calculate history information for meeting_user
+            if added:
+                meeting_user_changed_fields["group_ids"] = {"added": list(added)}
+            if removed:
+                meeting_user_changed_fields.setdefault("group_ids", dict()).update(
+                    {"removed": list(removed)}
                 )
 
             # remove default groups
@@ -292,6 +310,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             removed.discard(meeting.get("default_group_id"))
             changed = added | removed
 
+            # Calculate history information for user
             group_information: list[str] = []
             if added and removed:
                 group_information.append("Groups changed")

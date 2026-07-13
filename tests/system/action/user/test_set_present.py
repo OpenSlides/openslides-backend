@@ -8,12 +8,10 @@ class UserSetPresentActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting()
 
-    def test_set_present_add_correct(self) -> None:
-        self.set_models(
-            {
-                "user/111": {"username": "username_srtgb123"},
-            }
-        )
+    def base_test_set_present_add_correct(self, with_meeting_user: bool) -> None:
+        self.set_models({"user/111": {"username": "username_srtgb123"}})
+        if with_meeting_user:
+            self.set_user_groups(111, [3])
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": True}
         )
@@ -23,10 +21,20 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/111",
             ["Set present in meeting {}", "meeting/1"],
-            {"is_present_in_meeting_ids": [1]},
         )
+        if with_meeting_user:
+            self.assert_history_information(
+                "meeting_user/1",
+                changed_fields={"is_present": True},
+            )
 
-    def test_set_present_add_second_correct(self) -> None:
+    def test_set_present_add_correct(self) -> None:
+        self.base_test_set_present_add_correct(False)
+
+    def test_set_present_add_correct_with_meeting_user(self) -> None:
+        self.base_test_set_present_add_correct(True)
+
+    def base_test_set_present_add_second_correct(self, with_meeting_user: bool) -> None:
         self.set_models(
             {
                 "meeting/1": {"present_user_ids": [111]},
@@ -34,6 +42,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
             }
         )
         self.create_meeting(4)
+        if with_meeting_user:
+            self.set_user_groups(111, [3, 6])
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 4, "present": True}
         )
@@ -44,16 +54,35 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/111",
             ["Set present in meeting {}", "meeting/4"],
-            {"is_present_in_meeting_ids": [1, 4]},
         )
+        if with_meeting_user:
+            self.assert_model_exists(
+                "meeting_user/1", {"user_id": 111, "meeting_id": 1}
+            )
+            self.assert_history_information("meeting_user/1")
+            self.assert_model_exists(
+                "meeting_user/2", {"user_id": 111, "meeting_id": 4}
+            )
+            self.assert_history_information(
+                "meeting_user/2",
+                changed_fields={"is_present": True},
+            )
 
-    def test_set_present_del_correct(self) -> None:
+    def test_set_present_add_second_correct(self) -> None:
+        self.base_test_set_present_add_second_correct(False)
+
+    def test_set_present_add_second_correct_with_meeting_users(self) -> None:
+        self.base_test_set_present_add_second_correct(True)
+
+    def base_test_set_present_del_correct(self, with_meeting_user: bool) -> None:
         self.set_models(
             {
                 "meeting/1": {"present_user_ids": [111]},
                 "user/111": {"username": "username_srtgb123"},
             }
         )
+        if with_meeting_user:
+            self.set_user_groups(111, [3])
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
@@ -63,8 +92,18 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/111",
             ["Set not present in meeting {}", "meeting/1"],
-            {"is_present_in_meeting_ids": []},
         )
+        if with_meeting_user:
+            self.assert_history_information(
+                "meeting_user/1",
+                changed_fields={"is_present": False},
+            )
+
+    def test_set_present_del_correct(self) -> None:
+        self.base_test_set_present_del_correct(False)
+
+    def test_set_present_del_correct_with_meeting_user(self) -> None:
+        self.base_test_set_present_del_correct(True)
 
     def test_set_present_null_action(self) -> None:
         self.set_models(
