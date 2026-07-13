@@ -3047,7 +3047,7 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         presenterapp = create_presenter_test_application()
-        presenterclient = Client(presenterapp, self.update_vote_service_auth_data)
+        presenterclient = Client(presenterapp)
         presenterclient.login("admin", "admin")
         self.auth_data = deepcopy(presenterclient.auth_data)
         response = presenterclient.post(
