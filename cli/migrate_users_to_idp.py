@@ -21,7 +21,7 @@ db_database = get_config("DATABASE_NAME")
 db_user = get_config("DATABASE_USER")
 db_password = get_config("DATABASE_PASSWORD")
 
-external_route = get_config("IDP_URL_EXTERNAL", "localhost:8080")
+external_route = get_config("IDP_HOST_HEADER", "localhost:8080")
 
 idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
 idp_realm = get_config("IDP_OS_REALM", "openslides")

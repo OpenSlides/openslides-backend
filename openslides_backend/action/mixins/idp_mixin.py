@@ -29,7 +29,7 @@ class IDPMixin(Action):
     db_user = get_config("DATABASE_USER")
     db_password = get_config("DATABASE_PASSWORD")
 
-    external_route = get_config("IDP_URL_EXTERNAL", "localhost:8080")
+    external_route = get_config("IDP_HOST_HEADER", "localhost:8080")
 
     idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
     idp_realm = get_config("IDP_OS_REALM", "openslides")
@@ -59,7 +59,7 @@ class IDPMixin(Action):
         try:
             with open(self.organization_id_path) as file:
                 self._idp_organisation_id = file.read().replace("\n","")
-                return self._idp_admin_access_token
+                return self._idp_organisation_id
         except Exception as e:
             raise ActionException(f"Error reading organization id file: {e}")
 
@@ -79,54 +79,65 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
-            response = requests.post(self.idp_admin_route + "users/search",
+            response = requests.post(self.idp_admin_route + "users",
                 json={
-                    'queries': [
-                    {
-                        'orQuery': {
-                            'queries': [
-                                {
-                                    'loginNameQuery': {
-                                        'loginName': user['username'],
-                                        'method': 'TEXT_QUERY_METHOD_EQUALS',
-                                    }
-                                },
-                                {
-                                    'metadataQuery': {
-                                        'key': 'os-id',
-                                        'value': base64.b64encode(str(user['os_id']).encode("utf-8")).decode("ascii"),
-                                        'method': 'TEXT_QUERY_METHOD_EQUALS',
-                                    }
-                                },
-                            ]
+                    'queries':
+                    [
+                        {
+                            'orQuery': {
+                                'queries': [
+                                    {
+                                        'loginNameQuery': {
+                                            'loginName': user['username'],
+                                            'method': 'TEXT_QUERY_METHOD_EQUALS',
+                                        }
+                                    },
+                                    {
+                                        'andQuery': {
+                                            'queries': [
+                                                {
+                                                    'metadataKeyFilter': {
+                                                        'key': 'os-id',
+                                                        'method': 'TEXT_FILTER_METHOD_EQUALS',
+                                                    },
+                                                },
+                                                {
+                                                    'metadataValueFilter': {
+                                                        'value': base64.b64encode(str(user['id']).encode("utf-8")).decode("ascii"),
+                                                        'method': 'BYTE_FILTER_METHOD_EQUALS',
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                ]
+                            }
                         }
-                    }
-                ]
+                    ]
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                     'Host': f'{self.external_route}'
                 }
             )
-            
+
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
+                raise ActionException(f"{response.status_code} {response.text}")
 
             json_response = response.json()
 
-            if len(json_response) == 0:
+            if "result" not in json_response or "totalResult" not in json_response["details"] or json_response["details"]["totalResult"] <= 0:
                 # User does not exist
                 return
 
             found_users = json_response['result']
 
-            logger.warning(json_response)
             logger.warning(f"--- {found_users}")
             for user in found_users:
                 logger.warning(f"Found user: {user}")
 
                 self.delete_user(user['id'])
-            
+
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
 
@@ -240,16 +251,38 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
-            ## Logout user
-            response = requests.post(self.idp_admin_route + "users/" + idp_id + "/logout",
+            response = requests.post(self.idp_admin_route + "sessions/search",
+                json={
+                    'queries': [
+                    {
+                        'userIdQuery': {
+                            'id': idp_id
+                        }
+                    }
+                ]
+                },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                     'Host': f'{self.external_route}'
                 }
             )
 
-            if response.status_code != 204:
+            logger.warning(f"Testing logut: {response.json()}")
+            if response.status_code != 200:
                 raise ActionException(f"{response.status_code} {json_response}")
+
+            for session in response.json()["sessions"]:
+                logger.warning(f"Testing logut specific session: {session}")
+                response = requests.delete(self.idp_admin_route + "sessions/" + session["id"],
+                    json={},
+                    headers={
+                        'Authorization': f'Bearer {idp_admin_access_token}',
+                        'Host': f'{self.external_route}'
+                    }
+                )
+
+                if response.status_code != 200:
+                    raise ActionException(f"{response.status_code} {json_response}")
 
         except Exception as e:
             raise ActionException(f"Error logout of user: {e}")

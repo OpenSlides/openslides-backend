@@ -36,7 +36,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     def __init__(self, env: Environment, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.env = env
-        self.issuer_url = self.env.OIDC_ISSUER_URL_DOCKER
+        self.issuer_url = self.env.IDP_URL_INTERNAL
         self.headers = {"Content-Type": "application/json"}
 
         # JWT public key caching
@@ -44,7 +44,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         self._keys_expires_at: float = 0.0
 
         if self.issuer_url is None or self.issuer_url == "":
-            self.issuer_url = self.env.OIDC_ISSUER_URL
+            self.issuer_url = self.env.IDP_URL_EXTERNAL
 
     def authenticate(self) -> tuple[int, str | None]:
         self.logger.debug(
@@ -96,7 +96,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         return self._fetch_jwks(kid)
 
     def _fetch_jwks(self, kid: str):
-        url = f"{self.issuer_url}/protocol/openid-connect/certs"
+        url = f"{self.issuer_url}/oauth/v2/keys"
         try:
             resp = requests.get(url, timeout=10)
         except requests.RequestException as e:
