@@ -544,6 +544,7 @@ class HistoryEntry(Model):
     model_id = fields.GenericRelationField(
         to={
             "assignment": "history_entry_ids",
+            "meeting_user": "history_entry_ids",
             "motion": "history_entry_ids",
             "poll": "history_entry_ids",
             "user": "history_entry_ids",
@@ -1579,6 +1580,9 @@ class MeetingUser(Model):
             "structure_level_id",
             [],
         ),
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
     )
 
 
