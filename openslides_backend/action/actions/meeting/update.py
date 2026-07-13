@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, cast
 
@@ -5,6 +6,7 @@ from psycopg.types.json import Jsonb
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
+from ....models.mixins import POLL_TYPES
 from ....models.models import Meeting
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
@@ -24,6 +26,9 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
+from ..meeting_poll_default.create import MeetingPollDefaultCreate
+from ..meeting_poll_default.helper_mixin import meeting_poll_default_schema
+from ..meeting_poll_default.update import MeetingPollDefaultUpdate
 from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
 
 meeting_settings_keys = [
@@ -128,14 +133,8 @@ meeting_settings_keys = [
     "motions_export_follow_recommendation",
     "motions_enable_restricted_editor_for_manager",
     "motions_enable_restricted_editor_for_non_manager",
-    "motion_poll_ballot_paper_selection",
-    "motion_poll_ballot_paper_number",
-    "motion_poll_default_allow_abstain",
-    "motion_poll_default_type",
-    "motion_poll_default_onehundred_percent_base",
-    "motion_poll_default_group_ids",
-    "motion_poll_projection_name_order_first",
-    "motion_poll_projection_max_columns",
+    "poll_projection_name_order_first",
+    "poll_projection_max_columns",
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_enable_vote_delegations",
@@ -155,19 +154,20 @@ meeting_settings_keys = [
     "users_forbid_delegator_to_vote",
     "assignments_export_title",
     "assignments_export_preamble",
-    "assignment_poll_ballot_paper_selection",
-    "assignment_poll_ballot_paper_number",
-    "assignment_poll_add_candidates_to_list_of_speakers",
-    "assignment_poll_enable_max_votes_per_option",
-    "assignment_poll_sort_poll_result_by_votes",
-    "assignment_poll_default_type",
-    "assignment_poll_default_method",
-    "assignment_poll_default_onehundred_percent_base",
-    "assignment_poll_default_group_ids",
-    "topic_poll_default_group_ids",
+    "poll_enable_max_votes_per_option",
     "poll_default_live_voting_enabled",
     "poll_default_allow_invalid",
+    "poll_default_allow_vote_split",
+    "assignment_poll_add_candidates_to_list_of_speakers",
+    "assignment_poll_default_method",
+    "topic_poll_default_method",
 ]
+
+meeting_poll_default_fields = {
+    f"{poll_type}_poll_default_{field_name}": type_
+    for poll_type in POLL_TYPES
+    for field_name, type_ in meeting_poll_default_schema.items()
+}
 
 
 @register_action("meeting.update")
@@ -197,6 +197,7 @@ class MeetingUpdate(
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
+            **meeting_poll_default_fields,
         },
     )
     check_email_field = "users_email_replyto"
@@ -331,6 +332,46 @@ class MeetingUpdate(
 
         if (translations := instance.get("custom_translations")) is not None:
             instance["custom_translations"] = Jsonb(translations)
+
+        # Set poll defaults
+        poll_default_data: dict[str, dict[str, Any]] = defaultdict(dict)
+        for field in meeting_poll_default_fields.keys():
+            if (value := instance.pop(field, None)) is not None:
+                poll_type, field_name = field.split("_poll_default_")
+                poll_default_data[poll_type][field_name] = value
+
+        if poll_default_data:
+            poll_types_to_poll_defaults_fields: dict[str, str] = {
+                poll_type: f"{poll_type}_poll_config_id"
+                for poll_type in poll_default_data.keys()
+            }
+            db_poll_defaults = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                list(poll_types_to_poll_defaults_fields.values()),
+                lock_result=False,
+            )
+            action_data_create = []
+            action_data_update = []
+
+            for poll_type, data in poll_default_data.items():
+                if existing_id := db_poll_defaults.get(
+                    poll_types_to_poll_defaults_fields[poll_type]
+                ):
+                    action_data_update.append({"id": existing_id, **data})
+                else:
+                    action_data_create.append(
+                        {
+                            "meeting_id": instance["id"],
+                            f"used_as_{poll_type}_poll_config_in_meeting_id": instance[
+                                "id"
+                            ],
+                            **data,
+                        }
+                    )
+            if action_data_create:
+                self.execute_other_action(MeetingPollDefaultCreate, action_data_create)
+            if action_data_update:
+                self.execute_other_action(MeetingPollDefaultUpdate, action_data_update)
 
         instance = super().update_instance(instance)
         return instance

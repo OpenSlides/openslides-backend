@@ -499,11 +499,6 @@ class MeetingClone(BaseActionTestCase):
                 "motions_export_preamble": "an export preamble",
                 "motions_export_submitter_recommendation": True,
                 "motions_export_follow_recommendation": True,
-                "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
-                "motion_poll_ballot_paper_number": 8,
-                "motion_poll_default_type": "pseudoanonymous",
-                "motion_poll_default_onehundred_percent_base": "valid",
-                "motion_poll_default_group_ids": [],
             },
         )
         self.set_user_groups(1, [5])
@@ -1405,10 +1400,6 @@ class MeetingClone(BaseActionTestCase):
             "motions_export_preamble": "pre",
             "motions_export_submitter_recommendation": True,
             "motions_export_follow_recommendation": True,
-            "motion_poll_ballot_paper_selection": "NUMBER_OF_DELEGATES",
-            "motion_poll_ballot_paper_number": 42,
-            "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_onehundred_percent_base": "yes_no",
             "users_enable_presence_view": True,
             "users_enable_vote_weight": True,
             "users_enable_vote_delegations": True,
@@ -1424,15 +1415,41 @@ class MeetingClone(BaseActionTestCase):
             "users_email_body": "body",
             "assignments_export_title": "title",
             "assignments_export_preamble": "pre",
-            "assignment_poll_ballot_paper_selection": "NUMBER_OF_DELEGATES",
-            "assignment_poll_ballot_paper_number": 42,
+            "assignment_poll_default_method": "rating_approval",
             "assignment_poll_add_candidates_to_list_of_speakers": True,
-            "assignment_poll_enable_max_votes_per_option": False,
-            "assignment_poll_sort_poll_result_by_votes": True,
-            "assignment_poll_default_type": "pseudoanonymous",
-            "assignment_poll_default_method": "YNA",
-            "assignment_poll_default_onehundred_percent_base": "valid",
+            "poll_enable_max_votes_per_option": False,
         }
+        assignment_poll_settings = {
+            "sort_result_by_votes": True,
+            "visibility": "secret",
+            "onehundred_percent_base": "valid",
+            "allow_abstain": True,
+        }
+        motion_poll_settings = {
+            "visibility": "secret",
+            "onehundred_percent_base": "valid",
+            "allow_abstain": False,
+        }
+        topic_poll_settings = {
+            "sort_result_by_votes": True,
+            "visibility": "named",
+            "onehundred_percent_base": "valid",
+            "display_chart": "pie",
+        }
+        self.test_models.update(
+            {
+                "meeting/1": {
+                    "assignment_poll_config_id": 1,
+                    "motion_poll_config_id": 2,
+                    "topic_poll_config_id": 3,
+                },
+                "group/2": {"used_in_meeting_poll_default_ids": [1, 2]},
+                "group/3": {"used_in_meeting_poll_default_ids": [1, 2, 3]},
+                "meeting_poll_default/1": {"meeting_id": 1, **assignment_poll_settings},
+                "meeting_poll_default/2": {"meeting_id": 1, **motion_poll_settings},
+                "meeting_poll_default/3": {"meeting_id": 1, **topic_poll_settings},
+            }
+        )
         self.meeting_data.update(settings)
         self.set_test_data_with_admin()
         response = self.request("meeting.clone", {"meeting_id": 1})
@@ -1440,7 +1457,49 @@ class MeetingClone(BaseActionTestCase):
         settings["name"] = f"{settings['name']} - Copy"
         settings["start_time"] = timestamp_with_tz
         settings["end_time"] = timestamp_with_tz
-        self.assert_model_exists("meeting/2", settings)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                **settings,
+                "assignment_poll_config_id": 4,
+                "motion_poll_config_id": 5,
+                "topic_poll_config_id": 6,
+                "poll_default_ids": [4, 5, 6],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/4",
+            {
+                "meeting_id": 2,
+                "used_as_assignment_poll_config_in_meeting_id": 2,
+                "group_ids": [5, 6],
+                **assignment_poll_settings,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/5",
+            {
+                "meeting_id": 2,
+                "used_as_motion_poll_config_in_meeting_id": 2,
+                "group_ids": [5, 6],
+                **motion_poll_settings,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_default/6",
+            {
+                "meeting_id": 2,
+                "used_as_topic_poll_config_in_meeting_id": 2,
+                "group_ids": [6],
+                **topic_poll_settings,
+            },
+        )
+        self.assert_model_exists(
+            "group/5", {"meeting_id": 2, "used_in_meeting_poll_default_ids": [4, 5]}
+        )
+        self.assert_model_exists(
+            "group/6", {"meeting_id": 2, "used_in_meeting_poll_default_ids": [4, 5, 6]}
+        )
 
     def test_limit_of_meetings_error(self) -> None:
         self.set_test_data_with_admin()

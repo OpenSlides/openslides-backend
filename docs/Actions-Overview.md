@@ -78,6 +78,12 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [meeting.archive](actions/meeting.archive.md)
 - [meeting.unarchive](actions/meeting.unarchive.md)
 
+## Meeting poll defaults
+
+- [meeting_poll_default.create](actions/meeting_poll_default.create.md)
+- [meeting_poll_default.update](actions/meeting_poll_default.delete.md)
+- [meeting_poll_default.update](actions/meeting_poll_default.update.md)
+
 ## Motions
 
 - [motion.create](actions/motion.create.md)
@@ -142,6 +148,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [personal_note.update](actions/personal_note.update.md)
 
 ## Projector and Projection
+
 - [projector.create](actions/projector.create.md)
 - [projector.update](actions/projector.update.md)
 - [projector.delete](actions/projector.delete.md)
@@ -219,6 +226,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [topic.import](actions/topic.import.md)
 
 ## Users
+
 - [user.assign_meetings](actions/user.assign_meetings.md)
 - [user.create](actions/user.create.md)
 - [user.delete](actions/user.delete.md)

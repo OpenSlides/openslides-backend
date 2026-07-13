@@ -314,7 +314,7 @@ def test_delete_1_n_not_null_success_replace_relations(
             "default_projector_countdown_ids": [2],
             "default_projector_assignment_poll_ids": [2],
             "default_projector_motion_poll_ids": [2],
-            "default_projector_poll_ids": [2],
+            "default_projector_topic_poll_ids": [2],
             "reference_projector_id": 2,
         },
     )
@@ -335,7 +335,7 @@ def test_delete_1_n_not_null_success_replace_relations(
             "used_as_default_projector_for_countdown_in_meeting_id": 1,
             "used_as_default_projector_for_assignment_poll_in_meeting_id": 1,
             "used_as_default_projector_for_motion_poll_in_meeting_id": 1,
-            "used_as_default_projector_for_poll_in_meeting_id": 1,
+            "used_as_default_projector_for_topic_poll_in_meeting_id": 1,
             "used_as_reference_projector_meeting_id": 1,
         },
     )
