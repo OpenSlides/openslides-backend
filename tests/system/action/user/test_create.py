@@ -133,6 +133,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "group/114",
                 "meeting/114",
             ],
+            {"group_ids": [114]},
         )
 
     def test_create_comment(self) -> None:

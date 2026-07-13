@@ -539,6 +539,7 @@ class HistoryEntry(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     entries = fields.TextArrayField()
+    changed_fields = fields.JSONField()
     original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={

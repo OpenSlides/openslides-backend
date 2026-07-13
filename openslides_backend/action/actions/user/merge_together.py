@@ -1,6 +1,10 @@
 from typing import Any
 
 from openslides_backend.services.database.interface import PartialModel
+from openslides_backend.shared.history_events import (
+    update_history_information,
+    update_history_information_multi,
+)
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -449,12 +453,17 @@ class UserMergeTogether(
                     deleted_string = " and ".join(
                         ["{}" for i in range(len(deleted_fqids))]
                     )
-                information[main_fqid] = [
-                    "Updated with data from " + deleted_string,
-                    *deleted_fqids,
-                ]
-                for deleted_fqid in deleted_fqids:
-                    information[deleted_fqid] = ["Merged into {}", main_fqid]
+                update_history_information(
+                    information,
+                    main_fqid,
+                    [
+                        "Updated with data from " + deleted_string,
+                        *deleted_fqids,
+                    ],
+                )
+                update_history_information_multi(
+                    information, deleted_fqids, ["Merged into {}", main_fqid]
+                )
             else:
                 raise BadCodingException("No id found for user history generation")
         return information
