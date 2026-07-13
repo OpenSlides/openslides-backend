@@ -199,10 +199,6 @@ class IDPMixin(Action):
             # TODO: Should this be an error? What's to do here?
             raise ActionException(f"Error creating user {username} in IDP: They already have a IDP ID")
 
-        ## Update passowrd
-        if password is not None and password != "":
-            self.update_password(idp_id, password)
-
         ## Set
         user['idp_id'] = idp_id
 
