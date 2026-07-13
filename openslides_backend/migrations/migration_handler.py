@@ -1,25 +1,24 @@
-import re
-import string
-from importlib import import_module
+import os
 from typing import Any
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
-from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
-from openslides_backend.models.base import model_registry
-from openslides_backend.shared.exceptions import CommandNotImplemented
+from meta.dev.src.helper_get_names import HelperGetNames
+from openslides_backend.migrations.migration_helper import (
+    MIGRATIONS_PATH,
+    MigrationHelper,
+    MigrationState,
+)
+from openslides_backend.services.postgresql.utils import (
+    activate_notify_triggers,
+    deactivate_notify_triggers,
+)
 
 from ..migrations.exceptions import (
     InvalidMigrationCommand,
     MigrationException,
     MigrationSetupException,
-)
-from ..migrations.migration_helper import (
-    MODULE_PATH,
-    OLD_TABLES,
-    MigrationHelper,
-    MigrationState,
 )
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
@@ -42,207 +41,6 @@ class MigrationHandler(BaseHandler):
         self.ver_conn = version_connection
         self.replace_tables: dict[str, Any]
 
-    def copy_table(self, table_name: str) -> None:
-        """Copies the table with its definition and rows. Does not copy trigger."""
-        table_m = sql.Identifier(
-            HelperGetNames.get_table_name(table_name, migration=True)
-        )
-        table_t = sql.Identifier(table_name)
-        self.cursor.execute(
-            sql.SQL("CREATE TABLE {table_m} (LIKE {table_t} INCLUDING ALL);").format(
-                table_m=table_m, table_t=table_t
-            )
-        )
-
-        # TODO we might need finalization tables for future migrations to have active triggers on the table.
-
-        fields = self.cursor.execute(sql.SQL("""
-                SELECT *
-                FROM information_schema.columns
-                WHERE table_schema = 'public'
-                AND table_name = {table};
-                """).format(table=table_name)).fetchall()
-        self.cursor.execute(
-            sql.SQL(
-                "INSERT INTO {table_m} ({fields}) SELECT {fields} FROM {table_t};"
-            ).format(
-                table_m=table_m,
-                table_t=table_t,
-                fields=sql.SQL(", ").join(
-                    sql.SQL(data["column_name"])
-                    for data in fields
-                    if data["is_generated"] != "ALWAYS"
-                ),
-            )
-        )
-
-    def setup_migration_relations(self) -> None:
-        """Sets the tables and views used within the migration and copies their data."""
-        with self.ver_conn.cursor() as cursor:
-            unified_replace_tables, _ = (
-                MigrationHelper.get_unified_replace_tables_from_database(cursor)
-            )
-        im_tables = set()
-        # COPY collection tables
-        for collection, r_tables in unified_replace_tables.items():
-            self.copy_table(collection + "_t")
-            im_tables.update(r_tables["im_tables"])
-
-        # COPY intermediate tables
-        for table_name in im_tables:
-            self.copy_table(table_name)
-
-        # COPY fkey constraints
-        for table_name in im_tables | {
-            r_tables["table"] for r_tables in unified_replace_tables.values()
-        }:
-            self.cursor.execute(
-                sql.SQL("""SELECT
-                        tc.constraint_name,
-                        tc.is_deferrable,
-                        tc.initially_deferred,
-                        kcu.column_name,
-                        ccu.table_name AS foreign_table_name,
-                        ccu.column_name AS foreign_column_name,
-                        rc.delete_rule
-                    FROM information_schema.table_constraints AS tc
-                    JOIN information_schema.key_column_usage AS kcu
-                        ON tc.constraint_name = kcu.constraint_name
-                        AND tc.table_schema = kcu.table_schema
-                    JOIN information_schema.constraint_column_usage AS ccu
-                        ON ccu.constraint_name = tc.constraint_name
-                    JOIN information_schema.referential_constraints AS rc
-                        ON rc.constraint_name = tc.constraint_name
-                    WHERE tc.constraint_type = 'FOREIGN KEY'
-                        AND tc.table_schema='public'
-                        AND tc.table_name='{table_name}';""").format(
-                    table_name=sql.SQL(table_name)
-                )
-            )
-            results = self.cursor.fetchall()
-
-            for result in results:
-                if result["foreign_table_name"][:-2] in unified_replace_tables:
-                    f_table_name = HelperGetNames.get_table_name(
-                        result["foreign_table_name"], migration=True
-                    )
-                else:
-                    f_table_name = result["foreign_table_name"]
-                # TODO for future migrations where not all tables are affected.
-                # Needs setting fkey pointing to migration and origin table correctly
-                # to prevent running into those constraints (later not) being violated.
-                # origin if not in replace tables
-                # else migration
-                self.cursor.execute(
-                    # sql.SQL(
-                    #     "ALTER TABLE {t_name} DROP CONSTRAINT {c_name};"
-                    # ).format(
-                    #     t_name=table_name,
-                    #     c_name=sql.SQL(result["constraint_name"])
-                    sql.SQL(
-                        "ALTER TABLE {o_table} ADD CONSTRAINT {c_name} FOREIGN KEY ({o_column}) REFERENCES {f_table}({f_column}) ON DELETE {on_delete}{deferable}{initially_deferred};"
-                    ).format(
-                        o_table=sql.Identifier(
-                            HelperGetNames.get_table_name(table_name, migration=True)
-                        ),
-                        f_table=sql.Identifier(f_table_name),
-                        c_name=sql.SQL(result["constraint_name"].replace("_t_", "_m_")),
-                        o_column=sql.SQL(result["column_name"]),
-                        f_column=sql.SQL(result["foreign_column_name"]),
-                        on_delete=sql.SQL(result["delete_rule"]),
-                        deferable=sql.SQL(
-                            " DEFERRABLE" if result["is_deferrable"] == "YES" else ""
-                        ),
-                        initially_deferred=sql.SQL(
-                            " INITIALLY DEFERRED"
-                            if result["initially_deferred"] == "YES"
-                            else ""
-                        ),
-                    )
-                )
-
-        def replace_suffix(m: re.Match) -> str:
-            base = m.group(1)
-            return base + ("_m")
-
-        # COPY views for migration reads
-        for collection, r_tables in unified_replace_tables.items():
-            # TODO create regex specifically for the replace tables to not change what should stay as origin table. Needed for future migrations.
-            table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t)\b")
-
-            self.cursor.execute(
-                """
-                SELECT pg_get_viewdef(%s::regclass, true) AS viewdef
-                FROM pg_class
-                WHERE relname = %s AND relkind = 'v';
-                """,
-                (collection, collection),
-            )
-            row = self.cursor.fetchone()
-            if not row:
-                raise ValueError(f"Source view not found: {collection}")
-            viewdef = table_re.sub(replace_suffix, row["viewdef"])
-            self.cursor.execute(
-                sql.SQL("CREATE VIEW {view_m} AS {viewdef};").format(
-                    view_m=sql.Identifier(r_tables["view"]),
-                    viewdef=sql.SQL(viewdef),
-                )
-            )
-            # TODO rereference all models pointing to or pointed from this collection including im tables
-            # (not origin tables)
-            # shouldn't that be done during finalize?
-
-        # RECREATE some relevant triggers
-        # May be error prone due to changing constraints
-        (
-            enum_definitions,
-            pre_code,
-            table_name_code,
-            view_name_code,
-            alter_table_code,
-            final_info_code,
-            missing_handled_attributes,
-            missing_handled_collections_meta_attributes,
-            im_table_code,
-            create_trigger_partitioned_sequences_code,
-            create_trigger_1_1_relation_not_null_code,
-            create_trigger_1_n_relation_not_null_code,
-            create_trigger_n_m_relation_not_null_code,
-            create_trigger_prevent_updates_code,
-            create_trigger_unique_ids_pair_code,
-            create_trigger_equal_fields_code,
-            create_trigger_notify_code,
-            errors,
-        ) = GenerateCodeBlocks.generate_the_code()
-        sql_text = (
-            create_trigger_1_1_relation_not_null_code
-            + create_trigger_1_n_relation_not_null_code
-            + create_trigger_n_m_relation_not_null_code
-            + create_trigger_unique_ids_pair_code
-            + create_trigger_equal_fields_code
-        )
-        # replace with the migration names before execute
-        replaced_blocks = []
-        trigger_re = re.compile(
-            r"(CREATE\s+(?:CONSTRAINT\s+)?TRIGGER\b.*?;)", re.IGNORECASE | re.DOTALL
-        )
-        view_re = re.compile(r"\B'([A-Za-z0-9_.]+)'\B")
-
-        def add_suffix(m: re.Match) -> str:
-            base = m.group(1)
-            if base in unified_replace_tables:
-                return f"'{base}vm'"
-            else:
-                return f"'{base}'"
-
-        for match in trigger_re.finditer(sql_text):
-            block = match.group(0)
-            if table_re.search(block):
-                modified_block = table_re.sub(replace_suffix, block)
-                replaced_blocks.append(view_re.sub(add_suffix, modified_block))
-        sql_text = "".join(replaced_blocks)
-        self.cursor.execute(sql_text)
-
     def update_sequence(self, name: str, maximum: int) -> None:
         self.cursor.execute(
             sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
@@ -256,7 +54,7 @@ class MigrationHandler(BaseHandler):
         Updates all primary keys and sequential_number fields.
         """
         with self.ver_conn.cursor() as cursor:
-            unified_repl_tables, _ = (
+            unified_repl_tables = (
                 MigrationHelper.get_unified_replace_tables_from_database(cursor)
             )
         for collection in unified_repl_tables:
@@ -271,49 +69,71 @@ class MigrationHandler(BaseHandler):
                     table_name + "_id_seq",
                     result["max"],
                 )
-            # update sequential_numbers.
-            if model_registry[collection]().try_get_field("sequential_number"):
-                results = self.cursor.execute(
-                    sql.SQL(
-                        "SELECT MAX(sequential_number), meeting_id FROM {table} GROUP BY meeting_id;"
-                    ).format(table=table)
-                ).fetchall()
-                SEQ_NAME = string.Template(
-                    table_name + "_meeting_id${meeting_id}_sequential_number_seq"
+
+    def apply_schema_diff(self, migration_number: int) -> None:
+        """Applies the sql diff for the given migration if it exists."""
+        try:
+            with open(
+                os.path.join(
+                    MIGRATIONS_PATH,
+                    MigrationHelper.migrations[migration_number],
+                    "schema_diff.sql",
                 )
-                for result in results:
-                    seq_name = SEQ_NAME.substitute({"meeting_id": result["meeting_id"]})
-                    self.cursor.execute(
-                        sql.SQL(f"CREATE SEQUENCE IF NOT EXISTS {seq_name};")
-                    )
-                    self.update_sequence(seq_name, result["max"])
+            ) as f:
+                self.cursor.execute(f.read())
+        except FileNotFoundError:
+            self.logger.warning(
+                f"Couldn't find an SQL diff for {migration_number}. This can be intentional."
+            )
+        except Exception as e:
+            raise MigrationException(f"Error applying schema diff: {e}")
 
     def execute_migrations(self) -> None:
         """
         Executes the data_definition and data_manipulation methods of the migrations
         stored in MigrationHelper.migrations.
         """
-        for index, module_name in MigrationHelper.migrations.items():
-            mig_class = getattr(
-                import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-            )
-            self.logger.info("Executing migration: " + module_name)
+        for index, package_name in MigrationHelper.migrations.items():
+            try:
+                mig_class = MigrationHelper.get_migration_class(package_name)
+                self.logger.info("Executing migration: " + package_name)
 
-            # checks wether the methods are available and executes them.
-            mig_class.data_definition(self.cursor)
-            mig_class.data_manipulation(self.cursor)
+                self.apply_schema_diff(index)
+                # Execute user defined functions or super classes noop.
+                stash = mig_class.data_preparation(self.cursor)
+                mig_class.data_definition(self.cursor)
+                mig_class.data_manipulation(self.cursor, stash)
+                mig_class.cleanup(self.cursor)
 
-            self.cursor.connection.commit()
-            with self.ver_conn.cursor() as curs:
+                self.cursor.connection.commit()
+                with self.ver_conn.cursor() as curs:
+                    MigrationHelper.set_database_migration_info(
+                        curs, index, MigrationState.MIGRATION_FINISHED
+                    )
+            except Exception as e:
+                MigrationHelper.migrate_thread_exception = e
+                with self.ver_conn.cursor() as curs:
+                    MigrationHelper.set_database_migration_info(
+                        curs, index, MigrationState.MIGRATION_FAILED
+                    )
+                raise e
+
+        # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
+        self.update_sequences()
+        with self.ver_conn.cursor() as curs:
+            for migration_number in MigrationHelper.migrations:
                 MigrationHelper.set_database_migration_info(
-                    curs, index, MigrationState.FINALIZATION_REQUIRED
+                    self.cursor, migration_number, MigrationState.FINALIZED
                 )
+        self.logger.info(
+            f"Migration index was set to {max(MigrationHelper.migrations)}..."
+        )
 
     def migrate(self) -> None:
         """
         Starts the migration process.
         """
-        self.logger.info("Preparing migrations ...")
+        self.logger.info("Checking migratability ...")
         with self.ver_conn.cursor() as cursor:
             state = MigrationHelper.get_migration_state(cursor)
             match state:
@@ -331,11 +151,10 @@ class MigrationHandler(BaseHandler):
                             MigrationState.MIGRATION_RUNNING,
                         )
                     # Check prerequisites
-                    for index, module_name in MigrationHelper.migrations.items():
-                        mig_class = getattr(
-                            import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-                        )
-                        self.logger.info("Pre check: " + module_name + " ...")
+                    for index, package_name in MigrationHelper.migrations.items():
+                        mig_class = MigrationHelper.get_migration_class(package_name)
+                        mig_name = package_name[4:]
+                        self.logger.info("Pre check: " + mig_name + " ...")
                         if errors := mig_class.check_prerequisites(self.cursor):
                             if minimum_required_index:
                                 MigrationHelper.set_database_migration_info(
@@ -343,17 +162,19 @@ class MigrationHandler(BaseHandler):
                                     minimum_required_index["min"],
                                     MigrationState.MIGRATION_REQUIRED,
                                 )
-                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
+                            errors = (
+                                f"Pre check for migration {mig_name} failed.\n{errors}"
+                            )
                             self.logger.info(errors)
                             raise MigrationSetupException(errors)
                     MigrationHelper.write_line("migration started")
-                    # self.set_public_tables_read_only()
-                    self.setup_migration_relations()
+                    deactivate_notify_triggers(self.cursor)
                     self.execute_migrations()
+                    activate_notify_triggers(self.cursor)
                     MigrationHelper.write_line("migration finished")
                     MigrationHelper.migrate_thread_stream_can_be_closed = True
-                case MigrationState.FINALIZATION_REQUIRED:
-                    self.logger.info("Done. Finalizing is still needed.")
+                case MigrationState.MIGRATION_FINISHED:
+                    self.logger.info("Done. About to finish.")
                 case MigrationState.FINALIZED:
                     self.logger.info("No migration needed.")
                 case MigrationState.MIGRATION_RUNNING:
@@ -372,262 +193,26 @@ class MigrationHandler(BaseHandler):
         ), "Handlers cursor must be initialized."
         if command == "migrate":
             self.migrate()
-        elif command == "finalize":
-            self.finalize()
         elif command == "reset":
             self.reset()
         else:
             raise InvalidMigrationCommand(command)
 
-    def set_public_tables_read_only(self) -> None:
-        """
-        Sets all origin_collections tables to read only by creating a trigger that fails hard.
-        In the case of the initial rel-db migration this also includes the old schema.
-        """
-        for table in MigrationHelper.get_public_tables(self.cursor):
-            trigger_name = f"tr_lock_{table}"
-            if self.cursor.execute(
-                sql.SQL(
-                    "SELECT 1 FROM pg_trigger WHERE tgname = {trigger_name};"
-                ).format(trigger_name=trigger_name)
-            ).fetchone():
-                self.cursor.execute(
-                    sql.SQL(
-                        "CREATE TRIGGER IF NOT EXISTS {trigger_name} BEFORE INSERT OR UPDATE OR DELETE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();"
-                    ).format(
-                        trigger_name=sql.SQL(trigger_name),
-                        table=sql.Identifier(table),
-                    )
-                )
-
-    def unset_tables_read_only(self) -> None:
-        """Sets all origin_collections tables to readable by dropping the read-only trigger."""
-        for table in MigrationHelper.get_public_tables(self.cursor):
-            self.cursor.execute(
-                sql.SQL("DROP TRIGGER IF EXISTS {trigger_name};").format(
-                    trigger_name=sql.SQL(f"tr_lock_{table}")
-                )
-            )
-        # Support reset on initial migration.
-        with self.ver_conn.cursor() as cursor:
-            if MigrationHelper.get_database_migration_index(cursor) < 100:
-                for table in OLD_TABLES:
-                    self.cursor.execute(
-                        sql.SQL("DROP TRIGGER IF EXISTS tr_lock_{table}").format(
-                            table=sql.SQL(table)
-                        )
-                    )
-
-    @classmethod
-    def close_migrate_thread_stream(cls) -> None:
-        """
-        Closes the migration threads io stream.
-        """
-        if (
-            MigrationHelper.migrate_thread_stream_can_be_closed
-            and MigrationHelper.migrate_thread_stream
-        ):
-            MigrationHelper.migrate_thread_stream.close()
-            MigrationHelper.migrate_thread_stream = None
-            MigrationHelper.migrate_thread_stream_can_be_closed = False
-            MigrationHelper.migrate_thread_stream_read_pos = 0
-            MigrationHelper.migrate_thread_exception = None
-
-    def finalize(self) -> None:
-        """
-        Executes the cleanup method and copies tables into place.
-        Also sets the migration info accordingly.
-        """
-        with self.ver_conn.cursor() as cursor:
-            state = MigrationHelper.get_migration_state(cursor)
-        match state:
-            case MigrationState.FINALIZED:
-                return
-            case MigrationState.MIGRATION_REQUIRED:
-                self.migrate()
-                return self.finalize()
-            case MigrationState.FINALIZATION_REQUIRED:
-                self.logger.info("Finalize migrations.")
-            case _:
-                raise MigrationException(
-                    f"State is: {state} Finalization not possible if it's not required."
-                )
-
-        MigrationHelper.write_line("finalization started")
-        for index, module_name in MigrationHelper.migrations.items():
-            mig_class = getattr(
-                import_module(f"{MODULE_PATH}{module_name}"), "Migration"
-            )
-            mig_class.cleanup(self.cursor)
-
-        with self.ver_conn.cursor() as curs:
-            unified_replace_tables, relevant_mis = (
-                MigrationHelper.get_unified_replace_tables_from_database(curs)
-            )
-            for mi in relevant_mis:
-                MigrationHelper.set_database_migration_info(
-                    curs, mi, MigrationState.FINALIZATION_RUNNING
-                )
-
-        im_tables = set()
-        # Do the general replacement
-        for collection, migration_names in unified_replace_tables.items():
-            # Will also drop attached intermediate tables and views.
-            self.cursor.execute(
-                sql.SQL("DROP TABLE {real_name} CASCADE;").format(
-                    real_name=sql.Identifier(collection + "_t")
-                )
-            )
-            self.cursor.execute(
-                sql.SQL("ALTER TABLE {migration_name} RENAME TO {real_name}").format(
-                    real_name=sql.Identifier(collection + "_t"),
-                    migration_name=sql.Identifier(migration_names["table"]),
-                )
-            )
-            self.cursor.execute(
-                sql.SQL(
-                    "ALTER SEQUENCE {collection}_m_id_seq RENAME TO {collection}_t_id_seq;"
-                ).format(collection=sql.SQL(collection))
-            )
-            # Will be recreated for origin table below.
-            self.cursor.execute(
-                sql.SQL("DROP VIEW {migration_name};").format(
-                    migration_name=sql.Identifier(migration_names["view"]),
-                )
-            )
-            im_tables.update(migration_names["im_tables"])
-
-        # RENAME intermediate tables
-        for table_name in im_tables:
-            self.cursor.execute(
-                sql.SQL("DROP TABLE {real_name};").format(
-                    real_name=sql.Identifier(table_name)
-                )
-            )
-            self.cursor.execute(
-                sql.SQL("ALTER TABLE {migration_name} RENAME TO {real_name}").format(
-                    real_name=sql.Identifier(table_name),
-                    migration_name=sql.Identifier(
-                        HelperGetNames.get_table_name(table_name, migration=True)
-                    ),
-                )
-            )
-
-        # RECREATE triggers
-        (
-            enum_definitions,
-            pre_code,
-            table_name_code,
-            view_name_code,
-            alter_table_code,  # should be sufficiently (re-)created with migrate command
-            final_info_code,
-            missing_handled_attributes,
-            missing_handled_collections_meta_attributes,
-            im_table_code,
-            create_trigger_partitioned_sequences_code,
-            create_trigger_1_1_relation_not_null_code,
-            create_trigger_1_n_relation_not_null_code,
-            create_trigger_n_m_relation_not_null_code,
-            create_trigger_prevent_updates_code,
-            create_trigger_unique_ids_pair_code,
-            create_trigger_equal_fields_code,
-            create_trigger_notify_code,
-            errors,
-        ) = GenerateCodeBlocks.generate_the_code()
-        sql_text = (
-            view_name_code
-            + alter_table_code
-            + create_trigger_partitioned_sequences_code
-            + create_trigger_1_1_relation_not_null_code
-            + create_trigger_1_n_relation_not_null_code
-            + create_trigger_n_m_relation_not_null_code
-            + create_trigger_prevent_updates_code
-            + create_trigger_unique_ids_pair_code
-            + create_trigger_notify_code
-            + create_trigger_equal_fields_code
-        )
-        for collection_or_imt in im_tables | set(unified_replace_tables):
-            to_drop_triggers = self.cursor.execute(
-                sql.SQL("""SELECT
-                        tgname AS trigger_name,
-                        tgrelid::regclass AS table_name
-                    FROM
-                        pg_trigger
-                    WHERE
-                        tgrelid = {table_name}::regclass AND
-                        tgname NOT LIKE 'RI_ConstraintTrigger_%';""").format(
-                    table_name=HelperGetNames.get_table_name(collection_or_imt)
-                )
-            ).fetchall()
-            for trigger_dict in to_drop_triggers:
-                self.cursor.execute(
-                    sql.SQL("DROP TRIGGER {trigger} ON {table};").format(
-                        trigger=sql.SQL(trigger_dict["trigger_name"]),
-                        table=sql.Identifier(trigger_dict["table_name"]),
-                    )
-                )
-        self.cursor.execute(sql_text)
-
-        self.update_sequences()
-
-        MigrationHelper.write_line("finalization finished")
-        with self.ver_conn.cursor() as curs:
-            for mi in relevant_mis:
-                MigrationHelper.set_database_migration_info(
-                    curs, mi, MigrationState.FINALIZED
-                )
-        self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
-
     def reset(self) -> None:
         """
         Resets the migrations currently in progress and restores the state before the migration.
         """
-        raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
-        self.close_migrate_thread_stream()
-        self._clean_migration_data()
-        with self.ver_conn.cursor as cursor:
-            indices = MigrationHelper.get_indices_from_database(cursor)
-            # Remove unfinalized migration indices from version table
-            to_delete_indices = [
-                idx
-                for idx, state in MigrationHelper.get_database_migration_states(
-                    cursor, indices
-                ).items()
-                if state != MigrationState.FINALIZED
-            ]
-            cursor.execute(
-                sql.SQL("DELETE from version WHERE migration_index = ANY(")
-                + sql.Placeholder()
-                + sql.SQL(");"),
-                (to_delete_indices,),
-            )
-            cursor.connection.commit()
-
-        self.unset_tables_read_only()
-
-    def _clean_migration_data(self) -> None:
-        """
-        Removes migration tables and views
-        """
-        self.logger.info("Clean up migration data...")
-        assert self.cursor, "Handlers cursor must be initialized."
+        activate_notify_triggers(self.cursor)
+        MigrationHelper.close_migrate_thread_stream()
+        MigrationHelper.migrate_thread_exception = None
+        # Remove unfinalized migration indices from version table
         with self.ver_conn.cursor() as cursor:
-            indices = MigrationHelper.get_indices_from_database(cursor)
-            state_per_idx = MigrationHelper.get_database_migration_states(
-                cursor, indices
+            to_reset_indices = MigrationHelper.get_unfinalized_indices(cursor)
+            cursor.execute(
+                sql.SQL(
+                    "UPDATE version SET migration_state = %s "
+                    "WHERE migration_index = ANY(%s)"
+                ),
+                (MigrationState.MIGRATION_REQUIRED, to_reset_indices),
             )
-            replace_tables = {
-                k: v
-                for idx, state in state_per_idx.items()
-                if state != MigrationState.FINALIZED
-                for k, v in MigrationHelper.get_replace_tables_from_database(
-                    cursor, idx
-                ).items()
-            }
-        for collection in replace_tables:
-            self.cursor.execute(f"DROP TABLE {collection}_m;")
-        if any(mi > 100 for mi in indices):
-            for table_view in replace_tables.values():
-                self.cursor.execute(f"DROP TABLE {table_view['table']};")
-                self.cursor.execute(f"DROP VIEW {table_view['view']};")
