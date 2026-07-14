@@ -61,9 +61,9 @@ class ActionWorkerTest(BaseActionTestCase):
             },
         )
 
-        # self.set_thread_watch_timeout(1)
-        payload: Payload = []
-        for i in range(1, 10):
+        # also test case where it actually gets chopped off
+        payload = []
+        for i in range(1, 12):
             payload.extend(
                 [
                     {
@@ -81,7 +81,7 @@ class ActionWorkerTest(BaseActionTestCase):
         assert self.get_thread_by_name("action_worker") is None
         self.assert_model_exists(
             "action_worker/2",
-            {"name": ",".join("user.create,group.create" for _ in range(1, 10))},
+            {"name": ",".join("user.create,group.create" for _ in range(1, 12))[:255]},
         )
 
     def test_action_worker_ready_before_timeout_okay(self) -> None:
