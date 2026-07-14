@@ -19,7 +19,6 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-# from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import ActionException, DatabaseException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
@@ -45,7 +44,7 @@ def concatenate_action_names(payload: Payload) -> str:
             if action_name == prev_action_name:
                 counter += 1
             else:
-                result += f"{prev_action_name}_{counter}, "
+                result += f"{prev_action_name}_{counter},"
                 prev_action_name = action_name
                 counter = 1
         result += f"{prev_action_name}_{counter}"
