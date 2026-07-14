@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
@@ -39,8 +38,13 @@ class MigrationHandler(BaseHandler):
         logging: LoggingModule,
     ) -> None:
         super().__init__(env, services, logging)
+        database_m_idx = MigrationHelper.get_database_migration_index(curs)
         self.cursor = curs
-        self.replace_tables: dict[str, Any]
+        self.pending_migrations = {
+            mig: directory
+            for mig, directory in MigrationHelper.migrations.items()
+            if mig > database_m_idx
+        }
 
     def update_sequence(self, name: str, maximum: int) -> None:
         self.cursor.execute(
@@ -76,7 +80,7 @@ class MigrationHandler(BaseHandler):
             with open(
                 os.path.join(
                     MIGRATIONS_PATH,
-                    MigrationHelper.migrations[migration_number],
+                    self.pending_migrations[migration_number],
                     "schema_diff.sql",
                 )
             ) as f:
@@ -91,9 +95,9 @@ class MigrationHandler(BaseHandler):
     def execute_migrations(self) -> None:
         """
         Executes the data_definition and data_manipulation methods of the migrations
-        stored in MigrationHelper.migrations.
+        stored in self.pending_migrations.
         """
-        for index, package_name in MigrationHelper.migrations.items():
+        for index, package_name in self.pending_migrations.items():
             try:
                 mig_class = MigrationHelper.get_migration_class(package_name)
                 self.logger.info("Executing migration: " + package_name)
@@ -120,12 +124,12 @@ class MigrationHandler(BaseHandler):
 
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
         self.update_sequences()
-        for migration_number in MigrationHelper.migrations:
+        for migration_number in self.pending_migrations:
             MigrationHelper.set_database_migration_info(
                 self.cursor, migration_number, MigrationState.FINALIZED
             )
         self.logger.info(
-            f"Migration index was set to {max(MigrationHelper.migrations)}..."
+            f"Migration index was set to {max(self.pending_migrations)}..."
         )
 
     def migrate(self) -> None:
@@ -149,7 +153,7 @@ class MigrationHandler(BaseHandler):
                         MigrationState.MIGRATION_RUNNING,
                     )
                 # Check prerequisites
-                for index, package_name in MigrationHelper.migrations.items():
+                for index, package_name in self.pending_migrations.items():
                     mig_class = MigrationHelper.get_migration_class(package_name)
                     mig_name = package_name[4:]
                     self.logger.info("Pre check: " + mig_name + " ...")
