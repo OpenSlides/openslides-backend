@@ -88,6 +88,9 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         except jwt.exceptions.InvalidTokenError as e:
             raise AuthenticationException(f"Validating JWT token: {e}")
 
+        if claims.Issuer != self.issuer_url:
+            raise AuthenticationException(f"Invalid issuer: got {claims.Issuer}, want {self.issuer_url}")
+
         return IDPPayload(claims)
 
     def _get_key(self, kid: str):
