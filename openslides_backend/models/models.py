@@ -1437,7 +1437,6 @@ class MeetingMediafile(Model):
 class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
     collection = "meeting_poll_default"
     verbose_name = "meeting poll default"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     sort_result_by_votes = fields.BooleanField(default=True)
