@@ -50,7 +50,7 @@ def concatenate_action_names(payload: Payload) -> str:
                 counter = 1
         result += f"{prev_action_name}_{counter}"
         if len(result) > 255:
-            result = result[:255]
+            result = result[:254] + "…"
     return result
 
 
