@@ -79,10 +79,8 @@ class ActionWorkerTest(BaseActionTestCase):
         response = self.request_json(payload)
         self.assert_status_code(response, 202)
         assert self.get_thread_by_name("action_worker") is None
-        self.assert_model_exists(
-            "action_worker/2",
-            {"name": ",".join("user.create,group.create" for _ in range(1, 12))[:255]},
-        )
+        name = ",".join("user.create,group.create" for _ in range(1, 12))[:254] + "…"
+        self.assert_model_exists("action_worker/2", {"name": name})
 
     def test_action_worker_ready_before_timeout_okay(self) -> None:
         """action thread used, but ended in time"""
