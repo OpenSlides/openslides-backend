@@ -170,7 +170,7 @@ class TestCheckerCheckData(TestCase):
                     "default_projector_amendment_ids": [1],
                     "default_projector_assignment_ids": [1],
                     "default_projector_motion_ids": [1],
-                    "default_projector_poll_ids": [1],
+                    "default_projector_topic_poll_ids": [1],
                     "motion_workflow_ids": [1],
                     "motion_state_ids": [1],
                 }
@@ -202,7 +202,7 @@ class TestCheckerCheckData(TestCase):
                     "used_as_default_projector_for_countdown_in_meeting_id": 1,
                     "used_as_default_projector_for_assignment_poll_in_meeting_id": 1,
                     "used_as_default_projector_for_motion_poll_in_meeting_id": 1,
-                    "used_as_default_projector_for_poll_in_meeting_id": 1,
+                    "used_as_default_projector_for_topic_poll_in_meeting_id": 1,
                 }
             },
             "motion_workflow": {

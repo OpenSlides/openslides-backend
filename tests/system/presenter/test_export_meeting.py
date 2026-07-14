@@ -60,6 +60,7 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_category",
             "motion_block",
             "motion_change_recommendation",
+            "meeting_poll_default",
             "poll",
             "assignment",
             "assignment_candidate",
@@ -302,6 +303,67 @@ class TestExportMeeting(BasePresenterTestCase):
             }
         )
 
+    def test_export_meeting_find_poll_defaults(self) -> None:
+        poll_defaults_data = {
+            "meeting_poll_default/1": {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": 1,
+                "group_ids": [2, 3],
+                "sort_result_by_votes": True,
+                "visibility": "open",
+                "onehundred_percent_base": "valid",
+                "allow_abstain": True,
+                "allow_nota": True,
+            },
+            "meeting_poll_default/2": {
+                "meeting_id": 1,
+                "used_as_motion_poll_config_in_meeting_id": 1,
+                "group_ids": [2, 3],
+                "sort_result_by_votes": False,
+                "visibility": "secret",
+                "onehundred_percent_base": "valid",
+                "allow_abstain": False,
+                "strike_out": True,
+            },
+            "meeting_poll_default/3": {
+                "meeting_id": 1,
+                "used_as_topic_poll_config_in_meeting_id": 1,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": "named",
+                "onehundred_percent_base": "valid",
+                "display_chart": "pie",
+            },
+        }
+        poll_default_config_ids = {
+            "assignment_poll_config_id": 1,
+            "motion_poll_config_id": 2,
+            "topic_poll_config_id": 3,
+        }
+        self.set_models(
+            {
+                "meeting/1": poll_default_config_ids,
+                "group/2": {"used_in_meeting_poll_default_ids": [1, 2]},
+                "group/3": {"used_in_meeting_poll_default_ids": [1, 2, 3]},
+                **poll_defaults_data,
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        for fqid, poll_default_data in poll_defaults_data.items():
+            collection, id_ = fqid.split("/")
+            for k, v in poll_default_data.items():
+                assert data[collection][id_][k] == v
+        assert data["meeting"]["1"]["poll_default_ids"] == [1, 2, 3]
+        for field_name, config_id in poll_default_config_ids.items():
+            assert data["meeting"]["1"][field_name] == config_id
+        for group_id, config_ids in {2: [1, 2], 3: [1, 2, 3]}.items():
+            assert (
+                data["group"][str(group_id)]["used_in_meeting_poll_default_ids"]
+                == config_ids
+            )
+        assert "used_in_meeting_poll_default_ids" not in data["group"]["1"]
+
     def test_export_meeting_find_poll_configs(self) -> None:
         configs_data = {
             "poll_config_approval/1": {
@@ -478,12 +540,8 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motions_supporters_min_amount": 0,
                     "motions_export_submitter_recommendation": True,
                     "motions_export_follow_recommendation": False,
-                    "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
-                    "motion_poll_ballot_paper_number": 8,
-                    "motion_poll_default_type": "pseudoanonymous",
-                    "motion_poll_default_onehundred_percent_base": "valid",
-                    "motion_poll_projection_name_order_first": "last_name",
-                    "motion_poll_projection_max_columns": 6,
+                    "poll_projection_name_order_first": "last_name",
+                    "poll_projection_max_columns": 6,
                     "users_enable_presence_view": False,
                     "users_enable_vote_weight": False,
                     "users_enable_vote_delegations": True,
@@ -494,18 +552,10 @@ class TestExportMeeting(BasePresenterTestCase):
                     "users_email_subject": "OpenSlides access data",
                     "users_email_body": "blablabla",
                     "assignments_export_title": "Elections",
-                    "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
-                    "assignment_poll_ballot_paper_number": 8,
                     "assignment_poll_add_candidates_to_list_of_speakers": False,
-                    "assignment_poll_enable_max_votes_per_option": False,
-                    "assignment_poll_sort_poll_result_by_votes": True,
-                    "assignment_poll_default_type": "pseudoanonymous",
-                    "assignment_poll_default_method": "Y",
-                    "assignment_poll_default_onehundred_percent_base": "valid",
-                    "poll_default_type": "analog",
-                    "poll_default_onehundred_percent_base": "valid",
-                    "poll_default_live_voting_enabled": False,
-                    "poll_default_method": "YNA",
+                    "assignment_poll_default_method": "rating_approval",
+                    "poll_enable_max_votes_per_option": False,
+                    "topic_poll_default_method": "rating_approval",
                     "poll_couple_countdown": True,
                 },
                 "group/1": {
