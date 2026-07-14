@@ -49,6 +49,8 @@ def concatenate_action_names(payload: Payload) -> str:
                 prev_action_name = action_name
                 counter = 1
         result += f"{prev_action_name}_{counter}"
+        if len(result) > 255:
+            result = result[:255]
     return result
 
 
@@ -299,6 +301,7 @@ def gunicorn_post_request(
 
         with get_new_os_conn() as conn:
             extended_db = ExtendedDatabase(conn, logging, env)
+            initial_write_counter = 0
             while True:
                 worker.tmp.notify()
                 if action_worker_writing.written:
@@ -310,7 +313,12 @@ def gunicorn_post_request(
                         break
                     else:
                         action_worker_writing.continue_action_worker_write(extended_db)
+                elif initial_write_counter >= 3:
+                    raise ActionException(
+                        "Couldn't write action_worker three times. Please check the logs or contact your admin."
+                    )
                 else:
+                    initial_write_counter += 1
                     action_worker_writing.initial_action_worker_write(extended_db)
                 conn.commit()
     except Exception as e:

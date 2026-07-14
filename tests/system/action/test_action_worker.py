@@ -61,6 +61,29 @@ class ActionWorkerTest(BaseActionTestCase):
             },
         )
 
+        # self.set_thread_watch_timeout(1)
+        payload: Payload = []
+        for i in range(1, 10):
+            payload.extend(
+                [
+                    {
+                        "action": "user.create",
+                        "data": [{"username": f"{i}"}],
+                    },
+                    {
+                        "action": "group.create",
+                        "data": [{"meeting_id": 222, "name": "gratuitous group"}],
+                    },
+                ]
+            )
+        response = self.request_json(payload)
+        self.assert_status_code(response, 202)
+        assert self.get_thread_by_name("action_worker") is None
+        self.assert_model_exists(
+            "action_worker/2",
+            {"name": ",".join("user.create,group.create" for _ in range(1, 10))},
+        )
+
     def test_action_worker_ready_before_timeout_okay(self) -> None:
         """action thread used, but ended in time"""
         self.set_user_groups(1, [223])
