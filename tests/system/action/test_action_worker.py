@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.action.util.typing import Payload
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -24,7 +25,7 @@ class ActionWorkerTest(BaseActionTestCase):
     def test_action_worker_exceeding_name_length(self) -> None:
         """action thread used, but ended in time"""
         self.set_thread_watch_timeout(0)
-        payload = [
+        payload: Payload = [
             {
                 "action": "user.create",
                 "data": [{"username": "fdfd"}],
