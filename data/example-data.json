@@ -528,7 +528,8 @@
                 2,
                 3,
                 4,
-                5
+                5,
+                6
             ],
             "assignment_ids": [
                 1,
@@ -673,7 +674,7 @@
                 2
             ],
             "poll_ids": [
-                5
+                5, 6
             ],
             "meeting_id": 1,
             "used_in_meeting_poll_default_ids": [1, 2]
@@ -1991,6 +1992,21 @@
             ],
             "entitled_group_ids": [2],
             "meeting_id": 1
+        },
+        "6": {
+            "id": 6,
+            "title": "6",
+            "config_id": "poll_config_stv_scottish/1",
+            "visibility": "secret",
+            "state": "created",
+            "anonymized": false,
+            "live_voting_enabled": false,
+            "published": false,
+            "allow_invalid": false,
+            "allow_vote_split": true,
+            "content_object_id": "assignment/1",
+            "entitled_group_ids": [2],
+            "meeting_id": 1
         }
     },
     "poll_config_approval": {
@@ -2038,6 +2054,13 @@
             "min_options_amount": 0,
             "allow_abstain": true,
             "onehundred_percent_base": "valid"
+        }
+    },
+    "poll_config_stv_scottish": {
+        "1": {
+            "id": 1,
+            "poll_id": 6,
+            "posts": 4
         }
     },
     "poll_option": {
@@ -2174,7 +2197,8 @@
             ],
             "poll_ids": [
                 2,
-                5
+                5,
+                6
             ],
             "agenda_item_id": 11,
             "list_of_speakers_id": 11,

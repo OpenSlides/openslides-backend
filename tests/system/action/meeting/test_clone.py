@@ -1773,29 +1773,22 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "poll/1": {
                     "title": "a",
-                    "type": "pseudoanonymous",
-                    "backend": "fast",
-                    "pollmethod": "YNA",
-                    "state": "published",
-                    "onehundred_percent_base": "valid",
-                    "votesvalid": "1.000000",
-                    "votescast": "1.000000",
-                    "content_object_id": "motion/1",
-                    "entitled_group_ids": [3],
-                    "meeting_id": 1,
-                },
-                "option/2": {
-                    "weight": 0,
-                    "poll_id": 1,
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "config_id": "poll_config_approval/1",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
-                "vote/3": {
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                    "allow_abstain": True,
+                },
+                "group/3": {"poll_ids": [1]},
+                "poll_ballot/3": {
                     "weight": "0.000000",
                     "value": "Y",
-                    "user_token": "ABC",
-                    "option_id": 2,
-                    "meeting_id": 1,
+                    "poll_id": 1,
                 },
                 "motion/2": {
                     "meeting_id": 4,
@@ -1858,13 +1851,11 @@ class MeetingClone(BaseActionTestCase):
             {"comment": "", "motion_id": 5, "section_id": 3, "meeting_id": 5},
         )
         self.assert_model_exists(
-            "vote/4",
+            "poll_ballot/4",
             {
                 "weight": Decimal("0.000000"),
                 "value": "Y",
-                "user_token": "ABC",
-                "option_id": 3,
-                "meeting_id": 5,
+                "poll_id": 2,
             },
         )
 

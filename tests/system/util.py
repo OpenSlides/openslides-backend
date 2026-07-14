@@ -5,7 +5,6 @@ from typing import Any, Self
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
@@ -13,7 +12,6 @@ from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.media.interface import MediaService
-from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.services import Services
@@ -58,9 +56,6 @@ def create_test_application(view: type[View]) -> OpenSlidesBackendWSGIApplicatio
     services = OpenSlidesBackendServices(
         config=env.get_service_url(),
         logging=MagicMock(),
-    )
-    services.vote = providers.Singleton(
-        VoteAdapter, services.config.vote_url, MagicMock()
     )
     mock_media_service = Mock(MediaService)
     mock_media_service.upload_mediafile = Mock(

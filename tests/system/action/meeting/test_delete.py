@@ -439,7 +439,7 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
             self.assert_model_not_exists(f"motion_workflow/{i+1}")
         for i in range(3):
             self.assert_model_not_exists(f"meeting_poll_default/{i+1}")
-        for i in range(5):
+        for i in range(6):
             self.assert_model_not_exists(f"poll/{i+1}")
         for i in range(10):
             self.assert_model_not_exists(f"poll_option/{i+1}")
@@ -450,6 +450,7 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
         self.assert_model_not_exists("poll_config_selection/1")
         self.assert_model_not_exists("poll_config_rating_score/1")
         self.assert_model_not_exists("poll_config_rating_approval/1")
+        self.assert_model_not_exists("poll_config_stv_scottish/1")
         for i in range(2):
             self.assert_model_not_exists(f"assignment/{i+1}")
         for i in range(5):
