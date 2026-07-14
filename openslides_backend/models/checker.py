@@ -193,6 +193,7 @@ MEETING_COLLECTIONS = {
     "user",
     "mediafile",
     "poll_ballot",
+    "poll_ballot_user",
     "poll_config_approval",
     "poll_config_selection",
     "poll_config_rating_score",

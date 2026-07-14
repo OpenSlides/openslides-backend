@@ -945,37 +945,66 @@ class UserMergeTogether(BaseActionTestCase):
         self.set_up_polls_for_merge()
         self.set_models(
             {
-                "meeting_user/12": {"poll_voted_ids": [2]},
-                "meeting_user/14": {"poll_voted_ids": [1]},
-                "meeting_user/15": {"poll_voted_ids": [1]},
-                "meeting_user/43": {"poll_voted_ids": [5]},
-                "meeting_user/73": {"poll_voted_ids": [6]},
-                "poll_ballot/1": {
+                "poll_ballot/11": {
                     "value": "no",
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 1,
+                },
+                "poll_ballot_user/1": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 14,
                 },
-                "poll_ballot/2": {
+                "poll_ballot/12": {
                     "value": "no",
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 2,
+                },
+                "poll_ballot_user/2": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,
                 },
-                "poll_ballot/3": {
+                "poll_ballot/13": {
                     "value": "4",
+                    "poll_id": 2,
+                    "poll_ballot_user_id": 3,
+                },
+                "poll_ballot_user/3": {
                     "poll_id": 2,
                     "acting_meeting_user_id": 12,
                     "represented_meeting_user_id": 12,
                 },
-                "poll_ballot/4": {
+                "poll_ballot/14": {
                     "value": "abstain",
+                    "poll_id": 5,
+                    "poll_ballot_user_id": 4,
+                },
+                "poll_ballot_user/4": {
                     "poll_id": 5,
                     "acting_meeting_user_id": 43,
                     "represented_meeting_user_id": 43,
                 },
-                "poll_ballot/5": {"value": "9", "poll_id": 6},
-                "poll_ballot/6": {"value": "10", "poll_id": 6},
+                "group/7": {
+                    "meeting_user_ids": [75],
+                },
+                "meeting_user/75": {
+                    "user_id": 5,
+                    "meeting_id": 7,
+                    "vote_weight": Decimal("1"),
+                },
+                "poll_ballot/15": {"value": "9", "poll_id": 6},
+                "poll_ballot_user/5": {
+                    "poll_id": 6,
+                    "acting_meeting_user_id": 75,
+                    "represented_meeting_user_id": 75,
+                },
+                "poll_ballot/16": {"value": "10", "poll_id": 6},
+                "poll_ballot_user/6": {
+                    "poll_id": 6,
+                    "acting_meeting_user_id": 73,
+                    "represented_meeting_user_id": 73,
+                },
             }
         )
 
@@ -996,7 +1025,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         self.assert_model_exists("committee/60", {"user_ids": [2, 5]})
-        self.assert_model_exists("committee/66", {"user_ids": [2]})
+        self.assert_model_exists("committee/66", {"user_ids": [2, 5]})
         for id_ in range(3, 5):
             self.assert_model_not_exists(f"user/{id_}")
         for id_ in [43, 73, 14, 44, 74, *range(106, 106 + add_to_creatable_ids)]:
@@ -1007,7 +1036,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "user_id": 2,
                 "meeting_id": 1,
                 "poll_option_ids": [1, 4, 5, 7],
-                "poll_voted_ids": [1, 2],
                 "acting_ballot_ids": [1, 2, 3],
                 "represented_ballot_ids": [1, 3],
             },
@@ -1018,14 +1046,13 @@ class UserMergeTogether(BaseActionTestCase):
                 "user_id": 2,
                 "meeting_id": 4,
                 "motion_submitter_ids": [1],
-                "poll_voted_ids": [5],
                 "acting_ballot_ids": [4],
                 "represented_ballot_ids": [4],
             },
         )
         self.assert_model_exists(
             f"meeting_user/{106 + add_to_creatable_ids}",
-            {"user_id": 2, "meeting_id": 7, "poll_voted_ids": [6]},
+            {"user_id": 2, "meeting_id": 7},
         )
         self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
@@ -1038,34 +1065,52 @@ class UserMergeTogether(BaseActionTestCase):
             )
 
         self.assert_model_exists(
-            "poll_ballot/2",
+            "poll_ballot_user/2",
             {"acting_meeting_user_id": 12, "represented_meeting_user_id": 15},
         )
         for id_ in [1, 3]:
             self.assert_model_exists(
-                f"poll_ballot/{id_}",
+                f"poll_ballot_user/{id_}",
                 {"acting_meeting_user_id": 12, "represented_meeting_user_id": 12},
             )
         self.assert_model_exists(
-            "poll_ballot/4",
+            "poll_ballot_user/4",
             {"acting_meeting_user_id": 42, "represented_meeting_user_id": 42},
         )
         for id_ in [5, 6]:  # anonymous ballots
             self.assert_model_exists(
-                f"poll_ballot/{id_}",
+                f"poll_ballot/{10 + id_}",
                 {
+                    "poll_id": 6,
                     "value": str(id_ + 4),
-                    "acting_meeting_user_id": None,
-                    "represented_meeting_user_id": None,
+                    "poll_ballot_user_id": None,
                 },
             )
+        self.assert_model_exists(
+            "poll_ballot_user/5",
+            {
+                "poll_id": 6,
+                "poll_ballot_id": None,
+                "acting_meeting_user_id": 75,
+                "represented_meeting_user_id": 75,
+            },
+        )
+        self.assert_model_exists(
+            "poll_ballot_user/6",
+            {
+                "poll_id": 6,
+                "poll_ballot_id": None,
+                "acting_meeting_user_id": 106 + add_to_creatable_ids,
+                "represented_meeting_user_id": 106 + add_to_creatable_ids,
+            },
+        )
 
-        self.assert_model_exists("poll/1", {"voted_ids": [12, 15]})
-        self.assert_model_exists("poll/2", {"voted_ids": [12]})
+        self.assert_model_exists("poll/1", {"ballot_user_ids": [1, 2]})
+        self.assert_model_exists("poll/2", {"ballot_user_ids": [3]})
         for id_ in [3, 4]:
-            self.assert_model_exists(f"poll/{id_}", {"voted_ids": None})
-        self.assert_model_exists("poll/5", {"voted_ids": [42]})
-        self.assert_model_exists("poll/6", {"voted_ids": [106 + add_to_creatable_ids]})
+            self.assert_model_exists(f"poll/{id_}", {"ballot_user_ids": None})
+        self.assert_model_exists("poll/5", {"ballot_user_ids": [4]})
+        self.assert_model_exists("poll/6", {"ballot_user_ids": [5, 6]})
 
     def test_merge_with_polls_correct(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
@@ -1088,37 +1133,66 @@ class UserMergeTogether(BaseActionTestCase):
         self.set_models(
             {
                 "poll/4": {"state": Poll.STATE_STARTED},
-                "meeting_user/12": {"poll_voted_ids": [2]},
-                "meeting_user/14": {"poll_voted_ids": [1]},
-                "meeting_user/15": {"poll_voted_ids": [1]},
-                "meeting_user/43": {"poll_voted_ids": [5]},
-                "meeting_user/73": {"poll_voted_ids": [6]},
-                "poll_ballot/1": {
+                "poll_ballot/11": {
                     "value": "no",
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 1,
+                },
+                "poll_ballot_user/1": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 14,
                 },
-                "poll_ballot/2": {
+                "poll_ballot/12": {
                     "value": "no",
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 2,
+                },
+                "poll_ballot_user/2": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,
                 },
-                "poll_ballot/3": {
+                "poll_ballot/13": {
                     "value": "4",
+                    "poll_id": 2,
+                    "poll_ballot_user_id": 3,
+                },
+                "poll_ballot_user/3": {
                     "poll_id": 2,
                     "acting_meeting_user_id": 12,
                     "represented_meeting_user_id": 12,
                 },
-                "poll_ballot/4": {
+                "poll_ballot/14": {
                     "value": "abstain",
+                    "poll_id": 5,
+                    "poll_ballot_user_id": 4,
+                },
+                "poll_ballot_user/4": {
                     "poll_id": 5,
                     "acting_meeting_user_id": 43,
                     "represented_meeting_user_id": 43,
                 },
-                "poll_ballot/5": {"value": "9", "poll_id": 6},
-                "poll_ballot/6": {"value": "10", "poll_id": 6},
+                "group/7": {
+                    "meeting_user_ids": [75],
+                },
+                "meeting_user/75": {
+                    "user_id": 5,
+                    "meeting_id": 7,
+                    "vote_weight": Decimal("1"),
+                },
+                "poll_ballot/15": {"value": "9", "poll_id": 6},
+                "poll_ballot_user/5": {
+                    "poll_id": 6,
+                    "acting_meeting_user_id": 75,
+                    "represented_meeting_user_id": 75,
+                },
+                "poll_ballot/16": {"value": "10", "poll_id": 6},
+                "poll_ballot_user/6": {
+                    "poll_id": 6,
+                    "acting_meeting_user_id": 73,
+                    "represented_meeting_user_id": 73,
+                },
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
@@ -1130,7 +1204,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "some of the users are entitled to vote in currently running polls in meeting(s) 1",
                     "some of the selected users have different delegations roles in meeting(s) 1",
                     "some of the selected users are delegating votes to each other in meeting(s) 1",
-                    "among the selected users multiple voted in poll(s) 1",
+                    "among the selected users multiple voted in poll(s) 1, 6",
                     "multiple of the selected users are among the options in poll(s) 1, 2, 3, 4",
                 ]
             )

@@ -229,7 +229,6 @@ class MeetingUserMergeMixin(
                     "chat_message_ids",
                     "group_ids",
                     "structure_level_ids",
-                    "poll_voted_ids",  # throw error if conflict on same poll
                     "poll_option_ids",  # throw error if conflict on same poll
                     "acting_ballot_ids",  # throw error if conflict on same poll
                     "represented_ballot_ids",  # throw error if conflict on same poll
@@ -305,7 +304,6 @@ class MeetingUserMergeMixin(
                         "group_ids",
                         "vote_delegations_from_ids",
                         "vote_delegated_to_id",
-                        "poll_voted_ids",
                         "poll_option_ids",
                         "acting_ballot_ids",
                         "represented_ballot_ids",
@@ -394,10 +392,6 @@ class MeetingUserMergeMixin(
         ballot_poll_ids_per_user_id: dict[int, set[int]] = {}
         option_poll_ids_per_user_id: dict[int, set[int]] = {}
         for meeting_user in meeting_users.values():
-            if poll_voted_ids := meeting_user.get("poll_voted_ids"):
-                ballot_poll_ids_per_user_id.setdefault(
-                    meeting_user["user_id"], set()
-                ).update(set(poll_voted_ids))
             if len(
                 (o_ids := meeting_user.get("poll_option_ids", []))
                 + (
@@ -415,7 +409,7 @@ class MeetingUserMergeMixin(
                 many_models = self.datastore.get_many(
                     [
                         GetManyRequest("poll_option", o_ids, ["poll_id"]),
-                        GetManyRequest("poll_ballot", b_ids, ["poll_id"]),
+                        GetManyRequest("poll_ballot_user", b_ids, ["poll_id"]),
                     ]
                 )
                 if o_ids:
@@ -427,7 +421,7 @@ class MeetingUserMergeMixin(
                             for option in many_models["poll_option"].values()
                         }
                     )
-                ballot_data = many_models["poll_ballot"]
+                ballot_data = many_models["poll_ballot_user"]
                 ballot_poll_ids_per_user_id.setdefault(
                     meeting_user["user_id"], set()
                 ).update({ballot["poll_id"] for ballot in ballot_data.values()})

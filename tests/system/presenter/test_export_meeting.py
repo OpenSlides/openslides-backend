@@ -246,7 +246,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "meeting_user/114": {
                     "meeting_id": 1,
                     "user_id": 14,
-                    "poll_voted_ids": [80],
                 },
                 "poll/80": {
                     "title": "Poll 80",
@@ -263,6 +262,10 @@ class TestExportMeeting(BasePresenterTestCase):
                 "poll_ballot/120": {
                     "poll_id": 80,
                     "value": "yes",
+                    "poll_ballot_user_id": 130,
+                },
+                "poll_ballot_user/130": {
+                    "poll_id": 80,
                     "represented_meeting_user_id": 114,
                     "acting_meeting_user_id": 114,
                 },
@@ -282,12 +285,12 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["poll_option"]["100"]["meeting_user_id"] == 113
         assert data["meeting_user"]["113"]["poll_option_ids"] == [100]
 
-        assert data["poll"]["80"]["voted_ids"] == [114]
-        assert data["meeting_user"]["114"]["poll_voted_ids"] == [80]
-        assert data["poll_ballot"]["120"]["acting_meeting_user_id"] == 114
-        assert data["poll_ballot"]["120"]["represented_meeting_user_id"] == 114
-        assert data["meeting_user"]["114"]["acting_ballot_ids"] == [120]
-        assert data["meeting_user"]["114"]["represented_ballot_ids"] == [120]
+        assert data["poll"]["80"]["ballot_ids"] == [120]
+        assert data["poll"]["80"]["ballot_user_ids"] == [130]
+        assert data["poll_ballot_user"]["130"]["acting_meeting_user_id"] == 114
+        assert data["poll_ballot_user"]["130"]["represented_meeting_user_id"] == 114
+        assert data["meeting_user"]["114"]["acting_ballot_ids"] == [130]
+        assert data["meeting_user"]["114"]["represented_ballot_ids"] == [130]
 
     def create_assignment(self, meeting_id: int, base: int) -> None:
         self.set_models(
