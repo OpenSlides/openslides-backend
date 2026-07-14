@@ -103,22 +103,22 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["state"] == ImportState.DONE
+        assert result["rows"][0]["state"] == ImportState.NEW
         assert result["rows"][1]["state"] == ImportState.NEW
-        assert result["rows"][2]["state"] == ImportState.ERROR
+        assert result["rows"][2]["state"] == ImportState.NEW
         self.assert_model_exists(
             "import_preview/1",
             {
                 "name": "topic",
-                "state": "error",
+                "state": "done",
                 "result": {
                     "rows": [
                         {
-                            "state": ImportState.ERROR,
-                            "messages": ["Duplicated topic name 'test'."],
+                            "state": ImportState.NEW,
+                            "messages": [],
                             "data": {
-                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "title": {"value": "test", "info": ImportState.NEW},
                                 "meeting_id": 22,
                             },
                         },
@@ -131,10 +131,10 @@ class TopicJsonUpload(BaseActionTestCase):
                             },
                         },
                         {
-                            "state": ImportState.ERROR,
-                            "messages": ["Duplicated topic name 'test'."],
+                            "state": ImportState.NEW,
+                            "messages": [],
                             "data": {
-                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "title": {"value": "test", "info": ImportState.NEW},
                                 "meeting_id": 22,
                             },
                         },
@@ -143,7 +143,7 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         )
 
-    def test_json_upload_duplicate_in_existing_topic(self) -> None:
+    def test_json_upload_duplicate_and_existing_topic(self) -> None:
         self.create_topic(10, 22)
         response = self.request(
             "topic.json_upload",
@@ -154,11 +154,11 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == ["Duplicated topic name 'test'."]
-        assert result["rows"][1]["state"] == ImportState.ERROR
-        assert result["rows"][1]["messages"] == ["Duplicated topic name 'test'."]
+        assert result["state"] == ImportState.DONE
+        assert result["rows"][0]["state"] == ImportState.NEW
+        assert result["rows"][0]["messages"] == []
+        assert result["rows"][1]["state"] == ImportState.NEW
+        assert result["rows"][1]["messages"] == []
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
@@ -231,14 +231,13 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.WARNING
+        assert result["state"] == ImportState.DONE
         assert result["rows"] == [
             {
-                "state": ImportState.DONE,
-                "messages": ["Existing topic will be updated."],
+                "state": ImportState.NEW,
+                "messages": [],
                 "data": {
-                    "id": 3,
-                    "title": {"value": "test", "info": ImportState.WARNING, "id": 3},
+                    "title": {"value": "test", "info": ImportState.NEW},
                     "text": "new one",
                     "meeting_id": 22,
                 },

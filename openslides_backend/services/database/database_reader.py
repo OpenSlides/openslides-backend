@@ -209,20 +209,6 @@ class DatabaseReader(SqlQueryHelper):
             else:
                 collection_result_part[id_] = row
 
-    # TODO: Fix or delete
-    def get_current_migration_index(self) -> int:
-        #        result = self.connection.query(
-        #            "select min(migration_index), max(migration_index) from positions", []
-        #        )
-        #        min_migration_index = result[0]["min"] if result else None
-        #        max_migration_index = result[0]["max"] if result else None
-        #        if min_migration_index != max_migration_index:
-        #            raise InvalidDatastoreState(
-        #                "The datastore has inconsistent migration indices: "
-        #                + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
-        #            )
-        return -1
-
     def execute_custom_select(
         self,
         query: sql.Composed | sql.SQL,

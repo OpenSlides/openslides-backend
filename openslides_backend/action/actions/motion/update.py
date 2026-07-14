@@ -1,7 +1,6 @@
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
 
@@ -109,7 +108,7 @@ class MotionUpdate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        timestamp = datetime.now(ZoneInfo("UTC"))
+        timestamp = datetime.now(tz=timezone.utc)
         instance["last_modified"] = timestamp
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -128,7 +127,7 @@ class MotionUpdate(
             raw_timestamp = instance.get(field_name)
             if isinstance(raw_timestamp, int):
                 instance[field_name] = datetime.fromtimestamp(
-                    raw_timestamp, ZoneInfo("UTC")
+                    raw_timestamp, tz=timezone.utc
                 )
 
         if instance.get("workflow_id"):

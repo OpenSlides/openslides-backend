@@ -1707,6 +1707,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         assert response.json["message"] == "Forward with attachments is disabled"
         self.assert_model_not_exists("mediafile/7")
         self.assert_model_not_exists("meeting_mediafile/17")
+        self.media.duplicate_mediafile.assert_not_called()
 
     def test_forward_to_the_same_meeting_with_orga_wide_mediafile(self) -> None:
         """

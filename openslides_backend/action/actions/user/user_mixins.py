@@ -7,7 +7,6 @@ from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....presenter.search_users import SearchUsers
 from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
 from ....shared.filters import Filter, FilterOperator
@@ -209,63 +208,6 @@ class UpdateHistoryMixin(Action):
                     instance_information
                 )
         return information
-
-
-class DuplicateCheckMixin(Action):
-    def init_duplicate_set(self, data: list[Any]) -> None:
-        self.users_in_double_lists = self.execute_presenter(
-            SearchUsers,
-            {
-                "permission_type": "organization",
-                "permission_id": 1,
-                "search": data,
-            },
-        )
-        self.used_usernames: list[str] = []
-        self.used_saml_ids: list[str] = []
-        self.used_names_and_email: list[Any] = []
-
-    def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
-        result = (
-            bool(self.users_in_double_lists[payload_index])
-            or username in self.used_usernames
-        )
-        if username not in self.used_usernames:
-            self.used_usernames.append(username)
-        return result
-
-    def check_saml_id_for_duplicate(self, saml_id: str, payload_index: int) -> bool:
-        result = (
-            bool(self.users_in_double_lists[payload_index])
-            or saml_id in self.used_saml_ids
-        )
-        if saml_id not in self.used_saml_ids:
-            self.used_saml_ids.append(saml_id)
-        return result
-
-    def check_name_and_email_for_duplicate(
-        self, first_name: str, last_name: str, email: str, payload_index: int
-    ) -> bool:
-        entry = (first_name, last_name, email)
-        result = (
-            self.users_in_double_lists[payload_index]
-            or entry in self.used_names_and_email
-        )
-        if entry not in self.used_names_and_email:
-            self.used_names_and_email.append(entry)
-        return result
-
-    def get_search_data(self, payload_index: int) -> dict[str, Any] | None:
-        if len(self.users_in_double_lists[payload_index]) == 1:
-            return self.users_in_double_lists[payload_index][0]
-        return None
-
-    def has_multiple_search_data(self, payload_index: int) -> list[str]:
-        if len(self.users_in_double_lists[payload_index]) >= 2:
-            return [
-                entry["username"] for entry in self.users_in_double_lists[payload_index]
-            ]
-        return []
 
 
 def check_gender_exists(datastore: Database, instance: dict[str, Any]) -> None:
