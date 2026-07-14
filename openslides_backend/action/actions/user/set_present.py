@@ -4,6 +4,7 @@ from openslides_backend.shared.history_events import build_history_information_d
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
+from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
@@ -47,11 +48,12 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             present = instance.pop("present")
             user = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["is_present_in_meeting_ids"],
+                ["is_present_in_meeting_ids", "meeting_ids"],
             )
             self.base_history_information[instance["id"]] = {
                 "present": present,
                 "meeting_id": meeting_id,
+                "all_meeting_ids": user.get("meeting_ids", []),
             }
             if present:
                 if meeting_id not in user.get("is_present_in_meeting_ids", []):
@@ -106,15 +108,29 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         raise PermissionDenied("You are not allowed to set present.")
 
     def get_history_information(self) -> HistoryInformation | None:
-        return {
-            fqid_from_collection_and_id(
-                self.model.collection, id_
-            ): build_history_information_data(
-                [
-                    f"Set {'not ' if not data['present'] else ''}present in meeting {{}}",
-                    fqid_from_collection_and_id("meeting", data["meeting_id"]),
-                ],
-                {"is_present_in_meeting_ids": data["is_present_in_meeting_ids"]},
+        information: HistoryInformation = {}
+        for user_id, data in self.base_history_information.items():
+            present = data["present"]
+            meeting_id = data["meeting_id"]
+            information[fqid_from_collection_and_id(self.model.collection, user_id)] = (
+                build_history_information_data(
+                    [
+                        f"Set {'not ' if not present else ''}present in meeting {{}}",
+                        fqid_from_collection_and_id("meeting", meeting_id),
+                    ],
+                )
             )
-            for id_, data in self.base_history_information.items()
-        }
+            if meeting_id in data["all_meeting_ids"]:
+                meeting_user = get_meeting_user(
+                    self.datastore,
+                    meeting_id,
+                    user_id,
+                    ["id"],
+                )
+                if meeting_user:
+                    information[
+                        fqid_from_collection_and_id("meeting_user", meeting_user["id"])
+                    ] = build_history_information_data(
+                        changed_fields={"is_present": present}
+                    )
+        return information

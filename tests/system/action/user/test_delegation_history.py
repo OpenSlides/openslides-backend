@@ -19,6 +19,7 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         )
         self.colin_meeting_user_id = meeting_user_ids.pop(0)
         self.next_user_id = self.colin_id + 1
+        self.next_meeting_user_id = self.colin_meeting_user_id + 1
 
     def setup_delegation(self) -> None:
         self.set_models(
@@ -44,8 +45,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         to_id: int,
         prepend_to: list[str] = [],
         prepend_from: list[str] = [],
-        changed_fields_to: dict[str, list[int]] | None = None,
-        changed_fields_from: dict[str, list[int]] | None = None,
     ) -> None:
         self.assert_history_information(
             f"user/{to_id}",
@@ -55,7 +54,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{from_id}",
                 "meeting/1",
             ],
-            changed_fields_to,
         )
         self.assert_history_information(
             f"user/{from_id}",
@@ -65,15 +63,9 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{to_id}",
                 "meeting/1",
             ],
-            changed_fields_from,
         )
 
-    def assert_alice_redelegated_to(
-        self,
-        who_id: int,
-        prepend: list[str] = [],
-        changed_fields: dict[str, list[int]] | None = None,
-    ) -> None:
+    def assert_alice_redelegated_to(self, who_id: int, prepend: list[str] = []) -> None:
         self.assert_history_information(
             f"user/{who_id}",
             [
@@ -82,7 +74,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            changed_fields,
         )
         self.assert_history_information(
             f"user/{self.alice_id}",
@@ -101,6 +92,16 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
+        )
+
+    def assert_meeting_user_changed_fields(self, user_id: int) -> None:
+        self.assert_model_exists(
+            f"meeting_user/{self.next_meeting_user_id}",
+            {"user_id": user_id, "meeting_id": 1, "group_ids": [3]},
+        )
+        self.assert_history_information(
+            f"meeting_user/{self.next_meeting_user_id}",
+            changed_fields={"group_ids": {"added": [3]}},
         )
 
     def test_update_delegate_vote(self) -> None:
@@ -126,8 +127,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "group/3",
                 "meeting/1",
             ],
-            changed_fields_from={"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(self.next_user_id)
 
     def test_create_receive_delegated_vote(self) -> None:
         self.make_request(
@@ -144,8 +145,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "group/3",
                 "meeting/1",
             ],
-            changed_fields_to={"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(self.next_user_id)
 
     def test_update_re_delegate_vote(self) -> None:
         self.setup_delegation()
@@ -174,8 +175,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "group/3",
                 "meeting/1",
             ],
-            changed_fields={"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(self.next_user_id)
 
     def test_update_re_delegate_received_votes(self) -> None:
         self.setup_delegation()
@@ -347,6 +348,7 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
     def test_create_multiple_from_ids(self) -> None:
         eric_id = self.create_user("eric", [3])
         fredric_id = self.create_user("fredric", [3])
+        self.next_meeting_user_id += 2
         self.make_request(
             {
                 "vote_delegations_from_ids": [
@@ -384,8 +386,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 ],
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(self.next_user_id + 2)
         for id_ in [self.alice_id, self.bob_id, self.colin_id, eric_id, fredric_id]:
             self.assert_history_information(
                 f"user/{id_}",
@@ -418,8 +420,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(debra_id)
 
     def test_update_create_meeting_user_with_delegation(self) -> None:
         debra_id = self.create_user("debra")
@@ -446,5 +448,5 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )
+        self.assert_meeting_user_changed_fields(debra_id)

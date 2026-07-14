@@ -289,11 +289,14 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/1",
                 "Committee management changed",
             ],
-            {"group_ids": [1]},
+        )
+        self.assert_history_information(
+            "meeting_user/224", changed_fields={"group_ids": {"added": [1]}}
         )
         self.assert_history_information(
             "user/23", ["Vote delegated to {} in meeting {}", "user/22", "meeting/1"]
         )
+        self.assert_history_information("meeting_user/223")
 
     def test_update_set_and_reset_vote_forwarded(self) -> None:
         self.create_meeting()
@@ -491,7 +494,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "Personal data changed",
                 "Committee management changed",
             ],
-            {"group_ids": []},
+        )
+        self.assert_history_information(
+            "meeting_user/1111",
+            changed_fields={"group_ids": {"removed": [600]}},
         )
 
     def test_committee_manager_remove_committee_ids(self) -> None:
@@ -2682,8 +2688,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/3", "meeting/1"],
-            {"group_ids": [2, 3, 10, 11, 12]},
         )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={"group_ids": {"added": [3]}},
+        )
+        self.assert_history_information("meeting_user/2")
 
     def test_update_history_add_group_to_default_group(self) -> None:
         self.create_meeting()
@@ -2703,8 +2713,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
-            {"group_ids": [2, 10, 11, 12]},
         )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={
+                "group_ids": {
+                    "added": [2],
+                    "removed": [1],
+                },
+            },
+        )
+        self.assert_history_information("meeting_user/2")
 
     def test_update_history_add_multiple_groups(self) -> None:
         self.create_meeting()
@@ -2724,8 +2743,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to multiple groups in meeting {}", "meeting/1"],
-            {"group_ids": [2, 3, 10, 11, 12]},
         )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={
+                "group_ids": {
+                    "added": [2, 3],
+                    "removed": [1],
+                },
+            },
+        )
+        self.assert_history_information("meeting_user/2")
 
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
         self.create_meeting()
@@ -2744,7 +2772,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
-            {"group_ids": [1, 2]},
+        )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={"group_ids": {"added": [2]}},
         )
 
     def test_update_history_remove_group(self) -> None:
@@ -2769,7 +2800,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant removed from meeting {}", "meeting/1"],
-            {"group_ids": []},
+        )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={"group_ids": {"removed": [1]}},
         )
 
     def test_update_fields_with_equal_value_no_history(self) -> None:
@@ -2866,7 +2900,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/4",
                 "meeting/4",
             ],
-            {"group_ids": [1, 4]},
+        )
+        self.assert_history_information("meeting_user/1")
+        self.assert_history_information(
+            "meeting_user/2",
+            changed_fields={"group_ids": {"added": [4]}},
         )
 
     def test_update_participant_data_in_multiple_meetings_with_existing_meetings(
@@ -2916,7 +2954,113 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/7",
                 "meeting/7",
             ],
-            {"group_ids": [1, 4, 7]},
+        )
+        self.assert_history_information("meeting_user/1")
+        self.assert_history_information(
+            "meeting_user/2",
+            changed_fields={"group_ids": {"added": [4]}},
+        )
+        self.assert_history_information(
+            "meeting_user/3",
+            changed_fields={"group_ids": {"added": [7]}},
+        )
+
+    def test_update_participant_data_in_multiple_meetings_log_is_present(
+        self,
+    ) -> None:
+        """
+        Checks that history information for the new meeting user contains
+        'is_present' when user is present in meeting before the request.
+        """
+        bob_id = self.create_user("bob")
+        self.create_meeting(meeting_data={"present_user_ids": [bob_id]})
+        self.create_meeting(4, meeting_data={"present_user_ids": [bob_id]})
+        self.create_meeting(7)
+        self.set_user_groups(bob_id, [1])[0]
+        response = self.request_multi(
+            "user.update",
+            [
+                {
+                    "id": bob_id,
+                    "meeting_id": 4,
+                    "group_ids": [4],
+                },
+                {
+                    "id": bob_id,
+                    "meeting_id": 7,
+                    "group_ids": [7],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            f"user/{bob_id}",
+            [
+                "Participant added to meeting {}.",
+                "meeting/4",
+                "Participant added to group {} in meeting {}.",
+                "group/4",
+                "meeting/4",
+                "Participant added to meeting {}.",
+                "meeting/7",
+                "Participant added to group {} in meeting {}.",
+                "group/7",
+                "meeting/7",
+            ],
+        )
+        self.assert_history_information("meeting_user/1")
+        self.assert_history_information(
+            "meeting_user/2",
+            changed_fields={"group_ids": {"added": [4]}, "is_present": True},
+        )
+        self.assert_history_information(
+            "meeting_user/3",
+            changed_fields={"group_ids": {"added": [7]}},
+        )
+
+    def test_update_remove_participant_from_multiple_meetings_log_is_present(
+        self,
+    ) -> None:
+        bob_id = self.create_user("bob")
+        self.create_meeting(meeting_data={"present_user_ids": [bob_id]})
+        self.create_meeting(4, meeting_data={"present_user_ids": [bob_id]})
+        self.create_meeting(7)
+        self.set_user_groups(bob_id, [1, 4, 7])
+        response = self.request_multi(
+            "user.update",
+            [
+                {
+                    "id": bob_id,
+                    "meeting_id": 4,
+                    "group_ids": [],
+                },
+                {
+                    "id": bob_id,
+                    "meeting_id": 7,
+                    "group_ids": [],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            f"user/{bob_id}",
+            [
+                "Set not present in meeting {}",
+                "meeting/4",
+                "Participant removed from meeting {}",
+                "meeting/4",
+                "Participant removed from meeting {}",
+                "meeting/7",
+            ],
+        )
+        self.assert_history_information("meeting_user/1")
+        self.assert_history_information(
+            "meeting_user/2",
+            changed_fields={"group_ids": {"removed": [4]}, "is_present": False},
+        )
+        self.assert_history_information(
+            "meeting_user/3",
+            changed_fields={"group_ids": {"removed": [7]}},
         )
 
     def test_update_saml_id__can_change_own_password_error(self) -> None:

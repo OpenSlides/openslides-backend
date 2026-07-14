@@ -67,7 +67,7 @@ def calculate_history_event_payloads(
         (
             model_fqid_to_entry_id[fqid],
             fqid,
-            data["entries"],
+            data.get("entries") or None,
             data.get("changed_fields"),
         )
         for fqid, data in information.items()
