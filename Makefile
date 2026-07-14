@@ -14,10 +14,15 @@ build-tests:
 
 # Development redirects
 
+.SERVICE_TARGETS := auth backend vote
+
+$(.SERVICE_TARGETS):
+	@echo ""
+
 .PHONY: dev
 
-dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log:
-	@@$(MAKE) -C .. $@ backend
+dev dev-help dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log dev-log-attach dev-restart dev-full-restart dev-docker-reset:
+	@@$(MAKE) -C .. $@ $(filter-out $@, $(MAKECMDGOALS)) SERVICE_COMPOSE_SETUP=backend
 
 # Tests
 
