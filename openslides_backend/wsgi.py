@@ -6,7 +6,6 @@ from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionView, PresenterView
 from .services.auth.adapter import AuthenticationHTTPAdapter
 from .services.media.adapter import MediaServiceAdapter
-from .services.vote.adapter import VoteAdapter
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import View, WSGIApplication
 
@@ -21,7 +20,6 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
     env = providers.Object(0)
     authentication = providers.Singleton(AuthenticationHTTPAdapter, logging)
     media = providers.Singleton(MediaServiceAdapter, config.media_url, logging)
-    vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
 
 
 class OpenSlidesBackendWSGI(containers.DeclarativeContainer):

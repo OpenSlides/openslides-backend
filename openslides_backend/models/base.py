@@ -10,7 +10,6 @@ from ..shared.patterns import Collection
 from . import fields
 
 model_registry: dict[Collection, type["Model"]] = {}
-collections_managed_by_vote: list[Collection] = []
 
 
 def json_dict_to_non_json_data_types(json: dict[str, Any]) -> None:
@@ -60,8 +59,6 @@ class ModelMetaClass(type):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
             model_registry[new_class.collection] = new_class
-            if new_class.managed_by == "vote":
-                collections_managed_by_vote.append(new_class.collection)
         return new_class
 
 

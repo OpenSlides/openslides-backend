@@ -13,7 +13,6 @@ from .mixins import (
 class ActionWorker(Model):
     collection = "action_worker"
     verbose_name = "action worker"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -35,7 +34,6 @@ class ActionWorker(Model):
 class AgendaItem(Model, AgendaItemModelMixin):
     collection = "agenda_item"
     verbose_name = "agenda item"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     item_number = fields.CharField()
@@ -94,7 +92,6 @@ class AgendaItem(Model, AgendaItemModelMixin):
 class Assignment(Model):
     collection = "assignment"
     verbose_name = "assignment"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
@@ -172,7 +169,6 @@ class Assignment(Model):
 class AssignmentCandidate(Model):
     collection = "assignment_candidate"
     verbose_name = "assignment candidate"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField(default=10000)
@@ -190,7 +186,6 @@ class AssignmentCandidate(Model):
 class ChatGroup(Model):
     collection = "chat_group"
     verbose_name = "chat group"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -230,7 +225,6 @@ class ChatGroup(Model):
 class ChatMessage(Model):
     collection = "chat_message"
     verbose_name = "chat message"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     content = fields.HTMLStrictField(required=True)
@@ -249,7 +243,6 @@ class ChatMessage(Model):
 class Committee(Model):
     collection = "committee"
     verbose_name = "committee"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -344,7 +337,6 @@ class Committee(Model):
 class Gender(Model):
     collection = "gender"
     verbose_name = "gender"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True, unique=True)
@@ -359,7 +351,6 @@ class Gender(Model):
 class Group(Model):
     collection = "group"
     verbose_name = "group"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     external_id = fields.CharField()
@@ -535,7 +526,6 @@ class Group(Model):
 class HistoryEntry(Model):
     collection = "history_entry"
     verbose_name = "history entry"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     entries = fields.TextArrayField()
@@ -559,7 +549,6 @@ class HistoryEntry(Model):
 class HistoryPosition(Model):
     collection = "history_position"
     verbose_name = "history position"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     timestamp = fields.TimestampField(read_only=True)
@@ -575,7 +564,6 @@ class HistoryPosition(Model):
 class ImportPreview(Model):
     collection = "import_preview"
     verbose_name = "import preview"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(
@@ -594,7 +582,6 @@ class ImportPreview(Model):
 class ListOfSpeakers(Model):
     collection = "list_of_speakers"
     verbose_name = "list of speakers"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     closed = fields.BooleanField(default=False)
@@ -642,7 +629,6 @@ class ListOfSpeakers(Model):
 class Mediafile(Model):
     collection = "mediafile"
     verbose_name = "mediafile"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(
@@ -685,7 +671,6 @@ class Mediafile(Model):
 class Meeting(Model, MeetingModelMixin):
     collection = "meeting"
     verbose_name = "meeting"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     external_id = fields.CharField(unique=True)
@@ -1334,7 +1319,6 @@ class Meeting(Model, MeetingModelMixin):
 class MeetingMediafile(Model):
     collection = "meeting_mediafile"
     verbose_name = "meeting mediafile"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     mediafile_id = fields.RelationField(
@@ -1454,7 +1438,6 @@ class MeetingMediafile(Model):
 class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
     collection = "meeting_poll_default"
     verbose_name = "meeting poll default"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     sort_result_by_votes = fields.BooleanField(default=True)
@@ -1493,7 +1476,6 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
 class MeetingUser(Model):
     collection = "meeting_user"
     verbose_name = "meeting user"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     comment = fields.HTMLStrictField()
@@ -1589,7 +1571,6 @@ class MeetingUser(Model):
 class Motion(Model):
     collection = "motion"
     verbose_name = "motion"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     number = fields.CharField()
@@ -1808,7 +1789,6 @@ class Motion(Model):
 class MotionBlock(Model):
     collection = "motion_block"
     verbose_name = "motion block"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
@@ -1847,7 +1827,6 @@ class MotionBlock(Model):
 class MotionCategory(Model):
     collection = "motion_category"
     verbose_name = "motion category"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -1880,7 +1859,6 @@ class MotionCategory(Model):
 class MotionChangeRecommendation(Model):
     collection = "motion_change_recommendation"
     verbose_name = "motion change recommendation"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     rejected = fields.BooleanField(default=False)
@@ -1905,7 +1883,6 @@ class MotionChangeRecommendation(Model):
 class MotionComment(Model):
     collection = "motion_comment"
     verbose_name = "motion comment"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     comment = fields.HTMLStrictField(required=True)
@@ -1923,7 +1900,6 @@ class MotionComment(Model):
 class MotionCommentSection(Model):
     collection = "motion_comment_section"
     verbose_name = "motion comment section"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -1971,7 +1947,6 @@ class MotionCommentSection(Model):
 class MotionEditor(Model):
     collection = "motion_editor"
     verbose_name = "motion editor"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
@@ -1987,7 +1962,6 @@ class MotionEditor(Model):
 class MotionState(Model):
     collection = "motion_state"
     verbose_name = "motion state"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2074,7 +2048,6 @@ class MotionState(Model):
 class MotionSubmitter(Model):
     collection = "motion_submitter"
     verbose_name = "motion submitter"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
@@ -2090,7 +2063,6 @@ class MotionSubmitter(Model):
 class MotionSupporter(Model):
     collection = "motion_supporter"
     verbose_name = "motion supporter"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     meeting_user_id = fields.RelationField(to={"meeting_user": "motion_supporter_ids"})
@@ -2105,7 +2077,6 @@ class MotionSupporter(Model):
 class MotionWorkflow(Model):
     collection = "motion_workflow"
     verbose_name = "motion workflow"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2140,7 +2111,6 @@ class MotionWorkflow(Model):
 class MotionWorkingGroupSpeaker(Model):
     collection = "motion_working_group_speaker"
     verbose_name = "motion working group speaker"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
@@ -2158,7 +2128,6 @@ class MotionWorkingGroupSpeaker(Model):
 class Organization(Model):
     collection = "organization"
     verbose_name = "organization"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField()
@@ -2245,7 +2214,6 @@ class Organization(Model):
 class OrganizationTag(Model):
     collection = "organization_tag"
     verbose_name = "organization tag"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2272,7 +2240,6 @@ class OrganizationTag(Model):
 class PersonalNote(Model):
     collection = "personal_note"
     verbose_name = "personal note"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     note = fields.HTMLStrictField()
@@ -2291,7 +2258,6 @@ class PersonalNote(Model):
 class PointOfOrderCategory(Model):
     collection = "point_of_order_category"
     verbose_name = "point of order category"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     text = fields.CharField(required=True)
@@ -2307,7 +2273,6 @@ class PointOfOrderCategory(Model):
 class Poll(Model, PollModelMixin):
     collection = "poll"
     verbose_name = "poll"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
@@ -2319,6 +2284,7 @@ class Poll(Model, PollModelMixin):
             "poll_config_selection": "poll_id",
             "poll_config_approval": "poll_id",
         },
+        on_delete=fields.OnDelete.CASCADE,
         required=True,
     )
     option_ids = fields.RelationListField(
@@ -2411,7 +2377,6 @@ class Poll(Model, PollModelMixin):
 class PollBallot(Model):
     collection = "poll_ballot"
     verbose_name = "poll ballot"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.DecimalField(constant=True, default="1.000000")
@@ -2431,7 +2396,6 @@ class PollBallot(Model):
 class PollConfigApproval(Model):
     collection = "poll_config_approval"
     verbose_name = "poll config approval"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
@@ -2456,7 +2420,6 @@ class PollConfigApproval(Model):
 class PollConfigRatingApproval(Model):
     collection = "poll_config_rating_approval"
     verbose_name = "poll config rating approval"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
@@ -2484,7 +2447,6 @@ class PollConfigRatingApproval(Model):
 class PollConfigRatingScore(Model):
     collection = "poll_config_rating_score"
     verbose_name = "poll config rating score"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
@@ -2513,7 +2475,6 @@ class PollConfigRatingScore(Model):
 class PollConfigSelection(Model):
     collection = "poll_config_selection"
     verbose_name = "poll config selection"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
@@ -2542,7 +2503,6 @@ class PollConfigSelection(Model):
 class PollConfigStvScottish(Model):
     collection = "poll_config_stv_scottish"
     verbose_name = "poll config stv scottish"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
@@ -2554,7 +2514,6 @@ class PollConfigStvScottish(Model):
 class PollOption(Model):
     collection = "poll_option"
     verbose_name = "poll option"
-    managed_by = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(to={"poll": "option_ids"}, required=True)
@@ -2566,7 +2525,6 @@ class PollOption(Model):
 class Projection(Model):
     collection = "projection"
     verbose_name = "projection"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     options = fields.JSONField()
@@ -2607,7 +2565,6 @@ class Projection(Model):
 class Projector(Model):
     collection = "projector"
     verbose_name = "projector"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2709,7 +2666,6 @@ class Projector(Model):
 class ProjectorCountdown(Model):
     collection = "projector_countdown"
     verbose_name = "projector countdown"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
@@ -2736,7 +2692,6 @@ class ProjectorCountdown(Model):
 class ProjectorMessage(Model):
     collection = "projector_message"
     verbose_name = "projector message"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     message = fields.HTMLStrictField(required=True)
@@ -2753,7 +2708,6 @@ class ProjectorMessage(Model):
 class Speaker(Model):
     collection = "speaker"
     verbose_name = "speaker"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     begin_time = fields.TimestampField()
@@ -2794,7 +2748,6 @@ class Speaker(Model):
 class StructureLevel(Model):
     collection = "structure_level"
     verbose_name = "structure level"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2822,7 +2775,6 @@ class StructureLevel(Model):
 class StructureLevelListOfSpeakers(Model):
     collection = "structure_level_list_of_speakers"
     verbose_name = "structure level list of speakers"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     structure_level_id = fields.RelationField(
@@ -2867,7 +2819,6 @@ class StructureLevelListOfSpeakers(Model):
 class Tag(Model):
     collection = "tag"
     verbose_name = "tag"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2894,7 +2845,6 @@ class Tag(Model):
 class Theme(Model):
     collection = "theme"
     verbose_name = "theme"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
@@ -2955,7 +2905,6 @@ class Theme(Model):
 class Topic(Model):
     collection = "topic"
     verbose_name = "topic"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
@@ -3011,7 +2960,6 @@ class Topic(Model):
 class User(Model):
     collection = "user"
     verbose_name = "user"
-    managed_by = "backend"
 
     id = fields.IntegerField(required=True, constant=True)
     username = fields.CharField(required=True, unique=True)

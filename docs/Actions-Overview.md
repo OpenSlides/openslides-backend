@@ -178,6 +178,17 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [point_of_order_category.delete](actions/point_of_order_category.delete.md)
 - [point_of_order_category.update](actions/point_of_order_category.update.md)
 
+## Poll related objects
+
+- [poll.delete](actions/poll.delete.md)
+- [poll_ballot.delete](actions/poll_ballot.delete.md)
+- [poll_config_approval.delete](actions/poll_config_approval.delete.md)
+- [poll_config_rating_approval.delete](actions/poll_config_rating_approval.delete.md)
+- [poll_config_rating_score.delete](actions/poll_config_rating_score.delete.md)
+- [poll_config_selection.delete](actions/poll_config_selection.delete.md)
+- [poll_config_stv_scottish.delete](actions/poll_config_stv_scottish.delete.md)
+- [poll_option.delete](actions/poll_option.delete.md)
+
 ## Speaker
 
 - [speaker.create](actions/speaker.create.md)
