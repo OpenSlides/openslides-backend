@@ -1244,12 +1244,27 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
 
-        self.assert_model_exists("poll/1", {"ballot_user_ids": [1, 2]})
-        self.assert_model_exists("poll/2", {"ballot_user_ids": [3]})
+        self.assert_model_exists(
+            "poll/1",
+            {"ballot_ids": [11, 12], "ballot_user_ids": [1, 2]},
+        )
+        self.assert_model_exists(
+            "poll/2",
+            {"ballot_ids": [13], "ballot_user_ids": [3]},
+        )
         for id_ in [3, 4]:
-            self.assert_model_exists(f"poll/{id_}", {"ballot_user_ids": None})
-        self.assert_model_exists("poll/5", {"ballot_user_ids": [4]})
-        self.assert_model_exists("poll/6", {"ballot_user_ids": [5, 6]})
+            self.assert_model_exists(
+                f"poll/{id_}",
+                {"ballot_ids": None, "ballot_user_ids": None},
+            )
+        self.assert_model_exists(
+            "poll/5",
+            {"ballot_ids": [14], "ballot_user_ids": [4]},
+        )
+        self.assert_model_exists(
+            "poll/6",
+            {"ballot_ids": [15, 16], "ballot_user_ids": [5, 6]},
+        )
 
     def test_merge_with_polls_correct(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
