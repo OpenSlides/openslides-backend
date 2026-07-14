@@ -221,6 +221,15 @@ class MigrationHelper:
         )
 
     @staticmethod
+    def get_last_migration_directory() -> str:
+        """Returns the directory to the last migration. Currently only supports numbers until 1099."""
+        idx_as_string = str(MigrationHelper.get_backend_migration_index())
+        for name in os.listdir(MIGRATIONS_PATH):
+            if idx_as_string in name:
+                return name
+        raise Exception("Could not find last migration directory.")
+
+    @staticmethod
     def get_backend_migration_index() -> int:
         MigrationHelper.load_migrations()
         return max(MigrationHelper.migrations)
