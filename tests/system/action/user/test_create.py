@@ -133,7 +133,10 @@ class UserCreateActionTest(BaseActionTestCase):
                 "group/114",
                 "meeting/114",
             ],
-            {"group_ids": [114]},
+        )
+        self.assert_history_information(
+            "meeting_user/1",
+            changed_fields={"group_ids": {"added": [114]}},
         )
 
     def test_create_comment(self) -> None:

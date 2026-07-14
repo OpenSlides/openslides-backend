@@ -28,6 +28,7 @@ class MeetingUserUpdate(
 
     merge_fields = [
         "assignment_candidate_ids",
+        "history_entry_ids",
         "motion_working_group_speaker_ids",
         "motion_editor_ids",
         "motion_supporter_ids",

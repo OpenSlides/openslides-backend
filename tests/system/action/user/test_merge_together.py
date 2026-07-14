@@ -5,6 +5,8 @@ from decimal import Decimal
 from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
@@ -487,44 +489,110 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "user/2",
                     "model_id": "user/2",
                     "position_id": 1,
-                    "entries": ["User created", "User added to meetings"],
+                    "entries": [
+                        "User created",
+                        "User added to meetings",
+                        "User added to groups 1, 2",
+                    ],
                 },
                 "history_entry/2": {
+                    "original_model_id": "meeting_user/12",
+                    "model_id": "meeting_user/12",
+                    "position_id": 1,
+                    "changed_fields": Jsonb({"group_ids": {"added": [1, 2]}}),
+                },
+                "history_entry/3": {
                     "original_model_id": "user/3",
                     "model_id": "user/3",
                     "position_id": 1,
                     "entries": ["User created"],
                 },
-                "history_entry/3": {
+                "history_entry/4": {
                     "original_model_id": "user/4",
                     "model_id": "user/4",
                     "position_id": 1,
-                    "entries": ["User created", "User added to meetings"],
+                    "entries": [
+                        "User created",
+                        "User added to meetings",
+                        "User added to groups 2, 4, 9",
+                    ],
+                },
+                "history_entry/5": {
+                    "original_model_id": "meeting_user/14",
+                    "model_id": "meeting_user/14",
+                    "position_id": 1,
+                    "changed_fields": Jsonb({"group_ids": {"added": [2]}}),
+                },
+                "history_entry/6": {
+                    "original_model_id": "meeting_user/44",
+                    "model_id": "meeting_user/44",
+                    "position_id": 1,
+                    "changed_fields": Jsonb({"group_ids": {"added": [4]}}),
+                },
+                "history_entry/7": {
+                    "original_model_id": "meeting_user/74",
+                    "model_id": "meeting_user/74",
+                    "position_id": 1,
+                    "changed_fields": Jsonb({"group_ids": {"added": [9]}}),
                 },
                 "history_position/2": {
                     "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
                     "original_user_id": 4,
                     "user_id": 4,
                 },
-                "history_entry/4": {
+                "history_entry/8": {
                     "original_model_id": "user/2",
                     "model_id": "user/2",
                     "position_id": 2,
-                    "entries": ["User added to meetings"],
+                    "entries": [
+                        "User added to meetings",
+                        "User added to group 5",
+                    ],
                 },
-                "history_entry/5": {
+                "history_entry/9": {
+                    "original_model_id": "meeting_user/42",
+                    "model_id": "meeting_user/42",
+                    "position_id": 2,
+                    "changed_fields": Jsonb({"group_ids": {"added": [5]}}),
+                },
+                "history_entry/10": {
                     "original_model_id": "user/3",
                     "model_id": "user/3",
                     "position_id": 2,
-                    "entries": ["User added to meetings"],
+                    "entries": [
+                        "User added to meetings",
+                        "User added to groups 4, 5, 8",
+                    ],
                 },
-                "history_entry/6": {
+                "history_entry/11": {
+                    "original_model_id": "meeting_user/43",
+                    "model_id": "meeting_user/43",
+                    "position_id": 2,
+                    "changed_fields": Jsonb({"group_ids": {"added": [4, 5]}}),
+                },
+                "history_entry/12": {
+                    "original_model_id": "meeting_user/73",
+                    "model_id": "meeting_user/73",
+                    "position_id": 2,
+                    "changed_fields": Jsonb({"group_ids": {"added": [8]}}),
+                },
+                "history_entry/13": {
                     "original_model_id": "user/5",
                     "model_id": "user/5",
                     "position_id": 2,
-                    "entries": ["User created", "User added to meetings"],
+                    "entries": [
+                        "User created",
+                        "User added to meetings",
+                        "User added to group 10",
+                    ],
                 },
-                "history_entry/7": {
+                "history_entry/14": {
+                    "original_model_id": "meeting_user/105",
+                    "model_id": "meeting_user/105",
+                    "position_id": 2,
+                    "changed_fields": Jsonb({"group_ids": {"added": [10]}}),
+                },
+                "history_entry/15": {
                     "original_model_id": "user/6",
                     "model_id": "user/6",
                     "position_id": 2,
@@ -551,6 +619,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "organization_id": 1,
                 "default_password": "user2",
                 "meeting_user_ids": [12, 42, 106, 107],
+                "history_entry_ids": [1, 3, 4, 8, 10, 13, 15, 16],
                 "password": password,
                 "pronoun": "he",
                 "first_name": "Nick",
@@ -583,6 +652,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "about_me": "I am an enthusiastic explorer",
                 "comment": "Nicks everything",
                 "number": "NOMNOM",
+                "history_entry_ids": [2, 5],
             },
         )
         self.assert_model_exists(
@@ -593,6 +663,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "number": "num?",
                 "vote_weight": Decimal("2"),
                 "comment": "Comment 1",
+                "history_entry_ids": [6, 9, 11],
             },
         )
         self.assert_model_exists(
@@ -602,6 +673,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 7,
                 "about_me": "I have a long beard",
                 "vote_weight": Decimal("1.234567"),
+                "history_entry_ids": [7, 12],
             },
         )
         self.assert_model_exists(
@@ -610,6 +682,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "user_id": 2,
                 "meeting_id": 10,
                 "comment": "This is a comment",
+                "history_entry_ids": [14],
             },
         )
 
@@ -646,51 +719,117 @@ class UserMergeTogether(BaseActionTestCase):
                 "timestamp": datetime.fromtimestamp(100000, ZoneInfo("UTC")),
                 "original_user_id": 1,
                 "user_id": 1,
-                "entry_ids": [1, 2, 3],
+                "entry_ids": [1, 2, 3, 4, 5, 6, 7],
             },
             "history_entry/1": {
                 "original_model_id": "user/2",
                 "model_id": "user/2",
                 "position_id": 1,
-                "entries": ["User created", "User added to meetings"],
+                "entries": [
+                    "User created",
+                    "User added to meetings",
+                    "User added to groups 1, 2",
+                ],
             },
             "history_entry/2": {
+                "original_model_id": "meeting_user/12",
+                "model_id": "meeting_user/12",
+                "position_id": 1,
+                "changed_fields": {"group_ids": {"added": [1, 2]}},
+            },
+            "history_entry/3": {
                 "original_model_id": "user/3",
                 "model_id": "user/2",
                 "position_id": 1,
                 "entries": ["User created"],
             },
-            "history_entry/3": {
+            "history_entry/4": {
                 "original_model_id": "user/4",
                 "model_id": "user/2",
                 "position_id": 1,
-                "entries": ["User created", "User added to meetings"],
+                "entries": [
+                    "User created",
+                    "User added to meetings",
+                    "User added to groups 2, 4, 9",
+                ],
+            },
+            "history_entry/5": {
+                "original_model_id": "meeting_user/14",
+                "model_id": "meeting_user/12",
+                "position_id": 1,
+                "changed_fields": {"group_ids": {"added": [2]}},
+            },
+            "history_entry/6": {
+                "original_model_id": "meeting_user/44",
+                "model_id": "meeting_user/42",
+                "position_id": 1,
+                "changed_fields": {"group_ids": {"added": [4]}},
+            },
+            "history_entry/7": {
+                "original_model_id": "meeting_user/74",
+                "model_id": "meeting_user/106",
+                "position_id": 1,
+                "changed_fields": {"group_ids": {"added": [9]}},
             },
             "history_position/2": {
                 "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
                 "original_user_id": 4,
                 "user_id": 2,
-                "entry_ids": [4, 5, 6, 7],
+                "entry_ids": [8, 9, 10, 11, 12, 13, 14, 15],
             },
-            "history_entry/4": {
+            "history_entry/8": {
                 "original_model_id": "user/2",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": ["User added to meetings"],
+                "entries": [
+                    "User added to meetings",
+                    "User added to group 5",
+                ],
             },
-            "history_entry/5": {
+            "history_entry/9": {
+                "original_model_id": "meeting_user/42",
+                "model_id": "meeting_user/42",
+                "position_id": 2,
+                "changed_fields": {"group_ids": {"added": [5]}},
+            },
+            "history_entry/10": {
                 "original_model_id": "user/3",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": ["User added to meetings"],
+                "entries": [
+                    "User added to meetings",
+                    "User added to groups 4, 5, 8",
+                ],
             },
-            "history_entry/6": {
+            "history_entry/11": {
+                "original_model_id": "meeting_user/43",
+                "model_id": "meeting_user/42",
+                "position_id": 2,
+                "changed_fields": {"group_ids": {"added": [4, 5]}},
+            },
+            "history_entry/12": {
+                "original_model_id": "meeting_user/73",
+                "model_id": "meeting_user/106",
+                "position_id": 2,
+                "changed_fields": {"group_ids": {"added": [8]}},
+            },
+            "history_entry/13": {
                 "original_model_id": "user/5",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": ["User created", "User added to meetings"],
+                "entries": [
+                    "User created",
+                    "User added to meetings",
+                    "User added to group 10",
+                ],
             },
-            "history_entry/7": {
+            "history_entry/14": {
+                "original_model_id": "meeting_user/105",
+                "model_id": "meeting_user/107",
+                "position_id": 2,
+                "changed_fields": {"group_ids": {"added": [10]}},
+            },
+            "history_entry/15": {
                 "original_model_id": "user/6",
                 "model_id": "user/2",
                 "position_id": 2,
