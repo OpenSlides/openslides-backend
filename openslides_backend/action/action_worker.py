@@ -35,7 +35,7 @@ class ActionWorkerState(StrEnum):
 
 def concatenate_action_names(payload: Payload) -> str:
     result = ",".join(elem.get("action", "") for elem in payload)
-    if len(result) > 255:
+    if len(result) > 256:
         action_names = result.split(",")
         result = ""
         prev_action_name = action_names[0]
@@ -48,8 +48,8 @@ def concatenate_action_names(payload: Payload) -> str:
                 prev_action_name = action_name
                 counter = 1
         result += f"{prev_action_name}_{counter}"
-        if len(result) > 255:
-            result = result[:254] + "…"
+        if len(result) > 256:
+            result = result[:255] + "…"
     return result
 
 
