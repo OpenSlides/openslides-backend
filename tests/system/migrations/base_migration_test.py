@@ -47,6 +47,7 @@ MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 class BaseMigrationTestCase(TestCase):
     # has to be set by subclass
     migration_number: int
+    migration_dir_list: list[str]
 
     def run(self, result: UnitTestResult | None = None) -> UnitTestResult | None:
         """
@@ -70,23 +71,34 @@ class BaseMigrationTestCase(TestCase):
 
         self.migrate_previous()
 
-        MigrationHelper.load_migrations()
         # Only migrate tested migration in following test.
         patcher = patch(
             "os.listdir",
-            return_value=[MigrationHelper.migrations[self.migration_number]],
+            return_value=self.migration_dir_list,
         )
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def tearDown(self) -> None:
+    def cleanup_helper_class(self) -> None:
         if MigrationHelper.migrate_thread:
             self.wait_for_migration_thread(15)
             MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
         if MigrationHelper.migrate_thread_stream:
+            MigrationHelper.migrate_thread_stream_can_be_closed = True
             MigrationHelper.close_migrate_thread_stream()
+
+    def tearDown(self) -> None:
+        self.cleanup_helper_class()
         super().tearDown()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.migration_dir_list = [
+            f
+            for f in os.listdir(MIGRATIONS_PATH)
+            if re.match("mig_\\d{4}", f[:8]) and int(f[4:8]) <= cls.migration_number
+        ]
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -162,18 +174,11 @@ class BaseMigrationTestCase(TestCase):
             with patch("os.listdir", return_value=filenames):
                 manager = MigrationManager(Mock(), Mock(), Mock())
                 result = manager.handle_request({"cmd": "migrate", "verbose": True})
-                self.wait_for_migration_thread(15)
+                self.cleanup_helper_class()
                 with self.connection.cursor() as curs:
                     MigrationHelper.assert_migration_index(curs)
         else:
             result = {}
-
-        # mimik reset or similar mechanism
-        if MigrationHelper.migrate_thread_stream:
-            MigrationHelper.migrate_thread_stream.close()
-        MigrationHelper.migrate_thread_stream = None
-        MigrationHelper.migrate_thread_stream_can_be_closed = False
-        MigrationHelper.migrate_thread_exception = None
 
         return result
 

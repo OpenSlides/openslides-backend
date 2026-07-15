@@ -62,7 +62,7 @@ class MigrationHelper:
     Helper class containing static methods for handling the migrations. Reads and executes them.
     """
 
-    migrations: dict = {}
+    migrations: dict[int, str] = {}
     migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_read_pos: int = 0
@@ -113,8 +113,8 @@ class MigrationHelper:
     @staticmethod
     def load_migrations() -> None:
         """
-        Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
-        accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the MIN_NON_REL_MIGRATION
+        Lists every migration with its number and subdirectory name
+        from the MIGRATION_DIRECTORY_PATH above the MIN_NON_REL_MIGRATION
         and stores them in MigrationHelper.migrations for future reference.
 
         Returns:
