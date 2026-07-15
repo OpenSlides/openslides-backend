@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.mig_0100_init_reldb.migration import (
-    ORIGIN_COLLECTION_LIST,
+    Migration,
     Sql_helper,
 )
 from openslides_backend.migrations.migration_handler import MigrationHandler
@@ -324,10 +324,10 @@ For more information, see
         # Prepare what manager would.
         MigrationHelper.load_migrations()
         # 5) Call data_manipulation of module
+        MigrationHelper.migrate_thread_stream = StringIO()
         with get_new_os_conn() as version_conn:
             with version_conn.cursor() as cursor:
                 MigrationHelper.add_new_migrations_to_version(cursor)
-            MigrationHelper.migrate_thread_stream = StringIO()
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
                     handler = MigrationHandler(
@@ -357,9 +357,9 @@ For more information, see
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute(
-                    "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'"
+                    "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
                 )
-                tables: list[str] = [x["table_name"] for x in curs.fetchall()]
+                tables: list[str] = [x["tablename"] for x in curs.fetchall()]
                 table_to_data = {}
                 for tablename in tables:
                     curs.execute(f"SELECT * FROM {tablename};")
@@ -424,7 +424,7 @@ For more information, see
                     assert fail[1] == {
                         "migration_index": 100,
                         "migration_state": MigrationState.MIGRATION_FAILED,
-                        "replace_tables": {k: {} for k in ORIGIN_COLLECTION_LIST},
+                        "replace_tables": {k: {} for k in Migration.ORIGIN_COLLECTIONS},
                     }
                 case "organization_t":
                     assert len(prev) == 0
@@ -489,7 +489,7 @@ For more information, see
                 assert reset[1] == {
                     "migration_index": 100,
                     "migration_state": MigrationState.MIGRATION_REQUIRED,
-                    "replace_tables": {k: {} for k in ORIGIN_COLLECTION_LIST},
+                    "replace_tables": {k: {} for k in Migration.ORIGIN_COLLECTIONS},
                 }
             else:
                 self.assertEqual(prev, reset, f"Failed for {tablename}")

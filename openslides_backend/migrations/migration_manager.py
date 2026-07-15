@@ -57,9 +57,7 @@ class MigrationManager:
         with get_new_os_conn() as conn:
             with conn.cursor() as cursor:
                 MigrationHelper.add_new_migrations_to_version(cursor)
-                self.target_migration_index = (
-                    MigrationHelper.get_backend_migration_index()
-                )
+        self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
         """
@@ -93,6 +91,22 @@ class MigrationManager:
         target_migration_index: The current backend index that is targeted by the migrations.
         migratable_models: Rough amounts per collection to be migrated.
         """
+
+        def count(table: str, curs: Cursor[DictRow]) -> int:
+            if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
+                # initial migration uses the models instead of table_t to count models
+                statement_part = sql.SQL(
+                    "models WHERE fqid LIKE '{collection}/%' and deleted = false"
+                ).format(collection=sql.SQL(table[:-2]))
+            elif table not in all_tables:
+                return 0
+            else:
+                statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
+            response = curs.execute(
+                sql.SQL("SELECT COUNT(*) FROM ") + statement_part
+            ).fetchone()
+            return (response or {}).get("count", 0)
+
         with self.ver_conn.cursor() as cursor:
             current_migration_index = MigrationHelper.get_database_migration_index(
                 cursor
@@ -101,23 +115,6 @@ class MigrationManager:
                 all_tables = MigrationHelper.get_public_tables(cursor)
             else:
                 all_tables = set()
-
-            def count(table: str, curs: Cursor[DictRow]) -> int:
-                if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
-                    # initial migration uses the models instead of table_t to count models
-                    statement_part = sql.SQL(
-                        "models WHERE fqid LIKE '{collection}/%' and deleted = false"
-                    ).format(collection=sql.SQL(table[:-2]))
-                elif table not in all_tables:
-                    return 0
-                else:
-                    statement_part = sql.SQL("{table}").format(
-                        table=sql.Identifier(table)
-                    )
-                response = cursor.execute(
-                    sql.SQL("SELECT COUNT(*) FROM ") + statement_part
-                ).fetchone()
-                return (response or {}).get("count", 0)
 
             if not MigrationHelper.migrate_thread_exception:
                 migration_indices = MigrationHelper.get_indices_from_database(cursor)
@@ -248,11 +245,13 @@ class MigrationManager:
                 MigrationHelper.migrate_thread_exception = e
                 with get_new_os_conn() as version_conn:
                     version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
-                    with version_conn.cursor() as cursor:
-                        relevant_mis = MigrationHelper.get_unfinalized_indices(cursor)
+                    with version_conn.cursor() as ver_cursor:
+                        relevant_mis = MigrationHelper.get_unfinalized_indices(
+                            ver_cursor
+                        )
                         for mi in relevant_mis:
                             MigrationHelper.set_database_migration_info(
-                                cursor, mi, MigrationState.MIGRATION_FAILED
+                                ver_cursor, mi, MigrationState.MIGRATION_FAILED
                             )
         finally:
             if caught_exception:

@@ -37,12 +37,12 @@ class MigrationHandler(BaseHandler):
         version_connection: Any,
     ) -> None:
         super().__init__(env, services, logging)
-        self.cursor = curs
+        self.migration_cursor = curs
         self.ver_conn = version_connection
         self.replace_tables: dict[str, Any]
 
     def update_sequence(self, name: str, maximum: int) -> None:
-        self.cursor.execute(
+        self.migration_cursor.execute(
             sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
                 sequence_name=sql.SQL(name),
                 maximum=maximum,
@@ -53,15 +53,15 @@ class MigrationHandler(BaseHandler):
         """
         Updates all primary keys and sequential_number fields.
         """
-        with self.ver_conn.cursor() as cursor:
+        with self.ver_conn.cursor() as ver_cursor:
             unified_repl_tables = (
-                MigrationHelper.get_unified_replace_tables_from_database(cursor)
+                MigrationHelper.get_unified_replace_tables_from_database(ver_cursor)
             )
         for collection in unified_repl_tables:
             table_name = HelperGetNames.get_table_name(collection)
             table = sql.Identifier(table_name)
             # update primary keys.
-            result = self.cursor.execute(
+            result = self.migration_cursor.execute(
                 sql.SQL("SELECT MAX(id) FROM {table_name};").format(table_name=table)
             ).fetchone()
             if result:
@@ -80,7 +80,7 @@ class MigrationHandler(BaseHandler):
                     "schema_diff.sql",
                 )
             ) as f:
-                self.cursor.execute(f.read())
+                self.migration_cursor.execute(f.read())
         except FileNotFoundError:
             self.logger.warning(
                 f"Couldn't find an SQL diff for {migration_number}. This can be intentional."
@@ -100,30 +100,30 @@ class MigrationHandler(BaseHandler):
 
                 self.apply_schema_diff(index)
                 # Execute user defined functions or super classes noop.
-                stash = mig_class.data_preparation(self.cursor)
-                mig_class.data_definition(self.cursor)
-                mig_class.data_manipulation(self.cursor, stash)
-                mig_class.cleanup(self.cursor)
+                stash = mig_class.data_preparation(self.migration_cursor)
+                mig_class.data_definition(self.migration_cursor)
+                mig_class.data_manipulation(self.migration_cursor, stash)
+                mig_class.cleanup(self.migration_cursor)
 
-                self.cursor.connection.commit()
-                with self.ver_conn.cursor() as curs:
+                self.migration_cursor.connection.commit()
+                with self.ver_conn.cursor() as ver_curs:
                     MigrationHelper.set_database_migration_info(
-                        curs, index, MigrationState.MIGRATION_FINISHED
+                        ver_curs, index, MigrationState.MIGRATION_FINISHED
                     )
             except Exception as e:
                 MigrationHelper.migrate_thread_exception = e
-                with self.ver_conn.cursor() as curs:
+                with self.ver_conn.cursor() as ver_curs:
                     MigrationHelper.set_database_migration_info(
-                        curs, index, MigrationState.MIGRATION_FAILED
+                        ver_curs, index, MigrationState.MIGRATION_FAILED
                     )
                 raise e
 
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
         self.update_sequences()
-        with self.ver_conn.cursor() as curs:
+        with self.ver_conn.cursor() as ver_curs:
             for migration_number in MigrationHelper.migrations:
                 MigrationHelper.set_database_migration_info(
-                    self.cursor, migration_number, MigrationState.FINALIZED
+                    self.migration_cursor, migration_number, MigrationState.FINALIZED
                 )
         self.logger.info(
             f"Migration index was set to {max(MigrationHelper.migrations)}..."
@@ -134,19 +134,19 @@ class MigrationHandler(BaseHandler):
         Starts the migration process.
         """
         self.logger.info("Checking migratability ...")
-        with self.ver_conn.cursor() as cursor:
-            state = MigrationHelper.get_migration_state(cursor)
+        with self.ver_conn.cursor() as ver_cursor:
+            state = MigrationHelper.get_migration_state(ver_cursor)
             match state:
                 case MigrationState.MIGRATION_REQUIRED:
                     # Block other migration requests by setting state to preparing.
-                    if minimum_required_index := cursor.execute(
+                    if minimum_required_index := ver_cursor.execute(
                         sql.SQL(
                             "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
                         ),
                         (MigrationState.MIGRATION_REQUIRED,),
                     ).fetchone():
                         MigrationHelper.set_database_migration_info(
-                            cursor,
+                            ver_cursor,
                             minimum_required_index["min"],
                             MigrationState.MIGRATION_RUNNING,
                         )
@@ -155,10 +155,12 @@ class MigrationHandler(BaseHandler):
                         mig_class = MigrationHelper.get_migration_class(package_name)
                         mig_name = package_name[4:]
                         self.logger.info("Pre check: " + mig_name + " ...")
-                        if errors := mig_class.check_prerequisites(self.cursor):
+                        if errors := mig_class.check_prerequisites(
+                            self.migration_cursor
+                        ):
                             if minimum_required_index:
                                 MigrationHelper.set_database_migration_info(
-                                    cursor,
+                                    ver_cursor,
                                     minimum_required_index["min"],
                                     MigrationState.MIGRATION_REQUIRED,
                                 )
@@ -168,9 +170,9 @@ class MigrationHandler(BaseHandler):
                             self.logger.info(errors)
                             raise MigrationSetupException(errors)
                     MigrationHelper.write_line("migration started")
-                    deactivate_notify_triggers(self.cursor)
+                    deactivate_notify_triggers(self.migration_cursor)
                     self.execute_migrations()
-                    activate_notify_triggers(self.cursor)
+                    activate_notify_triggers(self.migration_cursor)
                     MigrationHelper.write_line("migration finished")
                     MigrationHelper.migrate_thread_stream_can_be_closed = True
                 case MigrationState.MIGRATION_FINISHED:
@@ -189,7 +191,7 @@ class MigrationHandler(BaseHandler):
         Low level entry point.
         """
         assert (
-            self.cursor and not self.cursor.closed
+            self.migration_cursor and not self.migration_cursor.closed
         ), "Handlers cursor must be initialized."
         if command == "migrate":
             self.migrate()
@@ -203,13 +205,13 @@ class MigrationHandler(BaseHandler):
         Resets the migrations currently in progress and restores the state before the migration.
         """
         self.logger.info("Reset migrations.")
-        activate_notify_triggers(self.cursor)
+        activate_notify_triggers(self.migration_cursor)
         MigrationHelper.close_migrate_thread_stream()
         MigrationHelper.migrate_thread_exception = None
         # Remove unfinalized migration indices from version table
-        with self.ver_conn.cursor() as cursor:
-            to_reset_indices = MigrationHelper.get_unfinalized_indices(cursor)
-            cursor.execute(
+        with self.ver_conn.cursor() as ver_cursor:
+            to_reset_indices = MigrationHelper.get_unfinalized_indices(ver_cursor)
+            ver_cursor.execute(
                 sql.SQL(
                     "UPDATE version SET migration_state = %s "
                     "WHERE migration_index = ANY(%s)"
