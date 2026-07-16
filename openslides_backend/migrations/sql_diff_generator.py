@@ -6,13 +6,14 @@ from typing import Any
 
 from meta.dev.src.generate_sql_schema import Helper
 from meta.dev.src.helper_get_names import HelperGetNames
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.yaml_diff_generator import dumpjson, generate_diff
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
 To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
 It will generate the sql diff comparing it to the changes made to the model definitions present in the meta.
-The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'. TODO
+The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'.
 """
 
 
@@ -42,7 +43,7 @@ def main() -> int:
     with open(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "migrations",
+            MigrationHelper.get_last_migration_directory(),
             "schema_diff.sql",
         ),
         "w",

@@ -59,7 +59,7 @@ class MigrationHelper:
     Helper class containing static methods for handling the migrations. Reads and executes them.
     """
 
-    migrations: dict = {}
+    migrations: dict[int, str] = {}
     migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_read_pos: int = 0
@@ -110,8 +110,8 @@ class MigrationHelper:
     @staticmethod
     def load_migrations() -> None:
         """
-        Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
-        accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the MIN_NON_REL_MIGRATION
+        Lists every migration with its number and subdirectory name
+        from the MIGRATION_DIRECTORY_PATH above the MIN_NON_REL_MIGRATION
         and stores them in MigrationHelper.migrations for future reference.
 
         Returns:
@@ -212,6 +212,15 @@ class MigrationHelper:
         raise MigrationException(
             "Requested migration indices are not available in version table."
         )
+
+    @staticmethod
+    def get_last_migration_directory() -> str:
+        """Returns the directory to the last migration. Currently only supports numbers until 1099."""
+        idx_as_string = str(MigrationHelper.get_backend_migration_index())
+        for name in os.listdir(MIGRATIONS_PATH):
+            if idx_as_string in name:
+                return name
+        raise Exception("Could not find last migration directory.")
 
     @staticmethod
     def get_backend_migration_index() -> int:
