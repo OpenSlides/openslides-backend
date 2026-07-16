@@ -2459,3 +2459,25 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1101, "admin_ids": [1]})
         self.assert_status_code(response, 200)
+
+    def test_duplicate_with_public_folder_and_files(self) -> None:
+        self.create_meeting()
+        self.create_mediafile(is_directory=True)
+        self.create_mediafile(2, parent_id=1)
+        self.create_mediafile(3, parent_id=1)
+        self.create_motion(1)
+        self.set_models(
+            {
+                "group/2": {"meeting_mediafile_inherited_access_group_ids": [1]},
+                "meeting_mediafile/1": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "inherited_access_group_ids": [2],
+                    "is_public": False,
+                    "attachment_ids": ["motion/1"],
+                },
+                "motion/1": {"attachment_meeting_mediafile_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "admin_ids": [1]})
+        self.assert_status_code(response, 200)
