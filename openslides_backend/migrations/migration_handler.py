@@ -51,7 +51,7 @@ class MigrationHandler(BaseHandler):
 
     def update_sequences(self) -> None:
         """
-        Updates all primary keys and sequential_number fields.
+        Updates all primary keys.
         """
         with self.ver_conn.cursor() as ver_cursor:
             unified_repl_tables = (
@@ -105,7 +105,6 @@ class MigrationHandler(BaseHandler):
                 mig_class.data_manipulation(self.migration_cursor, stash)
                 mig_class.cleanup(self.migration_cursor)
 
-                self.migration_cursor.connection.commit()
                 with self.ver_conn.cursor() as ver_curs:
                     MigrationHelper.set_database_migration_info(
                         ver_curs, index, MigrationState.MIGRATION_FINISHED
@@ -118,6 +117,8 @@ class MigrationHandler(BaseHandler):
                     )
                 raise e
 
+        # Needs to happen before sequence update because the latter circumvents transaction logic.
+        self.migration_cursor.connection.commit()
         # This could theoretically set the sequences to values we don't want because this circumvents transaction logic
         self.update_sequences()
         with self.ver_conn.cursor() as ver_curs:
@@ -205,7 +206,6 @@ class MigrationHandler(BaseHandler):
         Resets the migrations currently in progress and restores the state before the migration.
         """
         self.logger.info("Reset migrations.")
-        activate_notify_triggers(self.migration_cursor)
         MigrationHelper.close_migrate_thread_stream()
         MigrationHelper.migrate_thread_exception = None
         # Remove unfinalized migration indices from version table

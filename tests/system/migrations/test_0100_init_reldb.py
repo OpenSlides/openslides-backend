@@ -323,11 +323,11 @@ For more information, see
     def test_migration_handler(self) -> None:
         # Prepare what manager would.
         MigrationHelper.load_migrations()
-        # 5) Call data_manipulation of module
         MigrationHelper.migrate_thread_stream = StringIO()
         with get_new_os_conn() as version_conn:
             with version_conn.cursor() as cursor:
                 MigrationHelper.add_new_migrations_to_version(cursor)
+            # 5) Call data_manipulation of module
             with get_new_os_conn() as conn:
                 with conn.cursor() as curs:
                     handler = MigrationHandler(
@@ -467,6 +467,26 @@ For more information, see
                 case _:
                     self.assertEqual(prev, fail, f"Failed for {tablename}")
 
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                assert get_notify_names(curs, "organization_t") == [
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "notify_transaction_end",
+                        "is_enabled": True,
+                    },
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "tr_log_organization",
+                        "is_enabled": True,
+                    },
+                    {
+                        "table_name": "organization_t",
+                        "trigger_name": "tr_log_organization_t_theme_id",
+                        "is_enabled": True,
+                    },
+                ]
+
         response = self.request("reset")
         assert response.json == {
             "success": True,
@@ -493,26 +513,6 @@ For more information, see
                 }
             else:
                 self.assertEqual(prev, reset, f"Failed for {tablename}")
-
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                assert get_notify_names(curs, "organization_t") == [
-                    {
-                        "table_name": "organization_t",
-                        "trigger_name": "notify_transaction_end",
-                        "is_enabled": True,
-                    },
-                    {
-                        "table_name": "organization_t",
-                        "trigger_name": "tr_log_organization",
-                        "is_enabled": True,
-                    },
-                    {
-                        "table_name": "organization_t",
-                        "trigger_name": "tr_log_organization_t_theme_id",
-                        "is_enabled": True,
-                    },
-                ]
 
         assert MigrationHelper.migrate_thread_exception is None
         assert MigrationHelper.migrate_thread_stream is None
