@@ -11,7 +11,7 @@ Schema = dict[str, Any]
 
 class HistoryInformationData(TypedDict):
     entries: NotRequired[list[str]]
-    changed_fields: NotRequired[dict[Field, Any]]
+    structured_information: NotRequired[dict[Field, Any]]
 
 
 HistoryInformation = dict[FullQualifiedId, HistoryInformationData]

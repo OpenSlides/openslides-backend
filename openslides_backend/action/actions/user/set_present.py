@@ -131,6 +131,6 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
                     information[
                         fqid_from_collection_and_id("meeting_user", meeting_user["id"])
                     ] = build_history_information_data(
-                        changed_fields={"is_present": present}
+                        structured_information={"is_present": present}
                     )
         return information
