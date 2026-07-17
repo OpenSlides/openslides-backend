@@ -10,6 +10,7 @@ from openslides_backend.migrations.migration_helper import (
     MIN_NON_REL_MIGRATION,
     MigrationHelper,
 )
+from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
@@ -117,6 +118,10 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
             MigrationHelper.set_database_migration_info(
                 curs, MIN_NON_REL_MIGRATION, MigrationState.FINALIZED
             )
+        prev_min = os_conn_pool.min_size
+        prev_max = os_conn_pool.max_size
+        os_conn_pool.resize(prev_min, 6)
+        self.addCleanup(os_conn_pool.resize, prev_min, prev_max)
 
     def wait_for_lock(
         self,
