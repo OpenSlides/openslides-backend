@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.action.util.typing import Payload
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -20,6 +21,37 @@ class ActionWorkerTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting(222)
         self.set_models({"motion_state/222": {"set_workflow_timestamp": True}})
+
+    def test_action_worker_exceeding_name_length(self) -> None:
+        """action thread used, but ended in time"""
+        self.set_thread_watch_timeout(0)
+        payload: Payload = [
+            {
+                "action": "user.create",
+                "data": [{"username": "fdfd"}],
+            }
+        ]
+        for i in range(1, 12):
+            payload.extend(
+                [
+                    {
+                        "action": "user.create",
+                        "data": [{"username": f"{i}"}],
+                    },
+                    {
+                        "action": "group.create",
+                        "data": [{"meeting_id": 222, "name": "gratuitous group"}],
+                    },
+                ]
+            )
+        response = self.request_json(payload)
+        self.assert_status_code(response, 202)
+        assert self.get_thread_by_name("action_worker") is None
+        name = "user.create_2,group.create_1," + ",".join(
+            "user.create_1,group.create_1" for _ in range(1, 11)
+        )
+        name = name[:255] + "…"
+        self.assert_model_exists("action_worker/1", {"name": name})
 
     def test_action_worker_ready_before_timeout_okay(self) -> None:
         """action thread used, but ended in time"""
@@ -187,7 +219,7 @@ class ActionWorkerTest(BaseActionTestCase):
             response.json["results"][0][0],
             {"fqid": "action_worker/1", "name": "motion.create", "written": True},
         )
-        self.assert_model_exists("action_worker/1")
+        self.assert_model_exists("action_worker/1", {"name": "motion.create"})
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
         self.assert_model_not_exists("motion/1")

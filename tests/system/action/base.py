@@ -98,7 +98,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             results = response.json.get("results", [])
             assert len(results) == 1
             assert results[0] is None or len(results[0]) == len(data)
-        self.connection.commit()
         return response
 
     def request_json(
@@ -130,6 +129,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 None,  # type: ignore
                 response,
             )
+        self.connection.commit()
         return response
 
     def execute_action_internally(
