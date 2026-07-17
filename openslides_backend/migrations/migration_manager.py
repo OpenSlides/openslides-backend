@@ -3,7 +3,7 @@ from io import StringIO
 from threading import Thread
 from typing import Any
 
-from psycopg import Cursor, sql
+from psycopg import Cursor, IsolationLevel, sql
 from psycopg.rows import DictRow
 
 from openslides_backend.migrations.exceptions import (
@@ -54,7 +54,9 @@ class MigrationManager:
 
         self.handler: MigrationHandler | None
         MigrationHelper.load_migrations()
-        MigrationHelper.add_new_migrations_to_version()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as cursor:
+                MigrationHelper.add_new_migrations_to_version(cursor)
         self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
@@ -70,7 +72,8 @@ class MigrationManager:
         Gets the 'status' and migration threads 'output' string. 'exception' if
         an exception occured.
         """
-        state = MigrationHelper.get_migration_state(self.cursor)
+        with self.ver_conn.cursor() as cursor:
+            state = MigrationHelper.get_migration_state(cursor)
         result = {"status": str(state), "output": ""}
 
         if MigrationHelper.migrate_thread_stream:
@@ -88,13 +91,6 @@ class MigrationManager:
         target_migration_index: The current backend index that is targeted by the migrations.
         migratable_models: Rough amounts per collection to be migrated.
         """
-        current_migration_index = MigrationHelper.get_database_migration_index(
-            self.cursor
-        )
-        if current_migration_index >= 100:
-            all_tables = MigrationHelper.get_public_tables(self.cursor)
-        else:
-            all_tables = set()
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
@@ -106,32 +102,41 @@ class MigrationManager:
                 return 0
             else:
                 statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
-            response = self.cursor.execute(
+            response = curs.execute(
                 sql.SQL("SELECT COUNT(*) FROM ") + statement_part
             ).fetchone()
             return (response or {}).get("count", 0)
 
-        if not MigrationHelper.migrate_thread_exception:
-            migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
-            state_per_mi = MigrationHelper.get_database_migration_states(
-                self.cursor, migration_indices
+        with self.ver_conn.cursor() as cursor:
+            current_migration_index = MigrationHelper.get_database_migration_index(
+                cursor
             )
-            unmigrated_collections = {
-                collection
-                for mi in migration_indices
-                if mi > current_migration_index
-                if state_per_mi[mi]
-                in (
-                    MigrationState.MIGRATION_REQUIRED,
-                    MigrationState.MIGRATION_RUNNING,
+            if current_migration_index >= 100:
+                all_tables = MigrationHelper.get_public_tables(cursor)
+            else:
+                all_tables = set()
+
+            if not MigrationHelper.migrate_thread_exception:
+                migration_indices = MigrationHelper.get_indices_from_database(cursor)
+                state_per_mi = MigrationHelper.get_database_migration_states(
+                    cursor, migration_indices
                 )
-                for collection in MigrationHelper.get_replace_tables(mi)
-            }
-            stats = {
-                collection: amount
-                for collection in unmigrated_collections
-                if (amount := count(collection + "_t", self.cursor))
-            }
+                unmigrated_collections = {
+                    collection
+                    for mi in migration_indices
+                    if mi > current_migration_index
+                    if state_per_mi[mi]
+                    in (
+                        MigrationState.MIGRATION_REQUIRED,
+                        MigrationState.MIGRATION_RUNNING,
+                    )
+                    for collection in MigrationHelper.get_replace_tables(mi)
+                }
+                stats = {
+                    collection: amount
+                    for collection in unmigrated_collections
+                    if (amount := count(collection + "_t", cursor))
+                }
 
         if exc := MigrationHelper.migrate_thread_exception:
             module_name = getattr(exc, "__module__", "")
@@ -150,9 +155,9 @@ class MigrationManager:
             ),
         }
 
-    def assert_valid_migration_index(self) -> None:
+    def assert_valid_migration_index(self, curs: Cursor[DictRow]) -> None:
         """assert consistent migration index"""
-        database_m_idx = MigrationHelper.get_database_migration_index(self.cursor)
+        database_m_idx = MigrationHelper.get_database_migration_index(curs)
         if database_m_idx > self.target_migration_index:
             raise MismatchingMigrationIndicesException(
                 "The database has a higher migration index "
@@ -173,17 +178,17 @@ class MigrationManager:
             raise View400Exception("Unknown command: " + command)
 
         self.logger.info(f"Migration command: {command}")
-        with get_new_os_conn() as conn:
-            conn.transaction()
-            with conn.cursor() as curs:
-                self.cursor = curs
+        with get_new_os_conn() as version_conn:
+            version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+            with version_conn.cursor() as cursor:
+                self.ver_conn = version_conn
                 if command == MigrationCommand.PROGRESS:
                     return self.handle_progress_command()
                 elif command == MigrationCommand.STATS:
                     return {"stats": self.get_stats()}
                 elif command != MigrationCommand.RESET:
-                    self.assert_valid_migration_index()
-                    match MigrationHelper.get_migration_state(curs):
+                    self.assert_valid_migration_index(cursor)
+                    match MigrationHelper.get_migration_state(cursor):
                         case MigrationState.MIGRATION_RUNNING:
                             raise View400Exception(
                                 "Migration is running, only 'stats' or 'progress' commands are allowed."
@@ -205,11 +210,9 @@ class MigrationManager:
                 thread.start()
                 thread.join(THREAD_WAIT_TIME)
                 if thread.is_alive():
-                    # Read isolation would prevent seeing the newest migration state otherwise.
-                    curs.connection.commit()
                     # Migration still running. Report current progress and return
                     return {
-                        "status": MigrationHelper.get_migration_state(curs),
+                        "status": MigrationHelper.get_migration_state(cursor),
                         "output": MigrationHelper.read_stream(),
                     }
                 else:
@@ -225,12 +228,14 @@ class MigrationManager:
         """
         caught_exception: None | Exception = None
         try:
-            with get_new_os_conn() as conn:
-                with conn.cursor() as curs:
-                    self.handler = MigrationHandler(
-                        curs, self.env, self.services, self.logging
-                    )
-                    return self.handler.execute_command(command)
+            with get_new_os_conn() as version_conn:
+                version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+                with get_new_os_conn() as conn:
+                    with conn.cursor() as curs:
+                        self.handler = MigrationHandler(
+                            curs, self.env, self.services, self.logging, version_conn
+                        )
+                        return self.handler.execute_command(command)
         except MigrationSetupException as e:
             caught_exception = MigrationHelper.migrate_thread_exception = e
         except Exception as e:
@@ -238,12 +243,15 @@ class MigrationManager:
             # This is a fallback in case an error is not attributable to a certain migration
             if not MigrationHelper.migrate_thread_exception:
                 MigrationHelper.migrate_thread_exception = e
-                with get_new_os_conn() as conn:
-                    with conn.cursor() as curs:
-                        relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
+                with get_new_os_conn() as version_conn:
+                    version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
+                    with version_conn.cursor() as ver_cursor:
+                        relevant_mis = MigrationHelper.get_unfinalized_indices(
+                            ver_cursor
+                        )
                         for mi in relevant_mis:
                             MigrationHelper.set_database_migration_info(
-                                curs, mi, MigrationState.MIGRATION_FAILED
+                                ver_cursor, mi, MigrationState.MIGRATION_FAILED
                             )
         finally:
             if caught_exception:

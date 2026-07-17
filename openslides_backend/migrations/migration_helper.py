@@ -11,9 +11,6 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations.exceptions import MigrationException
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 
 from ..shared.exceptions import ActionException
 
@@ -62,7 +59,7 @@ class MigrationHelper:
     Helper class containing static methods for handling the migrations. Reads and executes them.
     """
 
-    migrations: dict = {}
+    migrations: dict[int, str] = {}
     migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_read_pos: int = 0
@@ -113,8 +110,8 @@ class MigrationHelper:
     @staticmethod
     def load_migrations() -> None:
         """
-        Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
-        accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the MIN_NON_REL_MIGRATION
+        Lists every migration with its number and subdirectory name
+        from the MIGRATION_DIRECTORY_PATH above the MIN_NON_REL_MIGRATION
         and stores them in MigrationHelper.migrations for future reference.
 
         Returns:
@@ -140,24 +137,20 @@ class MigrationHelper:
         MigrationHelper.migrations = dict(sorted(migration_dict.items()))
 
     @staticmethod
-    def add_new_migrations_to_version() -> None:
+    def add_new_migrations_to_version(curs: Cursor[DictRow]) -> None:
         """
         Adds new migrations to the version table with state MIGRATION_REQUIRED if the index didn't exist yet.
         """
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                database_indices = MigrationHelper.get_indices_from_database(curs)
-                for migration_index in MigrationHelper.migrations:
-                    if migration_index not in database_indices:
-                        replace_tables = MigrationHelper.get_replace_tables(
-                            migration_index
-                        )
-                        MigrationHelper.set_database_migration_info(
-                            curs,
-                            migration_index,
-                            MigrationState.MIGRATION_REQUIRED,
-                            replace_tables,
-                        )
+        database_indices = MigrationHelper.get_indices_from_database(curs)
+        for migration_index in MigrationHelper.migrations:
+            if migration_index not in database_indices:
+                replace_tables = MigrationHelper.get_replace_tables(migration_index)
+                MigrationHelper.set_database_migration_info(
+                    curs,
+                    migration_index,
+                    MigrationState.MIGRATION_REQUIRED,
+                    replace_tables,
+                )
 
     @staticmethod
     def get_unfinalized_indices(curs: Cursor[DictRow]) -> list[int]:
@@ -300,14 +293,14 @@ class MigrationHelper:
         """
         Returns True if the passed table exists in the database.
         """
-        version_table_exists = curs.execute(
+        table_exists = curs.execute(
             "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s);",
             (table_name,),
         ).fetchone()
         assert (
-            version_table_exists
-        ), "Something really blew up checking the version tables existence."
-        return version_table_exists["exists"]
+            table_exists
+        ), f"Something really blew up checking the {table_name} tables existence."
+        return table_exists["exists"]
 
     @staticmethod
     def pull_migration_index_from_db(curs: Cursor[DictRow]) -> int:
