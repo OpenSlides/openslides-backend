@@ -19,6 +19,11 @@ build-tests:
 $(.SERVICE_TARGETS):
 	@echo ""
 
+.FLAGS := no-cache compose-local-branch no-log-prefix debug-dry-run
+
+$(.FLAGS):
+	@echo ""
+
 .PHONY: dev
 
 dev dev-help dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log dev-log-attach dev-restart dev-full-restart dev-docker-reset:
