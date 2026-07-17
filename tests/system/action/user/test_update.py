@@ -291,7 +291,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_history_information(
-            "meeting_user/224", changed_fields={"group_ids": {"added": [1]}}
+            "meeting_user/224", structured_information={"group_ids": {"added": [1]}}
         )
         self.assert_history_information(
             "user/23", ["Vote delegated to {} in meeting {}", "user/22", "meeting/1"]
@@ -497,7 +497,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1111",
-            changed_fields={"group_ids": {"removed": [600]}},
+            structured_information={"group_ids": {"removed": [600]}},
         )
 
     def test_committee_manager_remove_committee_ids(self) -> None:
@@ -2691,7 +2691,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1",
-            changed_fields={"group_ids": {"added": [3]}},
+            structured_information={"group_ids": {"added": [3]}},
         )
         self.assert_history_information("meeting_user/2")
 
@@ -2716,7 +2716,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1",
-            changed_fields={
+            structured_information={
                 "group_ids": {
                     "added": [2],
                     "removed": [1],
@@ -2746,7 +2746,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1",
-            changed_fields={
+            structured_information={
                 "group_ids": {
                     "added": [2, 3],
                     "removed": [1],
@@ -2775,7 +2775,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1",
-            changed_fields={"group_ids": {"added": [2]}},
+            structured_information={"group_ids": {"added": [2]}},
         )
 
     def test_update_history_remove_group(self) -> None:
@@ -2803,7 +2803,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "meeting_user/1",
-            changed_fields={"group_ids": {"removed": [1]}},
+            structured_information={"group_ids": {"removed": [1]}},
         )
 
     def test_update_fields_with_equal_value_no_history(self) -> None:
@@ -2904,7 +2904,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("meeting_user/1")
         self.assert_history_information(
             "meeting_user/2",
-            changed_fields={"group_ids": {"added": [4]}},
+            structured_information={"group_ids": {"added": [4]}},
         )
 
     def test_update_participant_data_in_multiple_meetings_with_existing_meetings(
@@ -2958,11 +2958,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("meeting_user/1")
         self.assert_history_information(
             "meeting_user/2",
-            changed_fields={"group_ids": {"added": [4]}},
+            structured_information={"group_ids": {"added": [4]}},
         )
         self.assert_history_information(
             "meeting_user/3",
-            changed_fields={"group_ids": {"added": [7]}},
+            structured_information={"group_ids": {"added": [7]}},
         )
 
     def test_update_participant_data_in_multiple_meetings_log_is_present(
@@ -3011,11 +3011,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("meeting_user/1")
         self.assert_history_information(
             "meeting_user/2",
-            changed_fields={"group_ids": {"added": [4]}, "is_present": True},
+            structured_information={"group_ids": {"added": [4]}, "is_present": True},
         )
         self.assert_history_information(
             "meeting_user/3",
-            changed_fields={"group_ids": {"added": [7]}},
+            structured_information={"group_ids": {"added": [7]}},
         )
 
     def test_update_remove_participant_from_multiple_meetings_log_is_present(
@@ -3056,11 +3056,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("meeting_user/1")
         self.assert_history_information(
             "meeting_user/2",
-            changed_fields={"group_ids": {"removed": [4]}, "is_present": False},
+            structured_information={"group_ids": {"removed": [4]}, "is_present": False},
         )
         self.assert_history_information(
             "meeting_user/3",
-            changed_fields={"group_ids": {"removed": [7]}},
+            structured_information={"group_ids": {"removed": [7]}},
         )
 
     def test_update_saml_id__can_change_own_password_error(self) -> None:
