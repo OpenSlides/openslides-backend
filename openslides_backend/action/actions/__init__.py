@@ -40,6 +40,7 @@ def prepare_actions_map() -> None:
         point_of_order_category,
         poll,
         poll_ballot,
+        poll_ballot_user,
         poll_config_approval,
         poll_config_rating_approval,
         poll_config_rating_score,

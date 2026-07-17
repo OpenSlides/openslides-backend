@@ -2397,9 +2397,13 @@ class MeetingImport(BaseActionTestCase):
             {
                 **self.get_assignment_poll_data(3),
                 "poll_ballot": {
-                    "7": {
-                        "id": 7,
+                    "7": {"id": 7, "poll_id": 3, "poll_ballot_user_id": 14},
+                },
+                "poll_ballot_user": {
+                    "14": {
+                        "id": 14,
                         "poll_id": 3,
+                        "poll_ballot_id": 7,
                         "acting_meeting_user_id": 11,
                         "represented_meeting_user_id": 11,
                     },
@@ -2418,9 +2422,8 @@ class MeetingImport(BaseActionTestCase):
                 },
                 "meeting_user": {
                     "11": {
-                        "poll_voted_ids": [3],
-                        "acting_ballot_ids": [7],
-                        "represented_ballot_ids": [7],
+                        "acting_ballot_ids": [14],
+                        "represented_ballot_ids": [14],
                     }
                 },
             }
@@ -2429,7 +2432,7 @@ class MeetingImport(BaseActionTestCase):
             {
                 "entitled_group_ids": [2],
                 "ballot_ids": [7],
-                "voted_ids": [11],
+                "ballot_user_ids": [14],
             }
         )
         return data
@@ -2451,11 +2454,14 @@ class MeetingImport(BaseActionTestCase):
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
                 "poll_ballot/1": {
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 1,
+                },
+                "poll_ballot_user/1": {
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 1,
                     "poll_id": 1,
                 },
-                "meeting_user/1": {"poll_voted_ids": [1]},
             }
         )
 
@@ -2483,7 +2489,6 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 1,
                 "acting_ballot_ids": [1],
                 "represented_ballot_ids": [1],
-                "poll_voted_ids": [1],
             },
         )
         self.assert_model_exists(
@@ -2493,7 +2498,6 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 2,
                 "acting_ballot_ids": [2],
                 "represented_ballot_ids": [2],
-                "poll_voted_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -2503,7 +2507,6 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 2,
                 "acting_ballot_ids": None,
                 "represented_ballot_ids": None,
-                "poll_voted_ids": None,
             },
         )
         self.assert_model_exists(
@@ -2513,7 +2516,7 @@ class MeetingImport(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "meeting_id": 2,
                 "ballot_ids": [2],
-                "voted_ids": [2],
+                "ballot_user_ids": [2],
                 "entitled_group_ids": [5],
             },
         )

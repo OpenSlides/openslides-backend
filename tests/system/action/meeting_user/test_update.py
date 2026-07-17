@@ -151,10 +151,18 @@ class MeetingUserUpdate(BaseActionTestCase):
                 },
                 "poll_ballot/1": {
                     "poll_id": 1,
+                    "poll_ballot_user_id": 1,
+                },
+                "poll_ballot_user/1": {
+                    "poll_id": 1,
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 1,
                 },
                 "poll_ballot/2": {
+                    "poll_id": 1,
+                    "poll_ballot_user_id": 2,
+                },
+                "poll_ballot_user/2": {
                     "poll_id": 1,
                     "acting_meeting_user_id": 1,
                     "represented_meeting_user_id": 2,
@@ -166,7 +174,6 @@ class MeetingUserUpdate(BaseActionTestCase):
             {
                 "id": 3,
                 "poll_option_ids": [1],
-                "poll_voted_ids": [1],
                 "acting_ballot_ids": [1],
                 "represented_ballot_ids": [2],
             },
@@ -176,14 +183,22 @@ class MeetingUserUpdate(BaseActionTestCase):
         expected: dict[str, dict[str, Any]] = {
             "meeting_user/3": {
                 "poll_option_ids": [1],
-                "poll_voted_ids": [1],
                 "acting_ballot_ids": [1],
                 "represented_ballot_ids": [2],
             },
-            "poll/1": {"voted_ids": [3]},
+            "poll/1": {"ballot_user_ids": [1, 2]},
             "poll_option/1": {"meeting_user_id": 3},
-            "poll_ballot/1": {"acting_meeting_user_id": 3},
-            "poll_ballot/2": {"represented_meeting_user_id": 3},
+            "poll_ballot_user/1": {
+                "poll_id": 1,
+                "acting_meeting_user_id": 3,
+                "represented_meeting_user_id": 1,
+            },
+            "poll_ballot_user/2": {
+                "poll_id": 1,
+                "poll_ballot_id": 2,
+                "acting_meeting_user_id": 1,
+                "represented_meeting_user_id": 3,
+            },
         }
         for fqid, model in expected.items():
             self.assert_model_exists(fqid, model)

@@ -34,6 +34,8 @@ class MeetingUserUpdate(
         "motion_supporter_ids",
         "motion_submitter_ids",
         "chat_message_ids",
+        "acting_ballot_ids",
+        "represented_ballot_ids",
     ]
 
     model = MeetingUser()
@@ -42,9 +44,6 @@ class MeetingUserUpdate(
             "about_me",
             "group_ids",
             "poll_option_ids",
-            "poll_voted_ids",
-            "acting_ballot_ids",
-            "represented_ballot_ids",
             *meeting_user_standard_fields,
             *merge_fields,
         ],

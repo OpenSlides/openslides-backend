@@ -182,6 +182,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 
 - [poll.delete](actions/poll.delete.md)
 - [poll_ballot.delete](actions/poll_ballot.delete.md)
+- [poll_ballot_user.delete](actions/poll_ballot_user.delete.md)
 - [poll_config_approval.delete](actions/poll_config_approval.delete.md)
 - [poll_config_rating_approval.delete](actions/poll_config_rating_approval.delete.md)
 - [poll_config_rating_score.delete](actions/poll_config_rating_score.delete.md)

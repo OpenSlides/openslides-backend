@@ -212,7 +212,7 @@ def export_meeting(
     if polls := export.get("poll"):
         related_collections: dict[str, list[int]] = {}
         for poll in polls.values():
-            for collection_base_name in ["ballot", "option"]:
+            for collection_base_name in ["ballot", "ballot_user", "option"]:
                 if ids := poll.get(f"{collection_base_name}_ids"):
                     related_collections.setdefault(
                         f"poll_{collection_base_name}", list()

@@ -1979,6 +1979,10 @@ class MeetingClone(BaseActionTestCase):
                         "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                     },
                     f"poll_ballot/{poll_id}": {
+                        "poll_id": poll_id,
+                        "poll_ballot_user_id": poll_id,
+                    },
+                    f"poll_ballot_user/{poll_id}": {
                         "acting_meeting_user_id": 1 if poll_id == 1 else 2,
                         "represented_meeting_user_id": 1 if poll_id == 1 else 2,
                         "poll_id": poll_id,
@@ -1989,10 +1993,15 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "poll_ballot/5",
+            {"poll_id": 5, "poll_ballot_user_id": 5},
+        )
+        self.assert_model_exists(
+            "poll_ballot_user/5",
             {
                 "acting_meeting_user_id": 3,
                 "represented_meeting_user_id": 3,
                 "poll_id": 5,
+                "poll_ballot_id": 5,
             },
         )
         self.assert_model_exists(
