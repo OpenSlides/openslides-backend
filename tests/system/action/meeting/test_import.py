@@ -10,6 +10,7 @@ from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.http.views.presenter_view import PresenterView
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.models import Meeting
+from openslides_backend.shared.export_helper import export_meeting
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import (
@@ -3224,3 +3225,34 @@ class MeetingImport(BaseActionTestCase):
             f"Your data migration index '{self.mig_index+1}' is higher than the migration index of this backend '{self.mig_index}'! Please, update your backend!",
             response.json["message"],
         )
+
+    def test_impoer_with_public_folder_and_files(self) -> None:
+        self.create_meeting()
+        self.create_mediafile(is_directory=True)
+        self.create_mediafile(2, parent_id=1)
+        self.create_mediafile(3, parent_id=1)
+        self.create_motion(1)
+        self.set_models(
+            {
+                "group/2": {"meeting_mediafile_inherited_access_group_ids": [1]},
+                "meeting_mediafile/1": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "is_public": False,
+                    "attachment_ids": ["motion/1"],
+                },
+                "motion/1": {"attachment_meeting_mediafile_ids": [1]},
+            }
+        )
+        meeting_json = export_meeting(
+            self.datastore,
+            1,
+            transform_datetime_decimal=True,
+        )
+        meeting_json["meeting"]["1"]["external_id"] = "ext_id_2"
+        response = self.request(
+            "meeting.import", {"committee_id": 60, "meeting": meeting_json}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_mediafile/2")
+        self.assert_model_not_exists("mediafile/4")

@@ -2472,7 +2472,6 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
                     "mediafile_id": 2,
-                    "inherited_access_group_ids": [2],
                     "is_public": False,
                     "attachment_ids": ["motion/1"],
                 },
@@ -2481,3 +2480,15 @@ class MeetingClone(BaseActionTestCase):
         )
         response = self.request("meeting.clone", {"meeting_id": 1, "admin_ids": [1]})
         self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_mediafile/3")
+        self.assert_model_not_exists("mediafile/4")
+        self.assert_model_exists(
+            "meeting_mediafile/2",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 2,
+                "attachment_ids": ["motion/2"],
+                "inherited_access_group_ids": [5],
+                "is_public": False,
+            },
+        )
