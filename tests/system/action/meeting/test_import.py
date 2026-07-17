@@ -3226,7 +3226,7 @@ class MeetingImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_impoer_with_public_folder_and_files(self) -> None:
+    def test_import_with_public_folder_and_files(self) -> None:
         self.create_meeting()
         self.create_mediafile(is_directory=True)
         self.create_mediafile(2, parent_id=1)
