@@ -31,7 +31,7 @@ def main() -> int:
 
     sql = "-- REMOVE SECTION --\n"
     # TODO create generate diff content functions in schema generator.
-    # Using a lot of isinstance for pleasing mypy
+    # Using a lot of isinstance calls here for pleasing mypy
     remove = diff["remove"]
     if isinstance(remove, list) and isinstance(remove[0], list):
         for collection_name in remove[0]:
@@ -162,11 +162,34 @@ def generate_constraints_sql(
                         constraints_sql += Helper.get_inline_timezone_constraint(
                             table_name, field_name
                         )
-                    case "relation" | "relation-list":
+                    case (
+                        "string"
+                        | "number"
+                        | "boolean"
+                        | "JSON"
+                        | "HTMLStrict"
+                        | "HTMLPermissive"
+                        | "float"
+                        | "decimal(6)"
+                        | "timestamp"
+                        | "string[]"
+                        | "number[]"
+                        | "text"
+                        | "text[]"
+                    ):
+                        pass
+                    case (
+                        "relation"
+                        | "relation-list"
+                        | "generic-relation"
+                        | "generic-relation-list"
+                    ):
                         # TODO
                         pass
                     case _:
-                        raise NotImplementedError(f"{constraint}: {value}")
+                        raise NotImplementedError(
+                            f"{table_name}/{field_name}: {constraint}, {value}"
+                        )
             case "constant":
                 # TODO
                 pass
@@ -219,7 +242,9 @@ def generate_constraints_sql(
                 # this is irrelevant, thus omitted
                 pass
             case _:
-                raise NotImplementedError(f"{constraint}: {value}")
+                raise NotImplementedError(
+                    f"{table_name}/{field_name}: {constraint}, {value}"
+                )
         del diff_control_part[constraint]
     return constraints_sql
 
@@ -303,15 +328,17 @@ def handle_add_tree(
 ) -> str:
     sql = ""
     for collection_name, collection_def in add_tree_dict.items():
-        # TODO collection_def[0] What does that even mean for the fields? It didn't have any before?
-        # TODO what else can exist here?
+        # TODO _meta
         table_name = HelperGetNames.get_table_name(collection_name)
+        # TODO unique_together, unique_together_strict
         for fields_idx in [0, 1]:
+            # fields always exists
             fields = collection_def[1]["fields"][fields_idx]
             dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
             for field_name, field_def in fields.items():
                 if fields_idx == 0:
                     # field added
+                    # TODO needs to differentiate cardinality and type maybe usage of CodeGenerator defined functions
                     constraints_sql = generate_constraints_sql(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )

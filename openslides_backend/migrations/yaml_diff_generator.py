@@ -14,7 +14,8 @@ from openslides_backend.migrations.migration_helper import MigrationHelper
 To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
 It will generate the diff comparing it to the changes made to the model definitions present in the meta.
 The json diff will be written to 'previous_models/diff.json' if --dumpjson is given as an argument.
-# renames can only happen in the leaves
+# edits can only happen in the yaml file leaves
+# renames can only happen in the diffs leaves
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
