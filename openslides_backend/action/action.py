@@ -787,8 +787,10 @@ def merge_history_informations(
             if fqid in a:
                 if entries := information.get("entries"):
                     a[fqid].setdefault("entries", list()).extend(entries)
-                if changed_fields := information.get("changed_fields"):
-                    a[fqid].setdefault("changed_fields", dict()).update(changed_fields)
+                if structured_information := information.get("structured_information"):
+                    a[fqid].setdefault("structured_information", dict()).update(
+                        structured_information
+                    )
             else:
                 a[fqid] = information
     return a

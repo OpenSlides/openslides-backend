@@ -499,7 +499,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "meeting_user/12",
                     "model_id": "meeting_user/12",
                     "position_id": 1,
-                    "changed_fields": Jsonb({"group_ids": {"added": [1, 2]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [1, 2]}}),
                 },
                 "history_entry/3": {
                     "original_model_id": "user/3",
@@ -521,19 +521,19 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "meeting_user/14",
                     "model_id": "meeting_user/14",
                     "position_id": 1,
-                    "changed_fields": Jsonb({"group_ids": {"added": [2]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [2]}}),
                 },
                 "history_entry/6": {
                     "original_model_id": "meeting_user/44",
                     "model_id": "meeting_user/44",
                     "position_id": 1,
-                    "changed_fields": Jsonb({"group_ids": {"added": [4]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [4]}}),
                 },
                 "history_entry/7": {
                     "original_model_id": "meeting_user/74",
                     "model_id": "meeting_user/74",
                     "position_id": 1,
-                    "changed_fields": Jsonb({"group_ids": {"added": [9]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [9]}}),
                 },
                 "history_position/2": {
                     "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
@@ -553,7 +553,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "meeting_user/42",
                     "model_id": "meeting_user/42",
                     "position_id": 2,
-                    "changed_fields": Jsonb({"group_ids": {"added": [5]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [5]}}),
                 },
                 "history_entry/10": {
                     "original_model_id": "user/3",
@@ -568,13 +568,13 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "meeting_user/43",
                     "model_id": "meeting_user/43",
                     "position_id": 2,
-                    "changed_fields": Jsonb({"group_ids": {"added": [4, 5]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [4, 5]}}),
                 },
                 "history_entry/12": {
                     "original_model_id": "meeting_user/73",
                     "model_id": "meeting_user/73",
                     "position_id": 2,
-                    "changed_fields": Jsonb({"group_ids": {"added": [8]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [8]}}),
                 },
                 "history_entry/13": {
                     "original_model_id": "user/5",
@@ -590,7 +590,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "meeting_user/105",
                     "model_id": "meeting_user/105",
                     "position_id": 2,
-                    "changed_fields": Jsonb({"group_ids": {"added": [10]}}),
+                    "structured_information": Jsonb({"group_ids": {"added": [10]}}),
                 },
                 "history_entry/15": {
                     "original_model_id": "user/6",
@@ -735,7 +735,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "original_model_id": "meeting_user/12",
                 "model_id": "meeting_user/12",
                 "position_id": 1,
-                "changed_fields": {"group_ids": {"added": [1, 2]}},
+                "structured_information": {"group_ids": {"added": [1, 2]}},
             },
             "history_entry/3": {
                 "original_model_id": "user/3",
@@ -757,19 +757,19 @@ class UserMergeTogether(BaseActionTestCase):
                 "original_model_id": "meeting_user/14",
                 "model_id": "meeting_user/12",
                 "position_id": 1,
-                "changed_fields": {"group_ids": {"added": [2]}},
+                "structured_information": {"group_ids": {"added": [2]}},
             },
             "history_entry/6": {
                 "original_model_id": "meeting_user/44",
                 "model_id": "meeting_user/42",
                 "position_id": 1,
-                "changed_fields": {"group_ids": {"added": [4]}},
+                "structured_information": {"group_ids": {"added": [4]}},
             },
             "history_entry/7": {
                 "original_model_id": "meeting_user/74",
                 "model_id": "meeting_user/106",
                 "position_id": 1,
-                "changed_fields": {"group_ids": {"added": [9]}},
+                "structured_information": {"group_ids": {"added": [9]}},
             },
             "history_position/2": {
                 "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
@@ -790,7 +790,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "original_model_id": "meeting_user/42",
                 "model_id": "meeting_user/42",
                 "position_id": 2,
-                "changed_fields": {"group_ids": {"added": [5]}},
+                "structured_information": {"group_ids": {"added": [5]}},
             },
             "history_entry/10": {
                 "original_model_id": "user/3",
@@ -805,13 +805,13 @@ class UserMergeTogether(BaseActionTestCase):
                 "original_model_id": "meeting_user/43",
                 "model_id": "meeting_user/42",
                 "position_id": 2,
-                "changed_fields": {"group_ids": {"added": [4, 5]}},
+                "structured_information": {"group_ids": {"added": [4, 5]}},
             },
             "history_entry/12": {
                 "original_model_id": "meeting_user/73",
                 "model_id": "meeting_user/106",
                 "position_id": 2,
-                "changed_fields": {"group_ids": {"added": [8]}},
+                "structured_information": {"group_ids": {"added": [8]}},
             },
             "history_entry/13": {
                 "original_model_id": "user/5",
@@ -827,7 +827,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "original_model_id": "meeting_user/105",
                 "model_id": "meeting_user/107",
                 "position_id": 2,
-                "changed_fields": {"group_ids": {"added": [10]}},
+                "structured_information": {"group_ids": {"added": [10]}},
             },
             "history_entry/15": {
                 "original_model_id": "user/6",

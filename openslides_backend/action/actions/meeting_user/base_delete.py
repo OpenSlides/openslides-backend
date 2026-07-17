@@ -45,5 +45,7 @@ class MeetingUserBaseDelete(DeleteAction):
             ):
                 information[
                     fqid_from_collection_and_id("meeting_user", meeting_user["id"])
-                ] = build_history_information_data(changed_fields={"is_present": False})
+                ] = build_history_information_data(
+                    structured_information={"is_present": False}
+                )
         return information

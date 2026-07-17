@@ -25,7 +25,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         if with_meeting_user:
             self.assert_history_information(
                 "meeting_user/1",
-                changed_fields={"is_present": True},
+                structured_information={"is_present": True},
             )
 
     def test_set_present_add_correct(self) -> None:
@@ -65,7 +65,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
             )
             self.assert_history_information(
                 "meeting_user/2",
-                changed_fields={"is_present": True},
+                structured_information={"is_present": True},
             )
 
     def test_set_present_add_second_correct(self) -> None:
@@ -96,7 +96,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         if with_meeting_user:
             self.assert_history_information(
                 "meeting_user/1",
-                changed_fields={"is_present": False},
+                structured_information={"is_present": False},
             )
 
     def test_set_present_del_correct(self) -> None:
