@@ -157,10 +157,9 @@
             "assignment_candidate_ids": [1],
             "structure_level_ids": [1],
             "group_ids": [2],
-            "poll_voted_ids": [3],
             "poll_option_ids": [1, 8],
-            "acting_ballot_ids": [9],
-            "represented_ballot_ids": [9]
+            "acting_ballot_ids": [1],
+            "represented_ballot_ids": [1]
         },
         "2": {
             "id": 2,
@@ -1952,7 +1951,7 @@
             "allow_vote_split": false,
             "content_object_id": "motion/1",
             "ballot_ids": [9],
-            "voted_ids": [1],
+            "ballot_user_ids": [1],
             "meeting_id": 1
         },
         "4": {
@@ -2178,12 +2177,20 @@
             "id": 9,
             "value": "1",
             "weight": "1.000000",
+            "split": false,
+            "poll_id": 3,
+            "poll_ballot_user_id": 1
+        }
+      },
+      "poll_ballot_user": {
+        "1": {
+            "id": 1,
             "acting_meeting_user_id": 1,
             "represented_meeting_user_id": 1,
-            "split": false,
-            "poll_id": 3
+            "poll_id": 3,
+            "poll_ballot_id": 9
         }
-    },
+      },
     "assignment": {
         "1": {
             "id": 1,

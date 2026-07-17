@@ -610,6 +610,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "poll_ballot/8": {
                     "poll_id": 7,
+                    "poll_ballot_user_id": 12,
+                },
+                "poll_ballot_user/12": {
+                    "poll_id": 7,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,
                 },

@@ -445,6 +445,7 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
             self.assert_model_not_exists(f"poll_option/{i+1}")
         for i in range(9):
             self.assert_model_not_exists(f"poll_ballot/{i+1}")
+        self.assert_model_not_exists("poll_ballot_user/1")
         for i in range(2):
             self.assert_model_not_exists(f"poll_config_approval/{i+1}")
         self.assert_model_not_exists("poll_config_selection/1")

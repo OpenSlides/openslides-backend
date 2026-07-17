@@ -436,8 +436,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             # sort events: create - update - delete
             events_by_type: dict[EventType, list[Event]] = defaultdict(list)
             for event in self.events:
-                self.apply_event(event)
-                events_by_type[event["type"]].append(event)
+                if event["type"] == "delete" or not self.is_to_be_deleted(
+                    event["fqid"]
+                ):
+                    self.apply_event(event)
+                    events_by_type[event["type"]].append(event)
             information = self.get_full_history_information()
             if self.is_sub_call:
                 write_request.information = information
@@ -764,6 +767,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         with the return data from the database writer.
         """
         return None
+
+    def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
+        return self.datastore.is_to_be_deleted(fqid)
 
 
 def merge_history_informations(
