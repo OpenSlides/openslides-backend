@@ -88,19 +88,19 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
     found = set()
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.table_sql[collection_name]
+        sql += GenerateCodeBlocks.table_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.view_sql[collection_name]
+        sql += GenerateCodeBlocks.view_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.alter_table_final_sql[collection_name]
+        sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.trigger_sql[collection_name]
+        sql += GenerateCodeBlocks.trigger_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.intermediate_sql[collection_name]
+        sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
     for collection_name in found:
         del dc_add[collection_name]
     return sql
