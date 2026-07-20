@@ -28,7 +28,6 @@ services:
         depends_on:
             - postgres
             - auth
-            - vote
     auth:
         build:
             context: "https://github.com/OpenSlides/openslides-auth-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
@@ -48,26 +47,6 @@ services:
             - CACHE_HOST=redis
         depends_on:
             - redis
-    vote:
-        build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#feature/vote"  # TODO: change branch back to the main
-            target: "dev"
-            args:
-                CONTEXT: "dev"
-        image: openslides-vote-dev
-        ports:
-            - "9013:9013"
-        environment:
-            - OPENSLIDES_DEVELOPMENT=1
-            - MESSAGING=redis
-            - AUTH_HOST=auth
-            - DATABASE_HOST=postgres
-            - VOTE_DATABASE_HOST=postgres
-            - MESSAGE_BUS_HOST=redis
-            - CACHE_HOST=redis
-        depends_on:
-            - redis
-            - auth
     postgres:
         image: postgres:17
         command: ["postgres", "-c", "log_statement=all"]

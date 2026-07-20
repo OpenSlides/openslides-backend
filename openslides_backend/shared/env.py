@@ -47,10 +47,6 @@ class Environment(Env):
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
         "OPENTELEMETRY_ENABLED": "false",
         "PRESENTER_PORT": "9003",
-        "VOTE_HOST": "vote",
-        "VOTE_PATH": "/system/vote",
-        "VOTE_PORT": "9013",
-        "VOTE_PROTOCOL": "http",
         "DATABASE_HOST": "",
         "DATABASE_PORT": "5432",
         "DATABASE_NAME": "openslides",
@@ -104,7 +100,7 @@ class Environment(Env):
     def get_service_url(self) -> dict[str, str]:
         service_url = {}
         # Extend the vars attribute with the lower case properties for the service URLs.
-        for service in ("media", "vote"):
+        for service in ("media",):
             key = service + "_url"
             service_url[key] = self.get_endpoint(service.upper())
         return service_url

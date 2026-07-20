@@ -1,4 +1,4 @@
-# Use local auth and vote service
+# Use local auth service
 version: "3"
 services:
     backend:
@@ -12,11 +12,6 @@ services:
         environment:
             - PYTHONPATH=/app:/osauthlib
             - MYPYPATH=/app:/osauthlib
-    vote:
-        build:
-            context: ../../openslides-vote-service
-            args:
-                CONTEXT: "prod"
     auth:
         build:
             context: ../../openslides-auth-service
