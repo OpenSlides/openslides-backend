@@ -28,7 +28,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         yield from super().create_events(instance)
         db_instance = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["id"]),
-            ["vote_delegated_to_id", "vote_delegations_from_ids"],
+            ["vote_delegated_to_ids", "vote_delegations_from_ids"],
             use_changed_models=False,
             raise_exception=False,
             lock_result=False,

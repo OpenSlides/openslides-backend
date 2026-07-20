@@ -124,6 +124,7 @@
     users_enable_presence_view: boolean;
     users_enable_vote_weight: boolean;
     users_enable_vote_delegations: boolean;
+    users_vote_delegations_max_amount: number;
     users_allow_self_set_present: boolean;
     users_pdf_welcometitle: string;
     users_pdf_welcometext: string;

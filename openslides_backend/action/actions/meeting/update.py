@@ -138,6 +138,7 @@ meeting_settings_keys = [
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_enable_vote_delegations",
+    "users_vote_delegations_max_amount",
     "users_allow_self_set_present",
     "users_pdf_welcometitle",
     "users_pdf_welcometext",

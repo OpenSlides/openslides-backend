@@ -20,7 +20,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                 "meeting_user/12": {
                     "meeting_id": 222,
                     "user_id": 2,
-                    "vote_delegated_to_id": 13,
+                    "vote_delegated_to_ids": [13],
                 },
                 "meeting_user/13": {"meeting_id": 222, "user_id": 3},
                 "meeting_user/14": {"meeting_id": 222, "user_id": 4},
@@ -44,14 +44,16 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_delegated_to_error_self(self) -> None:
-        response = self.request_executor({"vote_delegated_to_id": 14})
+        response = self.request_executor({"vote_delegated_to_ids": [14]})
         self.assert_status_code(response, 400)
         self.assertIn(
             "User 4 can't delegate the vote to himself.", response.json["message"]
         )
 
     def test_delegated_to_without_group(self) -> None:
-        response = self.request_executor({"group_ids": [], "vote_delegated_to_id": 13})
+        response = self.request_executor(
+            {"group_ids": [], "vote_delegated_to_ids": [13]}
+        )
         self.assert_status_code(response, 400)
         self.assertIn(
             "Update of meeting_user/14: You try to set following required fields to an empty value: ['group_ids']",
@@ -60,7 +62,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
     def test_delegated_to_error_group_do_not_match_meeting(self) -> None:
         response = self.request_executor(
-            {"vote_delegated_to_id": 13, "group_ids": [227]}
+            {"vote_delegated_to_ids": [13], "group_ids": [227]}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -131,7 +133,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_delegated_to_error_target_not_exists(self) -> None:
-        response = self.request_executor({"vote_delegated_to_id": 1000})
+        response = self.request_executor({"vote_delegated_to_ids": [1000]})
         self.assert_status_code(response, 400)
         self.assertIn(
             "Model 'meeting_user/1000' does not exist.",
@@ -188,47 +190,47 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_reset_vote_delegated_to_ok(self) -> None:
         self.set_models(
             {
-                "meeting_user/14": {"vote_delegated_to_id": 13},
+                "meeting_user/14": {"vote_delegated_to_ids": [13]},
             }
         )
-        response = self.request_executor({"vote_delegated_to_id": None})
+        response = self.request_executor({"vote_delegated_to_ids": []})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_id": None})
+        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_ids": None})
         self.assert_model_exists("meeting_user/13", {"vote_delegations_from_ids": [12]})
 
     def test_reset_vote_delegations_from_ok(self) -> None:
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegated_to_id": 14},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/13": {"vote_delegated_to_ids": [14]},
             }
         )
         response = self.request_executor({"vote_delegations_from_ids": [12]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": [12]})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": 14})
-        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": None})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": [14]})
+        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_ids": None})
 
     def test_delegations_from_on_empty_array_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegated_to_id": 14},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/13": {"vote_delegated_to_ids": [14]},
             }
         )
         response = self.request_executor({"vote_delegations_from_ids": []})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": None})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": None})
-        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": None})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_ids": None})
 
     def test_delegated_to_error_user_cant_delegate_to_user_who_delegated(self) -> None:
         self.set_models(
             {
-                "meeting_user/13": {"vote_delegated_to_id": 12},
+                "meeting_user/13": {"vote_delegated_to_ids": [12]},
             }
         )
-        response = self.request_executor({"vote_delegated_to_id": 13})
+        response = self.request_executor({"vote_delegated_to_ids": [13]})
         self.assert_status_code(response, 400)
         self.assertIn(
             "User 4 cannot delegate his vote to user 3, because that user has delegated his vote himself.",
@@ -238,16 +240,16 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_delegated_replace_existing_to_other_user(self) -> None:
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 13},
-                "meeting_user/14": {"vote_delegated_to_id": 13},
+                "meeting_user/12": {"vote_delegated_to_ids": [13]},
+                "meeting_user/14": {"vote_delegated_to_ids": [13]},
             }
         )
-        response = self.request_executor({"vote_delegated_to_id": 11})
+        response = self.request_executor({"vote_delegated_to_ids": [11]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/11", {"vote_delegations_from_ids": [14]})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": 13})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": [13]})
         self.assert_model_exists("meeting_user/13", {"vote_delegations_from_ids": [12]})
-        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_id": 11})
+        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_ids": [11]})
 
     def test_replace_existing_delegations_from_1(self) -> None:
         self.set_models(
@@ -270,20 +272,20 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     ) -> None:
         self.set_models(
             {
-                "meeting_user/11": {"vote_delegated_to_id": 14},
-                "meeting_user/12": {"vote_delegated_to_id": 14},
+                "meeting_user/11": {"vote_delegated_to_ids": [14]},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
             }
         )
 
         response = self.request_executor({"vote_delegations_from_ids": [13]})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": None})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": None})
-        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": 14})
+        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_ids": [14]})
         self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": [13]})
 
     def test_delegations_from_but_delegated_own(self) -> None:
-        self.set_models({"meeting_user/14": {"vote_delegated_to_id": 13}})
+        self.set_models({"meeting_user/14": {"vote_delegated_to_ids": [13]}})
         response = self.request_executor({"vote_delegations_from_ids": [11]})
 
         self.assert_status_code(response, 400)
@@ -302,45 +304,48 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
     def test_vote_setting_both_correct_from_to_1_standard_user(self) -> None:
         """meeting_user2/4 -> meeting_user3: meeting_user4 reset own delegation and receives other delegation"""
-        self.set_models({"meeting_user/14": {"vote_delegated_to_id": 13}})
+        self.set_models({"meeting_user/14": {"vote_delegated_to_ids": [13]}})
 
         response = self.request_executor(
-            {"vote_delegations_from_ids": [11], "vote_delegated_to_id": None}
+            {"vote_delegations_from_ids": [11], "vote_delegated_to_ids": []}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": 14})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": 13})
+        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": [14]})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": [13]})
         self.assert_model_exists("meeting_user/13", {"vote_delegations_from_ids": [12]})
-        self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": [11]})
+        self.assert_model_exists(
+            "meeting_user/14",
+            {"vote_delegated_to_ids": None, "vote_delegations_from_ids": [11]},
+        )
 
     def test_vote_setting_both_correct_from_to_2_standard_user(self) -> None:
         """meeting_user2/3 -> meeting_user4: meeting_user4 delegates to meeting_user/1 and resets it's received delegations"""
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegated_to_id": 14},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/13": {"vote_delegated_to_ids": [14]},
             }
         )
 
         response = self.request_executor(
-            {"vote_delegations_from_ids": [], "vote_delegated_to_id": 11}
+            {"vote_delegations_from_ids": [], "vote_delegated_to_ids": [11]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/11", {"vote_delegations_from_ids": [14]})
-        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": None})
-        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": None})
-        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_id": 11})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/14", {"vote_delegated_to_ids": [11]})
 
     def test_vote_setting_both_from_to_error_standard_user_1(self) -> None:
         """meeting_user2/3 -> meeting_user4: meeting_user4 delegates to meeting_user/13 and resets received delegation from meeting_user/13"""
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegated_to_id": 14},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/13": {"vote_delegated_to_ids": [14]},
             }
         )
         response = self.request_executor(
-            {"vote_delegations_from_ids": [12], "vote_delegated_to_id": 13}
+            {"vote_delegations_from_ids": [12], "vote_delegated_to_ids": [13]}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -352,14 +357,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """user2/3 -> user4: user4 removes 2 and adds 1 delegations_from"""
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegated_to_id": 14},
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/13": {"vote_delegated_to_ids": [14]},
             }
         )
         response = self.request_executor({"vote_delegations_from_ids": [13, 11]})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": 14})
         self.assert_model_exists(
             "meeting_user/14", {"vote_delegations_from_ids": [11, 13]}
         )
-        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": 14})
+        self.assert_model_exists("meeting_user/13", {"vote_delegated_to_ids": [14]})
+        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": [14]})
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": None})

@@ -303,6 +303,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test({"poll_default_allow_vote_split": True})
         self.assert_model_exists("meeting/1", {"poll_default_allow_vote_split": True})
 
+    def test_update_users_vote_delegations_max_amount(self) -> None:
+        self.basic_test({"users_vote_delegations_max_amount": 4})
+        self.assert_model_exists("meeting/1", {"users_vote_delegations_max_amount": 4})
+
     def test_update_motions_block_slide_columns(self) -> None:
         self.basic_test({"motions_block_slide_columns": 2})
         self.assert_model_exists("meeting/1", {"motions_block_slide_columns": 2})

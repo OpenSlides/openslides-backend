@@ -328,7 +328,7 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
         meeting_user_self = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["id"]),
             [
-                "vote_delegated_to_id",
+                "vote_delegated_to_ids",
                 "vote_delegations_from_ids",
                 "user_id",
                 "meeting_id",
@@ -339,9 +339,9 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
             meeting_user_self.update(
                 {"vote_delegations_from_ids": instance["vote_delegations_from_ids"]}
             )
-        if "vote_delegated_to_id" in instance:
+        if "vote_delegated_to_ids" in instance:
             meeting_user_self.update(
-                {"vote_delegated_to_id": instance["vote_delegated_to_id"]}
+                {"vote_delegated_to_ids": instance["vote_delegated_to_ids"]}
             )
 
         user_id_self = cast(
