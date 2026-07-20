@@ -350,50 +350,83 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
         meeting_id_self = cast(
             int, meeting_user_self.get("meeting_id", instance.get("meeting_id"))
         )
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id_self),
+            ["users_vote_delegations_max_amount"],
+        )
+        delegations_max_amount = meeting.get("users_vote_delegations_max_amount", 1)
 
-        if "vote_delegated_to_id" in instance:
-            self.check_vote_delegated_to_id(
-                instance, meeting_user_self, user_id_self, meeting_id_self
+        if "vote_delegated_to_ids" in instance:
+            self.check_vote_delegated_to_ids(
+                instance,
+                meeting_user_self,
+                user_id_self,
+                meeting_id_self,
+                delegations_max_amount,
             )
         if "vote_delegations_from_ids" in instance:
             self.check_vote_delegations_from_ids(
-                instance, meeting_user_self, user_id_self, meeting_id_self
+                instance,
+                meeting_user_self,
+                user_id_self,
+                meeting_id_self,
+                delegations_max_amount,
             )
         return instance
 
-    def check_vote_delegated_to_id(
+    def check_vote_delegated_to_ids(
         self,
         instance: dict[str, Any],
         meeting_user_self: dict[str, Any],
         user_id_self: int,
         meeting_id_self: int,
+        delegations_max_amount: int,
     ) -> None:
-        if instance["id"] == instance.get("vote_delegated_to_id"):
+        if instance["id"] in instance.get("vote_delegated_to_ids", []):
             raise ActionException(
                 f"User {user_id_self} can't delegate the vote to himself."
             )
 
-        if instance["vote_delegated_to_id"]:
+        if instance["vote_delegated_to_ids"]:
             if meeting_user_self.get("vote_delegations_from_ids"):
                 raise ActionException(
                     f"User {user_id_self} cannot delegate his vote, because there are votes delegated to him."
                 )
-            meeting_user_delegated_to = self.datastore.get(
-                fqid_from_collection_and_id(
-                    "meeting_user", instance["vote_delegated_to_id"]
-                ),
-                ["vote_delegated_to_id", "user_id", "meeting_id"],
-            )
-            if meeting_user_delegated_to.get("meeting_id") != meeting_id_self:
+            if len(instance["vote_delegated_to_ids"]) > delegations_max_amount:
                 raise ActionException(
-                    f"User {meeting_user_delegated_to.get('user_id')}'s delegation id don't belong to meeting {meeting_id_self}."
+                    f"User {user_id_self} cannot delegate his vote to more than {delegations_max_amount} user{'s' if delegations_max_amount > 1 else ''} in meeting {meeting_id_self}."
                 )
-            if (
-                meeting_user_delegated_to.get("vote_delegated_to_id")
-                and instance["id"] != meeting_user_delegated_to["vote_delegated_to_id"]
-            ):
+            meeting_error_user_ids: list[int] = []
+            vote_error_user_ids: list[int] = []
+            meeting_users_delegated_to = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting_user",
+                        instance["vote_delegated_to_ids"],
+                        ["vote_delegated_to_ids", "user_id", "meeting_id"],
+                    )
+                ]
+            )["meeting_user"]
+            for delegated_to_id in instance["vote_delegated_to_ids"]:
+                meeting_user_delegated_to, user_id = self._get_meeting_user_and_user_id(
+                    meeting_users_delegated_to, delegated_to_id
+                )
+                if meeting_user_delegated_to.get("meeting_id") != meeting_id_self:
+                    meeting_error_user_ids.append(user_id)
+                delegated_target_to_ids = meeting_user_delegated_to.get(
+                    "vote_delegated_to_ids", []
+                )
+                if delegated_target_to_ids and delegated_target_to_ids != [
+                    instance["id"]
+                ]:
+                    vote_error_user_ids.append(user_id)
+            if meeting_error_user_ids:
                 raise ActionException(
-                    f"User {user_id_self} cannot delegate his vote to user {meeting_user_delegated_to['user_id']}, because that user has delegated his vote himself."
+                    f"User(s) {meeting_error_user_ids} delegation ids don't belong to meeting {meeting_id_self}."
+                )
+            elif vote_error_user_ids:
+                raise ActionException(
+                    f"User {user_id_self} cannot delegate his vote to user(s) {vote_error_user_ids}, because these users have delegated their votes themselves."
                 )
 
     def check_vote_delegations_from_ids(
@@ -402,9 +435,10 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
         meeting_user_self: dict[str, Any],
         user_id_self: int,
         meeting_id_self: int,
+        delegations_max_amount: int,
     ) -> None:
         delegated_from_ids = instance["vote_delegations_from_ids"]
-        if delegated_from_ids and meeting_user_self.get("vote_delegated_to_id"):
+        if delegated_from_ids and meeting_user_self.get("vote_delegated_to_ids"):
             raise ActionException(
                 f"User {user_id_self} cannot receive vote delegations, because he delegated his own vote."
             )
@@ -414,18 +448,44 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
             )
         vote_error_user_ids: list[int] = []
         meeting_error_user_ids: list[int] = []
-        for meeting_user_id in delegated_from_ids:
-            meeting_user = self.datastore.get(
-                fqid_from_collection_and_id("meeting_user", meeting_user_id),
-                ["vote_delegations_from_ids", "user_id", "meeting_id"],
+        max_amount_error_user_ids: list[int] = []
+        meeting_users_delegated_from = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    delegated_from_ids,
+                    [
+                        "vote_delegated_to_ids",
+                        "vote_delegations_from_ids",
+                        "user_id",
+                        "meeting_id",
+                    ],
+                )
+            ]
+        )["meeting_user"]
+        for delegated_from_id in delegated_from_ids:
+            meeting_user_delegated_from, user_id = self._get_meeting_user_and_user_id(
+                meeting_users_delegated_from, delegated_from_id
             )
-            if meeting_user.get("meeting_id") != meeting_id_self:
-                meeting_error_user_ids.append(cast(int, meeting_user.get("user_id")))
-            if meeting_user.get("vote_delegations_from_ids") and meeting_user[
+
+            if meeting_user_delegated_from.get("meeting_id") != meeting_id_self:
+                meeting_error_user_ids.append(user_id)
+            if meeting_user_delegated_from.get(
                 "vote_delegations_from_ids"
-            ] != [instance["id"]]:
-                vote_error_user_ids.append(cast(int, meeting_user.get("user_id")))
-        if meeting_error_user_ids:
+            ) and meeting_user_delegated_from["vote_delegations_from_ids"] != [
+                instance["id"]
+            ]:
+                vote_error_user_ids.append(user_id)
+            delegated_to_ids = set(
+                meeting_user_delegated_from.get("vote_delegated_to_ids", [])
+            )
+            if len(delegated_to_ids | {instance["id"]}) > delegations_max_amount:
+                max_amount_error_user_ids.append(user_id)
+        if max_amount_error_user_ids:
+            raise ActionException(
+                f"User(s) {max_amount_error_user_ids} cannot delegate their votes to more than {delegations_max_amount} user{'s' if delegations_max_amount > 1 else ''} in meeting {meeting_id_self}."
+            )
+        elif meeting_error_user_ids:
             raise ActionException(
                 f"User(s) {meeting_error_user_ids} delegation ids don't belong to meeting {meeting_id_self}."
             )
@@ -433,3 +493,14 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
             raise ActionException(
                 f"User(s) {vote_error_user_ids} can't delegate their votes because they receive vote delegations."
             )
+
+    def _get_meeting_user_and_user_id(
+        self,
+        meeting_users_from_db: dict[int, dict[str, Any]],
+        meeting_user_id: int,
+    ) -> tuple[dict[str, Any], int]:
+        if not (meeting_user := meeting_users_from_db[meeting_user_id]):
+            raise ModelDoesNotExist(
+                fqid_from_collection_and_id("meeting_user", meeting_user_id)
+            )
+        return meeting_user, cast(int, meeting_user.get("user_id"))

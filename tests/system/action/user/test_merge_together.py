@@ -957,7 +957,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
 
-    def test_with_multiple_delegations(self) -> None:
+    def test_with_multiple_delegations_in_different_meetings(self) -> None:
         self.set_models(
             {
                 "meeting_user/15": {"vote_delegated_to_id": 14},
@@ -970,6 +970,99 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_exists("meeting_user/12", {"vote_delegations_from_ids": [15]})
         self.assert_model_exists("meeting_user/42", {"vote_delegations_from_ids": [43]})
         self.assert_model_exists("meeting_user/106", {"vote_delegated_to_id": 73})
+
+    def test_with_multiple_delegations_from(self) -> None:
+        """
+        Check that vote_delegations_from_ids contains the ids from this field
+        for all the merged users.
+        """
+        self.set_models(
+            {
+                "meeting_user/15": {"vote_delegated_to_ids": [14]},
+                "meeting_user/16": {
+                    "user_id": 6,
+                    "meeting_id": 1,
+                    "vote_delegated_to_ids": [12],
+                },
+                "group/2": {"meeting_user_ids": [12, 14, 15, 16]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/12", {"vote_delegations_from_ids": [15, 16]}
+        )
+        self.assert_model_exists("meeting_user/15", {"vote_delegated_to_ids": [12]})
+        self.assert_model_exists("meeting_user/16", {"vote_delegated_to_ids": [12]})
+
+    def test_with_multiple_delegations_to(self) -> None:
+        """
+        Check that vote_delegated_to_ids contains only the ids from this field
+        of the primary meeting_user.
+        """
+        self.set_models(
+            {
+                "meeting_user/16": {"user_id": 6, "meeting_id": 1},
+                "meeting_user/12": {"vote_delegated_to_ids": [16]},
+                "meeting_user/14": {"vote_delegated_to_ids": [15]},
+                "group/2": {"meeting_user_ids": [12, 14, 15, 16]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": [16]})
+        self.assert_model_exists("meeting_user/16", {"vote_delegations_from_ids": [12]})
+        self.assert_model_exists("meeting_user/15", {"vote_delegations_from_ids": None})
+
+    def base_test_different_delegation_roles_error(self) -> None:
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "Cannot carry out merge into user/2, because "
+            + " and ".join(
+                [
+                    "some of the selected users have different delegations roles in meeting(s) 1",
+                    "some of the selected users are delegating votes to each other in meeting(s) 1",
+                ]
+            ),
+            response.json["message"],
+        )
+
+    def test_with_delegations_to_other_and_self(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"vote_delegated_to_ids": [15]},
+                "meeting_user/14": {"vote_delegated_to_ids": [12]},
+            }
+        )
+        self.base_test_different_delegation_roles_error()
+
+    def test_with_delegations_to_self_and_other(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/14": {"vote_delegated_to_ids": [15]},
+            }
+        )
+        self.base_test_different_delegation_roles_error()
+
+    def test_with_delegations_from_self_and_other(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/14": {"vote_delegated_to_ids": [12]},
+                "meeting_user/15": {"vote_delegated_to_ids": [14]},
+            }
+        )
+        self.base_test_different_delegation_roles_error()
+
+    def test_with_delegations_from_other_and_self(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"vote_delegated_to_ids": [14]},
+                "meeting_user/15": {"vote_delegated_to_ids": [12]},
+            }
+        )
+        self.base_test_different_delegation_roles_error()
 
     def set_up_polls_for_merge(self) -> None:
         self.create_assignment(1, 1)
