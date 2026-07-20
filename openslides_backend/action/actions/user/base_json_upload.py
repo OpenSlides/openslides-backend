@@ -193,7 +193,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                         ),
                     )
                 else:
-                    check_result = ResultType.NOT_FOUND
+                    check_result = ResultType.NOT_FOUND  #
                     id_ = 0
                 if check_result == ResultType.FOUND_ID and id_ != 0:
                     username = self.names_email_lookup.get_field_by_name(
@@ -506,9 +506,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
 
         if not entry.get("id"):
             if "username" in failing_fields:
-                failing_fields.remove("username")
+                failing_fields.remove("username")  #
             if "member_number" in failing_fields:
-                failing_fields.remove("member_number")
+                failing_fields.remove("member_number")  #
 
         verbose_ff = [
             field if field != "home_committee_id" else "home_committee"

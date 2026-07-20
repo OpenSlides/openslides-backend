@@ -100,7 +100,7 @@ class Lookup:
                 ]
         if or_filters:
             if global_and_filter:
-                filter_: Filter = And(global_and_filter, Or(*or_filters))
+                filter_: Filter = And(global_and_filter, Or(*or_filters))  #
             else:
                 filter_ = Or(*or_filters)
 
@@ -184,7 +184,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
         if type(field) is dict:
             return field.get("value", "")
         elif type(field) is str:
-            return field
+            return field  #
         else:
             return None
 
@@ -281,7 +281,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
             if required:
                 error = f"Error: {self.import_name} {entry[field]['id']} not found anymore for updating {self.import_name} '{value}'."
             else:
-                error = f"Error: {field} '{value}' not found anymore in {self.import_name} with id '{id_}'"
+                error = f"Error: {field} '{value}' not found anymore in {self.import_name} with id '{id_}'"  #
 
         if error:
             row["messages"].append(error)

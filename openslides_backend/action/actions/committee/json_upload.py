@@ -320,7 +320,7 @@ class CommitteeJsonUpload(
                         "Template meetings can only be used for existing committees."
                     )
                 elif not entry.get("meeting_name"):
-                    pass  # message was already created in meeting_checks
+                    pass  # message was already created in meeting_checks  - test it
                 else:
                     meetings = meeting_map[(template, committee_id)]
                     if len(meetings) > 1:
@@ -342,7 +342,7 @@ class CommitteeJsonUpload(
 
     def is_same_day(self, dt_a: datetime | None, dt_b: datetime | None) -> bool:
         if dt_a is None or dt_b is None:
-            return dt_a == dt_b
+            return dt_a == dt_b  #
         return dt_a.date() == dt_b.date()
 
     def validate_with_lookup(
@@ -375,7 +375,7 @@ class CommitteeJsonUpload(
                     else:
                         obj["info"] = ImportState.WARNING
                         missing.append(name)
-                elif result == ResultType.FOUND_MORE_IDS:
+                elif result == ResultType.FOUND_MORE_IDS:  #
                     duplicates.append(name)
             objects.append(obj)
         if missing:

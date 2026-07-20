@@ -82,6 +82,11 @@ class TestExportMeeting(BasePresenterTestCase):
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 403
 
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("export_meeting")
+        assert status_code == 400
+        assert "No data given." == data["message"]
+
     def test_with_locked_meeting(self) -> None:
         self.set_models({"meeting/1": {"locked_from_inside": True}})
         status_code, data = self.request("export_meeting", {"meeting_id": 1})

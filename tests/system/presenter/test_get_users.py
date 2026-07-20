@@ -145,3 +145,8 @@ class TestGetUsers(BasePresenterTestCase):
         self.client.auth_data.pop("access_token", None)
         status_code, data = self.request("get_users", {})
         self.assertEqual(status_code, 403)
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_users")
+        assert status_code == 400
+        assert "No data given." == data["message"]
