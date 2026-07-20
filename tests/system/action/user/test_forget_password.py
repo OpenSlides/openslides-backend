@@ -51,6 +51,44 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert "Ihres OpenSlides-Passworts" in handler.emails[0]["data"]
 
+    def test_forget_password_send_mail_correct_translated_to_orga_default(self) -> None:
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"url": None, "default_language": "de"}, "user/1": {"email": "test@ntvtn.de"}}
+        )
+        start_time = datetime.now(ZoneInfo("UTC"))
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password",
+                {"email": "test@ntvtn.de"},
+                anonymous=True,
+                lang="mars",
+            )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/1")
+        assert user.get("last_email_sent", 0) >= start_time
+        assert handler.emails[0]["from"] == EmailSettings.default_from_email
+        assert "Ihres OpenSlides-Passworts" in handler.emails[0]["data"]
+
+    def test_forget_password_send_mail_correct_translated_to_orga_default_2(self) -> None:
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"url": None, "default_language": "en"}, "user/1": {"email": "test@ntvtn.de"}}
+        )
+        start_time = datetime.now(ZoneInfo("UTC"))
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password",
+                {"email": "test@ntvtn.de"},
+                anonymous=True,
+                lang="mars",
+            )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/1")
+        assert user.get("last_email_sent", 0) >= start_time
+        assert handler.emails[0]["from"] == EmailSettings.default_from_email
+        assert "You are receiving this email" in handler.emails[0]["data"]
+
     def test_forget_password_saml_sso_user_error(self) -> None:
         self.set_models(
             {

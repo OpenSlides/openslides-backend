@@ -29,7 +29,7 @@ class _Translator:
         else:
             return msg
 
-    def set_translation_language(self, lang_header: str | None) -> None:
+    def set_translation_language(self, lang_header: str | None, default_language: str | None = None) -> None:
         langs = []
         if lang_header is not None:
             langs = self.parse_language_header(lang_header)
@@ -38,7 +38,7 @@ class _Translator:
                 self.current_language = lang
                 break
         else:
-            self.current_language = DEFAULT_LANGUAGE
+            self.current_language = default_language or DEFAULT_LANGUAGE
 
     def parse_language_header(self, lang_header: str) -> list[str]:
         # each language is separated by a comma
