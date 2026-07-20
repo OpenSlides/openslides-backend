@@ -35,6 +35,8 @@ class ActionView(BaseView):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 MigrationHelper.assert_migration_index(curs)
+                curs.execute("SELECT default_language FROM organization_t WHERE id = 1")
+                lang: str | None = (curs.fetchone() or {}).get("default_language")
         # Get user id.
         user_id, access_token = self.get_user_id_from_headers(
             request.headers, request.cookies
@@ -47,7 +49,9 @@ class ActionView(BaseView):
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)
-        Translator.set_translation_language(request.headers.get("Accept-Language"))
+        Translator.set_translation_language(
+            request.headers.get("Accept-Language"), lang
+        )
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handle_action_in_worker_thread(
             request.json, user_id, is_atomic, handler
