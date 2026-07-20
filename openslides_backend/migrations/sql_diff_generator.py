@@ -315,8 +315,8 @@ def handle_remove_tree(
             result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
 
             dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-        # TODO fields[1]
-                # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
+            # TODO fields[1]
+            # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
             remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
