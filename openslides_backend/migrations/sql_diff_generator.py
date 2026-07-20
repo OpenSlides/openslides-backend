@@ -256,11 +256,9 @@ def generate_altered_constraints_sql(
     diff_control_part: tuple[dict[str, Any], dict[str, Any]],
 ) -> str:
     constraints_sql = ""
-    # field_def = field_def[0]
     for constraint, value in field_def.items():
         match constraint:
             case "default":
-                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
                 constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {field_def['default']};\n"
             case "description":
                 pass
@@ -317,6 +315,8 @@ def handle_remove_tree(
             result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
 
             dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
+        # TODO fields[1]
+                # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
             remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
