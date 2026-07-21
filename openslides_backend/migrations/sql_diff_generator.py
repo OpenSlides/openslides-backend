@@ -79,7 +79,7 @@ def main() -> int:
 
 
 def remove_empty(dictionary: dict[str, Any], key: str) -> None:
-    if not any(dictionary[key]):
+    if dictionary[key] is None or not any(dictionary[key]):
         del dictionary[key]
 
 
