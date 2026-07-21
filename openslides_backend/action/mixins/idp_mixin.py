@@ -29,7 +29,7 @@ class IDPMixin(Action):
     db_user = get_config("DATABASE_USER")
     db_password = get_config("DATABASE_PASSWORD")
 
-    external_route = get_config("IDP_HOST_HEADER", "localhost:8080")
+    external_host = get_config("IDP_EXTERNAL_HOST", "localhost:8800")
 
     idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
     idp_realm = get_config("IDP_OS_REALM", "openslides")
@@ -117,7 +117,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
 
@@ -182,7 +182,7 @@ class IDPMixin(Action):
                     },
                     headers={
                         'Authorization': f'Bearer {idp_admin_access_token}',
-                        'Host': f'{self.external_route}'
+                        'Host': f'{self.external_host}'
                     }
                 )
                 if response.status_code == 200:
@@ -224,7 +224,7 @@ class IDPMixin(Action):
             response = requests.delete(self.idp_admin_route + "users/" + idp_id,
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
 
@@ -259,7 +259,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
 
@@ -273,7 +273,7 @@ class IDPMixin(Action):
                     json={},
                     headers={
                         'Authorization': f'Bearer {idp_admin_access_token}',
-                        'Host': f'{self.external_route}'
+                        'Host': f'{self.external_host}'
                     }
                 )
 
@@ -313,7 +313,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
             if response.status_code != 200:
@@ -338,7 +338,7 @@ class IDPMixin(Action):
             response = requests.post(self.idp_admin_route + "users/" + idp_id + "/password_reset",
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
 
@@ -380,7 +380,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
             if response.status_code != 200:
@@ -413,7 +413,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
             if response.status_code != 200:
@@ -453,7 +453,7 @@ class IDPMixin(Action):
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
-                    'Host': f'{self.external_route}'
+                    'Host': f'{self.external_host}'
                 }
             )
             """

@@ -21,7 +21,7 @@ db_database = get_config("DATABASE_NAME")
 db_user = get_config("DATABASE_USER")
 db_password = get_config("DATABASE_PASSWORD")
 
-external_route = get_config("IDP_HOST_HEADER", "localhost:8080")
+external_host = get_config("IDP_EXTERNAL_HOST", "localhost:8800")
 
 idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
 idp_realm = get_config("IDP_OS_REALM", "openslides")
@@ -58,7 +58,7 @@ def get_name_of_idp_user(idp_admin_access_token, idp_id) -> str:
         response = requests.get(idp_admin_route + "users/" + idp_id,
             headers={
                 'Authorization': f'Bearer {idp_admin_access_token}',
-                'Host': f'{external_route}'
+                'Host': f'{external_host}'
             }
         )
 
@@ -117,7 +117,7 @@ def migrate_and_create_user(idp_admin_access_token, username, os_id, email, pass
             },
             headers={
                 'Authorization': f'Bearer {idp_admin_access_token}',
-                'Host': f'{external_route}'
+                'Host': f'{external_host}'
             }
         )
 

@@ -37,6 +37,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         self.logger = logging.getLogger(__name__)
         self.env = env
         self.issuer_url = self.env.IDP_URL_INTERNAL
+        self.externalHost = self.env.IDP_EXTERNAL_HOST
         self.headers = {"Content-Type": "application/json"}
 
         # JWT public key caching
@@ -101,7 +102,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     def _fetch_jwks(self, kid: str):
         url = f"{self.issuer_url}/oauth/v2/keys"
         try:
-            resp = requests.get(url, timeout=10)
+            resp = requests.get(url, headers={"Host": f"{self.externalHost.strip()}"}, timeout=10)
         except requests.RequestException as e:
             raise AuthenticationException(f"Fetching JWKS: {e}")
 
