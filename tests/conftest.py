@@ -1,17 +1,15 @@
 from collections.abc import Generator
-from contextlib import suppress
 
 import pytest
 from psycopg import Connection, Cursor
-from psycopg.errors import AdminShutdown
 from psycopg.rows import DictRow
 
 from openslides_backend.services.postgresql.db_connection_handling import (
     env,
     get_new_os_conn,
 )
+from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from tests.conftest_helper import (
-    deactivate_notify_triggers,
     generate_remove_all_test_functions,
     generate_sql_for_test_initiation,
 )
@@ -78,9 +76,7 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
             curs.execute("SELECT init_table_contents();")
-        conn.commit()
-        yield conn
-        conn.commit()
-        with conn.cursor() as curs, suppress(AdminShutdown):
-            # AdminShutdown will happen when the database is dropped during first rel-db migration tests
+            conn.commit()
+            yield conn
+            conn.commit()
             curs.execute("SELECT truncate_testdata_tables();")
