@@ -387,12 +387,13 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
                 f"User {user_id_self} can't delegate the vote to himself."
             )
 
-        if instance["vote_delegated_to_ids"]:
+        vote_delegated_to_ids = instance["vote_delegated_to_ids"]
+        if vote_delegated_to_ids:
             if meeting_user_self.get("vote_delegations_from_ids"):
                 raise ActionException(
                     f"User {user_id_self} cannot delegate his vote, because there are votes delegated to him."
                 )
-            if len(instance["vote_delegated_to_ids"]) > delegations_max_amount:
+            if len(vote_delegated_to_ids) > delegations_max_amount:
                 raise ActionException(
                     f"User {user_id_self} cannot delegate his vote to more than {delegations_max_amount} user{'s' if delegations_max_amount > 1 else ''} in meeting {meeting_id_self}."
                 )
@@ -402,12 +403,12 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
                 [
                     GetManyRequest(
                         "meeting_user",
-                        instance["vote_delegated_to_ids"],
+                        vote_delegated_to_ids,
                         ["vote_delegated_to_ids", "user_id", "meeting_id"],
                     )
                 ]
             )["meeting_user"]
-            for delegated_to_id in instance["vote_delegated_to_ids"]:
+            for delegated_to_id in vote_delegated_to_ids:
                 meeting_user_delegated_to, user_id = self._get_meeting_user_and_user_id(
                     meeting_users_delegated_to, delegated_to_id
                 )
