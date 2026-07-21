@@ -8,7 +8,7 @@ The backend actions will be blocked/interrupted if the state of the version tabl
 The migration connection is committed once before the migration process starts and after all migrations were successful. It shouldn't be committed by the user‑defined functions, as this will write the current state to the tables resulting in a rollback if constraints aren't met or worse be irreversable.
 The migration state for each individual migration is stored along with its number on a different connection/transaction. Thus not experiencing any rollbacks. This enables us to look at the table `version` and see which migrations ran succesfully until a migration failed.
 
-The migrations themselves are stored in a subfolder to the `migrations` folder. Each must start with `mig_` and a four‑digit number. The migration itself should be called `migrate.py` and define a class like this.
+The migrations themselves are stored in a subfolder to the `migrations` folder. Each must start with `mig_` and a four‑digit number. The migration itself should be called `migration.py` and define a class like this.
 ```
 class Migration(BaseMigration):  # use MigrationHelper.write_line at any point to write helpful information about the migration process to the stats commands output.
     ORIGIN_COLLECTIONS = []  # collections to be migrated. Used to generate the `replace_tables` in the `version` table.
@@ -18,6 +18,7 @@ This can include certain functions that can be found by the loader. A psycopg cu
 Possible functions in the migration class are optional and defined as follows:
  * check_prerequisites: should check all necessities that need to be set before a migration can complete successfully
  * data_preparation: should do necessary stashing of information that would get lost due to schema changes
+ * data_definition: should stay unused but may be useful in very rare cases where the manual diff changes should stay separate from generated ones or where logic needs to be applied to recover something
  * data_manipulation: should alter the data within the tables
  * cleanup: should do all clean‑up tasks that aren’t performed automatically, such as deleting additional temporary tables. This step happens  before any automatic changes.
 
