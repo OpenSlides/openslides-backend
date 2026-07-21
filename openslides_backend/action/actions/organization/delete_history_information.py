@@ -1,16 +1,14 @@
-from collections.abc import Iterable
-from typing import Any
-
+from ....action.util.typing import ActionData, ActionResults
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...action import Action, Event
+from ...ddaction import DDAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..history_position.delete import HistoryPositionDelete
 
 
 @register_action("organization.delete_history_information")
-class DeleteHistoryInformation(Action):
+class DeleteHistoryInformation(DDAction):
     """
     Action to delete history information.
     """
@@ -20,12 +18,9 @@ class DeleteHistoryInformation(Action):
     skip_archived_meeting_check = True
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        all_positions = self.datastore.get_all("history_position", ["id"])
+    def write_instances(self, action_data: ActionData) -> ActionResults | None:
+        all_positions = self.database.get_all("history_position", ["id"])
         self.execute_other_action(
             HistoryPositionDelete, [{"id": id_} for id_ in all_positions]
         )
-        return instance
-
-    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
-        return []
+        return list(action_data)

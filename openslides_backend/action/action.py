@@ -24,6 +24,7 @@ from ..services.database.interface import Database
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
+    BadCodingException,
     MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
@@ -117,14 +118,14 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def __init__(
         self,
         services: Services,
-        datastore: Database,
+        database: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
         skip_archived_meeting_check: bool | None = None,
         use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
-        super().__init__(services, datastore, logging)
+        super().__init__(services, database, logging)
         self.relation_manager = relation_manager
         self.logger = logging.getLogger(__name__)
         self.env = env
@@ -137,6 +138,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.events = []
         self.results = []
         self.cascaded_actions_history = {}
+
+    @property
+    def datastore(self) -> Database:
+        return self.database
 
     def perform(
         self,
@@ -704,7 +709,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def execute_other_action(
         self,
-        ActionClass: type["Action"],
+        ActionClass: type["Action"] | type[Any],
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
@@ -731,6 +736,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 self.env,
                 skip_archived_meeting_check,
             )
+            if not isinstance(action, Action):
+                raise BadCodingException(
+                    f"Old-style action {self.__class__.__name__} can only call subactions of the same type. Called {action.__class__.__name__}."
+                )
             write_request, action_results = action.perform(
                 action_data, self.user_id, internal=True, is_sub_call=True
             )
