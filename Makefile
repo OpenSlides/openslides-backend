@@ -162,6 +162,9 @@ create-database:
 generate-schema:
 	make -C meta/dev generate-relational-schema
 
+replace-previous-models:
+	cp -r meta/collections/ openslides_backend/migrations/previous_models/ && cp meta/collection-meta.yml openslides_backend/migrations/previous_models/
+
 generate-migration-diff:
 	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)
 
@@ -181,7 +184,7 @@ run-psql:
 
 # General
 
-generate-files: | generate-permissions generate-models generate-schema generate-migration-diff 
+generate-files: | generate-permissions generate-models generate-schema generate-migration-diff
 
 # Build and run production docker container (not usable inside the docker container)
 
