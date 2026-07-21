@@ -312,7 +312,9 @@ def handle_remove_tree(
     for collection_name, field_lists in remove_tree_dict.items():
         fields = field_lists[1]["fields"]
         for field_name in fields[0]:
-            result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
+            result += (
+                f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name} CASCADE;\n"
+            )
 
             dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
             # TODO fields[1]
