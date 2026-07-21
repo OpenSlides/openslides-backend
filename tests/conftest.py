@@ -37,7 +37,7 @@ def get_rel_db_table_names(curs: Cursor[DictRow]) -> list[str]:
     gets the table names of the relational schema currently applied to the database
     """
     rows = curs.execute(
-        "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
+        "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'ballot');"
     ).fetchall()
     return [
         f"{row.get('schemaname', '')}.{row.get('tablename', '')}"
