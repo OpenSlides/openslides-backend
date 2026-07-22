@@ -24,6 +24,59 @@ PREVIOUS_MODELS_DIR = os.path.join(
 )
 
 
+class FieldAttributes:
+    skipped_in_schema = [
+        "calculated",
+        "constant_legacy",
+        "deferred",
+        "description",
+        "on_delete",
+        "restriction_mode",
+    ]
+    field_attributes = [
+        "default",
+        "maxLength",
+        "maximum",
+        "minLength",
+        "minimum",
+        "required",
+        "type",
+        "unique",
+    ]
+    relational_field_attributes = [
+        "reference",
+        "to",
+    ]
+    view_attributes = [
+        "sql",
+    ]
+    trigger_definitions = [
+        "constant",
+        "equal_fields",
+        "log_triggers",
+        "read_only",
+        "sequence_scope",
+    ]
+    enum_definitions = [
+        "enum",
+        "items",
+    ]
+    used_in_schema = [
+        *field_attributes,
+        *relational_field_attributes,
+        *view_attributes,
+        *trigger_definitions,
+        *enum_definitions,
+    ]
+
+
+class CollectionAttributes:
+    unique_together = [
+        "unique_together",
+        "unique_together_strict",
+    ]
+
+
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--dumpjson", action="store_true")
