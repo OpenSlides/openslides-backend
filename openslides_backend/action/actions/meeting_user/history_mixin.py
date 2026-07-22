@@ -353,7 +353,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     [
                         GetManyRequest(
                             "meeting_user",
-                            list(old_to_muser_ids ^ new_to_muser_ids),
+                            [*removed_to_muser_ids, *added_to_muser_ids],
                             ["user_id"],
                         )
                     ],
