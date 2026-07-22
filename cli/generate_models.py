@@ -232,7 +232,6 @@ class Attribute(Node):
                     # database metadata
                     "reference",
                     "sql",
-                    "deferred",
                     "unique",
                     "equal_fields",
                     "log_triggers",

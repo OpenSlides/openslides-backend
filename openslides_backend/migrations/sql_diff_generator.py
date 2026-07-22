@@ -147,7 +147,6 @@ def generate_constraints_sql(
         unique_together_strict
         maxLength
         maximum
-        deferred
         calculated
         minLength
         """
