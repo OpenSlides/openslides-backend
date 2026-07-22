@@ -138,7 +138,13 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
-) -> list[list[str] | dict[str, Any]] | None:
+    enum_tree: dict[str, list[str]] = {},
+    path: tuple[str, ...] = (),
+) -> (
+    list[list[str] | dict[str, Any]]
+    | dict[str, list[list[str] | dict[str, Any]] | dict[str, str]]
+    | None
+):
     missing_entries = []
     tree = {}
     for key, prev_value in prev_models.items():
@@ -155,18 +161,31 @@ def create_remove_recursive(
                     and isinstance(prev_value["enum"], list)
                 )
             ):
-                missing_entries.append("enum")
+                if len(path) >= 3:
+                    model = path[0]
+                    field = path[2]
+                    enum_tree.setdefault(model, []).append(field)
         if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
-                prev_value, curr_models.get(key, {}), renames_dict.get(key, {})
+                prev_value,
+                curr_models.get(key, {}),
+                renames_dict.get(key, {}),
+                enum_tree,
+                path + (key,),
             )
             if result is not None:
                 tree[key] = result
 
-    if missing_entries or tree:
-        return [missing_entries, tree]
+    if path:
+        if missing_entries or tree:
+            return [missing_entries, tree]
     else:
-        return None
+        return {
+            "collections": [missing_entries, tree],
+            "enum_types": enum_tree,
+        }
+
+    return None
 
 
 def create_add_recursive(
