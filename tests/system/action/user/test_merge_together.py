@@ -960,16 +960,16 @@ class UserMergeTogether(BaseActionTestCase):
     def test_with_multiple_delegations_in_different_meetings(self) -> None:
         self.set_models(
             {
-                "meeting_user/15": {"vote_delegated_to_id": 14},
-                "meeting_user/43": {"vote_delegated_to_id": 44},
-                "meeting_user/74": {"vote_delegated_to_id": 73},
+                "meeting_user/15": {"vote_delegated_to_ids": [14]},
+                "meeting_user/43": {"vote_delegated_to_ids": [44]},
+                "meeting_user/74": {"vote_delegated_to_ids": [73]},
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/12", {"vote_delegations_from_ids": [15]})
         self.assert_model_exists("meeting_user/42", {"vote_delegations_from_ids": [43]})
-        self.assert_model_exists("meeting_user/106", {"vote_delegated_to_id": 73})
+        self.assert_model_exists("meeting_user/106", {"vote_delegated_to_ids": [73]})
 
     def test_with_multiple_delegations_from(self) -> None:
         """
