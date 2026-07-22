@@ -471,6 +471,65 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": [14]})
         self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": None})
 
+    def test_delegate_and_redelegate_in_1_request_ok(self) -> None:
+        response = self.request_multi(
+            "meeting_user.set_data",
+            [
+                {
+                    "id": 12,
+                    "vote_delegated_to_ids": [14],
+                },
+                {
+                    "id": 12,
+                    "vote_delegated_to_ids": [11],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/12",
+            {"vote_delegated_to_ids": [11]},
+        )
+        for id_ in [13, 14]:
+            self.assert_model_exists(
+                f"meeting_user/{id_}",
+                {"vote_delegations_from_ids": None},
+            )
+        self.assert_model_exists(
+            "meeting_user/11",
+            {"vote_delegations_from_ids": [12]},
+        )
+
+    def test_delegate_and_add_delegation_in_1_request_ok(self) -> None:
+        self.set_models({"meeting/222": {"users_vote_delegations_max_amount": 2}})
+        response = self.request_multi(
+            "meeting_user.set_data",
+            [
+                {
+                    "id": 12,
+                    "vote_delegated_to_ids": [14],
+                },
+                {
+                    "id": 12,
+                    "vote_delegated_to_ids": [14, 11],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/12",
+            {"vote_delegated_to_ids": [11, 14]},
+        )
+        for id_ in [11, 14]:
+            self.assert_model_exists(
+                f"meeting_user/{id_}",
+                {"vote_delegations_from_ids": [12]},
+            )
+        self.assert_model_exists(
+            "meeting_user/13",
+            {"vote_delegations_from_ids": None},
+        )
+
     def test_receive_delegations_from_2_users_1_request_ok(self) -> None:
         self.set_models({"meeting_user/12": {"vote_delegated_to_ids": None}})
         response = self.request_multi(

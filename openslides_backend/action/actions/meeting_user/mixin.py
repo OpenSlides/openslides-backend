@@ -382,12 +382,12 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
         meeting_id_self: int,
         delegations_max_amount: int,
     ) -> None:
-        if instance["id"] in instance.get("vote_delegated_to_ids", []):
+        vote_delegated_to_ids = instance["vote_delegated_to_ids"]
+        if instance["id"] in vote_delegated_to_ids:
             raise ActionException(
                 f"User {user_id_self} can't delegate the vote to himself."
             )
 
-        vote_delegated_to_ids = instance["vote_delegated_to_ids"]
         if vote_delegated_to_ids:
             if meeting_user_self.get("vote_delegations_from_ids"):
                 raise ActionException(
