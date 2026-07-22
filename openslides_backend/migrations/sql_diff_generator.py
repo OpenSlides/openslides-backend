@@ -33,12 +33,26 @@ def main() -> int:
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
     remove = diff["remove"]
-    if isinstance(remove, list) and isinstance(remove[0], list):
-        for collection_name in remove[0]:
+    if isinstance(remove, dict) and isinstance(
+        remove_collections_list := remove["collections"][0], list
+    ):
+        for collection_name in remove_collections_list:
             sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
-            diff_control["remove"][0].remove(collection_name)
-    if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
-        sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
+            diff_control["remove"]["collections"][0].remove(collection_name)
+    if isinstance(remove, dict) and isinstance(
+        remove_tree_dict := remove["collections"][1], dict
+    ):
+        sql += handle_remove_tree(
+            remove_tree_dict, diff_control["remove"]["collections"][1]
+        )
+        remove_empty(diff_control["remove"], "collections")
+    if isinstance(remove, dict) and isinstance(
+        remove_enum_types_dict := remove["enum_types"], dict
+    ):
+        sql += handle_remove_enum_types(
+            remove_enum_types_dict, diff_control["remove"]["enum_types"]
+        )
+        remove_empty(diff_control["remove"], "enum_types")
 
     sql += "\n-- RENAME SECTION --\n"
     rename = diff["rename"]
@@ -320,6 +334,22 @@ def handle_remove_tree(
             # TODO fields[1]
             # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
             remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+        remove_empty(dc_remove_tree_dict, collection_name)
+    return result
+
+
+def handle_remove_enum_types(
+    remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+) -> str:
+    result = ""
+    for collection_name, field_names in remove_tree_dict.items():
+        for field_name in field_names:
+            enum_name = HelperGetNames.get_enum_name_for_column(
+                collection_name, field_name
+            )
+            result += f"DROP TYPE {enum_name};\n"
+            dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
 
