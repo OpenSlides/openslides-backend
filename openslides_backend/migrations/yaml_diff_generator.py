@@ -146,10 +146,19 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            missing_entries.append(key)
-        elif isinstance(prev_value, dict):
+            if curr_models:
+                missing_entries.append(key)
+            elif key in FieldAttributes.enum_definitions and (
+                isinstance(prev_value, list)
+                or (
+                    isinstance(prev_value, dict)
+                    and isinstance(prev_value["enum"], list)
+                )
+            ):
+                missing_entries.append("enum")
+        if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
-                prev_value, curr_models[key], renames_dict.get(key, {})
+                prev_value, curr_models.get(key, {}), renames_dict.get(key, {})
             )
             if result is not None:
                 tree[key] = result
