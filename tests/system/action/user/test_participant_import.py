@@ -734,14 +734,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.assert_status_code(response, 200)
         assert (result := response.json["results"][0][0])["state"] == ImportState.DONE
         row = result["rows"][0]
-        assert row["state"] == ImportState.DONE
+        assert row["state"] == ImportState.REFERENCED
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
-            "username": {"id": 2, "info": ImportState.DONE, "value": "user2"},
+            "username": {"id": 2, "info": ImportState.REFERENCED, "value": "user2"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [
                 {"id": 3, "info": "done", "value": "group3"},
@@ -766,12 +766,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         }
 
         row = result["rows"][2]
-        assert row["state"] == ImportState.DONE
+        assert row["state"] == ImportState.REFERENCED
         assert row["messages"] == []
         assert row["data"] == {
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
-            "username": {"id": 4, "info": ImportState.DONE, "value": "user4"},
+            "username": {"id": 4, "info": ImportState.REFERENCED, "value": "user4"},
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
@@ -1668,7 +1668,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
             "username": {
                 "id": 2,
-                "info": ImportState.DONE,
+                "info": ImportState.REFERENCED,
                 "value": "Alice",
             },
         }

@@ -40,6 +40,7 @@ class ImportState(StrEnum):
     GENERATED = "generated"
     REMOVE = "remove"
     ERROR = "error"
+    REFERENCED = "referenced"
 
 
 class ImportRow(TypedDict):
@@ -265,7 +266,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
         error: str | None = None
         if check_result == ResultType.FOUND_ID and id_ != 0:
             if required:
-                if row["state"] != ImportState.DONE:
+                if row["state"] not in [ImportState.DONE, ImportState.REFERENCED]:
                     error = f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
                 elif "id" not in entry:
                     raise ActionException(
@@ -392,6 +393,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     import_state: ImportState
     meeting_id: int
     timezone_field_name: str | None = None
+    use_referenced_state: bool = False
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
@@ -585,9 +587,17 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             {"name": "total", "value": len(self.rows)},
             {"name": "created", "value": state_to_count[ImportState.NEW]},
             {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
         ]
+        if self.use_referenced_state:
+            self.statistics.append(
+                {"name": "referenced", "value": state_to_count[ImportState.REFERENCED]}
+            )
+        self.statistics.extend(
+            [
+                {"name": "error", "value": state_to_count[ImportState.ERROR]},
+                {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+            ]
+        )
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )

@@ -8,6 +8,7 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import required_id_schema, str_list_schema
 
 from ...mixins.import_mixins import ImportState
+from ...mixins.meeting_user_helper import get_meeting_user
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .base_json_upload import BaseUserJsonUpload
@@ -52,6 +53,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     lookups: dict[str, dict[str, int]] = {}
     default_group: dict[str, Any] = {}
     missing_field_values: dict[str, set[str]]
+    use_referenced_state: bool = True
 
     def prefetch(self, action_data: ActionData) -> None:
         self.meeting_id = next(iter(action_data)).get("meeting_id", 0)
@@ -215,3 +217,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             if group.get("default_group_for_meeting_id"):
                 self.default_group = {"name": group["name"], "id": group["id"]}
                 break
+
+    def get_row_state_for_update_row(self, id_: int) -> ImportState:
+        meeting_user = get_meeting_user(self.datastore, self.meeting_id, id_, ["id"])
+        return ImportState.DONE if meeting_user else ImportState.REFERENCED

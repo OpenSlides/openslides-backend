@@ -474,13 +474,17 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.DONE
+        assert row["state"] == ImportState.REFERENCED
         assert row["data"]["id"] == 34
         assert row["data"]["default_password"] == {
             "value": "new default password",
             "info": "done",
         }
-        assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
+        assert row["data"]["username"] == {
+            "value": "test",
+            "info": ImportState.REFERENCED,
+            "id": 34,
+        }
         assert row["data"]["vote_weight"] == {"value": "1.456000", "info": "done"}
         assert row["data"]["is_present"] == {"value": False, "info": "done"}
         assert row["data"]["gender"] == {"id": 1, "value": "male", "info": "done"}
@@ -1565,7 +1569,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.WARNING
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
@@ -1573,7 +1577,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data == {
             "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id"},
-            "username": {"info": "done", "value": "test", "id": 2},
+            "username": {"info": ImportState.REFERENCED, "value": "test", "id": 2},
             "default_password": {"info": "warning", "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
@@ -1603,13 +1607,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
             "saml_id": {"info": "done", "value": "new_one"},
-            "username": {"info": "done", "value": "test", "id": 2},
+            "username": {"info": ImportState.REFERENCED, "value": "test", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
@@ -1703,10 +1707,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.DONE
+        assert row["state"] == ImportState.REFERENCED
         assert row["data"] == {
             "id": 11,
-            "username": {"value": "user11", "info": ImportState.DONE, "id": 11},
+            "username": {"value": "user11", "info": ImportState.REFERENCED, "id": 11},
             "saml_id": {"value": "saml_id11", "info": ImportState.DONE},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
@@ -1835,14 +1839,14 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.WARNING
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id2"},
-            "username": {"id": 2, "info": "done", "value": "user2"},
+            "username": {"id": 2, "info": ImportState.REFERENCED, "value": "user2"},
             "default_password": {"info": "warning", "value": ""},
             "groups": [
                 {"id": 3, "info": "done", "value": "group3"},
@@ -1865,12 +1869,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
         }
 
-        assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][2]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][2]["messages"] == []
         assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
-            "username": {"id": 4, "info": "done", "value": "user4"},
+            "username": {"id": 4, "info": ImportState.REFERENCED, "value": "user4"},
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
@@ -2734,13 +2738,43 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["statistics"] == [
+            {
+                "name": "total",
+                "value": 11,
+            },
+            {
+                "name": "created",
+                "value": 2,
+            },
+            {
+                "name": "updated",
+                "value": 6,
+            },
+            {
+                "name": "referenced",
+                "value": 3,
+            },
+            *[
+                {"name": n, "value": 0}
+                for n in [
+                    "error",
+                    "warning",
+                    "structure levels created",
+                    "groups created",
+                ]
+            ],
+        ]
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
         rows = import_preview["result"]["rows"]
         assert not any(len(row["messages"]) for row in rows)
         assert not any(row["state"] != ImportState.NEW for row in rows[:2])
-        assert not any(row["state"] != ImportState.DONE for row in rows[2:])
+        assert not any(
+            rows[i]["state"] != ImportState.DONE for i in [2, 4, *range(7, len(rows))]
+        )
+        assert not any(rows[i]["state"] != ImportState.REFERENCED for i in [3, 5, 6])
         data = [row["data"] for row in rows]
         assert not any(
             date["locked_out"] != {"info": "done", "value": True} for date in data[0:9]
@@ -2786,7 +2820,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         i += 1
         assert data[i]["username"] == {
             "id": foreign_cml,
-            "info": "done",
+            "info": ImportState.REFERENCED,
             "value": "foreign_cml",
         }
         assert data[i]["groups"] == [
@@ -2812,7 +2846,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         i += 1
         assert data[i]["username"] == {
             "id": foreign_meeting_admin,
-            "info": "done",
+            "info": ImportState.REFERENCED,
             "value": "foreign_meeting_admin",
         }
         assert data[i]["groups"] == [
@@ -2825,7 +2859,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         i += 1
         assert data[i]["username"] == {
             "id": foreign_can_manage,
-            "info": "done",
+            "info": ImportState.REFERENCED,
             "value": "foreign_can_manage",
         }
         assert data[i]["groups"] == [
@@ -3043,7 +3077,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         if old_perm and new_perm:
             assert import_preview["result"]["rows"][0]["messages"] == []
         else:
@@ -3054,7 +3088,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.DONE,
+            "info": ImportState.REFERENCED,
             "value": "Alice",
         }
         if old_perm and new_perm:
@@ -3088,13 +3122,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.DONE,
+            "info": ImportState.REFERENCED,
             "value": "Alice",
         }
         assert data["home_committee"] == {
@@ -3128,7 +3162,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         messages = [
             "If external is set to true, any home_committee that was set will be removed."
         ]
@@ -3140,7 +3174,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
         assert data["username"] == {
-            "info": ImportState.DONE,
+            "info": ImportState.REFERENCED,
             "value": "Alice",
             "id": alice_id,
         }
@@ -3180,7 +3214,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
         ]
@@ -3188,7 +3222,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.DONE,
+            "info": ImportState.REFERENCED,
             "value": "Alice",
         }
         assert data["home_committee"] == {
