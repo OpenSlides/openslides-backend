@@ -9,7 +9,13 @@ import simplejson as json
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
-from openslides_backend.migrations.yaml_diff_generator import dumpjson, generate_diff
+from openslides_backend.migrations.yaml_diff_generator import (
+    CollectionsRemoveList,
+    EnumTypesRemoveDict,
+    RemoveDiffDict,
+    dumpjson,
+    generate_diff,
+)
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -32,13 +38,9 @@ def main() -> int:
     sql = "-- REMOVE SECTION --\n"
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
-    remove = diff["remove"]
-    if isinstance(remove, list) and isinstance(remove[0], list):
-        for collection_name in remove[0]:
-            sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
-            diff_control["remove"][0].remove(collection_name)
-    if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
-        sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
+    remove: RemoveDiffDict | None = diff["remove"]
+    if remove:
+        sql += handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     rename = diff["rename"]
@@ -304,9 +306,35 @@ def handle_rename(
     return result
 
 
+def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str:
+    result = ""
+    if "collections" in remove:
+        collections_remove_list: CollectionsRemoveList = remove["collections"]
+        if isinstance(
+            collection_names := collections_remove_list[0], list
+        ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
+            for collection_name in collection_names:
+                result += f"DROP TABLE {collection_name}_t CASCADE;\n"
+                dc_collection_names.remove(collection_name)
+        if isinstance(
+            remove_tree_dict := collections_remove_list[1], dict
+        ) and isinstance(dc_remove_tree_dict := dc_remove_dict["collections"][1], dict):
+            result += handle_remove_tree(remove_tree_dict, dc_remove_tree_dict)
+        remove_empty(dc_remove_dict, "collections")
+
+    if "enum_types" in remove and isinstance(
+        remove_enum_types_dict := remove["enum_types"], dict
+    ):
+        result += handle_remove_enum_types(
+            remove_enum_types_dict, dc_remove_dict["enum_types"]
+        )
+        remove_empty(dc_remove_dict, "enum_types")
+    return result
+
+
 def handle_remove_tree(
-    remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    remove_tree_dict: dict[str, Any],
+    dc_remove_tree_dict: dict[str, Any],
 ) -> str:
     result = ""
     for collection_name, field_lists in remove_tree_dict.items():
@@ -320,6 +348,22 @@ def handle_remove_tree(
             # TODO fields[1]
             # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
             remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+        remove_empty(dc_remove_tree_dict, collection_name)
+    return result
+
+
+def handle_remove_enum_types(
+    remove_tree_dict: EnumTypesRemoveDict,
+    dc_remove_tree_dict: EnumTypesRemoveDict,
+) -> str:
+    result = ""
+    for collection_name, field_names in remove_tree_dict.items():
+        for field_name in field_names:
+            enum_name = HelperGetNames.get_enum_name_for_column(
+                collection_name, field_name
+            )
+            result += f"DROP TYPE {enum_name};\n"
+            dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
 

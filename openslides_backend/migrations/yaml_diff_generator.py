@@ -1,10 +1,11 @@
 import os
 import sys
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, TypedDict
 
 import simplejson as json
 import yaml
+from typing_extensions import NotRequired
 
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
 from meta.dev.src.helper_get_names import build_models_yaml_content
@@ -22,6 +23,15 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
+
+
+CollectionsRemoveList = list[list[str] | dict[str, Any]]
+EnumTypesRemoveDict = dict[str, list[str]]
+
+
+class RemoveDiffDict(TypedDict):
+    collections: NotRequired[CollectionsRemoveList]
+    enum_types: NotRequired[EnumTypesRemoveDict]
 
 
 class FieldAttributes:
@@ -139,7 +149,9 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
-) -> list[list[str] | dict[str, Any]] | None:
+    enum_tree: EnumTypesRemoveDict = {},
+    path: tuple[str, ...] = (),
+) -> CollectionsRemoveList | RemoveDiffDict | None:
     missing_entries = []
     tree = {}
     for key, prev_value in prev_models.items():
@@ -147,18 +159,36 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            missing_entries.append(key)
-        elif isinstance(prev_value, dict):
+            if is_enum(key, prev_value) and len(path) >= 3:
+                enum_tree.setdefault(path[0], []).append(path[2])
+            elif curr_models:
+                missing_entries.append(key)
+        if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
-                prev_value, curr_models[key], renames_dict.get(key, {})
+                prev_value,
+                curr_models.get(key, {}),
+                renames_dict.get(key, {}),
+                enum_tree,
+                path + (key,),
             )
             if result is not None:
                 tree[key] = result
 
+    if path:
+        if missing_entries or tree:
+            return [missing_entries, tree]
+        else:
+            return None
+
+    combined_result: RemoveDiffDict = {}
     if missing_entries or tree:
-        return [missing_entries, tree]
-    else:
-        return None
+        combined_result["collections"] = [missing_entries, tree]
+    if enum_tree:
+        combined_result["enum_types"] = enum_tree
+
+    if combined_result:
+        return combined_result
+    return None
 
 
 def create_add_recursive(
@@ -224,6 +254,13 @@ def load_models(mig_data_path: str) -> dict[str, Any]:
     meta_file = os.path.join(mig_data_path, "collection-meta.yml")
     collections_dir = os.path.join(mig_data_path, "collections")
     return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
+
+
+def is_enum(key: str, value: Any) -> bool:
+    return key in FieldAttributes.enum_definitions and (
+        isinstance(value, list)
+        or (isinstance(value, dict) and isinstance(value["enum"], list))
+    )
 
 
 if __name__ == "__main__":
