@@ -23,7 +23,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
         optional_properties=["username", "pronoun", "gender_id", "email"],
         additional_optional_fields={
             **MeetingUser().get_properties(
-                "meeting_id", "vote_delegated_to_id", "vote_delegations_from_ids"
+                "meeting_id", "vote_delegated_to_ids", "vote_delegations_from_ids"
             )
         },
     )
@@ -62,7 +62,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
         if (
             (meeting_id := instance.get("meeting_id"))
             and (
-                "vote_delegated_to_id" in instance
+                "vote_delegated_to_ids" in instance
                 or "vote_delegations_from_ids" in instance
             )
             and not has_perm(

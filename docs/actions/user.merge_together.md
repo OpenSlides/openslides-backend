@@ -108,7 +108,7 @@ The primary model is updated/re-created with the information from the secondary 
 - `assignment_candidate_ids` is update-merged
 - `motion_editor_ids`, `motion_submitter_ids`, `motion_working_group_speaker_ids`, `personal_note_ids` and `speaker_ids` are create-merged
 - other relation-lists are set to the union of their content among all selected users
-- `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
+- `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_ids` are set to the value from the highest ranked model that has the field
 - `locked_out` is set to whatever the primary model of the sub-merge has
 
 #### Personal note merge

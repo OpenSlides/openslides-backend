@@ -201,6 +201,8 @@ class UserMergeTogether(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
         )
 
+        if deleted_meeting_users := update_operations["meeting_user"]["delete"]:
+            self.cleanup_delegations(deleted_meeting_users)
         self.call_other_actions(update_operations)
 
         result = {"id": into["id"]}
@@ -208,6 +210,27 @@ class UserMergeTogether(
             (result, [into["id"], *instance["user_ids"]], False)
         )
         return result
+
+    def cleanup_delegations(self, delegatees_to_remove: list[int]) -> None:
+        """Remove delegations to ranked_others to ensure correct validation"""
+        delegators = self.datastore.filter(
+            "meeting_user",
+            Or(
+                FilterOperator("vote_delegated_to_ids", "has", delegatee_id)
+                for delegatee_id in delegatees_to_remove
+            ),
+            ["vote_delegated_to_ids"],
+        )
+        for id_, delegator in delegators.items():
+            self.datastore.apply_changed_model(
+                fqid_from_collection_and_id("meeting_user", id_),
+                {
+                    "vote_delegated_to_ids": list(
+                        set(delegator["vote_delegated_to_ids"])
+                        - set(delegatees_to_remove)
+                    )
+                },
+            )
 
     def call_other_actions(
         self, update_operations: dict[Collection, MergeUpdateOperations]

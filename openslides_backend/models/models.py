@@ -891,6 +891,7 @@ class Meeting(Model, MeetingModelMixin):
         default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
     users_enable_vote_delegations = fields.BooleanField()
+    users_vote_delegations_max_amount = fields.IntegerField(default=1)
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
     users_forbid_delegator_as_submitter = fields.BooleanField()
     users_forbid_delegator_as_supporter = fields.BooleanField()
@@ -1512,11 +1513,26 @@ class MeetingUser(Model):
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}, is_view_field=True
     )
-    vote_delegated_to_id = fields.RelationField(
-        to={"meeting_user": "vote_delegations_from_ids"}
+    vote_delegated_to_ids = fields.RelationListField(
+        to={"meeting_user": "vote_delegations_from_ids"},
+        is_view_field=True,
+        is_primary=True,
+        write_fields=(
+            "nm_meeting_user_vote_delegated_to_ids_meeting_user_t",
+            "vote_delegations_from_id",
+            "vote_delegated_to_id",
+            [],
+        ),
     )
     vote_delegations_from_ids = fields.RelationListField(
-        to={"meeting_user": "vote_delegated_to_id"}, is_view_field=True
+        to={"meeting_user": "vote_delegated_to_ids"},
+        is_view_field=True,
+        write_fields=(
+            "nm_meeting_user_vote_delegated_to_ids_meeting_user_t",
+            "vote_delegated_to_id",
+            "vote_delegations_from_id",
+            [],
+        ),
     )
     poll_option_ids = fields.RelationListField(
         to={"poll_option": "meeting_user_id"}, is_view_field=True, is_primary=True

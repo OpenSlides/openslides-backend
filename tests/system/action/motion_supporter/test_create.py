@@ -41,7 +41,7 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
         if is_delegator:
             self.create_user("delegatee", [1])
-            self.set_models({"meeting_user/1": {"vote_delegated_to_id": 2}})
+            self.set_models({"meeting_user/1": {"vote_delegated_to_ids": [2]}})
         self.set_organization_management_level(None)
         self.set_group_permissions(1, [perm])
 
