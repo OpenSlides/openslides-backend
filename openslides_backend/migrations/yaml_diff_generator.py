@@ -182,6 +182,9 @@ def create_remove_recursive(
         if key not in curr_models:
             if key in CollectionAttributes.unique_together:
                 tree[key] = prev_value
+            elif key == "maxLength":
+                # Should be processed as type change
+                update_edits_tree(secondary_edits, path[0], path[2], "maxLength", None)
             elif is_enum(key) and len(path) >= 3:
                 # Should be processed as type change
                 if "type" in curr_models:
