@@ -8,7 +8,12 @@ import yaml
 from typing_extensions import NotRequired
 
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
-from meta.dev.src.helper_get_names import build_models_yaml_content
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    InternalHelper,
+    TableFieldType,
+    build_models_yaml_content,
+)
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -116,7 +121,7 @@ def generate_diff() -> dict[str, Any]:
     return {
         "rename": renames,
         "remove": create_remove_recursive(
-            prev_models, curr_models, renames, secondary_edits
+            prev_models, curr_models, renames, prev_models, secondary_edits
         ),
         "add": create_add_recursive(prev_models, curr_models, renames),
         "edit": create_edit_recursive(
@@ -163,6 +168,7 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    all_prev_models: dict[str, Any],
     secondary_edits: dict[str, Any] = {},
     enum_tree: EnumTypesRemoveDict = {},
     path: tuple[str, ...] = (),
@@ -184,12 +190,17 @@ def create_remove_recursive(
                 if is_field_enum(prev_value):
                     enum_tree.setdefault(path[0], []).append(path[2])
             elif curr_models:
-                missing_entries.append(key)
+                if len(path) == 2 and is_relational_field(prev_value["type"]):
+                    if not is_view_field(path[0], key, prev_value, all_prev_models):
+                        missing_entries.append(key)
+                else:
+                    missing_entries.append(key)
         if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 renames_dict.get(key, {}),
+                all_prev_models,
                 secondary_edits,
                 enum_tree,
                 path + (key,),
@@ -294,6 +305,35 @@ def is_field_enum(value: Any) -> bool:
     return isinstance(value, list) or (
         isinstance(value, dict) and isinstance(value["enum"], list)
     )
+
+
+def is_relational_field(field_type: str) -> bool:
+    return field_type in [
+        "relation",
+        "generic-relation",
+        "relation-list",
+        "generic-relation-list",
+    ]
+
+
+def is_view_field(
+    collection_name: str,
+    field_name: str,
+    field_data: dict[str, Any],
+    all_prev_models: dict[str, dict[str, Any]],
+) -> bool:
+    own = TableFieldType(collection_name, field_name, field_data)
+
+    new_models = InternalHelper.MODELS
+    InternalHelper.MODELS = all_prev_models
+    foreign_fields = InternalHelper.get_definitions_from_foreign_list(
+        field_data.get("to", None),
+        field_data.get("reference", None),
+    )
+    InternalHelper.MODELS = new_models
+
+    state, *_ = InternalHelper.check_relation_definitions(own, foreign_fields)
+    return state == FieldSqlErrorType.SQL
 
 
 if __name__ == "__main__":
