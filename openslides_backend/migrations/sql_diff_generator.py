@@ -358,6 +358,32 @@ def handle_remove_tree(
                                             collection_name, field_name, "DEFAULT"
                                         )
                                     )
+                                case "required":
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name, field_name, "NOT NULL"
+                                        )
+                                    )
+                                case "minimum" | "maximum" | "minLength" | "unique":
+                                    constraint_name_func = getattr(
+                                        HelperGetNames,
+                                        f"get_{attr.lower()}_constraint_name",
+                                    )
+                                    constraint_name = constraint_name_func(
+                                        collection_name,
+                                        (
+                                            [field_name]
+                                            if attr == "unique"
+                                            else field_name
+                                        ),
+                                    )
+                                    result += (
+                                        Helper.get_drop_table_constraint_statement(
+                                            collection_name, constraint_name
+                                        )
+                                    )
+                                case _:
+                                    continue
                             dc_remove_tree_dict[collection_name][1]["fields"][1][
                                 field_name
                             ][0].remove(attr)
