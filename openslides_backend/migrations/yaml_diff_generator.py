@@ -110,12 +110,18 @@ def generate_diff() -> dict[str, Any]:
     renames = MigrationHelper.get_migration_class(directory).renames
 
     validate_renames(prev_models, curr_models, renames)
+    # Edits caused by adding or removing field attributes
+    secondary_edits: dict[str, Any] = {}
 
     return {
         "rename": renames,
-        "remove": create_remove_recursive(prev_models, curr_models, renames),
+        "remove": create_remove_recursive(
+            prev_models, curr_models, renames, secondary_edits
+        ),
         "add": create_add_recursive(prev_models, curr_models, renames),
-        "edit": create_edit_recursive(prev_models, curr_models, renames),
+        "edit": create_edit_recursive(
+            prev_models, curr_models, renames, secondary_edits
+        ),
     }
 
 
@@ -145,10 +151,19 @@ def validate_renames(
             )
 
 
+def update_edits_tree(
+    edits_tree: dict[str, Any], collection: str, field: str, attr: str, value: Any
+) -> None:
+    edits_tree.setdefault(collection, [{}, {}])[1].setdefault("fields", [{}, {}])[
+        1
+    ].setdefault(field, [{}, {}])[0][attr] = value
+
+
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
     enum_tree: EnumTypesRemoveDict = {},
     path: tuple[str, ...] = (),
 ) -> CollectionsRemoveList | RemoveDiffDict | None:
@@ -159,8 +174,15 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            if is_enum(key, prev_value) and len(path) >= 3:
-                enum_tree.setdefault(path[0], []).append(path[2])
+            if is_enum(key) and len(path) >= 3:
+                # Should be processed as type change
+                if "type" in curr_models:
+                    update_edits_tree(
+                        secondary_edits, path[0], path[2], "type", curr_models["type"]
+                    )
+                # Delete enum only when it is defined on the field
+                if is_field_enum(prev_value):
+                    enum_tree.setdefault(path[0], []).append(path[2])
             elif curr_models:
                 missing_entries.append(key)
         if isinstance(prev_value, dict) and key != "items":
@@ -168,6 +190,7 @@ def create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 renames_dict.get(key, {}),
+                secondary_edits,
                 enum_tree,
                 path + (key,),
             )
@@ -223,6 +246,7 @@ def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
@@ -244,6 +268,11 @@ def create_edit_recursive(
                 )
                 if result is not None:
                     tree[key] = result
+    if secondary_edits:
+        for collection, collection_data in secondary_edits.items():
+            for field_name, field_data in collection_data[1]["fields"][1].items():
+                for attr, value in field_data[0].items():
+                    update_edits_tree(tree, collection, field_name, attr, value)
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
@@ -256,10 +285,14 @@ def load_models(mig_data_path: str) -> dict[str, Any]:
     return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
 
 
-def is_enum(key: str, value: Any) -> bool:
-    return key in FieldAttributes.enum_definitions and (
-        isinstance(value, list)
-        or (isinstance(value, dict) and isinstance(value["enum"], list))
+def is_enum(key: str) -> bool:
+    return key in FieldAttributes.enum_definitions
+
+
+def is_field_enum(value: Any) -> bool:
+    """Checks that enum options are defined directly on the field"""
+    return isinstance(value, list) or (
+        isinstance(value, dict) and isinstance(value["enum"], list)
     )
 
 
