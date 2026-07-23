@@ -325,6 +325,24 @@ def handle_remove_tree(
     remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
 ) -> str:
+    # handle field attibutes
+    # field_attributes = [
+    #     "type",
+    # ]
+    # relational_field_attributes = [
+    #     "reference",
+    #     "to",
+    # ]
+    # view_attributes = [
+    #     "sql",
+    # ]
+    # trigger_definitions = [
+    #     "constant",
+    #     "equal_fields",
+    #     "log_triggers",
+    #     "read_only",
+    #     "sequence_scope",
+    # ]
     result = ""
     for collection_name, collection_data in remove_tree_dict.items():
         for key, data in collection_data[1].items():
