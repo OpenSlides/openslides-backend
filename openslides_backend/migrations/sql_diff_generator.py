@@ -33,26 +33,8 @@ def main() -> int:
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
     remove = diff["remove"]
-    if isinstance(remove, dict) and isinstance(
-        remove_collections_list := remove["collections"][0], list
-    ):
-        for collection_name in remove_collections_list:
-            sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
-            diff_control["remove"]["collections"][0].remove(collection_name)
-    if isinstance(remove, dict) and isinstance(
-        remove_tree_dict := remove["collections"][1], dict
-    ):
-        sql += handle_remove_tree(
-            remove_tree_dict, diff_control["remove"]["collections"][1]
-        )
-        remove_empty(diff_control["remove"], "collections")
-    if isinstance(remove, dict) and isinstance(
-        remove_enum_types_dict := remove["enum_types"], dict
-    ):
-        sql += handle_remove_enum_types(
-            remove_enum_types_dict, diff_control["remove"]["enum_types"]
-        )
-        remove_empty(diff_control["remove"], "enum_types")
+    if isinstance(remove, dict):
+        sql += handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     rename = diff["rename"]
@@ -315,6 +297,26 @@ def handle_rename(
             # TODO Renaming and redefining constraints
             remove_empty(dc_collection, "fields")
             remove_empty(dc_rename_dict, collection_name_old)
+    return result
+
+
+def handle_remove(
+    remove: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
+    dc_remove_dict: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
+):
+    result = ""
+    if isinstance(remove_collections_list := remove["collections"][0], list):
+        for collection_name in remove_collections_list:
+            result += f"DROP TABLE {collection_name}_t CASCADE;\n"
+            dc_remove_dict["collections"][0].remove(collection_name)
+    if isinstance(remove_tree_dict := remove["collections"][1], dict):
+        result += handle_remove_tree(remove_tree_dict, dc_remove_dict["collections"][1])
+        remove_empty(dc_remove_dict, "collections")
+    if isinstance(remove_enum_types_dict := remove["enum_types"], dict):
+        result += handle_remove_enum_types(
+            remove_enum_types_dict, dc_remove_dict["enum_types"]
+        )
+        remove_empty(dc_remove_dict, "enum_types")
     return result
 
 
