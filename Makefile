@@ -166,7 +166,7 @@ replace-previous-models:
 	cp -r meta/collections/ openslides_backend/migrations/previous_models/ && cp meta/collection-meta.yml openslides_backend/migrations/previous_models/
 
 generate-migration-diff:
-	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)
+	python openslides_backend/migrations/sql_diff_generator.py $(ARGS) --dumpjson
 
 generate-db: | generate-schema recreate-database
 
