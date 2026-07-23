@@ -172,8 +172,13 @@ def create_remove_recursive(
         if key not in curr_models:
             if key in CollectionAttributes.unique_together:
                 tree[key] = prev_value
-                continue
-            if curr_models:
+            elif key == "maxLength":
+                model = path[0]
+                field = path[2]
+                update_edits_tree(
+                    secondary_edits, model, field, "maxLength", None
+                )  # Should be processed as type change
+            elif curr_models:
                 if len(path) == 2 and prev_value["type"] in [
                     "relation",
                     "generic-relation",
