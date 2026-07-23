@@ -7,7 +7,12 @@ import simplejson as json
 import yaml
 
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
-from meta.dev.src.helper_get_names import build_models_yaml_content
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    InternalHelper,
+    TableFieldType,
+    build_models_yaml_content,
+)
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -104,7 +109,7 @@ def generate_diff() -> dict[str, Any]:
     return {
         "rename": renames,
         "remove": create_remove_recursive(
-            prev_models, curr_models, renames, secondary_edits
+            prev_models, curr_models, renames, prev_models, secondary_edits
         ),
         "add": create_add_recursive(prev_models, curr_models, renames),
         "edit": create_edit_recursive(
@@ -149,6 +154,7 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    all_prev_models: dict[str, Any],
     secondary_edits: dict[str, Any] = {},
     enum_tree: dict[str, list[str]] = {},
     path: tuple[str, ...] = (),
@@ -165,7 +171,30 @@ def create_remove_recursive(
             continue
         if key not in curr_models:
             if curr_models:
-                missing_entries.append(key)
+                if len(path) == 2 and prev_value["type"] in [
+                    "relation",
+                    "generic-relation",
+                    "relation-list",
+                    "generic-relation-list",
+                ]:
+                    own = TableFieldType(path[0], key, prev_value)
+
+                    new_models = InternalHelper.MODELS
+                    InternalHelper.MODELS = all_prev_models
+                    foreign_fields = InternalHelper.get_definitions_from_foreign_list(
+                        prev_value.get("to", None),
+                        prev_value.get("reference", None),
+                    )
+                    InternalHelper.MODELS = new_models
+
+                    state, _, _, _ = InternalHelper.check_relation_definitions(
+                        own, foreign_fields
+                    )
+                    is_view_field = state == FieldSqlErrorType.SQL
+                    if not is_view_field:
+                        missing_entries.append(key)
+                else:
+                    missing_entries.append(key)
             elif key in FieldAttributes.enum_definitions and (
                 isinstance(prev_value, list)
                 or (
@@ -186,6 +215,7 @@ def create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 renames_dict.get(key, {}),
+                all_prev_models,
                 secondary_edits,
                 enum_tree,
                 path + (key,),
