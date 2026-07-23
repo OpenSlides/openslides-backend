@@ -29,16 +29,18 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    sql = "-- REMOVE SECTION --\n"
+    # Has to happen before remove: field types have to change before the enum drop
+    sql = "-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+
+    sql += "\n-- REMOVE SECTION --\n"
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
     remove = diff["remove"]
-    if isinstance(remove, list) and isinstance(remove[0], list):
-        for collection_name in remove[0]:
-            sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
-            diff_control["remove"][0].remove(collection_name)
-    if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
-        sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
+    if isinstance(remove, dict):
+        sql += handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     rename = diff["rename"]
@@ -52,11 +54,6 @@ def main() -> int:
         sql += generate_new_collection_sql(add[0], diff_control["add"][0])
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
-
-    sql += "\n-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     # TODO Do this in a sub folder migrations?
     with open(
@@ -79,7 +76,7 @@ def main() -> int:
 
 
 def remove_empty(dictionary: dict[str, Any], key: str) -> None:
-    if not any(dictionary[key]):
+    if dictionary[key] is None or not any(dictionary[key]):
         del dictionary[key]
 
 
@@ -277,8 +274,8 @@ def generate_altered_constraints_sql(
                 # TODO
                 # recreate affected triggers
                 # recreate views
-            case _:
-                raise NotImplementedError(f"{constraint}: {value}")
+            # case _:
+            #     raise NotImplementedError(f"{constraint}: {value}")
         del diff_control_part[0][constraint]
     return constraints_sql
 
@@ -304,20 +301,132 @@ def handle_rename(
     return result
 
 
+def handle_remove(
+    remove: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
+    dc_remove_dict: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
+):
+    result = ""
+    if isinstance(remove_collections_list := remove["collections"][0], list):
+        for collection_name in remove_collections_list:
+            result += Helper.get_drop_table_statement(collection_name)
+            dc_remove_dict["collections"][0].remove(collection_name)
+    if isinstance(remove_tree_dict := remove["collections"][1], dict):
+        result += handle_remove_tree(remove_tree_dict, dc_remove_dict["collections"][1])
+        remove_empty(dc_remove_dict, "collections")
+    if isinstance(remove_enum_types_dict := remove["enum_types"], dict):
+        result += handle_remove_enum_types(
+            remove_enum_types_dict, dc_remove_dict["enum_types"]
+        )
+        remove_empty(dc_remove_dict, "enum_types")
+    return result
+
+
 def handle_remove_tree(
     remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
 ) -> str:
+    # handle field attibutes
+    # field_attributes = [
+    #     "type",
+    # ]
+    # relational_field_attributes = [
+    #     "reference",
+    #     "to",
+    # ]
+    # view_attributes = [
+    #     "sql",
+    # ]
+    # trigger_definitions = [
+    #     "constant",
+    #     "equal_fields",
+    #     "log_triggers",
+    #     "read_only",
+    #     "sequence_scope",
+    # ]
     result = ""
-    for collection_name, field_lists in remove_tree_dict.items():
-        fields = field_lists[1]["fields"]
-        for field_name in fields[0]:
-            result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
+    for collection_name, collection_data in remove_tree_dict.items():
+        for key, data in collection_data[1].items():
+            match key:
+                case "fields":
+                    for field_name in data[0]:
+                        result += Helper.get_drop_column_statement(
+                            collection_name, field_name
+                        )
+                        dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
+                            field_name
+                        )
+                        remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                    for field_name, attrs in data[1].items():
+                        for attr in attrs[0]:
+                            match attr:
+                                case "default":
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name, field_name, "DEFAULT"
+                                        )
+                                    )
+                                case "required":
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name, field_name, "NOT NULL"
+                                        )
+                                    )
+                                case "minimum" | "maximum" | "minLength" | "unique":
+                                    constraint_name_func = getattr(
+                                        HelperGetNames,
+                                        f"get_{attr.lower()}_constraint_name",
+                                    )
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name,
+                                            field_name,
+                                            constraint_name_func(
+                                                collection_name, field_name
+                                            ),
+                                        )
+                                    )
+                                case _:
+                                    continue
+                            dc_remove_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][0].remove(attr)
+                            remove_empty(
+                                dc_remove_tree_dict[collection_name][1]["fields"][1],
+                                field_name,
+                            )
+                        remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                    remove_empty(dc_remove_tree_dict, collection_name)
+                case "unique_together":
+                    for fields in data:
+                        result += Helper.get_drop_table_constraint_statement(
+                            collection_name,
+                            HelperGetNames.get_unique_constraint_name(
+                                collection_name,
+                                Helper.split_unique_together_fields(fields),
+                            ),
+                        )
+                        dc_remove_tree_dict[collection_name][1][
+                            "unique_together"
+                        ].remove(fields)
+                        remove_empty(
+                            dc_remove_tree_dict[collection_name][1],
+                            "unique_together",
+                        )
+                    remove_empty(dc_remove_tree_dict, collection_name)
+    return result
 
-            dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-            # TODO fields[1]
-            # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
-            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+
+def handle_remove_enum_types(
+    remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+) -> str:
+    result = ""
+    for collection_name, field_names in remove_tree_dict.items():
+        for field_name in field_names:
+            result += Helper.get_drop_enum_type_statement_from_collection_and_column(
+                collection_name, field_name
+            )
+            dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
 
@@ -362,6 +471,7 @@ def handle_edit_tree(
     dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
 ) -> str:
     sql = ""
+    return sql
     for collection_name, collection_def in edit_tree_dict.items():
         table_name = HelperGetNames.get_table_name(collection_name)
         dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]

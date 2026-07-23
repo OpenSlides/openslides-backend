@@ -7,7 +7,12 @@ import simplejson as json
 import yaml
 
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
-from meta.dev.src.helper_get_names import build_models_yaml_content
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    InternalHelper,
+    TableFieldType,
+    build_models_yaml_content,
+)
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -22,6 +27,59 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
+
+
+class FieldAttributes:
+    skipped_in_schema = [
+        "calculated",
+        "constant_legacy",
+        "deferred",
+        "description",
+        "on_delete",
+        "restriction_mode",
+    ]
+    field_attributes = [
+        "default",
+        "maxLength",
+        "maximum",
+        "minLength",
+        "minimum",
+        "required",
+        "type",
+        "unique",
+    ]
+    relational_field_attributes = [
+        "reference",
+        "to",
+    ]
+    view_attributes = [
+        "sql",
+    ]
+    trigger_definitions = [
+        "constant",
+        "equal_fields",
+        "log_triggers",
+        "read_only",
+        "sequence_scope",
+    ]
+    enum_definitions = [
+        "enum",
+        "items",
+    ]
+    used_in_schema = [
+        *field_attributes,
+        *relational_field_attributes,
+        *view_attributes,
+        *trigger_definitions,
+        *enum_definitions,
+    ]
+
+
+class CollectionAttributes:
+    unique_together = [
+        "unique_together",
+        "unique_together_strict",
+    ]
 
 
 def main() -> int:
@@ -46,12 +104,17 @@ def generate_diff() -> dict[str, Any]:
     renames = MigrationHelper.get_migration_class(directory).renames
 
     validate_renames(prev_models, curr_models, renames)
+    secondary_edits = {}
 
     return {
         "rename": renames,
-        "remove": create_remove_recursive(prev_models, curr_models, renames),
+        "remove": create_remove_recursive(
+            prev_models, curr_models, renames, prev_models, secondary_edits
+        ),
         "add": create_add_recursive(prev_models, curr_models, renames),
-        "edit": create_edit_recursive(prev_models, curr_models, renames),
+        "edit": create_edit_recursive(
+            prev_models, curr_models, renames, secondary_edits
+        ),
     }
 
 
@@ -81,11 +144,25 @@ def validate_renames(
             )
 
 
+def update_edits_tree(tree, collection, field, attr, value):
+    tree.setdefault(collection, [{}, {}])[1].setdefault("fields", [{}, {}])[
+        1
+    ].setdefault(field, [{}, {}])[0][attr] = value
+
+
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
-) -> list[list[str] | dict[str, Any]] | None:
+    all_prev_models: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
+    enum_tree: dict[str, list[str]] = {},
+    path: tuple[str, ...] = (),
+) -> (
+    list[list[str] | dict[str, Any]]
+    | dict[str, list[list[str] | dict[str, Any]] | dict[str, str]]
+    | None
+):
     missing_entries = []
     tree = {}
     for key, prev_value in prev_models.items():
@@ -93,18 +170,77 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            missing_entries.append(key)
-        elif isinstance(prev_value, dict):
+            if key in CollectionAttributes.unique_together:
+                tree[key] = prev_value
+            elif key == "maxLength":
+                model = path[0]
+                field = path[2]
+                update_edits_tree(
+                    secondary_edits, model, field, "maxLength", None
+                )  # Should be processed as type change
+            elif curr_models:
+                if len(path) == 2 and prev_value["type"] in [
+                    "relation",
+                    "generic-relation",
+                    "relation-list",
+                    "generic-relation-list",
+                ]:
+                    own = TableFieldType(path[0], key, prev_value)
+
+                    new_models = InternalHelper.MODELS
+                    InternalHelper.MODELS = all_prev_models
+                    foreign_fields = InternalHelper.get_definitions_from_foreign_list(
+                        prev_value.get("to", None),
+                        prev_value.get("reference", None),
+                    )
+                    InternalHelper.MODELS = new_models
+
+                    state, _, _, _ = InternalHelper.check_relation_definitions(
+                        own, foreign_fields
+                    )
+                    is_view_field = state == FieldSqlErrorType.SQL
+                    if not is_view_field:
+                        missing_entries.append(key)
+                else:
+                    missing_entries.append(key)
+            elif key in FieldAttributes.enum_definitions and (
+                isinstance(prev_value, list)
+                or (
+                    isinstance(prev_value, dict)
+                    and isinstance(prev_value["enum"], list)
+                )
+            ):
+                if len(path) >= 3:
+                    model = path[0]
+                    field = path[2]
+                    enum_tree.setdefault(model, []).append(field)
+                    if "type" in curr_models:
+                        update_edits_tree(
+                            secondary_edits, model, field, "type", curr_models["type"]
+                        )
+        if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
-                prev_value, curr_models[key], renames_dict.get(key, {})
+                prev_value,
+                curr_models.get(key, {}),
+                renames_dict.get(key, {}),
+                all_prev_models,
+                secondary_edits,
+                enum_tree,
+                path + (key,),
             )
             if result is not None:
                 tree[key] = result
 
-    if missing_entries or tree:
-        return [missing_entries, tree]
+    if path:
+        if missing_entries or tree:
+            return [missing_entries, tree]
     else:
-        return None
+        return {
+            "collections": [missing_entries, tree],
+            "enum_types": enum_tree,
+        }
+
+    return None
 
 
 def create_add_recursive(
@@ -139,11 +275,13 @@ def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
     TODO This has a very similar structure to the add recursive function. Maybe combine with use of lambda or passing additional dict.
     TODO This should only generate diffs for the leafs. Thus the structure should be reconsidered. Maybe flatter or integrating rename info.
+    TODO: if list of unique_together and unique_together_strict changes, the changes get added to the diff here, even when we don't change an existing item but add or remove.
     """
     edited_entries = {}
     tree = {}
@@ -160,6 +298,11 @@ def create_edit_recursive(
                 )
                 if result is not None:
                     tree[key] = result
+    if secondary_edits:
+        for collection, collection_data in secondary_edits.items():
+            for field_name, field_data in collection_data[1]["fields"][1].items():
+                for attr, value in field_data[0].items():
+                    update_edits_tree(tree, collection, field_name, attr, value)
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
