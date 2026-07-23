@@ -1,20 +1,28 @@
 import pytest
 
-from .setup import BaseRelationsTestCase, FakeModelA, SingleRelationHandlerWithContext
+from .setup import (
+    BaseRelationsTestCase,
+    FakeModelA,
+    FakeModelD,
+    SingleRelationHandlerWithContext,
+)
 
 
 class GenericRelationsTest(BaseRelationsTestCase):
+    @pytest.mark.skip(
+        reason="Relation type is not allowed anymore, one of the sides has to be required."
+    )
     def test_generic_O2O_empty(self) -> None:
-        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
+        self.set_models({"fake_model_a/1": {}, "fake_model_e/2": {}})
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_oo,
-            field_name="fake_model_b_generic_oo",
-            instance={"id": 1, "fake_model_b_generic_oo": 2},
+            field=FakeModelA.fake_model_e_generic_oo,
+            field_name="fake_model_e_generic_oo",
+            instance={"id": 1, "fake_model_e_generic_oo": 2},
         )
         result = handler.perform()
         expected = {
-            "fake_model_b/2/fake_model_a_generic_oo": {
+            "fake_model_e/2/fake_model_a_generic_oo": {
                 "type": "add",
                 "value": "fake_model_a/1",
                 "modified_element": "fake_model_a/1",
@@ -26,24 +34,24 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.set_models(
             {
                 "fake_model_a/1": {},
-                "fake_model_a/2": {"fake_model_b_generic_oo": 3},
-                "fake_model_b/3": {"fake_model_a_generic_oo": "fake_model_a/2"},
+                "fake_model_a/2": {},
+                "fake_model_e/3": {"fake_model_a_generic_oo": "fake_model_a/2"},
             }
         )
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_oo,
-            field_name="fake_model_b_generic_oo",
-            instance={"id": 1, "fake_model_b_generic_oo": 3},
+            field=FakeModelA.fake_model_e_generic_oo,
+            field_name="fake_model_e_generic_oo",
+            instance={"id": 1, "fake_model_e_generic_oo": 3},
         )
         result = handler.perform()
         expected = {
-            "fake_model_b/3/fake_model_a_generic_oo": {
+            "fake_model_e/3/fake_model_a_generic_oo": {
                 "type": "add",
                 "value": "fake_model_a/1",
                 "modified_element": "fake_model_a/1",
             },
-            "fake_model_a/2/fake_model_b_generic_oo": {
+            "fake_model_a/2/fake_model_e_generic_oo": {
                 "modified_element": 3,
                 "type": "remove",
                 "value": None,
@@ -54,19 +62,19 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2O_delete(self) -> None:
         self.set_models(
             {
-                "fake_model_a/1": {"fake_model_b_generic_oo": 2},
-                "fake_model_b/2": {"fake_model_a_generic_oo": "fake_model_a/1"},
+                "fake_model_a/1": {},
+                "fake_model_e/2": {"fake_model_a_generic_oo": "fake_model_a/1"},
             }
         )
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_oo,
-            field_name="fake_model_b_generic_oo",
-            instance={"id": 1, "fake_model_b_generic_oo": None},
+            field=FakeModelA.fake_model_e_generic_oo,
+            field_name="fake_model_e_generic_oo",
+            instance={"id": 1, "fake_model_e_generic_oo": None},
         )
         result = handler.perform()
         expected = {
-            "fake_model_b/2/fake_model_a_generic_oo": {
+            "fake_model_e/2/fake_model_a_generic_oo": {
                 "type": "remove",
                 "value": None,
                 "modified_element": "fake_model_a/1",
@@ -210,20 +218,20 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_multitype_delete(self) -> None:
         self.set_models(
             {
-                "fake_model_a/1": {"fake_model_generic_multitype": "fake_model_b/3"},
-                "fake_model_a/2": {"fake_model_generic_multitype": "fake_model_b/3"},
-                "fake_model_b/3": {"fake_model_a_generic_multitype_m": [1, 2]},
+                "fake_model_d/1": {"fake_model_generic_multitype": "fake_model_b/3"},
+                "fake_model_d/2": {"fake_model_generic_multitype": "fake_model_b/3"},
+                "fake_model_b/3": {},
             }
         )
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_generic_multitype,
+            field=FakeModelD.fake_model_generic_multitype,
             field_name="fake_model_generic_multitype",
             instance={"id": 1, "fake_model_generic_multitype": None},
         )
         result = handler.perform()
         expected = {
-            "fake_model_b/3/fake_model_a_generic_multitype_m": {
+            "fake_model_b/3/fake_model_d_generic_multitype_m": {
                 "type": "remove",
                 "value": [2],
                 "modified_element": 1,

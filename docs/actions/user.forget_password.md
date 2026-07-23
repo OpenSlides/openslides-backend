@@ -9,7 +9,9 @@
 
 ## Action 
 
-A user can change their password by this action without being authenticated. To perform a changing of their password the user enters their email-address (case insensitive). The client then sends a hard-coded reset email to the given email-address (as `email`). TODO: translations
+A user can change their password by this action without being authenticated. To perform a changing of their password the user enters their email-address (case insensitive). The client then sends a hard-coded reset email to the given email-address (as `email`). 
+
+The email text is translated based on the `Accept-Languages` column of the request header. The highest-priority language that is supported by OpenSlides is used. If none of them are supported, orga default language is used.
 
 Regardless if the email-address is used by a user, the client shows the user a successful message (for example "An email was successfully sent to the given email-address"). This is necessary to avoid filtering which email-address is used by an OpenSlides-user.
 
