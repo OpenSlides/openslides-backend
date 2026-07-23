@@ -7,7 +7,6 @@ from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
 from ...migrations.migration_helper import MigrationHelper
 from ...migrations.migration_manager import MigrationManager
-from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...services.postgresql.db_connection_handling import get_new_os_conn
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
@@ -35,19 +34,22 @@ class ActionView(BaseView):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 MigrationHelper.assert_migration_index(curs)
+                curs.execute("SELECT default_language FROM organization_t WHERE id = 1")
+                lang: str | None = (curs.fetchone() or {}).get("default_language")
         # Get user id.
         user_id, access_token = self.get_user_id_from_headers(
             request.headers, request.cookies
         )
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
-            request.headers.get(AUTHENTICATION_HEADER, ""),
-            request.cookies.get(COOKIE_NAME, ""),
+            request.headers.get("Authorization", "")
         )
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)
-        Translator.set_translation_language(request.headers.get("Accept-Language"))
+        Translator.set_translation_language(
+            request.headers.get("Accept-Language"), lang
+        )
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handle_action_in_worker_thread(
             request.json, user_id, is_atomic, handler

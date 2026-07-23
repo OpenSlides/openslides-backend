@@ -2895,6 +2895,13 @@ class User(Model):
     id = fields.IntegerField(required=True, constant=True)
     username = fields.CharField(required=True, unique=True)
     member_number = fields.CharField(unique=True)
+    idp_id = fields.CharField(
+        unique=True,
+        constraints={
+            "minLength": 1,
+            "description": "unique-key from IDP for OIDC login",
+        },
+    )
     saml_id = fields.CharField(
         unique=True,
         constraints={

@@ -19,7 +19,6 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-# from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import ActionException, DatabaseException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
@@ -34,6 +33,26 @@ class ActionWorkerState(StrEnum):
     ABORTED = "aborted"
 
 
+def concatenate_action_names(payload: Payload) -> str:
+    result = ",".join(elem.get("action", "") for elem in payload)
+    if len(result) > 256:
+        action_names = result.split(",")
+        result = ""
+        prev_action_name = action_names[0]
+        counter = 1
+        for action_name in action_names[1:]:
+            if action_name == prev_action_name:
+                counter += 1
+            else:
+                result += f"{prev_action_name}_{counter},"
+                prev_action_name = action_name
+                counter = 1
+        result += f"{prev_action_name}_{counter}"
+        if len(result) > 256:
+            result = result[:255] + "…"
+    return result
+
+
 def handle_action_in_worker_thread(
     payload: Payload,
     user_id: int,
@@ -44,7 +63,7 @@ def handle_action_in_worker_thread(
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
-        action_names = ",".join(elem.get("action", "") for elem in payload)
+        action_names = concatenate_action_names(payload)
     except Exception:
         action_names = "Cannot be determined"
     action_worker_writing = ActionWorkerWriting(user_id, handler.logging, action_names)
@@ -107,7 +126,6 @@ class ActionWorkerWriting:
         user_id: int,
         logging: LoggingModule,
         action_names: str,
-        # datastore: DatastoreService,
     ) -> None:
         self.user_id = user_id
         self.start_time = datetime.now(ZoneInfo("UTC"))
@@ -282,6 +300,7 @@ def gunicorn_post_request(
 
         with get_new_os_conn() as conn:
             extended_db = ExtendedDatabase(conn, logging, env)
+            initial_write_counter = 0
             while True:
                 worker.tmp.notify()
                 if action_worker_writing.written:
@@ -293,7 +312,12 @@ def gunicorn_post_request(
                         break
                     else:
                         action_worker_writing.continue_action_worker_write(extended_db)
+                elif initial_write_counter >= 3:
+                    raise ActionException(
+                        "Couldn't write action_worker three times. Please check the logs or contact your admin."
+                    )
                 else:
+                    initial_write_counter += 1
                     action_worker_writing.initial_action_worker_write(extended_db)
                 conn.commit()
     except Exception as e:
