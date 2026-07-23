@@ -218,7 +218,7 @@ class IDPMixin(Action):
 
         try:
             ## Logout user
-            self.logout_user(idp_id)
+            self.revoke_all_sessions_of_user(idp_id)
 
             ## Delete OS user from IDP
             response = requests.delete(self.idp_admin_route + "users/" + idp_id,
@@ -234,7 +234,7 @@ class IDPMixin(Action):
             raise ActionException(f"Error deleting user: {e}")
 
     # Logs user out and thereby revokes any active session of user
-    def logout_user(self, instance):
+    def revoke_all_sessions_of_user(self, instance):
         if isinstance(instance, str):
             idp_id = instance
         else:
@@ -249,10 +249,10 @@ class IDPMixin(Action):
         try:
             response = requests.post(self.idp_admin_route + "sessions/search",
                 json={
-                    'queries': [
+                    "queries": [
                     {
-                        'userIdQuery': {
-                            'id': idp_id
+                        "userIdQuery": {
+                            "id": f"{idp_id}"
                         }
                     }
                 ]
@@ -263,11 +263,16 @@ class IDPMixin(Action):
                 }
             )
 
-            logger.warning(f"Testing logut: {response.json()}")
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
+                raise ActionException(f"{response.status_code} {response.json()}")
 
-            for session in response.json()["sessions"]:
+            json_response = response.json()
+
+            if not "sessions" in json_response:
+                logger.warning(f"No session has been found")
+                return
+
+            for session in json_response:
                 logger.warning(f"Testing logut specific session: {session}")
                 response = requests.delete(self.idp_admin_route + "sessions/" + session["id"],
                     json={},
@@ -278,7 +283,7 @@ class IDPMixin(Action):
                 )
 
                 if response.status_code != 200:
-                    raise ActionException(f"{response.status_code} {json_response}")
+                    raise ActionException(f"{response.status_code} {response.json()}")
 
         except Exception as e:
             raise ActionException(f"Error logout of user: {e}")
@@ -301,23 +306,20 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
-            if enabled:
+            if not enabled:
                 command = "deactivate"
             else:
                 command = "reactivate"
 
             ## Change enable status of IDP user
             response = requests.post(self.idp_admin_route + "users/" + idp_id + "/" + command,
-                json={
-                    'enabled': enabled,
-                },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                     'Host': f'{self.external_host}'
                 }
             )
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {json_response}")
+                raise ActionException(f"{response.status_code} {response.json()}")
         except Exception as e:
             raise ActionException(f"Error setting enable status of user: {e}")
 
@@ -346,7 +348,7 @@ class IDPMixin(Action):
                 raise ActionException(f"{response.status_code}, {response.json()}")
 
             # Logout user
-            self.logout_user(idp_id)
+            self.revoke_all_sessions_of_user(idp_id)
         except Exception as e:
             raise ActionException(f"Error sending password reset email to user {idp_id}: {e}")
 
@@ -369,7 +371,7 @@ class IDPMixin(Action):
 
         try:
             ## Change email of IDP user
-            response = requests.patch(self.idp_admin_route + "users",
+            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
                 json={
                     'human': {
                         'email': {
@@ -407,9 +409,10 @@ class IDPMixin(Action):
 
         try:
             ## Change username of IDP user
-            response = requests.patch(self.idp_admin_route + "users",
+            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
                 json={
-                    'username': username
+                    'username': username,
+                    'human': { }
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
@@ -443,7 +446,7 @@ class IDPMixin(Action):
         try:
 
             ## Change email of IDP user
-            response = requests.patch(self.idp_admin_route + "users",
+            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
                 json={
                     'human': {
                         'hashedPassword': {

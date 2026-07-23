@@ -36,7 +36,8 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     def __init__(self, env: Environment, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.env = env
-        self.issuer_url = self.env.IDP_URL_INTERNAL
+        self.issuer_url = self.env.IDP_URL_EXTERNAL
+        self.issuer_url_internal = self.env.IDP_URL_INTERNAL
         self.externalHost = self.env.IDP_EXTERNAL_HOST
         self.headers = {"Content-Type": "application/json"}
 
@@ -44,8 +45,8 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         self._keys: dict = {}
         self._keys_expires_at: float = 0.0
 
-        if self.issuer_url is None or self.issuer_url == "":
-            self.issuer_url = self.env.IDP_URL_EXTERNAL
+        if self.issuer_url_internal is None or self.issuer_url_internal == "":
+            self.issuer_url_internal = self.env.IDP_URL_EXTERNAL
 
     def authenticate(self) -> tuple[int, str | None]:
         self.logger.debug(
@@ -89,10 +90,12 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         except jwt.exceptions.InvalidTokenError as e:
             raise AuthenticationException(f"Validating JWT token: {e}")
 
-        if claims.Issuer != self.issuer_url:
-            raise AuthenticationException(f"Invalid issuer: got {claims.Issuer}, want {self.issuer_url}")
+        payload = IDPPayload(claims)
 
-        return IDPPayload(claims)
+        if payload.iss != self.issuer_url:
+            raise AuthenticationException(f"Invalid issuer i {self.env.IDP_URL_INTERNAL} e {self.env.IDP_URL_EXTERNAL}: got {payload.iss}, want {self.issuer_url}")
+
+        return payload
 
     def _get_key(self, kid: str):
         if kid in self._keys and time.time() < self._keys_expires_at:
@@ -100,7 +103,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         return self._fetch_jwks(kid)
 
     def _fetch_jwks(self, kid: str):
-        url = f"{self.issuer_url}/oauth/v2/keys"
+        url = f"{self.issuer_url_internal}/oauth/v2/keys"
         try:
             resp = requests.get(url, headers={"Host": f"{self.externalHost.strip()}"}, timeout=10)
         except requests.RequestException as e:

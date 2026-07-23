@@ -199,10 +199,10 @@ class UserUpdate(
         if is_active := instance.get("is_active"):
             if not user.get("is_active"):
                 self.set_user_enable_status(instance, instance.get("is_active"))
-                self.logout_user(instance)
+                self.revoke_all_sessions_of_user(instance)
         elif is_active is False and user.get("is_active"):
             self.set_user_enable_status(instance, instance.get("is_active"))
-            self.logout_user(instance)
+            self.revoke_all_sessions_of_user(instance)
         # TODO: What was this about?
         #if is_active := instance.get("is_active"):
             #if not user.get("is_active"):
