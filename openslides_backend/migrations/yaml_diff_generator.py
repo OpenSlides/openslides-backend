@@ -170,6 +170,9 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
+            if key in CollectionAttributes.unique_together:
+                tree[key] = prev_value
+                continue
             if curr_models:
                 if len(path) == 2 and prev_value["type"] in [
                     "relation",
@@ -273,6 +276,7 @@ def create_edit_recursive(
     Returns the edited entries on pos 0 and the sub trees on pos 1.
     TODO This has a very similar structure to the add recursive function. Maybe combine with use of lambda or passing additional dict.
     TODO This should only generate diffs for the leafs. Thus the structure should be reconsidered. Maybe flatter or integrating rename info.
+    TODO: if list of unique_together and unique_together_strict changes, the changes get added to the diff here, even when we don't change an existing item but add or remove.
     """
     edited_entries = {}
     tree = {}

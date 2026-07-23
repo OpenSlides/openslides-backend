@@ -327,26 +327,50 @@ def handle_remove_tree(
 ) -> str:
     result = ""
     for collection_name, collection_data in remove_tree_dict.items():
-        fields_data = collection_data[1]["fields"]
-        for field_name in fields_data[0]:
-            result += Helper.get_drop_column_statement(collection_name, field_name)
-            dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
-        for field_name, attrs in fields_data[1].items():
-            for attr in attrs[0]:
-                match attr:
-                    case "default":
-                        result += Helper.get_alter_column_statement(
-                            collection_name, field_name, "DROP DEFAULT"
+        for key, data in collection_data[1].items():
+            match key:
+                case "fields":
+                    for field_name in data[0]:
+                        result += Helper.get_drop_column_statement(
+                            collection_name, field_name
                         )
-                dc_remove_tree_dict[collection_name][1]["fields"][1][field_name][
-                    0
-                ].remove(attr)
-                remove_empty(
-                    dc_remove_tree_dict[collection_name][1]["fields"][1], field_name
-                )
-            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_remove_tree_dict, collection_name)
+                        dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
+                            field_name
+                        )
+                        remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                    for field_name, attrs in data[1].items():
+                        for attr in attrs[0]:
+                            match attr:
+                                case "default":
+                                    result += Helper.get_alter_column_statement(
+                                        collection_name, field_name, "DROP DEFAULT"
+                                    )
+                            dc_remove_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][0].remove(attr)
+                            remove_empty(
+                                dc_remove_tree_dict[collection_name][1]["fields"][1],
+                                field_name,
+                            )
+                        remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                    remove_empty(dc_remove_tree_dict, collection_name)
+                case "unique_together":
+                    for fields in data:
+                        result += Helper.get_drop_table_constraint_statement(
+                            collection_name,
+                            HelperGetNames.get_unique_constraint_name(
+                                collection_name,
+                                Helper.split_unique_together_fields(fields),
+                            ),
+                        )
+                        dc_remove_tree_dict[collection_name][1][
+                            "unique_together"
+                        ].remove(fields)
+                        remove_empty(
+                            dc_remove_tree_dict[collection_name][1],
+                            "unique_together",
+                        )
+                    remove_empty(dc_remove_tree_dict, collection_name)
     return result
 
 
