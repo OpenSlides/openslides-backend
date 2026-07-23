@@ -54,6 +54,30 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     default_group: dict[str, Any] = {}
     missing_field_values: dict[str, set[str]]
     use_referenced_state: bool = True
+    check_changes: bool = True
+    property_to_equivalent: dict[str, tuple[str, str]] = {
+        "title": ("user", "title"),
+        "first_name": ("user", "first_name"),
+        "last_name": ("user", "last_name"),
+        "is_active": ("user", "is_active"),
+        "is_physical_person": ("user", "is_physical_person"),
+        "default_password": ("user", "default_password"),
+        "email": ("user", "email"),
+        "username": ("user", "username"),
+        "pronoun": ("user", "pronoun"),
+        "saml_id": ("user", "saml_id"),
+        "member_number": ("user", "member_number"),
+        "external": ("user", "external"),
+        "gender": ("user", "gender_id"),
+        "home_committee": ("user", "home_committee_id"),
+        "is_present": ("user", "is_present_in_meeting_ids"),
+        "structure_level": ("meeting_user", "structure_level_ids"),
+        "number": ("meeting_user", "number"),
+        "vote_weight": ("meeting_user", "vote_weight"),
+        "comment": ("meeting_user", "comment"),
+        "groups": ("meeting_user", "group_ids"),
+        "locked_out": ("meeting_user", "locked_out"),
+    }
 
     def prefetch(self, action_data: ActionData) -> None:
         self.meeting_id = next(iter(action_data)).get("meeting_id", 0)
@@ -221,3 +245,36 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     def get_row_state_for_update_row(self, id_: int) -> ImportState:
         meeting_user = get_meeting_user(self.datastore, self.meeting_id, id_, ["id"])
         return ImportState.DONE if meeting_user else ImportState.REFERENCED
+
+    def get_model_data(self, id_: int) -> dict[str, Any]:
+        model_fields = [
+            equivalent[1]
+            for header in self.headers
+            if (equivalent := self.property_to_equivalent[header["property"]])[0]
+            == self.model.collection
+        ]
+        meeting_user_fields = [
+            eq
+            for header in self.headers
+            if (eq := self.property_to_equivalent[header["property"]][1])
+            not in model_fields
+        ]
+        model = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, id_), model_fields
+        )
+        meeting_user = get_meeting_user(
+            self.datastore, self.meeting_id, id_, meeting_user_fields
+        )
+        if meeting_user:
+            model.update(meeting_user)
+        return model
+
+    def get_value_from_model_data(self, db_model: dict[str, Any], field: str) -> Any:
+        if field == "is_present":
+            return self.meeting_id in db_model.get("is_present_in_meeting_ids", [])
+        return db_model.get(self.property_to_equivalent[field][1])
+
+    def get_true_value_from_object(self, entry: dict[str, Any], field: str) -> Any:
+        if field == self.property_to_equivalent[field][1]:
+            return entry["value"]
+        return super().get_true_value_from_object(entry, field)

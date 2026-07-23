@@ -361,7 +361,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 or entry.get("default_password")
                 or old_default_password
             ):
-                entry["default_password"] = {"value": "", "info": ImportState.WARNING}
+                entry["default_password"] = {
+                    "value": "",
+                    "changed": False,
+                    "info": ImportState.WARNING,
+                }
                 messages.append(
                     f"Because this {self.import_name} is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )

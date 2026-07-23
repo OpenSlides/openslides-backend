@@ -394,11 +394,101 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     meeting_id: int
     timezone_field_name: str | None = None
     use_referenced_state: bool = False
+    check_changes: bool = False
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
+        property_to_type = {
+            header["property"]: (
+                header["type"],
+                header.get("is_object"),
+                header.get("is_list", False),
+            )
+            for header in self.headers
+        }
+        for row in self.rows:
+            if self.check_changes and row["state"] in [
+                ImportState.DONE,
+                ImportState.REFERENCED,
+            ]:
+                list_deletions: dict[str, int] = {}
+                # changed_fields = []
+                db_model = self.get_model_data(row["data"]["id"])
+                for field, entry in row["data"].items():
+                    if field in property_to_type:
+                        type_, is_object, is_list = property_to_type[field]
+                        if is_list and entry:
+                            lis = {
+                                (
+                                    self.get_true_value_from_object(e, field)
+                                    if is_object
+                                    else e
+                                )
+                                for e in entry
+                            }
+                            if symm_diff := lis.symmetric_difference(
+                                self.get_value_from_model_data(db_model, field) or []
+                            ):
+                                removed = symm_diff.difference(lis)
+                                added = symm_diff.difference(removed)
+                                if removed:
+                                    list_deletions[field] = len(removed)
+                                if added:
+                                    if is_object:
+                                        for e in entry:
+                                            if (
+                                                self.get_true_value_from_object(
+                                                    e, field
+                                                )
+                                                in added
+                                                and "changed" not in e
+                                                and e["info"] != ImportState.REMOVE
+                                            ):
+                                                e["changed"] = True
+                                    else:
+                                        row["data"][field] = [
+                                            {
+                                                "value": e,
+                                                "info": ImportState.DONE,
+                                                "changed": e in added,
+                                            }
+                                            for e in entry
+                                        ]
+                        elif entry is not None:
+                            if is_object:
+                                if (
+                                    self.get_true_value_from_object(entry, field)
+                                    != self.get_value_from_model_data(db_model, field)
+                                    and "changed" not in entry
+                                    and entry["info"] != ImportState.REMOVE
+                                ):
+                                    # changed_fields.append(field)
+                                    entry["changed"] = True
+                            elif entry != self.get_value_from_model_data(
+                                db_model, field
+                            ):
+                                # changed_fields.append(field)
+                                row["data"][field] = {
+                                    "value": entry,
+                                    "info": ImportState.DONE,
+                                    "changed": True,
+                                }
+                if list_deletions:
+                    row["list_deletions"] = list_deletions
         self.store_rows_in_the_import_preview(self.import_name)
         return instance
+
+    def get_model_data(self, id_: int) -> dict[str, Any]:
+        return self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, id_),
+            [header["property"] for header in self.headers],
+        )
+
+    def get_value_from_model_data(self, db_model: dict[str, Any], field: str) -> Any:
+        return db_model.get(field)
+
+    def get_true_value_from_object(self, entry: dict[str, Any], field: str) -> Any:
+        return entry.get("id", entry["value"])
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         if number_errors > 0:
