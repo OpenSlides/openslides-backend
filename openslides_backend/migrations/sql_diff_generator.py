@@ -29,7 +29,13 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    sql = "-- REMOVE SECTION --\n"
+    # Has to happen before remove: field types have to change before the enum drop
+    sql = "-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+
+    sql += "\n-- REMOVE SECTION --\n"
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
     remove = diff["remove"]
@@ -48,11 +54,6 @@ def main() -> int:
         sql += generate_new_collection_sql(add[0], diff_control["add"][0])
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
-
-    sql += "\n-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     # TODO Do this in a sub folder migrations?
     with open(

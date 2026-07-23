@@ -99,12 +99,17 @@ def generate_diff() -> dict[str, Any]:
     renames = MigrationHelper.get_migration_class(directory).renames
 
     validate_renames(prev_models, curr_models, renames)
+    secondary_edits = {}
 
     return {
         "rename": renames,
-        "remove": create_remove_recursive(prev_models, curr_models, renames),
+        "remove": create_remove_recursive(
+            prev_models, curr_models, renames, secondary_edits
+        ),
         "add": create_add_recursive(prev_models, curr_models, renames),
-        "edit": create_edit_recursive(prev_models, curr_models, renames),
+        "edit": create_edit_recursive(
+            prev_models, curr_models, renames, secondary_edits
+        ),
     }
 
 
@@ -134,10 +139,17 @@ def validate_renames(
             )
 
 
+def update_edits_tree(tree, collection, field, attr, value):
+    tree.setdefault(collection, [{}, {}])[1].setdefault("fields", [{}, {}])[
+        1
+    ].setdefault(field, [{}, {}])[0][attr] = value
+
+
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
     enum_tree: dict[str, list[str]] = {},
     path: tuple[str, ...] = (),
 ) -> (
@@ -165,11 +177,16 @@ def create_remove_recursive(
                     model = path[0]
                     field = path[2]
                     enum_tree.setdefault(model, []).append(field)
+                    if "type" in curr_models:
+                        update_edits_tree(
+                            secondary_edits, model, field, "type", curr_models["type"]
+                        )
         if isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 renames_dict.get(key, {}),
+                secondary_edits,
                 enum_tree,
                 path + (key,),
             )
@@ -220,6 +237,7 @@ def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
@@ -241,6 +259,11 @@ def create_edit_recursive(
                 )
                 if result is not None:
                     tree[key] = result
+    if secondary_edits:
+        for collection, collection_data in secondary_edits.items():
+            for field_name, field_data in collection_data[1]["fields"][1].items():
+                for attr, value in field_data[0].items():
+                    update_edits_tree(tree, collection, field_name, attr, value)
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
