@@ -314,7 +314,7 @@ def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str
             collection_names := collections_remove_list[0], list
         ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
             for collection_name in collection_names:
-                result += f"DROP TABLE {collection_name}_t CASCADE;\n"
+                result += Helper.get_drop_table_statement(collection_name)
                 dc_collection_names.remove(collection_name)
         if isinstance(
             remove_tree_dict := collections_remove_list[1], dict
@@ -340,9 +340,7 @@ def handle_remove_tree(
     for collection_name, field_lists in remove_tree_dict.items():
         fields = field_lists[1]["fields"]
         for field_name in fields[0]:
-            result += (
-                f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name} CASCADE;\n"
-            )
+            result += Helper.get_drop_column_statement(collection_name, field_name)
 
             dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
             # TODO fields[1]
@@ -359,10 +357,9 @@ def handle_remove_enum_types(
     result = ""
     for collection_name, field_names in remove_tree_dict.items():
         for field_name in field_names:
-            enum_name = HelperGetNames.get_enum_name_for_column(
+            result += Helper.get_drop_enum_type_statement_from_collection_and_column(
                 collection_name, field_name
             )
-            result += f"DROP TYPE {enum_name};\n"
             dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
