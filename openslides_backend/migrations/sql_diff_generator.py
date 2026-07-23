@@ -326,14 +326,25 @@ def handle_remove_tree(
     dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
 ) -> str:
     result = ""
-    for collection_name, field_lists in remove_tree_dict.items():
-        fields = field_lists[1]["fields"]
-        for field_name in fields[0]:
+    for collection_name, collection_data in remove_tree_dict.items():
+        fields_data = collection_data[1]["fields"]
+        for field_name in fields_data[0]:
             result += Helper.get_drop_column_statement(collection_name, field_name)
-
             dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-            # TODO fields[1]
-            # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
+            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+        for field_name, attrs in fields_data[1].items():
+            for attr in attrs[0]:
+                match attr:
+                    case "default":
+                        result += Helper.get_alter_column_statement(
+                            collection_name, field_name, "DROP DEFAULT"
+                        )
+                dc_remove_tree_dict[collection_name][1]["fields"][1][field_name][
+                    0
+                ].remove(attr)
+                remove_empty(
+                    dc_remove_tree_dict[collection_name][1]["fields"][1], field_name
+                )
             remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
         remove_empty(dc_remove_tree_dict, collection_name)
     return result
