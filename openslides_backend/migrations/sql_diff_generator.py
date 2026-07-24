@@ -424,6 +424,37 @@ def handle_remove_tree(
                                 dc_remove_tree_dict[collection_name][1]["fields"][1],
                                 field_name,
                             )
+                        for attr, attr_data in attrs[1].items():
+                            match attr:
+                                case "log_triggers":
+                                    processed_tables: dict[str, int] = {}
+                                    for log_trigger in attr_data:
+                                        trigger_name_iu, trigger_name_ud, *_ = (
+                                            Helper.get_log_calculated_id_array_trigger_data(
+                                                collection_name,
+                                                field_name,
+                                                log_trigger,
+                                                processed_tables,
+                                            )
+                                        )
+                                        for trigger_name in [
+                                            trigger_name_iu,
+                                            trigger_name_ud,
+                                        ]:
+                                            result += Helper.get_drop_trigger_statement(
+                                                log_trigger["on_table"], trigger_name
+                                            )
+                                case _:
+                                    raise NotImplementedError(
+                                        f"{collection_name}/{field_name}: {attr}"
+                                    )
+                            dc_remove_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][1].pop(attr)
+                            remove_empty(
+                                dc_remove_tree_dict[collection_name][1]["fields"][1],
+                                field_name,
+                            )
                     remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
                     remove_empty(dc_remove_tree_dict, collection_name)
                 case "unique_together":
