@@ -12,10 +12,12 @@ from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CollectionsRemoveList,
     EnumTypesRemoveDict,
+    FieldAttributes,
     RemoveDiffDict,
     dumpjson,
     generate_diff,
 )
+from openslides_backend.shared.exceptions import BadCodingException
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -382,8 +384,32 @@ def handle_remove_tree(
                                             collection_name, constraint_name
                                         )
                                     )
+                                case "sql":
+                                    result += Helper.get_drop_view_statement(
+                                        collection_name
+                                    )
+                                case "constant":
+                                    result += Helper.get_drop_trigger_statement(
+                                        collection_name,
+                                        HelperGetNames.get_constant_field_trigger_name(
+                                            collection_name, field_name
+                                        ),
+                                    )
+                                case value if (
+                                    value in FieldAttributes.skipped_in_schema
+                                ):
+                                    pass
+                                case "type":
+                                    raise BadCodingException(
+                                        f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
+                                    )
                                 case _:
-                                    continue
+                                    # "to" and "reference" are currently skipped. They can only be removed
+                                    # if type changes to not relational field which is not the case
+                                    # in the foreseeable future.
+                                    raise NotImplementedError(
+                                        f"{collection_name}/{field_name}: {attr}"
+                                    )
                             dc_remove_tree_dict[collection_name][1]["fields"][1][
                                 field_name
                             ][0].remove(attr)
