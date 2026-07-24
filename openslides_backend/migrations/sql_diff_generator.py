@@ -444,6 +444,9 @@ def handle_remove_tree(
                                             result += Helper.get_drop_trigger_statement(
                                                 log_trigger["on_table"], trigger_name
                                             )
+                                # case "equal_fields":
+                                #     pass
+                                #     TODO: correctly handle deleted equal_fields
                                 case _:
                                     raise NotImplementedError(
                                         f"{collection_name}/{field_name}: {attr}"

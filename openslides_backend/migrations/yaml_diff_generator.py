@@ -180,7 +180,11 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            if key in [*CollectionAttributes.unique_together, "log_triggers"]:
+            if key in [
+                *CollectionAttributes.unique_together,
+                "log_triggers",
+                "equal_fields",
+            ]:
                 # Old definitions are needed to re-build the trigger difinitions names
                 tree[key] = prev_value
             elif key == "maxLength":
