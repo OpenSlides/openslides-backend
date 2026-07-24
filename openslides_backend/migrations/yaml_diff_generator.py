@@ -185,6 +185,9 @@ def create_remove_recursive(
             elif key == "maxLength":
                 # Should be processed as type change
                 update_edits_tree(secondary_edits, path[0], path[2], "maxLength", None)
+            elif key == "sequence_scope":
+                missing_entries.append(key)
+                tree[key] = prev_value
             elif is_enum(key) and len(path) >= 3:
                 # Should be processed as type change
                 if "type" in curr_models:
@@ -214,6 +217,18 @@ def create_remove_recursive(
                 tree[key] = result
 
     if path:
+        if (
+            tree
+            and len(path) == 1
+            and "fields" in tree
+            and isinstance(tree["fields"], list)
+        ):
+            for field_name, data in tree["fields"][1].items():
+                if sequence_scope := data[1].pop("sequence_scope", None):
+                    tree.setdefault("unique_together", []).append(
+                        f"{field_name}, {sequence_scope}"
+                    )
+
         if missing_entries or tree:
             return [missing_entries, tree]
         else:

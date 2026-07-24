@@ -395,6 +395,13 @@ def handle_remove_tree(
                                             collection_name, field_name
                                         ),
                                     )
+                                case "sequence_scope":
+                                    result += Helper.get_drop_trigger_statement(
+                                        collection_name,
+                                        HelperGetNames.get_partitioned_sequence_trigger_name(
+                                            collection_name, field_name
+                                        ),
+                                    )
                                 case value if (
                                     value in FieldAttributes.skipped_in_schema
                                 ):
