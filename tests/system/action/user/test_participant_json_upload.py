@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState
@@ -1566,7 +1567,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data0 == {
             "saml_id": {"info": "new", "value": "test_saml_id"},
             "username": {"info": "generated", "value": "test_saml_id2"},
-            "default_password": {"info": "warning", "value": ""},
+            "default_password": {"info": "warning", "value": "", "changed": False},
             "groups": [{"value": "group1", "info": ImportState.DONE, "id": 1}],
         }
 
@@ -2904,10 +2905,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert not any(
             rows[i]["state"] != ImportState.DONE for i in [2, 4, *range(7, len(rows))]
         )
+
+        assert not any("list_deletions" in rows[i] for i in [0, 1, 3, 5, 6])
+        assert not any(
+            rows[i]["list_deletions"] != {"groups": 1} for i in [2, 4, 7, 8, 9, 10]
+        )
         assert not any(rows[i]["state"] != ImportState.REFERENCED for i in [3, 5, 6])
         data = [row["data"] for row in rows]
+        assert data[0]["locked_out"] == {"info": "done", "value": True}
+        assert data[1]["locked_out"] == {"info": "done", "value": True}
         assert not any(
-            date["locked_out"] != {"info": "done", "value": True} for date in data[0:9]
+            date["locked_out"] != {"info": "done", "value": True, "changed": True}
+            for date in data[2:9]
         )
         assert not any(data[i + 2]["id"] != participant1 + i for i in range(9))
         i = 0
@@ -2941,11 +2950,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "participant1",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 4,
-                "info": "done",
-                "value": "can_update",
-            },
+            {"id": 4, "info": "done", "value": "can_update", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -2954,11 +2959,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "foreign_cml",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "generated",
-                "value": "default",
-            },
+            {"id": 1, "info": "generated", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -2967,11 +2968,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "can_update",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "generated",
-                "value": "default",
-            },
+            {"id": 1, "info": "generated", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -2980,11 +2977,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "foreign_meeting_admin",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "generated",
-                "value": "default",
-            },
+            {"id": 1, "info": "generated", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -2993,11 +2986,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "foreign_can_manage",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "generated",
-                "value": "default",
-            },
+            {"id": 1, "info": "generated", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3006,11 +2995,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "can_manage",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "done",
-                "value": "default",
-            },
+            {"id": 1, "info": "done", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3019,11 +3004,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "meeting_admin",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 1,
-                "info": "done",
-                "value": "default",
-            },
+            {"id": 1, "info": "done", "value": "default", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3032,11 +3013,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "locked_out1",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 2,
-                "info": "done",
-                "value": "admin",
-            },
+            {"id": 2, "info": "done", "value": "admin", "changed": True},
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3045,11 +3022,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "locked_out2",
         }
         assert data[i]["groups"] == [
-            {
-                "id": 3,
-                "info": "done",
-                "value": "can_manage",
-            },
+            {"id": 3, "info": "done", "value": "can_manage", "changed": True},
         ]
 
     def json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group(
@@ -3091,10 +3064,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True},
-            "groups": [{"id": 1, "info": "generated", "value": "default"}],
+            "locked_out": {"info": "done", "value": True, "changed": True},
+            "groups": [
+                {"id": 1, "info": "generated", "value": "default", "changed": True}
+            ],
         }.items():
             assert data[key] == value
+        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
 
     def json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
         self,
@@ -3134,10 +3110,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True},
-            "groups": [{"id": 1, "info": "generated", "value": "default"}],
+            "locked_out": {"info": "done", "value": True, "changed": True},
+            "groups": [
+                {"id": 1, "info": "generated", "value": "default", "changed": True}
+            ],
         }.items():
             assert data[key] == value
+        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
 
     def json_upload_set_home_committee(self, has_perm: bool = True) -> None:
         self.create_committee(1, name="Home")
@@ -3226,8 +3205,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "info": ImportState.DONE,
                 "value": "Home",
                 "id": 2,
+                "changed": True,
             }
-            assert data["external"] == {"info": ImportState.GENERATED, "value": False}
+            assert data["external"] == {
+                "info": ImportState.GENERATED,
+                "value": False,
+                "changed": True,
+            }
         else:
             assert data["home_committee"] == {
                 "info": ImportState.REMOVE,
@@ -3235,6 +3219,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
             }
             assert data["external"] == {"info": ImportState.REMOVE, "value": False}
+        assert "list_deletions" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false(self) -> None:
         self.create_committee(1, name="Home")
@@ -3265,8 +3250,14 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.DONE,
             "value": "Home",
             "id": 1,
+            "changed": True,
         }
-        assert data["external"] == {"info": ImportState.DONE, "value": False}
+        assert data["external"] == {
+            "info": ImportState.DONE,
+            "value": False,
+            "changed": True,
+        }
+        assert "list_deletions" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_external_true(
         self, with_home_committee: bool = False, has_home_committee_perms: bool = True
@@ -3308,7 +3299,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Alice",
             "id": alice_id,
         }
-        assert data["home_committee"] == {
+        hc: dict[str, Any] = {
             "info": (
                 ImportState.GENERATED
                 if has_home_committee_perms
@@ -3316,12 +3307,19 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ),
             "value": None,
         }
-        assert data["external"] == {
+        ext: dict[str, Any] = {
             "info": (
                 ImportState.DONE if has_home_committee_perms else ImportState.REMOVE
             ),
             "value": True,
         }
+        if has_home_committee_perms:
+            if hc["value"] or with_home_committee:
+                hc["changed"] = True
+            ext["changed"] = True
+        assert data["home_committee"] == hc
+        assert data["external"] == ext
+        assert "list_deletions" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false_no_perms_new(self) -> None:
         self.create_committee(1, name="Old home")
