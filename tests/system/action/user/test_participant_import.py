@@ -1877,3 +1877,24 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "group_ids": [1, 2, 3, 7],
             },
         )
+
+    def test_json_upload_update_reference_via_two_attributes(self) -> None:
+        self.json_upload_update_reference_via_two_attributes()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["data"] == {
+            "id": 2,
+            "saml_id": {"info": "done", "value": "old_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "default_password": {
+                "value": "",
+                "info": ImportState.WARNING,
+                "changed": False,
+            },
+            "groups": [
+                {"id": 1, "info": "generated", "value": "group1", "changed": True}
+            ],
+        }
+        assert row["list_deletions"] == {"groups": 1}

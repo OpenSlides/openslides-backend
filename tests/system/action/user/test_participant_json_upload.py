@@ -2358,7 +2358,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         }
 
     def json_upload_update_reference_via_two_attributes(self) -> None:
-        # TODO: Seems this isn't called
         self.create_user("test", [3])
         self.set_models(
             {
@@ -2376,29 +2375,33 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "test",
                         "saml_id": "old_one",
-                        "default_vote_weight": "4.500000",
                     }
                 ],
             },
         )
         self.assert_status_code(response, 200)
         import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["state"] == ImportState.WARNING
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == []
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
+        ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
             "saml_id": {"info": "done", "value": "old_one"},
             "username": {"info": "done", "value": "test", "id": 2},
-            "default_vote_weight": {
-                "info": "done",
-                "value": "4.500000",
-                "changed": True,
+            "default_password": {
+                "value": "",
+                "info": ImportState.WARNING,
+                "changed": False,
             },
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [
+                {"id": 1, "info": "generated", "value": "group1", "changed": True}
+            ],
         }
+        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
 
     def json_upload_set_member_number_in_existing_participants(self) -> None:
         self.create_user("test1", [3])
