@@ -40,6 +40,7 @@ class ImportState(StrEnum):
     GENERATED = "generated"
     REMOVE = "remove"
     ERROR = "error"
+    REFERENCED = "referenced"
 
 
 class ImportRow(TypedDict):
@@ -265,7 +266,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
         error: str | None = None
         if check_result == ResultType.FOUND_ID and id_ != 0:
             if required:
-                if row["state"] != ImportState.DONE:
+                if row["state"] not in [ImportState.DONE, ImportState.REFERENCED]:
                     error = f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
                 elif "id" not in entry:
                     raise ActionException(
@@ -392,11 +393,102 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     import_state: ImportState
     meeting_id: int
     timezone_field_name: str | None = None
+    use_referenced_state: bool = False
+    check_changes: bool = False
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
+        property_to_type = {
+            header["property"]: (
+                header["type"],
+                header.get("is_object"),
+                header.get("is_list", False),
+            )
+            for header in self.headers
+        }
+        for row in self.rows:
+            if self.check_changes and row["state"] in [
+                ImportState.DONE,
+                ImportState.REFERENCED,
+            ]:
+                list_deletions: dict[str, int] = {}
+                # changed_fields = []
+                db_model = self.get_model_data(row["data"]["id"])
+                for field, entry in row["data"].items():
+                    if field in property_to_type:
+                        type_, is_object, is_list = property_to_type[field]
+                        if is_list and entry:
+                            lis = {
+                                (
+                                    self.get_true_value_from_object(e, field)
+                                    if is_object
+                                    else e
+                                )
+                                for e in entry
+                            }
+                            if symm_diff := lis.symmetric_difference(
+                                self.get_value_from_model_data(db_model, field) or []
+                            ):
+                                removed = symm_diff.difference(lis)
+                                added = symm_diff.difference(removed)
+                                if removed:
+                                    list_deletions[field] = len(removed)
+                                if added:
+                                    if is_object:
+                                        for e in entry:
+                                            if (
+                                                self.get_true_value_from_object(
+                                                    e, field
+                                                )
+                                                in added
+                                                and "changed" not in e
+                                                and e["info"] != ImportState.REMOVE
+                                            ):
+                                                e["changed"] = True
+                                    else:
+                                        row["data"][field] = [
+                                            {
+                                                "value": e,
+                                                "info": ImportState.DONE,
+                                                "changed": e in added,
+                                            }
+                                            for e in entry
+                                        ]
+                        elif entry is not None:
+                            if is_object:
+                                if (
+                                    self.get_true_value_from_object(entry, field)
+                                    != self.get_value_from_model_data(db_model, field)
+                                    and "changed" not in entry
+                                    and entry["info"] != ImportState.REMOVE
+                                ):
+                                    # changed_fields.append(field)
+                                    entry["changed"] = True
+                            elif entry != self.get_value_from_model_data(
+                                db_model, field
+                            ):
+                                # changed_fields.append(field)
+                                row["data"][field] = {
+                                    "value": entry,
+                                    "info": ImportState.DONE,
+                                    "changed": True,
+                                }
+                if list_deletions:
+                    row["list_deletions"] = list_deletions
         self.store_rows_in_the_import_preview(self.import_name)
         return instance
+
+    def get_model_data(self, id_: int) -> dict[str, Any]:
+        return self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, id_),
+            [header["property"] for header in self.headers],
+        )
+
+    def get_value_from_model_data(self, db_model: dict[str, Any], field: str) -> Any:
+        return db_model.get(field)
+
+    def get_true_value_from_object(self, entry: dict[str, Any], field: str) -> Any:
+        return entry.get("id", entry["value"])
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         if number_errors > 0:
@@ -585,9 +677,17 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             {"name": "total", "value": len(self.rows)},
             {"name": "created", "value": state_to_count[ImportState.NEW]},
             {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
         ]
+        if self.use_referenced_state:
+            self.statistics.append(
+                {"name": "referenced", "value": state_to_count[ImportState.REFERENCED]}
+            )
+        self.statistics.extend(
+            [
+                {"name": "error", "value": state_to_count[ImportState.ERROR]},
+                {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+            ]
+        )
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
