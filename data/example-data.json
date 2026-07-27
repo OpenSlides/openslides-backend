@@ -2066,8 +2066,7 @@
         "1": {
             "id": 1,
             "poll_id": 6,
-            "posts": 4,
-            "required_majority": "absolute_majority"
+            "posts": 4
         }
     },
     "poll_option": {
