@@ -367,6 +367,7 @@
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "assignments_export_title": "Elections",
             "assignment_poll_add_candidates_to_list_of_speakers": false,
+            "poll_enable_max_yes_votes": false,
             "poll_enable_max_votes_per_option": false,
             "assignment_poll_default_method": "selection",
             "assignment_poll_config_id": 1,

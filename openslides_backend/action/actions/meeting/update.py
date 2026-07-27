@@ -154,6 +154,7 @@ meeting_settings_keys = [
     "users_forbid_delegator_to_vote",
     "assignments_export_title",
     "assignments_export_preamble",
+    "poll_enable_max_yes_votes",
     "poll_enable_max_votes_per_option",
     "poll_default_live_voting_enabled",
     "poll_default_allow_invalid",

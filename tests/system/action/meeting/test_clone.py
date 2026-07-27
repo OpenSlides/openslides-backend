@@ -1417,6 +1417,7 @@ class MeetingClone(BaseActionTestCase):
             "assignments_export_preamble": "pre",
             "assignment_poll_default_method": "rating_approval",
             "assignment_poll_add_candidates_to_list_of_speakers": True,
+            "poll_enable_max_yes_votes": True,
             "poll_enable_max_votes_per_option": False,
         }
         assignment_poll_settings = {
