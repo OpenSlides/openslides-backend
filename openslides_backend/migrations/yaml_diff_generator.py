@@ -32,11 +32,13 @@ PREVIOUS_MODELS_DIR = os.path.join(
 
 CollectionsRemoveList = list[list[str] | dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
+MetaAttributesRemoveList = list[list[str] | dict[str, Any]]
 
 
 class RemoveDiffDict(TypedDict):
     collections: NotRequired[CollectionsRemoveList]
     enum_types: NotRequired[EnumTypesRemoveDict]
+    _meta: NotRequired[MetaAttributesRemoveList]
 
 
 class FieldAttributes:
@@ -203,7 +205,11 @@ def create_remove_recursive(
                 if is_field_enum(prev_value):
                     enum_tree.setdefault(path[0], []).append(path[2])
             elif curr_models:
-                if len(path) == 2 and is_relational_field(prev_value["type"]):
+                if (
+                    len(path) == 2
+                    and "type" in prev_value
+                    and is_relational_field(prev_value["type"])
+                ):
                     if not is_view_field(path[0], key, prev_value, all_prev_models):
                         missing_entries.append(key)
                 else:
@@ -240,6 +246,8 @@ def create_remove_recursive(
             return None
 
     combined_result: RemoveDiffDict = {}
+    if _meta := tree.pop("_meta", None):
+        combined_result["_meta"] = _meta
     if missing_entries or tree:
         combined_result["collections"] = [missing_entries, tree]
     if enum_tree:

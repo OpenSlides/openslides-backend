@@ -13,6 +13,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     CollectionsRemoveList,
     EnumTypesRemoveDict,
     FieldAttributes,
+    MetaAttributesRemoveList,
     RemoveDiffDict,
     dumpjson,
     generate_diff,
@@ -332,6 +333,14 @@ def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str
             remove_enum_types_dict, dc_remove_dict["enum_types"]
         )
         remove_empty(dc_remove_dict, "enum_types")
+
+    if "_meta" in remove and isinstance(
+        remove_meta_attributes_list := remove["_meta"], list
+    ):
+        result += handle_remove_meta_attributes(
+            remove_meta_attributes_list, dc_remove_dict["_meta"]
+        )
+        remove_empty(dc_remove_dict, "_meta")
     return result
 
 
@@ -492,6 +501,28 @@ def handle_remove_enum_types(
             )
             dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
+    return result
+
+
+def handle_remove_meta_attributes(
+    remove_meta_attributes_list: MetaAttributesRemoveList,
+    dc_remove_meta_attributes_list: MetaAttributesRemoveList,
+) -> str:
+    result = ""
+    if isinstance(remove_meta_attributes_list[1], dict) and isinstance(
+        dc_remove_meta_attributes_list[1], dict
+    ):
+        for attr, data in remove_meta_attributes_list[1].items():
+            match attr:
+                case "enum_definitions":
+                    for enum in data[0]:
+                        result += Helper.get_drop_type_statement(
+                            HelperGetNames.get_enum_name(enum)
+                        )
+                        dc_remove_meta_attributes_list[1][attr][0].remove(enum)
+                case _:
+                    raise NotImplementedError(f"_meta attribute: {attr}")
+            remove_empty(dc_remove_meta_attributes_list[1], attr)
     return result
 
 
