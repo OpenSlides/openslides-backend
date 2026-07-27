@@ -933,6 +933,7 @@ class Meeting(Model, MeetingModelMixin):
     topic_poll_config_id = fields.RelationField(
         to={"meeting_poll_default": "used_as_topic_poll_config_in_meeting_id"}
     )
+    poll_enable_max_yes_votes = fields.BooleanField(default=False)
     poll_enable_max_votes_per_option = fields.BooleanField(default=False)
     poll_default_live_voting_enabled = fields.BooleanField(
         default=False,
