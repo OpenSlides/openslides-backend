@@ -107,6 +107,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "topic_poll_default_method": "selection",
             "poll_enable_max_yes_votes": True,
             "poll_enable_max_votes_per_option": False,
+            "poll_default_required_majority": "no_majority",
             "poll_default_live_voting_enabled": False,
             "poll_default_allow_invalid": False,
             "poll_couple_countdown": True,

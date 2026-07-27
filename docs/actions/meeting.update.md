@@ -174,6 +174,7 @@
 
     poll_enable_max_yes_votes: boolean;
     poll_enable_max_votes_per_option: boolean;
+    poll_default_required_majority: string;
     poll_default_live_voting_enabled: boolean;
     poll_default_allow_invalid: boolean;
     poll_default_allow_vote_split: boolean;

@@ -288,6 +288,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
 
+    def test_update_poll_default_required_majority(
+        self,
+    ) -> None:
+        self.basic_test({"poll_default_required_majority": "absolute_majority"})
+        self.assert_model_exists(
+            "meeting/1",
+            {"poll_default_required_majority": "absolute_majority"},
+        )
+
     def test_update_poll_default_live_voting_enabled(self) -> None:
         self.basic_test({"poll_default_live_voting_enabled": True})
         self.assert_model_exists(

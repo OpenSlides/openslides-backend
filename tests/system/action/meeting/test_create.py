@@ -263,6 +263,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "external_id": external_id,
                 "assignment_poll_default_method": Poll.METHOD_SELECTION,
                 "topic_poll_default_method": Poll.METHOD_SELECTION,
+                "poll_default_required_majority": "no_majority",
                 "poll_default_live_voting_enabled": False,
                 "poll_default_allow_invalid": False,
                 "poll_default_allow_vote_split": False,

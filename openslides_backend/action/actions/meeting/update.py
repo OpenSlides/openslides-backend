@@ -156,6 +156,7 @@ meeting_settings_keys = [
     "assignments_export_preamble",
     "poll_enable_max_yes_votes",
     "poll_enable_max_votes_per_option",
+    "poll_default_required_majority",
     "poll_default_live_voting_enabled",
     "poll_default_allow_invalid",
     "poll_default_allow_vote_split",

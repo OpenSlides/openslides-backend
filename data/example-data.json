@@ -374,6 +374,7 @@
             "motion_poll_config_id": 2,
             "topic_poll_config_id": 3,
             "topic_poll_default_method": "selection",
+            "poll_default_required_majority": "two_third_majority",
             "poll_default_live_voting_enabled": false,
             "poll_default_allow_invalid": false,
             "poll_default_allow_vote_split": false,
@@ -2014,13 +2015,15 @@
             "id": 1,
             "poll_id": 1,
             "allow_abstain": false,
-            "onehundred_percent_base": "valid"
+            "onehundred_percent_base": "valid",
+            "required_majority": "no_majority"
         },
         "2": {
             "id": 2,
             "poll_id": 2,
             "allow_abstain": true,
-            "onehundred_percent_base": "valid"
+            "onehundred_percent_base": "valid",
+            "required_majority": "absolute_majority"
         }
     },
     "poll_config_selection": {
@@ -2031,7 +2034,8 @@
             "min_options_amount": 1,
             "allow_nota": true,
             "strike_out": false,
-            "onehundred_percent_base": "valid"
+            "onehundred_percent_base": "valid",
+            "required_majority": "no_majority"
         }
     },
     "poll_config_rating_score": {
@@ -2043,7 +2047,8 @@
             "max_votes_per_option": 0,
             "max_vote_sum": 5,
             "min_vote_sum": 1,
-            "onehundred_percent_base": "valid"
+            "onehundred_percent_base": "valid",
+            "required_majority": "no_majority"
         }
     },
     "poll_config_rating_approval": {
@@ -2053,14 +2058,16 @@
             "max_options_amount": 0,
             "min_options_amount": 0,
             "allow_abstain": true,
-            "onehundred_percent_base": "valid"
+            "onehundred_percent_base": "valid",
+            "required_majority": "two_third_majority"
         }
     },
     "poll_config_stv_scottish": {
         "1": {
             "id": 1,
             "poll_id": 6,
-            "posts": 4
+            "posts": 4,
+            "required_majority": "absolute_majority"
         }
     },
     "poll_option": {
