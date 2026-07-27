@@ -1,2 +1,2 @@
 #!/bin/bash
-export AUTH_COMMIT_HASH=a2ef588f95901fa67c8ee47c2e8f3793b4f7850a
+export AUTH_COMMIT_HASH=8262d96098fabfeed2d5a5c0fee3299da6d34a22

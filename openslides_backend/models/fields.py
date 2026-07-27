@@ -208,6 +208,13 @@ class HTMLStrictField(TextField):
     Field for restricted HTML.
     """
 
+    def get_schema(self) -> Schema:
+        if self.required:
+            return self.extend_schema(
+                super(TextField, self).get_schema(), type="string"
+            )
+        return super().get_schema()
+
     def validate(self, html: str | None, payload: dict[str, Any] = {}) -> str | None:
         if html is not None:
             return validate_html(html, self.get_allowed_tags())
@@ -215,6 +222,13 @@ class HTMLStrictField(TextField):
 
     def get_allowed_tags(self) -> set[str]:
         return ALLOWED_HTML_TAGS_STRICT
+
+    def check_required_not_fulfilled(
+        self, instance: dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return instance[self.own_field_name] is None
 
 
 class HTMLPermissiveField(HTMLStrictField):
@@ -292,6 +306,13 @@ class DecimalField(Field):
                 f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
             )
         super().validate_with_schema(fqid, field_name, value)
+
+    def check_required_not_fulfilled(
+        self, instance: dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return instance[self.own_field_name] is None
 
 
 class TimestampField(IntegerField):
