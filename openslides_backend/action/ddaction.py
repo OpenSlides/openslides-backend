@@ -22,7 +22,12 @@ from ..permissions.permissions import Permission
 from ..services.database.commands import GetManyRequest
 from ..services.database.extended_database import ExtendedDatabase
 from ..services.database.interface import Database
-from ..shared.exceptions import ActionException, MissingPermission, PermissionDenied
+from ..shared.exceptions import (
+    ActionException,
+    BadCodingException,
+    MissingPermission,
+    PermissionDenied,
+)
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.logging import LoggingModule
@@ -258,6 +263,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
+        models_to_apply: dict[str, dict[str, Any]] | None = None,
     ) -> ActionResults | None:
         """
         Executes the given action class as a dependent action with the given action
@@ -284,8 +290,14 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             if isinstance(action, Action):
                 # Code for if the sub-action is old-style.
                 # TODO: To be deleted along with the old-style actions
-                return self._execute_old_style_action(action, action_data, skip_history)
+                return self._execute_old_style_action(
+                    action, action_data, skip_history, models_to_apply
+                )
             else:
+                if models_to_apply:
+                    raise BadCodingException(
+                        f"DDAction needs no models_to_apply: {action.name}"
+                    )
                 results = action.perform(
                     action_data, self.user_id, internal=True, is_sub_call=True
                 )
@@ -357,9 +369,16 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
     # TO BE DELETED WHEN THOSE ARE REMOVED COMPLETELY.
 
     def _execute_old_style_action(
-        self, action: Action, action_data: ActionData, skip_history: bool
+        self,
+        action: Action,
+        action_data: ActionData,
+        skip_history: bool,
+        models_to_apply: dict[str, dict[str, Any]] | None,
     ) -> ActionResults | None:
         cast(ExtendedDatabase, self.database).toggle_changed_models(True)
+        if models_to_apply:
+            for fqid, model in models_to_apply.items():
+                self.database.apply_changed_model(fqid, model)
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True, is_sub_call=True
         )
