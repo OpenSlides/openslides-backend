@@ -132,7 +132,7 @@ The internal types will be created by the backend service from the CSV-strings
                 state: string,   // row state, one of done, new, error
                 messages: string[],
                 data: json,
-                list_deletions: {
+                list_delete_amounts: {
                     [string]: int
                 }
             }
@@ -154,7 +154,7 @@ The internal types will be created by the backend service from the CSV-strings
                 // property name and type must match an entry in the given `headers`
                 [property: string]: (boolean | number | string | date | object) []; // if is_list is set in corresponding header column, we need here also a list. `object` only on error
             };
-            list_deletions: { [string]: int } // optional and only used in imports that support change detection. See more in section 'Change Detection'.
+            list_delete_amounts: { [string]: int } // optional and only used in imports that support change detection. See more in section 'Change Detection'.
         }[];  // row-list: Empty list, if `import` in payload was `false` to delete the import_preview-record on database
     }[[]];  // nested lists for actions and data row per action
 }
@@ -162,12 +162,12 @@ The internal types will be created by the backend service from the CSV-strings
 ```
 
 ## Change Detection
-### The `changed` and `list_deletions` keywords
+### The `changed` and `list_delete_amounts` keywords
 These keywords are used in the preview to signify the relation between the cell content and the related database data at the time of upload.
 
 Any single field that contains a value that would change database data (i.e. by filling in a new field, changing a value or creating a new model) will be marked with `"changed": True`.
 
-For list columns, every new element is marked with `"changed": True`. Any removed values are counted and then added to the `list_deletions`-dict with the import field name as keyword.
+For list columns, every new element is marked with `"changed": True`. Any removed values are counted and then added to the `list_delete_amounts`-dict with the import field name as keyword.
 
 These keywords are only written for update or reference rows in imports that support change detection, and if `changed` isn't written there it is assumed to be `False`.
 
@@ -223,7 +223,7 @@ In such imports all columns should be object columns.
                     },
                 ]
             },
-            list_deletions: { admin: 2 }
+            list_delete_amounts: { admin: 2 }
         },
         {
             state: "new",

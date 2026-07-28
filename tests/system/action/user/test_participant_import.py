@@ -537,7 +537,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "changed": True,
             },
         }
-        assert row["list_deletions"] == {"structure_level": 1}
+        assert row["list_delete_amounts"] == {"structure_level": 1}
 
         self.assert_model_exists(
             "user/10",
@@ -805,7 +805,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             ],
             "gender": {"id": 3, "info": "done", "value": "diverse", "changed": True},
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][1]
         assert row["state"] == ImportState.DONE
@@ -828,7 +828,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
             "groups": [{"id": 3, "info": "done", "value": "group3", "changed": True}],
         }
-        assert row["list_deletions"] == {"groups": 2}
+        assert row["list_delete_amounts"] == {"groups": 2}
 
         row = result["rows"][2]
         assert row["state"] == ImportState.REFERENCED
@@ -848,7 +848,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 }
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][3]
         assert row["state"] == ImportState.NEW
@@ -871,7 +871,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             ],
             "gender": {"info": "warning", "value": "unknown"},
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         self.assert_model_exists("structure_level/2", {"name": "level up"})
 
@@ -893,7 +893,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
     def test_json_upload_update_multiple_users_all_error(self) -> None:
         self.json_upload_multiple_users()
@@ -952,7 +952,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "structure_level": [{"info": "new", "value": "level up", "changed": True}],
             "gender": {"id": 3, "info": "done", "value": "diverse", "changed": True},
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
@@ -977,7 +977,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
             "groups": [{"id": 3, "info": "error", "value": "group3", "changed": True}],
         }
-        assert row["list_deletions"] == {"groups": 2}
+        assert row["list_delete_amounts"] == {"groups": 2}
 
         row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
@@ -994,7 +994,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4", "changed": True},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
@@ -1018,7 +1018,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             ],
             "gender": {"info": "warning", "value": "unknown"},
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
@@ -1039,7 +1039,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4"},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
         row = result["rows"][5]
         assert row["state"] == ImportState.NEW
@@ -1058,7 +1058,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"info": "new", "value": "unknown"},
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
     def test_json_upload_with_complicated_names(self) -> None:
         self.json_upload_with_complicated_names()
@@ -1090,7 +1090,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
             "In contrast to preview you may import field(s) 'default_password, email, first_name, saml_id, username'",
         ]
-        # TODO: Update 'changed' in import?
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "done", "value": "saml_id1"},
@@ -1106,7 +1105,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": 7, "info": "new", "value": "group4", "changed": True},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
         self.assert_model_exists(
             "user/2",
             {
@@ -1897,4 +1896,4 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert row["list_deletions"] == {"groups": 1}
+        assert row["list_delete_amounts"] == {"groups": 1}

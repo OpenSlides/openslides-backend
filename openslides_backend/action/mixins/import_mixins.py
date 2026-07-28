@@ -411,13 +411,13 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                 ImportState.DONE,
                 ImportState.REFERENCED,
             ]:
-                list_deletions: dict[str, int] = {}
+                list_delete_amounts: dict[str, int] = {}
                 db_model = self.get_model_data(row["data"]["id"])
                 for field, entry in row["data"].items():
                     if field in property_to_type:
                         type_, is_object, is_list = property_to_type[field]
                         if is_list and entry:
-                            lis = {
+                            list_values = {
                                 (
                                     self.get_true_value_from_object(e, field)
                                     if is_object
@@ -425,13 +425,15 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                                 )
                                 for e in entry
                             }
-                            if symm_diff := lis.symmetric_difference(
+                            value_from_model = set(
                                 self.get_value_from_model_data(db_model, field) or []
-                            ):
-                                removed = symm_diff.difference(lis)
-                                added = symm_diff.difference(removed)
+                            )
+                            removed = value_from_model.difference(list_values)
+                            if (
+                                added := list_values.difference(value_from_model)
+                            ) or removed:
                                 if removed:
-                                    list_deletions[field] = len(removed)
+                                    list_delete_amounts[field] = len(removed)
                                 if added:
                                     if is_object:
                                         for e in entry:
@@ -470,8 +472,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                                     "info": ImportState.DONE,
                                     "changed": True,
                                 }
-                if list_deletions:
-                    row["list_deletions"] = list_deletions
+                if list_delete_amounts:
+                    row["list_delete_amounts"] = list_delete_amounts
         self.store_rows_in_the_import_preview(self.import_name)
         return instance
 
@@ -674,9 +676,18 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             {"name": "total", "value": len(self.rows)},
             {"name": "created", "value": state_to_count[ImportState.NEW]},
             {"name": "updated", "value": state_to_count[ImportState.DONE]},
-        ]
             *(
-                [{"name": "referenced", "value": state_to_count[ImportState.REFERENCED]}] if self.use_referenced_state else []
+                [
+                    cast(
+                        StatisticEntry,
+                        {
+                            "name": "referenced",
+                            "value": state_to_count[ImportState.REFERENCED],
+                        },
+                    )
+                ]
+                if self.use_referenced_state
+                else []
             ),
             {"name": "error", "value": state_to_count[ImportState.ERROR]},
             {"name": "warning", "value": state_to_count[ImportState.WARNING]},

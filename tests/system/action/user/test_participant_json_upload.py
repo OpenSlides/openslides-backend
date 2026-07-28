@@ -80,7 +80,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
         assert {"name": "groups created", "value": 2} in response.json["results"][0][0][
             "statistics"
         ]
@@ -120,7 +120,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_remove_last_admins(self) -> None:
         self.set_up_test_models()
@@ -153,7 +153,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
         assert response.json["results"][0][0]["rows"][1] == {
             "state": ImportState.ERROR,
             "messages": ["Error: Cannot remove last member of admin group"],
@@ -166,7 +166,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][1]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][1]
 
     def test_json_upload_empty_data(self) -> None:
         self.set_up_test_models()
@@ -223,7 +223,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "number": {"value": "strange number", "info": ImportState.DONE},
             },
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_results(self) -> None:
         self.set_up_test_models()
@@ -513,7 +513,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         ]
         for key in fix_fields.keys():
             assert row["data"][key]["value"] == fix_fields[key]
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_names_generate_username_password_create_meeting(self) -> None:
         self.set_up_test_models()
@@ -579,7 +579,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "Gender 'notAGender' is not in the allowed gender list."
             in entry["messages"]
         )
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_invalid_vote_weight(self) -> None:
         self.set_up_test_models()
@@ -614,7 +614,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
             "groups": [{"id": 1, "info": "generated", "value": "testgroup"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_not_sufficient_field_permission_update_with_wrong_email(
         self,
@@ -670,7 +670,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "vote_weight": {"value": "1.234560", "info": "done"},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_wrong_email(self) -> None:
         self.create_meeting(1)
@@ -722,7 +722,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "Error: 'this.is@wrong,too' is not a valid email address."
             in row["messages"]
         )
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_with_illegal_decimal_value(self) -> None:
         self.create_meeting(1)
@@ -784,7 +784,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_duplicate_member_numbers(self) -> None:
         self.create_meeting(1)
@@ -827,7 +827,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test1", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.ERROR
         assert import_preview["result"]["rows"][1]["messages"] == [
@@ -839,7 +839,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test2"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][1]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][1]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant(
         self,
@@ -885,7 +885,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant_2(
         self,
@@ -932,7 +932,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "saml_id": {"info": "done", "value": "tessst"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant_3(
         self,
@@ -986,7 +986,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "email": {"info": "done", "value": "fritz.chen@scho.ol"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def prepare_locked_out_test(
         self,
@@ -1035,7 +1035,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 2, "info": "error", "value": "admin"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_create_locked_out_user_can_manage_error(self) -> None:
         self.prepare_locked_out_test()
@@ -1063,7 +1063,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 3, "info": "error", "value": "can_manage"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_self_error(self) -> None:
         self.prepare_locked_out_test()
@@ -1098,7 +1098,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_meeting_admin_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1125,7 +1125,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 2, "info": "error", "value": "admin"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_superadmin_error(self) -> None:
         self.prepare_locked_out_test("test", oml=OrganizationManagementLevel.SUPERADMIN)
@@ -1157,7 +1157,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
@@ -1188,7 +1188,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "is_active": {"info": "error", "value": False, "changed": True},
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_other_oml_error(self) -> None:
         self.prepare_locked_out_test(
@@ -1222,7 +1222,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_cml_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1260,7 +1260,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_meeting_admin_on_locked_out_user_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1286,7 +1286,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"info": "error", "value": "admin", "id": 2}],
         }.items():
             assert data[key] == value
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_permission_as_locked_out(self) -> None:
         self.create_meeting()
@@ -1359,7 +1359,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "external": {"value": False, "info": ImportState.GENERATED},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_home_committee_multiple_found(self) -> None:
         self.set_up_test_models()
@@ -1405,7 +1405,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "external": {"value": False, "info": ImportState.DONE},
             "groups": [{"id": 1, "value": "testgroup", "info": ImportState.DONE}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_home_committee_and_set_external_to_true(self) -> None:
         self.set_up_test_models()
@@ -1446,7 +1446,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "external": {"value": True, "info": ImportState.ERROR},
             "groups": [{"value": "test", "info": ImportState.NEW}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -1516,7 +1516,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             },
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def json_upload_saml_id_new(self) -> None:
         self.create_meeting(4)
@@ -1643,7 +1643,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert "list_deletions" not in response.json["results"][0][0]["rows"][0]
+        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def json_upload_update_saml_id_in_existing_participant(self) -> None:
         self.set_models(
@@ -1751,7 +1751,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 for k, v in fix_fields.items()
             },
         }
-        assert row["list_deletions"] == {"structure_level": 1}
+        assert row["list_delete_amounts"] == {"structure_level": 1}
 
     def json_upload_username_username_and_saml_id_found(self) -> None:
         self.set_models(
@@ -1933,7 +1933,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "changed": True,
             },
         }
-        assert "list_deletions" not in import_preview["result"]["rows"][0]
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][1]["messages"] == [
@@ -1955,7 +1955,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "changed": True,
             },
         }
-        assert import_preview["result"]["rows"][1]["list_deletions"] == {"groups": 2}
+        assert import_preview["result"]["rows"][1]["list_delete_amounts"] == {
+            "groups": 2
+        }
 
         assert import_preview["result"]["rows"][2]["state"] == ImportState.REFERENCED
         assert import_preview["result"]["rows"][2]["messages"] == []
@@ -1969,7 +1971,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"info": "new", "value": "group4", "changed": True},
             ],
         }
-        assert "list_deletions" not in import_preview["result"]["rows"][2]
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][2]
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
@@ -1987,7 +1989,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
             "gender": {"info": ImportState.WARNING, "value": "unknown"},
         }
-        assert "list_deletions" not in import_preview["result"]["rows"][3]
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][3]
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
@@ -2133,7 +2135,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "new", "changed": True},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
     def json_upload_no_permissions_to_set_meeting_external_fields_on_superadmin(
         self,
@@ -2199,7 +2201,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "new", "changed": True},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
     def json_upload_not_sufficient_field_permission_update_with_member_number(
         self,
@@ -2271,7 +2273,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "new", "changed": True},
             ],
         }
-        assert "list_deletions" not in row
+        assert "list_delete_amounts" not in row
 
     def json_upload_sufficient_field_permission_create(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
@@ -2401,7 +2403,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_set_member_number_in_existing_participants(self) -> None:
         self.create_user("test1", [3])
@@ -2457,7 +2461,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
         row = import_preview["result"]["rows"][1]["data"]
         assert row == {
             "id": 3,
@@ -2469,7 +2475,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][1]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][1]["list_delete_amounts"] == {
+            "groups": 1
+        }
         row = import_preview["result"]["rows"][2]["data"]
         assert row == {
             "id": 4,
@@ -2482,7 +2490,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][2]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][2]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_set_other_matching_criteria_in_existing_participant_via_member_number(
         self,
@@ -2537,7 +2547,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_add_member_number(self) -> None:
         self.create_user("test", [3])
@@ -2578,7 +2590,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 1, "info": "generated", "value": "group1", "changed": True}
             ],
         }
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_new_participant_with_member_number(self) -> None:
         response = self.request(
@@ -2706,7 +2720,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     },
                 ],
             },
-            "list_deletions": {"groups": 1},
+            "list_delete_amounts": {"groups": 1},
         }
         row = response.json["results"][0][0]["rows"][1]
         assert row["state"] == ImportState.NEW
@@ -2746,7 +2760,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     },
                 ],
             },
-            "list_deletions": {"groups": 1},
+            "list_delete_amounts": {"groups": 1},
         }
 
     def json_upload_remove_last_admin_in_template(self) -> None:
@@ -2784,7 +2798,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     },
                 ],
             },
-            "list_deletions": {"groups": 1},
+            "list_delete_amounts": {"groups": 1},
         }
 
     def json_upload_multi_with_locked_out(self) -> None:
@@ -2909,9 +2923,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             rows[i]["state"] != ImportState.DONE for i in [2, 4, *range(7, len(rows))]
         )
 
-        assert not any("list_deletions" in rows[i] for i in [0, 1, 3, 5, 6])
+        assert not any("list_delete_amounts" in rows[i] for i in [0, 1, 3, 5, 6])
         assert not any(
-            rows[i]["list_deletions"] != {"groups": 1} for i in [2, 4, 7, 8, 9, 10]
+            rows[i]["list_delete_amounts"] != {"groups": 1} for i in [2, 4, 7, 8, 9, 10]
         )
         assert not any(rows[i]["state"] != ImportState.REFERENCED for i in [3, 5, 6])
         data = [row["data"] for row in rows]
@@ -3073,7 +3087,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
         }.items():
             assert data[key] == value
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
         self,
@@ -3119,7 +3135,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
         }.items():
             assert data[key] == value
-        assert import_preview["result"]["rows"][0]["list_deletions"] == {"groups": 1}
+        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
+            "groups": 1
+        }
 
     def json_upload_set_home_committee(self, has_perm: bool = True) -> None:
         self.create_committee(1, name="Home")
@@ -3222,7 +3240,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
             }
             assert data["external"] == {"info": ImportState.REMOVE, "value": False}
-        assert "list_deletions" not in import_preview["result"]["rows"][0]
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false(self) -> None:
         self.create_committee(1, name="Home")
@@ -3260,7 +3278,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": False,
             "changed": True,
         }
-        assert "list_deletions" not in import_preview["result"]["rows"][0]
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_external_true(
         self, with_home_committee: bool = False, has_home_committee_perms: bool = True
@@ -3302,7 +3320,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Alice",
             "id": alice_id,
         }
-        hc: dict[str, Any] = {
+        home_committee: dict[str, Any] = {
             "info": (
                 ImportState.GENERATED
                 if has_home_committee_perms
@@ -3310,19 +3328,19 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ),
             "value": None,
         }
-        ext: dict[str, Any] = {
+        external: dict[str, Any] = {
             "info": (
                 ImportState.DONE if has_home_committee_perms else ImportState.REMOVE
             ),
             "value": True,
         }
         if has_home_committee_perms:
-            if hc["value"] or with_home_committee:
-                hc["changed"] = True
-            ext["changed"] = True
-        assert data["home_committee"] == hc
-        assert data["external"] == ext
-        assert "list_deletions" not in import_preview["result"]["rows"][0]
+            if home_committee["value"] or with_home_committee:
+                home_committee["changed"] = True
+            external["changed"] = True
+        assert data["home_committee"] == home_committee
+        assert data["external"] == external
+        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false_no_perms_new(self) -> None:
         self.create_committee(1, name="Old home")
