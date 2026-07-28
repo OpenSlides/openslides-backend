@@ -465,7 +465,6 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             elif entry != self.get_value_from_model_data(
                                 db_model, field
                             ):
-                                # changed_fields.append(field)
                                 row["data"][field] = {
                                     "value": entry,
                                     "info": ImportState.DONE,
