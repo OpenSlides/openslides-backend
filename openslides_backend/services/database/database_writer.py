@@ -591,6 +591,8 @@ class DatabaseWriter(SqlQueryHelper):
                 for field in [*match_on, *columns_and_exists_columns]
             ),
             columns_equal=sql.SQL(", ").join(
+                # TODO: This works for text fields, however if it is an integer
+                # field, c.{field} will be interpreted as a text value if it is none
                 sql.SQL(
                     f"{field} = CASE WHEN c._exists_{field} THEN c.{field} ELSE t.{field} END"
                 )
