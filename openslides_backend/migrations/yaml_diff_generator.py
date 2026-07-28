@@ -205,12 +205,22 @@ def create_remove_recursive(
                 if is_field_enum(prev_value):
                     enum_tree.setdefault(path[0], []).append(path[2])
             elif curr_models:
-                if (
-                    len(path) == 2
-                    and "type" in prev_value
-                    and is_relational_field(prev_value["type"])
-                ):
-                    if not is_view_field(path[0], key, prev_value, all_prev_models):
+                # TODO: currently `constant` on the reading side of the relation
+                # is being excluded from diff within this check. This has to be changed
+                # after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+                if len(path) >= 2 and key != "sql":
+                    if len(path) == 2:
+                        field_name = key
+                        field_def = prev_value
+                    else:
+                        field_name = path[2]
+                        field_def = all_prev_models[path[0]][path[1]][path[2]]
+                    if "type" in field_def and is_relational_field(field_def["type"]):
+                        if not is_view_field(
+                            path[0], field_name, field_def, all_prev_models
+                        ):
+                            missing_entries.append(key)
+                    else:
                         missing_entries.append(key)
                 else:
                     missing_entries.append(key)
