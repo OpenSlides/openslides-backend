@@ -678,16 +678,12 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             {"name": "created", "value": state_to_count[ImportState.NEW]},
             {"name": "updated", "value": state_to_count[ImportState.DONE]},
         ]
-        if self.use_referenced_state:
-            self.statistics.append(
-                {"name": "referenced", "value": state_to_count[ImportState.REFERENCED]}
-            )
-        self.statistics.extend(
-            [
-                {"name": "error", "value": state_to_count[ImportState.ERROR]},
-                {"name": "warning", "value": state_to_count[ImportState.WARNING]},
-            ]
-        )
+            *(
+                [{"name": "referenced", "value": state_to_count[ImportState.REFERENCED]}] if self.use_referenced_state else []
+            ),
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+        ]
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
