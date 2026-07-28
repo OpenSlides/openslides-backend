@@ -412,7 +412,6 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                 ImportState.REFERENCED,
             ]:
                 list_deletions: dict[str, int] = {}
-                # changed_fields = []
                 db_model = self.get_model_data(row["data"]["id"])
                 for field, entry in row["data"].items():
                     if field in property_to_type:
