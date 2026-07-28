@@ -163,7 +163,7 @@ The internal types will be created by the backend service from the CSV-strings
 
 ## Change Detection
 ### The `changed` and `list_deletions` keywords
-These keywords are used in the preview to signify the relation between the cell content and the related database data.
+These keywords are used in the preview to signify the relation between the cell content and the related database data at the time of upload.
 
 Any single field that contains a value that would change database data (i.e. by filling in a new field, changing a value or creating a new model) will be marked with `"changed": True`.
 
