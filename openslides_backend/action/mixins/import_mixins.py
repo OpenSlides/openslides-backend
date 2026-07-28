@@ -461,7 +461,6 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                                     and "changed" not in entry
                                     and entry["info"] != ImportState.REMOVE
                                 ):
-                                    # changed_fields.append(field)
                                     entry["changed"] = True
                             elif entry != self.get_value_from_model_data(
                                 db_model, field
