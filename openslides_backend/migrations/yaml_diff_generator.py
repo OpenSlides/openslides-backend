@@ -182,6 +182,8 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
+            if key == "id" or len(path) >= 3 and path[2] == "id":
+                continue
             if key in [
                 *CollectionAttributes.unique_together,
                 "log_triggers",
