@@ -154,7 +154,7 @@ The internal types will be created by the backend service from the CSV-strings
                 // property name and type must match an entry in the given `headers`
                 [property: string]: (boolean | number | string | date | object) []; // if is_list is set in corresponding header column, we need here also a list. `object` only on error
             };
-            list_deletions: { [string]: int } // optional and only used in imports that support it (no changes from the import even if there were changes due to changed database data)
+            list_deletions: { [string]: int } // optional and only used in imports that support change detection. See more in section 'Change Detection'.
         }[];  // row-list: Empty list, if `import` in payload was `false` to delete the import_preview-record on database
     }[[]];  // nested lists for actions and data row per action
 }
