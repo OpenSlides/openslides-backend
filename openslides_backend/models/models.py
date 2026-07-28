@@ -933,7 +933,14 @@ class Meeting(Model, MeetingModelMixin):
     topic_poll_config_id = fields.RelationField(
         to={"meeting_poll_default": "used_as_topic_poll_config_in_meeting_id"}
     )
+    poll_enable_max_yes_votes = fields.BooleanField(default=False)
     poll_enable_max_votes_per_option = fields.BooleanField(default=False)
+    poll_default_required_majority = fields.CharField(
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
+    )
     poll_default_live_voting_enabled = fields.BooleanField(
         default=False,
         constraints={
@@ -2416,6 +2423,12 @@ class PollConfigApproval(Model):
             ]
         },
     )
+    required_majority = fields.CharField(
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
+    )
 
 
 class PollConfigRatingApproval(Model):
@@ -2441,6 +2454,12 @@ class PollConfigRatingApproval(Model):
                 "entitled_present",
                 "disabled",
             ]
+        },
+    )
+    required_majority = fields.CharField(
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
         },
     )
 
@@ -2471,6 +2490,12 @@ class PollConfigRatingScore(Model):
             ]
         },
     )
+    required_majority = fields.CharField(
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
+    )
 
 
 class PollConfigSelection(Model):
@@ -2496,6 +2521,12 @@ class PollConfigSelection(Model):
                 "entitled_present",
                 "disabled",
             ]
+        },
+    )
+    required_majority = fields.CharField(
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
         },
     )
     display_chart = fields.CharField()
