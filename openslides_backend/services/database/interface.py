@@ -203,7 +203,6 @@ class Database(Protocol):
         self,
         collection: Collection,
         instances: list[dict[str, Any]],
-        fields: list[str] | None = None,
         return_fields: list[str] = ["id"],
         match_on: list[str] = ["id"],
     ) -> list[dict[str, Any]]: ...

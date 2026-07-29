@@ -25,6 +25,5 @@ class ThemeUpdate(DDAction):
             self.database.update_models(
                 self.model.collection,
                 list(action_data),
-                [*THEME_REQ_FIELDS, *THEME_OPT_FIELDS],
             )
         )

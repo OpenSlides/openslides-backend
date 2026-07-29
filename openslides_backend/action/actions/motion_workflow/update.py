@@ -1,9 +1,10 @@
 from ....action.util.typing import ActionData, ActionResults
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
+from ...ddaction import DDAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...ddaction import DDAction
+
 
 @register_action("motion_workflow.update")
 class MotionWorkflowUpdateAction(DDAction):
@@ -22,6 +23,5 @@ class MotionWorkflowUpdateAction(DDAction):
             self.database.update_models(
                 self.model.collection,
                 list(action_data),
-                ["name", "first_state_id"],
             )
         )

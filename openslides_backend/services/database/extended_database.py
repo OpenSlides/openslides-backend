@@ -740,7 +740,6 @@ class ExtendedDatabase(Database):
         self,
         collection: Collection,
         instances: list[dict[str, Any]],
-        fields: list[str] | None = None,
         return_fields: list[str] = ["id"],
         match_on: list[str] = ["id"],
     ) -> list[dict[str, Any]]:
@@ -748,10 +747,8 @@ class ExtendedDatabase(Database):
             raise BadCodingException(
                 "Cannot use insert_model if changed_models is enabled."
             )
-        if fields is None:
-            fields = list(str(field for instance in instances for field in instance))
         return self.database_writer.update_rows(
-            collection, fields, instances, return_fields, match_on
+            collection, instances, return_fields, match_on
         )
 
     def delete_model(self, collection: Collection, id_: Id) -> Id:

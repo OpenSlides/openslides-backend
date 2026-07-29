@@ -538,76 +538,51 @@ class DatabaseWriter(SqlQueryHelper):
     def update_rows(
         self,
         table_name: str,
-        columns: list[str],
         instances: list[dict[str, Any]],
         return_fields: list[str] | None = None,
         match_on: list[str] = ["id"],
     ) -> list[dict[str, Any]]:
-        values: dict[str, Any] = {}
-        placeholders: list[sql.SQL] = []
-        base = 0
         if return_fields:
             return_fields = [f"t.{field}" for field in return_fields]
         if not table_name.endswith("_t"):
             table_name += "_t"
+        results: list[dict[str, Any]] = []
         for instance in instances:
-            placeholders.append(
-                sql.SQL(
-                    "("
-                    + ", ".join(
-                        [
-                            f"%({i})s"
-                            for i in range(
-                                base, base + len(columns) * 2 + len(match_on)
-                            )
-                        ]
-                    )
-                    + ")"
+            fields = list(instance.keys())
+            data = sql.SQL(", ").join(
+                sql.SQL("""{field} = %s""").format(
+                    field=sql.Identifier(field_name),
+                )
+                for field_name in fields
+                if field_name not in match_on
+            )
+            condition = sql.SQL(" AND ").join(
+                sql.SQL(f"t.{field} = %s") for field in match_on
+            )
+            statement = sql.SQL("""
+                UPDATE {table} AS t SET
+                {data}
+                WHERE {conditions}
+                """).format(
+                table=sql.Identifier(table_name), data=data, conditions=condition
+            )
+            results.append(
+                self.execute_sql(
+                    statement,
+                    [
+                        *[
+                            instance[field_name]
+                            for field_name in fields
+                            if field_name not in match_on
+                        ],
+                        *[instance[field_name] for field_name in match_on],
+                    ],
+                    table_name[:-2],
+                    instance["id"] if "id" in match_on else None,
+                    return_fields,
                 )
             )
-            values.update(
-                {
-                    str(i): instance.get(field)
-                    for i, field in enumerate([*match_on, *columns], base)
-                }
-            )
-            values.update(
-                {
-                    str(i + len(columns) + len(match_on)): field in instance
-                    for i, field in enumerate(columns, base)
-                }
-            )
-            base += len(columns) * 2 + len(match_on)
-        columns_and_exists_columns = [*columns, *[f"_exists_{col}" for col in columns]]
-        statement = sql.SQL("""
-            UPDATE {table_name} AS t SET
-            {columns_equal}
-            FROM (VALUES {placeholders}) as c({columns})
-            WHERE {conditions}
-            """).format(
-            table_name=sql.Identifier(table_name),
-            columns=sql.SQL(", ").join(
-                sql.Identifier(field)
-                for field in [*match_on, *columns_and_exists_columns]
-            ),
-            columns_equal=sql.SQL(", ").join(
-                # TODO: This works for text fields, however if it is an integer
-                # field, c.{field} will be interpreted as a text value if it is none
-                sql.SQL(
-                    f"{field} = CASE WHEN c._exists_{field} THEN c.{field} ELSE t.{field} END"
-                )
-                for field in columns
-            ),
-            placeholders=sql.SQL(", ").join(placeholders),
-            conditions=sql.SQL(" AND ").join(
-                sql.SQL(f"t.{field} = c.{field}") for field in match_on
-            ),
-        )
-        return self.execute_multi_row_sql(
-            statement,
-            values,
-            return_fields=return_fields,
-        )
+        return results
 
     def delete_rows(
         self,
