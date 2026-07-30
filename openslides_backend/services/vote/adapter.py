@@ -26,7 +26,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
         elif response.status_code == 500:
             self.logger.error(message)
             raise VoteServiceException(
-                "Vote service sends HTTP 500 Internal Server Error."
+                f"Vote service sends HTTP 500 Internal Server Error with the message: {message}."
             )
         else:
             self.logger.error(message)
