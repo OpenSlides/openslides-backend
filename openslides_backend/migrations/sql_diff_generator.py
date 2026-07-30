@@ -404,13 +404,6 @@ def handle_remove_tree(
                                             collection_name, field_name
                                         ),
                                     )
-                                case "sequence_scope":
-                                    result += Helper.get_drop_trigger_statement(
-                                        collection_name,
-                                        HelperGetNames.get_partitioned_sequence_trigger_name(
-                                            collection_name, field_name
-                                        ),
-                                    )
                                 case value if (
                                     value in FieldAttributes.skipped_in_schema
                                 ):
@@ -420,9 +413,9 @@ def handle_remove_tree(
                                         f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
                                     )
                                 case _:
-                                    # "to" and "reference" are currently skipped. They can only be removed
-                                    # if type changes to not relational field which is not the case
-                                    # in the foreseeable future.
+                                    # Skipped as not likely to be removed in the foreseeable future:
+                                    # "to" and "reference": can only be removed if type changes to not relational field
+                                    # "sequence_scope": would turn a sequence field into a regular number field
                                     raise NotImplementedError(
                                         f"{collection_name}/{field_name}: {attr}"
                                     )
