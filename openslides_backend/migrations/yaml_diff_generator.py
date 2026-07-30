@@ -42,7 +42,6 @@ class RemoveDiffDict(TypedDict):
 
 
 class FieldAttributes:
-    # TODO: if the list changes, we might need to take the migration index into account
     skipped_in_schema = [
         "calculated",
         "constant_legacy",
@@ -171,10 +170,15 @@ def create_remove_recursive(
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
     all_prev_models: dict[str, Any],
-    secondary_edits: dict[str, Any] = {},
+    secondary_edits: dict[str, Any],
     enum_tree: EnumTypesRemoveDict = {},
     path: tuple[str, ...] = (),
 ) -> CollectionsRemoveList | RemoveDiffDict | None:
+    """
+    Parameter `path` is used only internally and describes the path to the node
+    within the tree created inside the outer create_remove_recursive call.
+    Example: (collection_name, "fields", field_name)
+    """
     missing_entries = []
     tree = {}
     for key, prev_value in prev_models.items():
