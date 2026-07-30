@@ -24,6 +24,16 @@ PREVIOUS_MODELS_DIR = os.path.join(
 )
 
 
+def load_models(mig_data_path: str) -> dict[str, Any]:
+    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
+    collections_dir = os.path.join(mig_data_path, "collections")
+    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
+
+
+PREV_MODELS = load_models(PREVIOUS_MODELS_DIR)
+CURR_MODELS = load_models(CURR_MODELS_DIR)
+
+
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--dumpjson", action="store_true")
@@ -40,18 +50,16 @@ def dumpjson(diff: dict[str, Any]) -> None:
 
 
 def generate_diff() -> dict[str, Any]:
-    prev_models = load_models(PREVIOUS_MODELS_DIR)
-    curr_models = load_models(CURR_MODELS_DIR)
     directory = MigrationHelper.get_last_migration_directory()
     renames = MigrationHelper.get_migration_class(directory).renames
 
-    validate_renames(prev_models, curr_models, renames)
+    validate_renames(PREV_MODELS, CURR_MODELS, renames)
 
     return {
         "rename": renames,
-        "remove": create_remove_recursive(prev_models, curr_models, renames),
-        "add": create_add_recursive(prev_models, curr_models, renames),
-        "edit": create_edit_recursive(prev_models, curr_models, renames),
+        "remove": create_remove_recursive(PREV_MODELS, CURR_MODELS, renames),
+        "add": create_add_recursive(PREV_MODELS, CURR_MODELS, renames),
+        "edit": create_edit_recursive(PREV_MODELS, CURR_MODELS, renames),
     }
 
 
@@ -164,12 +172,6 @@ def create_edit_recursive(
         return (edited_entries, tree)
     else:
         return None
-
-
-def load_models(mig_data_path: str) -> dict[str, Any]:
-    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
-    collections_dir = os.path.join(mig_data_path, "collections")
-    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
 
 
 if __name__ == "__main__":

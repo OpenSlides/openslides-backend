@@ -6,10 +6,15 @@ from typing import Any, cast
 
 import simplejson as json
 
+from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
-from openslides_backend.migrations.yaml_diff_generator import dumpjson, generate_diff
+from openslides_backend.migrations.yaml_diff_generator import (
+    CURR_MODELS,
+    dumpjson,
+    generate_diff,
+)
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -17,6 +22,8 @@ To use this script create a folder 'previous_models' next to it and copy the unc
 It will generate the sql diff comparing it to the changes made to the model definitions present in the meta.
 The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'.
 """
+
+alter_views: set[str] = set()
 
 
 def main() -> int:
@@ -49,7 +56,7 @@ def main() -> int:
     add = diff["add"]
     GenerateCodeBlocks.generate_the_code()
     if isinstance(add, tuple) and isinstance(add[0], dict):
-        sql += generate_new_collection_sql(add[0], diff_control["add"][0])
+        sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
 
@@ -58,6 +65,13 @@ def main() -> int:
     if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
         sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
+    sql += "\n-- VIEW UPDATE SECTION --\n"
+    for collection_name in alter_views:
+        sql += (
+            GenerateCodeBlocks.view_sql.get(collection_name, "")
+            .lstrip("\n")
+            .replace("CREATE", "CREATE OR REPLACE")
+        )
     # TODO Do this in a sub folder migrations?
     with open(
         os.path.join(
@@ -91,9 +105,6 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
         sql += GenerateCodeBlocks.table_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.view_sql.get(collection_name, "")
-    for collection_name in add:
-        found.add(collection_name)
         sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
@@ -103,16 +114,18 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
         sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
     for collection_name in found:
         del dc_add[collection_name]
+        alter_views.add(collection_name)
     return sql
 
 
-def generate_constraints_sql(
+def handle_add_field_attributes(
     table_name: str,
     field_name: str,
     field_def: dict[str, Any],
     diff_control_part: dict[str, Any],
 ) -> str:
     constraints_sql = ""
+    collection_name = table_name[:-2]
     for constraint, value in field_def.items():
         """
         TODO other constraints type etc
@@ -232,9 +245,20 @@ def generate_constraints_sql(
                 constraints_sql += Helper.get_inline_default_constraint(
                     table_name, field_name, value
                 )
+            case "sql":
+                alter_views.add(collection_name)
             case "to":
+                # This essentially would be an integer field being turned into a real relation
+                # Should probably be handled together with reference and type
                 # TODO
-                pass
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                )
+                alter_views_conditionally(
+                    collection_name, field_name, bool(write_fields), is_view_field
+                )
             case "reference":
                 # TODO
                 pass
@@ -249,34 +273,49 @@ def generate_constraints_sql(
     return constraints_sql
 
 
-def generate_altered_constraints_sql(
+def handle_edit_field_attributes(
     table_name: str,
     field_name: str,
-    field_def: dict[str, Any],
+    field_def_diff: dict[str, Any],
     diff_control_part: tuple[dict[str, Any], dict[str, Any]],
 ) -> str:
     constraints_sql = ""
-    for constraint, value in field_def.items():
+    collection_name = table_name[:-2]
+    for constraint, value in field_def_diff.items():
+        field_def = CURR_MODELS[collection_name]["fields"][field_name]
         match constraint:
             case "default":
-                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {field_def['default']};\n"
+                default = Helper.get_formatted_default_value(
+                    table_name, field_name, field_def_diff["default"], field_def["type"]
+                )
+                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
             case "description":
                 pass
+            case "sql":
+                alter_views.add(collection_name)
             case "reference" | "to":
-                # TODO this can be better about rename, maybe pass or store centrally
+                # TODO the rename check can be handled better. Maybe pass the dict or store centrally.
                 directory = MigrationHelper.get_last_migration_directory()
                 renames = MigrationHelper.get_migration_class(directory).renames
                 if table_name in renames or field_name in renames.get(
                     table_name, {}
                 ).get("fields", {}):
+                    print(f"Skipping {table_name} since it is renamed.")
                     continue
                 else:
                     NotImplementedError(
                         f"{constraint}: {value} is probably a view field or unmentioned in renames."
                     )
-                # TODO
-                # recreate affected triggers
-                # recreate views
+
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                )
+                alter_views_conditionally(
+                    collection_name, field_name, bool(write_fields), is_view_field
+                )
+                # TODO recreate affected triggers
             case _:
                 raise NotImplementedError(f"{constraint}: {value}")
         del diff_control_part[0][constraint]
@@ -289,19 +328,50 @@ def handle_rename(
 ) -> str:
     result = ""
     for collection_name_old, value in rename.items():
+        table_name = f"{collection_name_old}_t"
         if isinstance(value, str):
-            result += f"ALTER TABLE {collection_name_old}_t RENAME TO {value}_t;\n"
-            # TODO Renaming views
+            result += f"ALTER TABLE {table_name} RENAME TO {value}_t;\n"
+            result += f"DROP VIEW {collection_name_old};\n"
+            alter_views.add(value)
+            # TODO recreate dependend triggers
             del dc_rename_dict[collection_name_old]
         else:
             dc_collection = cast(dict, dc_rename_dict[collection_name_old])
             for field_name_old, field_name_new in value["fields"].items():
-                result += f"ALTER TABLE {collection_name_old}_t RENAME COLUMN {field_name_old} TO {field_name_new}_t;\n"
+                assert isinstance(field_name_new, str)
+                result += f"ALTER TABLE {table_name} RENAME COLUMN {field_name_old} TO {field_name_new};\n"
+                field_def = CURR_MODELS[collection_name_old]["fields"][field_name_new]
+                if field_def.get("to"):
+                    # This also includes all sql fields
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
+                        collection_name_old, field_name_new, field_def
+                    )
+                    alter_views_conditionally(
+                        collection_name_old,
+                        field_name_new,
+                        bool(write_fields),
+                        is_view_field,
+                    )
+
+                # TODO recreate dependend triggers
                 del dc_collection["fields"][field_name_old]
             # TODO Renaming and redefining constraints
             remove_empty(dc_collection, "fields")
             remove_empty(dc_rename_dict, collection_name_old)
     return result
+
+
+def alter_views_conditionally(
+    collection_name: str, field_name: str, has_write_fields: bool, is_view_field: bool
+) -> None:
+    if has_write_fields or is_view_field:
+        alter_views.add(collection_name)
+    if has_write_fields or not is_view_field:
+        reference = CURR_MODELS[collection_name]["fields"][field_name]["reference"]
+        if isinstance(reference, list):
+            alter_views.update(reference)
+        else:
+            alter_views.add(reference)
 
 
 def handle_remove_tree(
@@ -339,13 +409,13 @@ def handle_add_tree(
                 if fields_idx == 0:
                     # field added
                     # TODO needs to differentiate cardinality and type maybe usage of CodeGenerator defined functions
-                    constraints_sql = generate_constraints_sql(
+                    constraints_sql = handle_add_field_attributes(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )
                     sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
                 else:
                     # field altered
-                    sql += generate_altered_constraints_sql(
+                    sql += handle_edit_field_attributes(
                         table_name, field_name, field_def[0], dc_fields[field_name]
                     )
                 remove_empty(
@@ -366,7 +436,7 @@ def handle_edit_tree(
         table_name = HelperGetNames.get_table_name(collection_name)
         dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
         for field_name, field_def in collection_def[1]["fields"][1].items():
-            sql += generate_altered_constraints_sql(
+            sql += handle_edit_field_attributes(
                 table_name, field_name, field_def[0], dc_fields[field_name]
             )
             remove_empty(dc_edit_tree_dict[collection_name][1]["fields"][1], field_name)
