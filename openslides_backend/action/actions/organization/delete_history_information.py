@@ -23,4 +23,4 @@ class DeleteHistoryInformation(DDAction):
         self.execute_other_action(
             HistoryPositionDelete, [{"id": id_} for id_ in all_positions]
         )
-        return list(action_data)
+        return None
