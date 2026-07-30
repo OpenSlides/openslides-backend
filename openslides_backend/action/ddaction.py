@@ -63,18 +63,11 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
     permission_id: str | None = None
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
-    # history_information: str | None = None
-    # history_relation_field: str | None = None
-    # add_self_history_information: bool = False
-    # own_history_information_first: bool = False
-
-    # relation_manager: RelationManager
 
     action_data: ActionData
     instances: list[dict[str, Any]]
     events: list[Event]
     results: ActionResults
-    # cascaded_actions_history: HistoryInformation
     internal: bool
 
     def __init__(
@@ -99,7 +92,6 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
             )
         self.events = []
         self.results = []
-        # self.cascaded_actions_history = {}
 
     def perform(
         self,
@@ -311,7 +303,6 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         create_history = history_information
         update_history: dict[int, list[str]] = {}
         if self.history_position_id is None:
-            # TODO: Create a history_position
             self.history_position_id = self.database.insert_model(
                 "history_position",
                 {

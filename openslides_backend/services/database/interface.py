@@ -36,6 +36,8 @@ class Database(Protocol):
 
     locked_fields: dict[str, CollectionFieldLock]
 
+    enable_changed_models: bool
+
     @abstractmethod
     def apply_changed_model(
         self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False

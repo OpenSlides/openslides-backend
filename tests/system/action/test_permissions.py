@@ -1,5 +1,7 @@
+from openslides_backend.action.ddaction import DDAction
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.util.register import register_action
+from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.models import fields
 from openslides_backend.models.base import model_registry
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -40,16 +42,34 @@ class FakeModelP(FakeModel):
     meeting_id = fields.IntegerField()
 
 
-@register_action("fake_model_p.create")
-class FakeModelPCreate(CreateAction):
+@register_action("fake_model_p.legacy_create")
+class LegacyFakeModelPCreate(CreateAction):
     model = FakeModelP()
     schema = {}  # type: ignore
     permission = Permissions.Motion.CAN_CREATE
 
 
+@register_action("fake_model_p.create")
+class FakeModelPCreate(DDAction):
+    model = FakeModelP()
+    schema = {}  # type: ignore
+    permission = Permissions.Motion.CAN_CREATE
+
+    def write_instances(self, action_data: ActionData) -> ActionResults | None:
+        instances = list(action_data)
+        return list(
+            self.database.insert_models(
+                self.model.collection,
+                instances,
+                list({field for instance in instances for field in instance}),
+            )
+        )
+
+
 class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
     fake_model_registry = model_registry | fake_registry
     init_with_login = True
+    create_action_name = "fake_model_p.create"
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -78,7 +98,7 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
     def test_anonymous_disabled(self) -> None:
         self.set_anonymous(False)
         response = self.request(
-            "fake_model_p.create", {"meeting_id": 1}, anonymous=True
+            self.create_action_name, {"meeting_id": 1}, anonymous=True
         )
         self.assert_status_code(response, 403)
         assert response.json["message"] == "Anonymous is not enabled for meeting 1"
@@ -88,33 +108,33 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
         # 1 is default group
         self.set_group_permissions(1, [])
         response = self.request(
-            "fake_model_p.create", {"meeting_id": 1}, anonymous=True
+            self.create_action_name, {"meeting_id": 1}, anonymous=True
         )
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
+            == f"You are not allowed to perform action {self.create_action_name}. Missing Permission: motion.can_create"
         )
 
     def test_anonymous_valid(self) -> None:
         self.set_anonymous(True, permissions=[Permissions.Motion.CAN_CREATE])
         response = self.request(
-            "fake_model_p.create", {"meeting_id": 1}, anonymous=True
+            self.create_action_name, {"meeting_id": 1}, anonymous=True
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_not_related_user(self) -> None:
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
+            == f"You are not allowed to perform action {self.create_action_name}. Missing Permission: motion.can_create"
         )
 
     def test_superadmin(self) -> None:
         self.set_organization_management_level(OrganizationManagementLevel.SUPERADMIN)
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
@@ -122,37 +142,41 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_in_admin_group(self) -> None:
         # 2 is admin group
         self.set_user_groups(self.user_id, [2])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_in_some_group(self) -> None:
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_parent_perm(self) -> None:
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_child_perm(self) -> None:
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        response = self.request(self.create_action_name, {"meeting_id": 1})
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
+            == f"You are not allowed to perform action {self.create_action_name}. Missing Permission: motion.can_create"
         )
+
+
+class LegacyTestPermissions(TestPermissions):
+    create_action_name = "fake_model_p.legacy_create"

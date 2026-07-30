@@ -608,6 +608,8 @@ class DatabaseWriter(SqlQueryHelper):
                 {str(i): instance[field] for i, field in enumerate(match_on, base)}
             )
             base += len(match_on)
+        # TODO: Is this right? Should the check use ANY?
+        # Like in database_reader get_many?
         statement = sql.SQL("""
             DELETE FROM {table_name}
             WHERE {columns} IN ({placeholders})
