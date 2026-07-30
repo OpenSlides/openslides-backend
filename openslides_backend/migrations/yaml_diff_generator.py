@@ -218,12 +218,11 @@ def create_remove_recursive(
                     else:
                         field_name = path[2]
                         field_def = all_prev_models[path[0]][path[1]][path[2]]
-                    if "type" in field_def and is_relational_field(field_def["type"]):
-                        if not is_view_field(
-                            path[0], field_name, field_def, all_prev_models
-                        ):
-                            missing_entries.append(key)
-                    else:
+                    if not (
+                        "type" in field_def 
+                        and is_relational_field(field_def["type"])
+                        and is_view_field(path[0], field_name, field_def, all_prev_models)
+                    ):
                         missing_entries.append(key)
                 else:
                     missing_entries.append(key)
