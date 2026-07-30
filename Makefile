@@ -84,6 +84,9 @@ mypy:
 
 # Models
 
+cleanup-collection-yaml:
+	make -C meta/dev cleanup-yaml
+
 generate-schema:
 	make -C meta/dev generate-relational-schema
 
