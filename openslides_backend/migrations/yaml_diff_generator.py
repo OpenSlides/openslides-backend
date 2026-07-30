@@ -189,7 +189,7 @@ def create_remove_recursive(
                 "log_triggers",
                 "equal_fields",
             ]:
-                # Old definitions are needed to re-build the trigger difinitions names
+                # Old definitions are needed to re-build the trigger definitions names
                 tree[key] = prev_value
             elif key == "maxLength":
                 # Should be processed as type change
