@@ -9,7 +9,16 @@ import simplejson as json
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
-from openslides_backend.migrations.yaml_diff_generator import dumpjson, generate_diff
+from openslides_backend.migrations.yaml_diff_generator import (
+    CollectionsRemoveList,
+    EnumTypesRemoveDict,
+    FieldAttributes,
+    MetaAttributesRemoveList,
+    RemoveDiffDict,
+    dumpjson,
+    generate_diff,
+)
+from openslides_backend.shared.exceptions import BadCodingException
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -29,16 +38,18 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    sql = "-- REMOVE SECTION --\n"
+    # Has to happen before remove: field types have to change before dropping the enum
+    sql = "-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+
+    sql += "\n-- REMOVE SECTION --\n"
     # TODO create generate diff content functions in schema generator.
     # Using a lot of isinstance calls here for pleasing mypy
-    remove = diff["remove"]
-    if isinstance(remove, list) and isinstance(remove[0], list):
-        for collection_name in remove[0]:
-            sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
-            diff_control["remove"][0].remove(collection_name)
-    if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
-        sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
+    remove: RemoveDiffDict | None = diff["remove"]
+    if remove:
+        sql += handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     rename = diff["rename"]
@@ -52,11 +63,6 @@ def main() -> int:
         sql += generate_new_collection_sql(add[0], diff_control["add"][0])
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
-
-    sql += "\n-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     # TODO Do this in a sub folder migrations?
     with open(
@@ -79,7 +85,7 @@ def main() -> int:
 
 
 def remove_empty(dictionary: dict[str, Any], key: str) -> None:
-    if not any(dictionary[key]):
+    if dictionary[key] is None or not any(dictionary[key]):
         del dictionary[key]
 
 
@@ -303,21 +309,212 @@ def handle_rename(
     return result
 
 
+def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str:
+    result = ""
+    if "collections" in remove:
+        collections_remove_list: CollectionsRemoveList = remove["collections"]
+        if isinstance(
+            collection_names := collections_remove_list[0], list
+        ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
+            for collection_name in collection_names:
+                result += Helper.get_drop_table_statement(collection_name)
+                dc_collection_names.remove(collection_name)
+        if isinstance(
+            remove_tree_dict := collections_remove_list[1], dict
+        ) and isinstance(dc_remove_tree_dict := dc_remove_dict["collections"][1], dict):
+            result += handle_remove_tree(remove_tree_dict, dc_remove_tree_dict)
+        remove_empty(dc_remove_dict, "collections")
+
+    if "enum_types" in remove and isinstance(
+        remove_enum_types_dict := remove["enum_types"], dict
+    ):
+        result += handle_remove_enum_types(
+            remove_enum_types_dict, dc_remove_dict["enum_types"]
+        )
+        remove_empty(dc_remove_dict, "enum_types")
+
+    if "_meta" in remove and isinstance(
+        remove_meta_attributes_list := remove["_meta"], list
+    ):
+        result += handle_remove_meta_attributes(
+            remove_meta_attributes_list, dc_remove_dict["_meta"]
+        )
+        remove_empty(dc_remove_dict, "_meta")
+    return result
+
+
 def handle_remove_tree(
-    remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    remove_tree_dict: dict[str, Any],
+    dc_remove_tree_dict: dict[str, Any],
 ) -> str:
     result = ""
-    for collection_name, field_lists in remove_tree_dict.items():
-        fields = field_lists[1]["fields"]
-        for field_name in fields[0]:
-            result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
+    for collection_name, collection_data in remove_tree_dict.items():
+        for key, data in collection_data[1].items():
+            match key:
+                case "fields":
+                    for field_name in data[0]:
+                        result += Helper.get_drop_column_statement(
+                            collection_name, field_name
+                        )
+                        dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
+                            field_name
+                        )
+                    for field_name, attrs in data[1].items():
+                        for attr in attrs[0]:
+                            match attr:
+                                case "default":
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name, field_name, "DEFAULT"
+                                        )
+                                    )
+                                case "required":
+                                    result += (
+                                        Helper.get_drop_column_attribute_statement(
+                                            collection_name, field_name, "NOT NULL"
+                                        )
+                                    )
+                                case "minimum" | "maximum" | "minLength" | "unique":
+                                    constraint_name_func = getattr(
+                                        HelperGetNames,
+                                        f"get_{attr.lower()}_constraint_name",
+                                    )
+                                    constraint_name = constraint_name_func(
+                                        collection_name,
+                                        (
+                                            [field_name]
+                                            if attr == "unique"
+                                            else field_name
+                                        ),
+                                    )
+                                    result += (
+                                        Helper.get_drop_table_constraint_statement(
+                                            collection_name, constraint_name
+                                        )
+                                    )
+                                case "sql":
+                                    result += Helper.get_drop_view_statement(
+                                        collection_name
+                                    )
+                                case "constant":
+                                    result += Helper.get_drop_trigger_statement(
+                                        collection_name,
+                                        HelperGetNames.get_constant_field_trigger_name(
+                                            collection_name, field_name
+                                        ),
+                                    )
+                                case value if (
+                                    value in FieldAttributes.skipped_in_schema
+                                ):
+                                    pass
+                                case "type":
+                                    raise BadCodingException(
+                                        f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
+                                    )
+                                case _:
+                                    # Skipped as not likely to be removed in the foreseeable future:
+                                    # "to" and "reference": can only be removed if type changes to not relational field
+                                    # "sequence_scope": would turn a sequence field into a regular number field
+                                    raise NotImplementedError(
+                                        f"{collection_name}/{field_name}: {attr}"
+                                    )
+                            dc_remove_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][0].remove(attr)
+                            remove_empty(
+                                dc_remove_tree_dict[collection_name][1]["fields"][1],
+                                field_name,
+                            )
+                        for attr, attr_data in attrs[1].items():
+                            match attr:
+                                case "log_triggers":
+                                    processed_tables: dict[str, int] = {}
+                                    for log_trigger in attr_data:
+                                        trigger_name_iu, trigger_name_ud, *_ = (
+                                            Helper.get_log_calculated_id_array_trigger_data(
+                                                collection_name,
+                                                field_name,
+                                                log_trigger,
+                                                processed_tables,
+                                            )
+                                        )
+                                        for trigger_name in [
+                                            trigger_name_iu,
+                                            trigger_name_ud,
+                                        ]:
+                                            result += Helper.get_drop_trigger_statement(
+                                                log_trigger["on_table"], trigger_name
+                                            )
+                                # case "equal_fields":
+                                #     pass
+                                #     TODO: correctly handle deleted equal_fields
+                                case _:
+                                    raise NotImplementedError(
+                                        f"{collection_name}/{field_name}: {attr}"
+                                    )
+                            dc_remove_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][1].pop(attr)
+                            remove_empty(
+                                dc_remove_tree_dict[collection_name][1]["fields"][1],
+                                field_name,
+                            )
+                    remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                    remove_empty(dc_remove_tree_dict, collection_name)
+                case "unique_together":
+                    for fields in data:
+                        result += Helper.get_drop_table_constraint_statement(
+                            collection_name,
+                            HelperGetNames.get_unique_constraint_name(
+                                collection_name,
+                                Helper.split_unique_together_fields(fields),
+                            ),
+                        )
+                        dc_remove_tree_dict[collection_name][1][
+                            "unique_together"
+                        ].remove(fields)
+                        remove_empty(
+                            dc_remove_tree_dict[collection_name][1],
+                            "unique_together",
+                        )
+                    remove_empty(dc_remove_tree_dict, collection_name)
+    return result
 
-            dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-            # TODO fields[1]
-            # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
-            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+
+def handle_remove_enum_types(
+    remove_tree_dict: EnumTypesRemoveDict,
+    dc_remove_tree_dict: EnumTypesRemoveDict,
+) -> str:
+    result = ""
+    for collection_name, field_names in remove_tree_dict.items():
+        for field_name in field_names:
+            result += Helper.get_drop_enum_type_statement_from_collection_and_column(
+                collection_name, field_name
+            )
+            dc_remove_tree_dict[collection_name].remove(field_name)
         remove_empty(dc_remove_tree_dict, collection_name)
+    return result
+
+
+def handle_remove_meta_attributes(
+    remove_meta_attributes_list: MetaAttributesRemoveList,
+    dc_remove_meta_attributes_list: MetaAttributesRemoveList,
+) -> str:
+    result = ""
+    if isinstance(remove_meta_attributes_list[1], dict) and isinstance(
+        dc_remove_meta_attributes_list[1], dict
+    ):
+        for attr, data in remove_meta_attributes_list[1].items():
+            match attr:
+                case "enum_definitions":
+                    for enum in data[0]:
+                        result += Helper.get_drop_type_statement(
+                            HelperGetNames.get_enum_name(enum)
+                        )
+                        dc_remove_meta_attributes_list[1][attr][0].remove(enum)
+                case _:
+                    raise NotImplementedError(f"_meta attribute: {attr}")
+            remove_empty(dc_remove_meta_attributes_list[1], attr)
     return result
 
 
