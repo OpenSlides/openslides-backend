@@ -12,6 +12,8 @@ from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
+    RENAMES,
+    Renames,
     dumpjson,
     generate_diff,
 )
@@ -42,15 +44,13 @@ def main() -> int:
     remove = diff["remove"]
     if isinstance(remove, list) and isinstance(remove[0], list):
         for collection_name in remove[0]:
-            sql += f"DROP TABLE {collection_name}_t CASCADE;\n"
+            sql += f"DROP TABLE {HelperGetNames.get_table_name(collection_name)} CASCADE;\n"
             diff_control["remove"][0].remove(collection_name)
     if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
         sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
 
     sql += "\n-- RENAME SECTION --\n"
-    rename = diff["rename"]
-    if isinstance(rename, dict):
-        sql += handle_rename(rename, diff_control["rename"])
+    sql += handle_rename(diff["rename"], diff_control["rename"])
 
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
@@ -65,8 +65,8 @@ def main() -> int:
     if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
         sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
-    sql += "\n-- VIEW UPDATE SECTION --\n"
-    for collection_name in alter_views:
+    sql += "\n-- VIEWS UPDATE SECTION --\n"
+    for collection_name in sorted(alter_views):
         sql += (
             GenerateCodeBlocks.view_sql.get(collection_name, "")
             .lstrip("\n")
@@ -121,12 +121,12 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
 def handle_add_field_attributes(
     table_name: str,
     field_name: str,
-    field_def: dict[str, Any],
-    diff_control_part: dict[str, Any],
+    field_def_diff: dict[str, Any],
+    dc_field_def: dict[str, Any],
 ) -> str:
     constraints_sql = ""
     collection_name = table_name[:-2]
-    for constraint, value in field_def.items():
+    for constraint, value in field_def_diff.items():
         """
         TODO other constraints type etc
         This is a full list of leaf types we have. (Including _meta.)
@@ -269,7 +269,7 @@ def handle_add_field_attributes(
                 raise NotImplementedError(
                     f"{table_name}/{field_name}: {constraint}, {value}"
                 )
-        del diff_control_part[constraint]
+        del dc_field_def[constraint]
     return constraints_sql
 
 
@@ -277,7 +277,7 @@ def handle_edit_field_attributes(
     table_name: str,
     field_name: str,
     field_def_diff: dict[str, Any],
-    diff_control_part: tuple[dict[str, Any], dict[str, Any]],
+    dc_field_def: tuple[dict[str, Any], dict[str, Any]],
 ) -> str:
     constraints_sql = ""
     collection_name = table_name[:-2]
@@ -294,12 +294,9 @@ def handle_edit_field_attributes(
             case "sql":
                 alter_views.add(collection_name)
             case "reference" | "to":
-                # TODO the rename check can be handled better. Maybe pass the dict or store centrally.
-                directory = MigrationHelper.get_last_migration_directory()
-                renames = MigrationHelper.get_migration_class(directory).renames
-                if table_name in renames or field_name in renames.get(
+                if table_name in RENAMES[0] or field_name in RENAMES[1].get(
                     table_name, {}
-                ).get("fields", {}):
+                ):
                     print(f"Skipping {table_name} since it is renamed.")
                     continue
                 else:
@@ -318,46 +315,43 @@ def handle_edit_field_attributes(
                 # TODO recreate affected triggers
             case _:
                 raise NotImplementedError(f"{constraint}: {value}")
-        del diff_control_part[0][constraint]
+        del dc_field_def[0][constraint]
     return constraints_sql
 
 
-def handle_rename(
-    rename: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
-    dc_rename_dict: dict[str, str | dict[str, dict[str, dict[str, Any]]]],
-) -> str:
+def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
     result = ""
-    for collection_name_old, value in rename.items():
-        table_name = f"{collection_name_old}_t"
-        if isinstance(value, str):
-            result += f"ALTER TABLE {table_name} RENAME TO {value}_t;\n"
-            result += f"DROP VIEW {collection_name_old};\n"
-            alter_views.add(value)
-            # TODO recreate dependend triggers
-            del dc_rename_dict[collection_name_old]
-        else:
-            dc_collection = cast(dict, dc_rename_dict[collection_name_old])
-            for field_name_old, field_name_new in value["fields"].items():
-                assert isinstance(field_name_new, str)
-                result += f"ALTER TABLE {table_name} RENAME COLUMN {field_name_old} TO {field_name_new};\n"
-                field_def = CURR_MODELS[collection_name_old]["fields"][field_name_new]
-                if field_def.get("to"):
-                    # This also includes all sql fields
-                    is_view_field, _, write_fields = get_view_field_state_write_fields(
-                        collection_name_old, field_name_new, field_def
-                    )
-                    alter_views_conditionally(
-                        collection_name_old,
-                        field_name_new,
-                        bool(write_fields),
-                        is_view_field,
-                    )
+    collection_renames = renames[0]
+    field_renames = renames[1]
 
-                # TODO recreate dependend triggers
-                del dc_collection["fields"][field_name_old]
-            # TODO Renaming and redefining constraints
-            remove_empty(dc_collection, "fields")
-            remove_empty(dc_rename_dict, collection_name_old)
+    for collection_name_old, field_name_new in collection_renames.items():
+        table_name = f"{HelperGetNames.get_table_name(collection_name_old)}"
+        result += f"ALTER TABLE {table_name} RENAME TO {HelperGetNames.get_table_name(field_name_new)};\n"
+        result += f"ALTER VIEW {collection_name_old} RENAME TO {field_name_new};\n"
+        # TODO recreate dependend triggers
+        del dc_rename_dict[0][collection_name_old]
+
+    for collection_name_old, collection_diff in field_renames.items():
+        dc_collection = cast(dict, dc_rename_dict[1][collection_name_old])
+        for field_name_old, field_name_new in collection_diff.items():
+            assert isinstance(field_name_new, str)
+            field_def = CURR_MODELS[collection_name_old]["fields"][field_name_new]
+            is_view_field = False
+            if field_def.get("to"):
+                # This also includes all sql fields
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name_old, field_name_new, field_def
+                )
+            if is_view_field:
+                result += f"ALTER VIEW {collection_name_old} "
+            else:
+                result += f"ALTER TABLE {table_name} "
+            result += f"RENAME COLUMN {field_name_old} TO {field_name_new};\n"
+
+            # TODO recreate dependend triggers and intermediate tables
+            del dc_collection[field_name_old]
+        # TODO Renaming and redefining constraints
+        remove_empty(dc_rename_dict[1], collection_name_old)
     return result
 
 
@@ -366,12 +360,15 @@ def alter_views_conditionally(
 ) -> None:
     if has_write_fields or is_view_field:
         alter_views.add(collection_name)
-    if has_write_fields or not is_view_field:
-        reference = CURR_MODELS[collection_name]["fields"][field_name]["reference"]
-        if isinstance(reference, list):
-            alter_views.update(reference)
-        else:
-            alter_views.add(reference)
+    # if has_write_fields:
+    #     to = CURR_MODELS[collection_name]["fields"][field_name]["to"]
+    #     if isinstance(to, list):
+    #         for collection_field in to:
+    #             alter_views.update(collection_field.split("/")[0])
+    #     elif isinstance(to, dict):
+    #         alter_views.update(to["collections"])
+    #     else:
+    #         alter_views.add(to.split("/")[0])
 
 
 def handle_remove_tree(
