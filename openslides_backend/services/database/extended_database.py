@@ -587,7 +587,6 @@ class ExtendedDatabase(Database):
 
     def is_new(self, fqid: FullQualifiedId) -> bool:
         if not self.enable_changed_models:
-            # TODO: This is used in get, we should handle this differently
             return False
         collection, id_ = collection_and_id_from_fqid(fqid)
         return self._changed_models[collection].get(id_, {}).get("meta_new") is True

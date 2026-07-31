@@ -482,6 +482,7 @@ class DatabaseWriter(SqlQueryHelper):
             ],
         )
 
+    @retry_on_db_failure
     def insert_rows(
         self,
         table_name: str,
@@ -536,6 +537,7 @@ class DatabaseWriter(SqlQueryHelper):
             return_fields=return_fields,
         )
 
+    @retry_on_db_failure
     def update_rows(
         self,
         table_name: str,
@@ -585,6 +587,7 @@ class DatabaseWriter(SqlQueryHelper):
             )
         return results
 
+    @retry_on_db_failure
     def delete_rows(
         self,
         table_name: str,
@@ -609,8 +612,6 @@ class DatabaseWriter(SqlQueryHelper):
                 {str(i): instance[field] for i, field in enumerate(match_on, base)}
             )
             base += len(match_on)
-        # TODO: Is this right? Should the check use ANY?
-        # Like in database_reader get_many?
         statement = sql.SQL("""
             DELETE FROM {table_name}
             WHERE {columns} IN ({placeholders})
