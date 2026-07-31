@@ -732,8 +732,8 @@ class ExtendedDatabase(Database):
             raise BadCodingException(
                 "Cannot use insert_model if changed_models is enabled."
             )
-        return self.database_writer.insert_rows(
-            collection, list(instance), [{"id": id_, **instance}], return_fields
+        return self.database_writer.update_rows(
+            collection, [{"id": id_, **instance}], return_fields
         )[0]
 
     def update_models(

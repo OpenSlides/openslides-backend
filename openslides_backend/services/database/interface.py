@@ -26,7 +26,7 @@ FQID_MAX_LEN = 48  # collection + id
 COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 SqlArguments = list[str | int]
-SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
+SqlArgumentsExtended = tuple[list[Id] | list[str]] | SqlArguments
 
 
 class Database(Protocol):

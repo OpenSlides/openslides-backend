@@ -315,11 +315,12 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         else:
             found = self.database.execute_custom_select(
                 sql.SQL(
-                    "id, model_id, entries FROM history_entry_t WHERE position_id = {position_id} AND model_id IN {fqids}"
+                    "id, model_id, entries FROM history_entry_t WHERE position_id = {position_id} AND model_id = ANY(%s)"
                 ).format(
                     fqids=tuple(history_information),
                     position_id=self.history_position_id,
-                )
+                ),
+                arguments=(list(history_information),),
             )
             for model in found:
                 update_history[model["id"]] = [
@@ -377,7 +378,8 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
         if write_request:
             if events := write_request.events:
                 self.database.write(WriteRequest(events=events))
+        cast(ExtendedDatabase, self.database).toggle_changed_models(False)
+        if write_request:
             if not skip_history and (history_information := write_request.information):
                 self.write_history_information(history_information)
-        cast(ExtendedDatabase, self.database).toggle_changed_models(False)
         return action_results
