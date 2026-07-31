@@ -9,10 +9,11 @@ import simplejson as json
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
-from meta.dev.src.helper_get_names import HelperGetNames
+from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
+    PREV_MODELS,
     RENAMES,
     CollectionsRemoveList,
     EnumTypesRemoveDict,
@@ -420,9 +421,25 @@ def handle_remove_tree(
             match key:
                 case "fields":
                     for field_name in data[0]:
-                        result += AlterSchemaHelper.get_drop_column_statement(
-                            collection_name, field_name
+                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
+
+                        InternalHelper.MODELS = PREV_MODELS
+                        is_view_field, _, write_fields = (
+                            get_view_field_state_write_fields(
+                                collection_name, field_name, field_def
+                            )
                         )
+                        InternalHelper.MODELS = CURR_MODELS
+
+                        alter_views_conditionally(
+                            collection_name, bool(write_fields), is_view_field
+                        )
+
+                        if collection_name not in alter_views:
+                            result += AlterSchemaHelper.get_drop_column_statement(
+                                collection_name, field_name
+                            )
+
                         dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
                             field_name
                         )
