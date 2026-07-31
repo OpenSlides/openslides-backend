@@ -90,6 +90,7 @@ class DatabaseWriter(SqlQueryHelper):
                 with make_span(self.env, "write with database context"):
 
                     results = self.write_events(write_request.events)
+                    write_request.written = True
                     for fqid, model in results.items():
                         modified_models[fqid].update(model)
 

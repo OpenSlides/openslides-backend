@@ -69,7 +69,7 @@ class DDAction(BaseServiceProvider, metaclass=SchemaProvider):
     events: list[Event]
     results: ActionResults
     internal: bool
-    legacy=False
+    legacy = False
 
     def __init__(
         self,

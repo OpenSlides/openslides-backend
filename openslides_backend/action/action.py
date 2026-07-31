@@ -114,7 +114,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     results: ActionResults
     cascaded_actions_history: HistoryInformation
     internal: bool
-    legacy=True
+    legacy = True
 
     def __init__(
         self,

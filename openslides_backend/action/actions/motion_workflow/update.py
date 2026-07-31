@@ -19,7 +19,10 @@ class MotionWorkflowUpdateAction(DDAction):
     permission = Permissions.Motion.CAN_MANAGE
 
     def write_instances(self, action_data: ActionData) -> ActionResults | None:
-        return [None for _ in self.database.update_models(
-            self.model.collection,
-            list(action_data),
-        )]
+        return [
+            None
+            for _ in self.database.update_models(
+                self.model.collection,
+                list(action_data),
+            )
+        ]

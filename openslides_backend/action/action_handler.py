@@ -361,9 +361,9 @@ class ActionHandler(BaseHandler):
                 else:
                     if self.prev_was_new:
                         for write_request in self.write_requests:
-                            write_results = self.datastore.write(write_request)
-                            write_request.written = True
-                            write_request.results = write_results
+                            if not write_request.written:
+                                write_results = self.datastore.write(write_request)
+                                write_request.results = write_results
                         self.write_requests = []
                     self.datastore.toggle_changed_models(False)
                     write_request = None
