@@ -67,7 +67,7 @@ ENTRYPOINT ["./entrypoint.sh"]
 FROM base AS dev
 
 # Starting with debian forky this package will be packaged as yq-go
-RUN curl -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64 &&\
+RUN curl -L -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64 &&\
     chmod +x /usr/local/bin/yq &&\
     echo "fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4 /usr/local/bin/yq" | sha256sum -c -
 
