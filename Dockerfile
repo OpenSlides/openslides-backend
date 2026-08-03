@@ -10,8 +10,8 @@ ENV APP_CONTEXT=${CONTEXT}
 
 ### Query based on context value
 RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
-    tests)  echo "make vim bash-completion wget";; \
-    dev)    echo "make vim bash-completion wget";; \
+    tests)  echo "make vim bash-completion";; \
+    dev)    echo "make vim bash-completion";; \
     *)      echo "libc-dev" ;; esac) && \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
@@ -67,7 +67,7 @@ ENTRYPOINT ["./entrypoint.sh"]
 FROM base AS dev
 
 # Starting with debian forky this package will be packaged as yq-go
-RUN wget https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64 -O /usr/local/bin/yq &&\
+RUN curl -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64 &&\
     chmod +x /usr/local/bin/yq &&\
     echo "fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4 /usr/local/bin/yq" | sha256sum -c -
 
