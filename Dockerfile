@@ -11,7 +11,7 @@ ENV APP_CONTEXT=${CONTEXT}
 ### Query based on context value
 RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     tests)  echo "make vim bash-completion";; \
-    dev)    echo "make vim bash-completion";; \
+    dev)    echo "make vim bash-completion wget";; \
     *)      echo "libc-dev" ;; esac) && \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
