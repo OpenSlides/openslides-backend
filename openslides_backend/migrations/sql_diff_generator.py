@@ -297,6 +297,8 @@ def handle_edit_field_attributes(
                 if table_name in RENAMES[0] or field_name in RENAMES[1].get(
                     table_name, {}
                 ):
+                    # Shouldn't be a case since this is already skipped in yaml diff generator.
+                    # TODO decide whether to fail or delete
                     print(f"Skipping {table_name} since it is renamed.")
                     continue
                 else:
@@ -360,15 +362,6 @@ def alter_views_conditionally(
 ) -> None:
     if has_write_fields or is_view_field:
         alter_views.add(collection_name)
-    # if has_write_fields:
-    #     to = CURR_MODELS[collection_name]["fields"][field_name]["to"]
-    #     if isinstance(to, list):
-    #         for collection_field in to:
-    #             alter_views.update(collection_field.split("/")[0])
-    #     elif isinstance(to, dict):
-    #         alter_views.update(to["collections"])
-    #     else:
-    #         alter_views.add(to.split("/")[0])
 
 
 def handle_remove_tree(
@@ -405,7 +398,6 @@ def handle_add_tree(
             for field_name, field_def in fields.items():
                 if fields_idx == 0:
                     # field added
-                    # TODO needs to differentiate cardinality and type maybe usage of CodeGenerator defined functions
                     constraints_sql = handle_add_field_attributes(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )

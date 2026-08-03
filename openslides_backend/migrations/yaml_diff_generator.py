@@ -76,44 +76,8 @@ def validate_renames(
     collection_renames = renames[0]
     field_renames = renames[1]
     check_renames_node(collection_renames, None)
-    # for collection_old, collection_new in collection_renames.items():
-    # if collection_old not in PREV_MODELS:
-    #     raise Exception(
-    #         f"Faulty collection yml files. {collection_old} not in old yml files."
-    #     )
-    # elif collection_new not in CURR_MODELS:
-    #     raise Exception(
-    #         f"Faulty collection yml files. {collection_new} not in new yml files."
-    #     )
-    # elif collection_new in PREV_MODELS:
-    #     raise Exception(
-    #         f"Faulty collection yml files. {collection_new} already existed in old yml files."
-    #     )
-    # elif collection_old in CURR_MODELS:
-    #     raise Exception(
-    #         f"Faulty collection yml files. {collection_old} already existed in new yml files."
-    #     )
     for collection_old, value in field_renames.items():
         check_renames_node(value, collection_old)
-        # prev_collection_fields = prev_models[collection_old]["fields"]
-        # curr_collection_fields = curr_models[collection_old]["fields"]
-        # for field_name_old, field_name_new in value.items():
-        #     if field_name_old not in prev_collection_fields:
-        #         raise Exception(
-        #             f"Faulty {collection_old} yml file. {field_name_old} not in old yml file."
-        #         )
-        #     elif field_name_new not in curr_collection_fields:
-        #         raise Exception(
-        #             f"Faulty {collection_old} yml file. {field_name_new} not in new yml file."
-        #         )
-        #     elif field_name_new in prev_collection_fields:
-        #         raise Exception(
-        #             f"Faulty {collection_old} yml file. {field_name_new} already existed in old yml file."
-        #         )
-        #     elif field_name_old in curr_collection_fields:
-        #         raise Exception(
-        #             f"Faulty {collection_old} yml file. {field_name_old} already existed in new yml file."
-        #         )
 
 
 def load_renames() -> Renames:
