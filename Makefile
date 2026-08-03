@@ -36,6 +36,7 @@ run-tests:
 
 lint:
 	bash dev/run-lint.sh -l
+	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
 	pytest
