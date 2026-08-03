@@ -36,6 +36,7 @@ run-tests:
 
 lint:
 	bash dev/run-lint.sh -l
+	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
 	pytest
@@ -83,6 +84,9 @@ mypy:
 	mypy $(paths)
 
 # Models
+
+cleanup-collection-yaml:
+	make -C meta/dev cleanup-yaml
 
 generate-schema:
 	make -C meta/dev generate-relational-schema
