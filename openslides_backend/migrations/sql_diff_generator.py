@@ -68,7 +68,7 @@ def main() -> int:
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     for collection_name in sorted(alter_views):
         sql += (
-            GenerateCodeBlocks.view_sql.get(collection_name, "")
+            GenerateCodeBlocks.view_sql[collection_name]
             .lstrip("\n")
             .replace("CREATE", "CREATE OR REPLACE")
         )
