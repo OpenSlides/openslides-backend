@@ -1286,6 +1286,63 @@ class AccountJsonUpload(BaseActionTestCase):
             in import_preview["result"]["rows"][0]["messages"]
         )
 
+    def test_json_upload_wrong_gender(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [{"username": "test", "gender": "veryveryveryverybad"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
+            "value": "veryveryveryverybad",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: Gender 'veryveryveryverybad' is not in the allowed gender list."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+
+    def test_json_upload_wrong_gender_2(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
+                "gender/1": {"name": "dragon"},
+                "gender/2": {"name": "lobster"},
+                "gender/3": {"name": "snake"},
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [{"username": "test", "gender": "male"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
+            "value": "male",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: Gender 'male' is not in the allowed gender list."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+
 
 class AccountJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_saml_id_new(self) -> None:
@@ -1552,61 +1609,6 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert (
             import_preview["result"]["rows"][0]["data"]["default_password"]["info"]
             == ImportState.GENERATED
-        )
-
-    def json_upload_wrong_gender(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"gender_ids": [1, 2, 3, 4]},
-                "gender/1": {"name": "male"},
-                "gender/2": {"name": "female"},
-                "gender/3": {"name": "diverse"},
-                "gender/4": {"name": "non-binary"},
-            }
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [{"username": "test", "gender": "veryveryveryverybad"}],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["name"] == "account"
-        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
-            "value": "veryveryveryverybad",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "Gender 'veryveryveryverybad' is not in the allowed gender list."
-            in import_preview["result"]["rows"][0]["messages"]
-        )
-
-    def json_upload_wrong_gender_2(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
-                "gender/1": {"name": "dragon"},
-                "gender/2": {"name": "lobster"},
-                "gender/3": {"name": "snake"},
-            }
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [{"username": "test", "gender": "male"}],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["name"] == "account"
-        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
-            "value": "male",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "Gender 'male' is not in the allowed gender list."
-            in import_preview["result"]["rows"][0]["messages"]
         )
 
     def json_upload_username_10_saml_id_11(self) -> None:

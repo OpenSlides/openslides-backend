@@ -218,30 +218,6 @@ class ParticipantImport(BaseActionTestCase):
             "Error: saml_id 'testsaml' found in different id (1 instead of None)"
         ]
 
-    def test_import_gender_warning(self) -> None:
-        """Set saml_id 'testsaml' to user 1, add the import user 1 will be
-        found and the import should result in an error."""
-        self.preview_result["rows"][0]["data"]["gender"] = {
-            "value": "notAGender",
-            "info": ImportState.WARNING,
-        }
-        self.preview_result["rows"][0]["messages"] = [
-            "Gender 'notAGender' is not in the allowed gender list."
-        ]
-        self.import_preview1_data["result"] = Jsonb(self.preview_result)
-        self.set_models({"import_preview/1": self.import_preview1_data})
-        response = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response, 200)
-        entry = response.json["results"][0][0]["rows"][0]
-        assert entry["state"] == ImportState.NEW
-        assert entry["messages"] == [
-            "Gender 'notAGender' is not in the allowed gender list."
-        ]
-        user = self.assert_model_exists(
-            "user/2", {"username": "jonny", "first_name": "Testy"}
-        )
-        assert user.get("gender_id") is None
-
     def test_import_error_state_done_missing_username(self) -> None:
         self.preview_result["rows"][0]["data"].pop("username")
         self.import_preview1_data["result"] = Jsonb(self.preview_result)
@@ -783,7 +759,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -794,7 +769,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": ImportState.NEW, "value": "level up", "id": 2},
                 {"info": ImportState.DONE, "value": "no. 5", "id": 1},
             ],
-            "gender": {"info": "warning", "value": "unknown"},
         }
 
         self.assert_model_exists("structure_level/2", {"name": "level up"})
@@ -900,7 +874,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Gender 'unknown' is not in the allowed gender list.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -912,7 +885,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": ImportState.NEW, "value": "level up"},
                 {"info": ImportState.NEW, "value": "no. 5"},
             ],
-            "gender": {"info": "warning", "value": "unknown"},
         }
 
         row = result["rows"][4]
