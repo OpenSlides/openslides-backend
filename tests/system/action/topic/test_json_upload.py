@@ -36,7 +36,10 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Could not parse X50 expect integer" in response.json["message"]
+        assert (
+            "For column agenda_duration: Invalid format X50 expected integer (i.e. a natural number)"
+            in response.json["message"]
+        )
 
     def test_json_upload_results(self) -> None:
         response = self.request(

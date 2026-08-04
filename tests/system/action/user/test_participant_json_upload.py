@@ -716,7 +716,10 @@ class ParticipantJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Could not parse 2/3 expect decimal" in response.json["message"]
+        assert (
+            "For column vote_weight: Invalid format 2/3 expected decimal number with point separation (f.e. 1.234567)"
+            in response.json["message"]
+        )
 
     def test_json_upload_update_member_number_in_existing_participant_error(
         self,

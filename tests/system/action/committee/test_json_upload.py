@@ -94,6 +94,27 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
         assert start <= import_preview["created"] <= end
 
+    def test_json_upload_date_parsing_error(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "08.10.2023",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "For column meeting_end_time: Invalid date format 08.10.2023 (expected YYYY-MM-DD)"
+            in response.json["message"]
+        )
+
     def test_json_upload_update_correct(self) -> None:
         self.set_models({"committee/7": {"name": "test"}})
         response = self.request("committee.json_upload", {"data": [{"name": "test"}]})
