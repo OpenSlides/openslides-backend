@@ -522,14 +522,16 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             )
                         except Exception:
                             raise ActionException(
-                                f"For column {field}: Invalid format {entry[field]} expected decimal number with point separation (f.e. 1.234567)"
+                                "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (f.e. 1.234567)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
                         except ValueError:
                             raise ActionException(
-                                f"For column {field}: Invalid format {entry[field]} expected integer (i.e. a natural number)"
+                                "Invalid format for column {{field}}: Got {{content}}; expected integer (i.e. a natural number)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "boolean":
                         if entry[field].lower() in TRUE_VALUES:
@@ -538,7 +540,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             entry[field] = False
                         else:
                             raise ActionException(
-                                f"For column {field}: Invalid format {entry[field]} expected boolean (f.E. '1' for yes, '0' for no)"
+                                "Invalid format for column {{field}}: Got {{content}}; expected boolean (f.E. '1' for yes, '0' for no)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "date":
                         zone = self.get_time_zone_info(entry)
@@ -551,7 +554,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             )
                         except Exception:
                             raise ActionException(
-                                f"For column {field}: Invalid date format {entry[field]} (expected YYYY-MM-DD)"
+                                "Invalid date for column {{field}}: Got {{content}}; expected format YYYY-MM-DD",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     else:
                         raise ActionException(

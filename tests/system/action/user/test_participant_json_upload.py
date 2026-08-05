@@ -764,9 +764,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "For column vote_weight: Invalid format 2/3 expected decimal number with point separation (f.e. 1.234567)"
+            "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (f.e. 1.234567)"
             in response.json["message"]
         )
+        assert response.json["message_args"] == {
+            "field": "vote_weight",
+            "content": "2/3",
+        }
 
     def test_json_upload_update_member_number_in_existing_participant_error(
         self,

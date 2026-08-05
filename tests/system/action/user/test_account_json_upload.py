@@ -83,9 +83,13 @@ class AccountJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "For column is_physical_person: Invalid format X50 expected boolean (f.E. '1' for yes, '0' for no)"
+            "Invalid format for column {{field}}: Got {{content}}; expected boolean (f.E. '1' for yes, '0' for no)"
             in response.json["message"]
         )
+        assert response.json["message_args"] == {
+            "field": "is_physical_person",
+            "content": "X50",
+        }
 
     def test_json_upload_without_names_error(self) -> None:
         response = self.request(
