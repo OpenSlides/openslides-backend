@@ -7,6 +7,7 @@ from typing import Any, cast
 import simplejson as json
 
 from cli.util.util import get_view_field_state_write_fields
+from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
@@ -328,9 +329,13 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
     field_renames = renames[1]
 
     for collection_name_old, collection_name_new in collection_renames.items():
-        table_name_old = f"{HelperGetNames.get_table_name(collection_name_old)}"
-        result += f"ALTER TABLE {table_name_old} RENAME TO {HelperGetNames.get_table_name(collection_name_new)};\n"
-        result += f"ALTER VIEW {collection_name_old} RENAME TO {collection_name_new};\n"
+        result += AlterSchemaHelper.get_rename_table(
+            HelperGetNames.get_table_name(collection_name_old),
+            HelperGetNames.get_table_name(collection_name_new),
+        )
+        result += AlterSchemaHelper.get_rename_view(
+            collection_name_old, collection_name_new
+        )
         # TODO recreate dependend triggers
         del dc_rename_dict[0][collection_name_old]
 
@@ -346,12 +351,13 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
                 is_view_field, *_ = get_view_field_state_write_fields(
                     collection_name, field_name_new, field_def
                 )
-            rename_column_text = (
-                f"RENAME COLUMN {field_name_old} TO {field_name_new};\n"
+            result += AlterSchemaHelper.get_rename_view_column(
+                collection_name, field_name_old, field_name_new
             )
-            result += f"ALTER VIEW {collection_name} {rename_column_text}"
             if not is_view_field:
-                result += f"ALTER TABLE {table_name_old} {rename_column_text}"
+                result += AlterSchemaHelper.get_rename_table_column(
+                    table_name_old, field_name_old, field_name_new
+                )
 
             # TODO recreate dependend triggers and intermediate tables
             del dc_collection[field_name_old]
