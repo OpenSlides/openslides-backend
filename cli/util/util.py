@@ -111,7 +111,6 @@ def get_view_field_state_write_fields(
     foreign_type: str
     write_fields: tuple[str, str, str, list[str]] | None = None
 
-    # create TableFieldType own out of collection_name, field_name, field_def
     own = TableFieldType(collection_name, field_name, field_def)
     field_type = field_def.get("type", "")
 

@@ -1,7 +1,6 @@
 import os
 import sys
 from argparse import ArgumentParser
-from string import Template
 from typing import Any
 
 import simplejson as json
@@ -36,37 +35,25 @@ def check_renames_node(renames: dict[str, str], collection_name: str | None) -> 
     if collection_name:
         prev_tree = PREV_MODELS[collection_name]["fields"]
         curr_tree = CURR_MODELS[collection_name]["fields"]
-        subst_dict = {"collection": collection_name, "s": ""}
+        s = ""
     else:
         prev_tree = PREV_MODELS
         curr_tree = CURR_MODELS
-        subst_dict = {"collection": "collection", "s": "s"}
+        collection_name = "collection"
+        s = "s"
+    err_msg_base = f"Faulty {collection_name} yml file{s}. "
     for name_old, name_new in renames.items():
-        subst_dict["name_old"] = name_old
-        subst_dict["name_new"] = name_new
         if name_old not in prev_tree:
-            raise Exception(
-                Template(
-                    "Faulty {collection} yml file{s}. {name_old} not in old yml file{s}."
-                ).substitute(subst_dict)
-            )
+            raise Exception(f"{err_msg_base}{name_old} not in old yml file{s}.")
         elif name_new not in curr_tree:
-            raise Exception(
-                Template(
-                    "Faulty {collection} yml file{s}. {name_new} not in new yml file{s}."
-                ).substitute(subst_dict)
-            )
+            raise Exception(f"{err_msg_base}{name_new} not in new yml file{s}.")
         elif name_new in prev_tree:
             raise Exception(
-                Template(
-                    "Faulty {collection} yml file{s}. {name_new} already existed in old yml file{s}."
-                ).substitute(subst_dict)
+                f"{err_msg_base}{name_new} already existed in old yml file{s}."
             )
         elif name_old in curr_tree:
             raise Exception(
-                Template(
-                    "Faulty {collection} yml file{s}. {name_old} still exists in new yml file{s}."
-                ).substitute(subst_dict)
+                f"{err_msg_base}{name_old} still exists in new yml file{s}."
             )
 
 

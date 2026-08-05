@@ -66,12 +66,11 @@ def main() -> int:
         sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
-    for collection_name in sorted(alter_views):
-        sql += (
-            GenerateCodeBlocks.view_sql[collection_name]
-            .lstrip("\n")
-            .replace("CREATE", "CREATE OR REPLACE")
-        )
+    view_sql = "".join(
+        GenerateCodeBlocks.view_sql[collection_name]
+        for collection_name in sorted(alter_views)
+    )
+    sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
     # TODO Do this in a sub folder migrations?
     with open(
         os.path.join(
@@ -257,7 +256,7 @@ def handle_add_field_attributes(
                     CURR_MODELS[collection_name]["fields"][field_name],
                 )
                 alter_views_conditionally(
-                    collection_name, field_name, bool(write_fields), is_view_field
+                    collection_name, bool(write_fields), is_view_field
                 )
             case "reference":
                 # TODO
@@ -298,8 +297,10 @@ def handle_edit_field_attributes(
                     table_name, {}
                 ):
                     # Shouldn't be a case since this is already skipped in yaml diff generator.
-                    # TODO decide whether to fail or delete
-                    print(f"Skipping {table_name} since it is renamed.")
+                    # TODO decide whether to fail or delete this check
+                    print(
+                        f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
+                    )
                     continue
                 else:
                     NotImplementedError(
@@ -312,7 +313,7 @@ def handle_edit_field_attributes(
                     CURR_MODELS[collection_name]["fields"][field_name],
                 )
                 alter_views_conditionally(
-                    collection_name, field_name, bool(write_fields), is_view_field
+                    collection_name, bool(write_fields), is_view_field
                 )
                 # TODO recreate affected triggers
             case _:
@@ -326,39 +327,41 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
     collection_renames = renames[0]
     field_renames = renames[1]
 
-    for collection_name_old, field_name_new in collection_renames.items():
-        table_name = f"{HelperGetNames.get_table_name(collection_name_old)}"
-        result += f"ALTER TABLE {table_name} RENAME TO {HelperGetNames.get_table_name(field_name_new)};\n"
-        result += f"ALTER VIEW {collection_name_old} RENAME TO {field_name_new};\n"
+    for collection_name_old, collection_name_new in collection_renames.items():
+        table_name_old = f"{HelperGetNames.get_table_name(collection_name_old)}"
+        result += f"ALTER TABLE {table_name_old} RENAME TO {HelperGetNames.get_table_name(collection_name_new)};\n"
+        result += f"ALTER VIEW {collection_name_old} RENAME TO {collection_name_new};\n"
         # TODO recreate dependend triggers
         del dc_rename_dict[0][collection_name_old]
 
-    for collection_name_old, collection_diff in field_renames.items():
-        dc_collection = cast(dict, dc_rename_dict[1][collection_name_old])
+    for collection_name, collection_diff in field_renames.items():
+        table_name_old = f"{HelperGetNames.get_table_name(collection_name_old)}"
+        dc_collection = cast(dict, dc_rename_dict[1][collection_name])
         for field_name_old, field_name_new in collection_diff.items():
             assert isinstance(field_name_new, str)
-            field_def = CURR_MODELS[collection_name_old]["fields"][field_name_new]
+            field_def = CURR_MODELS[collection_name]["fields"][field_name_new]
             is_view_field = False
             if field_def.get("to"):
                 # This also includes all sql fields
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name_old, field_name_new, field_def
+                is_view_field, *_ = get_view_field_state_write_fields(
+                    collection_name, field_name_new, field_def
                 )
-            if is_view_field:
-                result += f"ALTER VIEW {collection_name_old} "
-            else:
-                result += f"ALTER TABLE {table_name} "
-            result += f"RENAME COLUMN {field_name_old} TO {field_name_new};\n"
+            rename_column_text = (
+                f"RENAME COLUMN {field_name_old} TO {field_name_new};\n"
+            )
+            result += f"ALTER VIEW {collection_name} {rename_column_text}"
+            if not is_view_field:
+                result += f"ALTER TABLE {table_name_old} {rename_column_text}"
 
             # TODO recreate dependend triggers and intermediate tables
             del dc_collection[field_name_old]
         # TODO Renaming and redefining constraints
-        remove_empty(dc_rename_dict[1], collection_name_old)
+        remove_empty(dc_rename_dict[1], collection_name)
     return result
 
 
 def alter_views_conditionally(
-    collection_name: str, field_name: str, has_write_fields: bool, is_view_field: bool
+    collection_name: str, has_write_fields: bool, is_view_field: bool
 ) -> None:
     if has_write_fields or is_view_field:
         alter_views.add(collection_name)
