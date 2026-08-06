@@ -207,7 +207,7 @@ class DatabaseWriter(SqlQueryHelper):
         id_: Id,
         event_fields: dict[str, Any],
         list_fields: ListFields = {},
-        event_return_fields: list[str] = ["id"],
+        return_fields: list[str] = ["id"],
     ) -> tuple[FullQualifiedId, dict[str, Any]]:
         table = sql.Identifier(f"{collection}_t")
         statement = sql.SQL("""
@@ -237,11 +237,11 @@ class DatabaseWriter(SqlQueryHelper):
         )
 
         nm_relation_list_fields_set = set(nm_relation_list_fields)
-        if nm_relation_list_fields_set.intersection(add_dict):
+        if any(elem in add_dict for elem in nm_relation_list_fields_set):
             self.write_to_intermediate_tables(
                 add_dict, nm_relation_list_fields, id_, collection
             )
-        if nm_relation_list_fields_set.intersection(remove_dict):
+        if any(elem in remove_dict for elem in nm_relation_list_fields_set):
             self.delete_from_intermediate_tables(
                 remove_dict, nm_relation_list_fields, id_, collection, directly=True
             )
@@ -289,7 +289,7 @@ class DatabaseWriter(SqlQueryHelper):
             collection,
             id_,
         ), self.execute_sql(
-            statement, arguments, collection, id_, return_fields=event_return_fields
+            statement, arguments, collection, id_, return_fields=return_fields
         )
 
     def is_primary_nm_relation(self, field: Field) -> bool:
