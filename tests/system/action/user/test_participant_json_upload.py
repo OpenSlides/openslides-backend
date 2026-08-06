@@ -545,7 +545,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "info": ImportState.ERROR,
         }
         assert (
-            "Error: Gender 'notAGender' is not in the allowed gender list."
+            "Error: Gender 'notAGender' is not in the allowed gender list. Please choose a valid gender option."
             in entry["messages"]
         )
 

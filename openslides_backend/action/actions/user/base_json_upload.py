@@ -396,7 +396,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             else:
                 entry["gender"] = {"info": ImportState.ERROR, "value": gender}
                 messages.append(
-                    f"Error: Gender '{gender}' is not in the allowed gender list."
+                    f"Error: Gender '{gender}' is not in the allowed gender list. Please choose a valid gender option."
                 )
                 self.row_state = ImportState.ERROR
 

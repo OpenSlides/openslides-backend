@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.patterns import fqid_from_collection_and_id, id_from_fqid
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -1293,7 +1292,6 @@ class AccountJsonUpload(BaseActionTestCase):
     def test_json_upload_wrong_gender(self) -> None:
         self.set_models(
             {
-                "organization/1": {"gender_ids": [1, 2, 3, 4]},
                 "gender/1": {"name": "male"},
                 "gender/2": {"name": "female"},
                 "gender/3": {"name": "diverse"},
@@ -1315,14 +1313,13 @@ class AccountJsonUpload(BaseActionTestCase):
             "info": ImportState.ERROR,
         }
         assert (
-            "Error: Gender 'veryveryveryverybad' is not in the allowed gender list."
+            "Error: Gender 'veryveryveryverybad' is not in the allowed gender list. Please choose a valid gender option."
             in import_preview["result"]["rows"][0]["messages"]
         )
 
     def test_json_upload_wrong_gender_2(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
                 "gender/1": {"name": "dragon"},
                 "gender/2": {"name": "lobster"},
                 "gender/3": {"name": "snake"},
@@ -1343,7 +1340,7 @@ class AccountJsonUpload(BaseActionTestCase):
             "info": ImportState.ERROR,
         }
         assert (
-            "Error: Gender 'male' is not in the allowed gender list."
+            "Error: Gender 'male' is not in the allowed gender list. Please choose a valid gender option."
             in import_preview["result"]["rows"][0]["messages"]
         )
 
