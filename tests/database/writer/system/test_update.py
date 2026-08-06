@@ -918,6 +918,19 @@ def test_list_update_remove_wrong_field_type() -> None:
             id="different_fields_filled",
         ),
         pytest.param(
+            {"manager_ids": [1], "forward_to_committee_ids": [2]},
+            {
+                "add": {"manager_ids": [2], "all_child_ids": [2]},
+                "remove": {"forward_to_committee_ids": [2]},
+            },
+            {
+                "manager_ids": [1, 2],
+                "forward_to_committee_ids": None,
+                "all_child_ids": [2],
+            },
+            id="multiple_fields_filled",
+        ),
+        pytest.param(
             {"manager_ids": []},
             {"add": {"manager_ids": []}, "remove": {"manager_ids": []}},
             {"manager_ids": None},

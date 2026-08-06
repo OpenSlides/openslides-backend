@@ -110,6 +110,14 @@ class ModelDoesNotExist(DatabaseException):
         self.fqid = fqid
 
 
+class DoesNotExist(DatabaseException):
+    def __init__(self, identifier: str | None) -> None:
+        super().__init__(
+            f"Does not exist error on '{identifier or 'undefined operation'}'."
+        )
+        self.identifier = identifier
+
+
 class ModelExists(DatabaseException):
     def __init__(self, fqid: str) -> None:
         super().__init__(f"Model '{fqid}' exists.")

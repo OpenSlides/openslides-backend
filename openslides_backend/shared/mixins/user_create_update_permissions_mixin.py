@@ -34,15 +34,15 @@ class PermissionVarStore:
 
     def __init__(
         self,
-        datastore: Database,
+        database: Database,
         user_id: int,
         manage_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
-        self.datastore = datastore
+        self.database = database
         self.user_id = user_id
         self.permission = manage_permission
         self.all_permissions = [self.permission, *permission_parents[self.permission]]
-        self.user = self.datastore.get(
+        self.user = self.database.get(
             fqid_from_collection_and_id("user", self.user_id),
             [
                 "organization_management_level",
@@ -96,7 +96,7 @@ class PermissionVarStore:
         user_committees = set(self.user.get("committee_management_ids") or [])
         if user_committees:
             committees_d = list(
-                self.datastore.get_many(
+                self.database.get_many(
                     [
                         GetManyRequest(
                             "committee",
@@ -117,7 +117,7 @@ class PermissionVarStore:
             user_committees.update(child_ids)
             if len(child_ids):
                 committees_d.extend(
-                    self.datastore.get_many(
+                    self.database.get_many(
                         [
                             GetManyRequest(
                                 "committee",
@@ -151,7 +151,7 @@ class PermissionVarStore:
             # fetch all group_ids
             all_groups: list[int] = []
             for meeting_user_id in meeting_user_ids:
-                meeting_user = self.datastore.get(
+                meeting_user = self.database.get(
                     fqid_from_collection_and_id("meeting_user", meeting_user_id),
                     ["group_ids", "locked_out"],
                 )
@@ -167,7 +167,7 @@ class PermissionVarStore:
 
             # fetch the groups for permissions
             groups = (
-                self.datastore.get_many(
+                self.database.get_many(
                     [
                         GetManyRequest(
                             "group",
@@ -248,7 +248,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
 
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(
-                self.datastore, self.user_id, self.permission
+                self.database, self.user_id, self.permission
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
@@ -268,7 +268,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         instance_meeting_id = instance.get("meeting_id")
         locked_from_inside = False
         if instance_meeting_id:
-            locked_from_inside = self.datastore.get(
+            locked_from_inside = self.database.get(
                 fqid_from_collection_and_id("meeting", instance_meeting_id),
                 ["locked_from_inside"],
                 lock_result=False,
@@ -312,7 +312,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
         ):
-            meeting = self.datastore.get(
+            meeting = self.database.get(
                 fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
                 lock_result=False,
@@ -435,7 +435,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
         ):
-            meeting = self.datastore.get(
+            meeting = self.database.get(
                 fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
                 lock_result=False,
@@ -492,7 +492,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             db_instance = (
                 {}
                 if "id" not in instance
-                else self.datastore.get(
+                else self.database.get(
                     fqid_from_collection_and_id("user", instance["id"]),
                     ["home_committee_id"],
                     lock_result=False,
@@ -506,7 +506,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 committee_id
                 for committee_id in committee_ids
                 if not has_committee_management_level(
-                    self.datastore,
+                    self.database,
                     self.user_id,
                     committee_id,
                 )
@@ -610,7 +610,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         """
         committees = set(instance.get("committee_management_ids") or [])
         if instance_user_id := instance.get("id"):
-            user = self.datastore.get(
+            user = self.database.get(
                 fqid_from_collection_and_id("user", instance_user_id),
                 ["committee_management_ids"],
                 lock_result=False,
@@ -645,7 +645,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         user_id: int,
         permstore: PermissionVarStore,
         services: Services,
-        datastore: Database,
+        database: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
@@ -656,7 +656,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         self.user_id = user_id
         super().__init__(
             services,
-            datastore,
+            database,
             logging,
         )
 
@@ -697,7 +697,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         instance_meeting_id = instance.get("meeting_id")
         locked_from_inside = False
         if instance_meeting_id:
-            locked_from_inside = self.datastore.get(
+            locked_from_inside = self.database.get(
                 fqid_from_collection_and_id("meeting", instance_meeting_id),
                 ["locked_from_inside"],
                 lock_result=False,
