@@ -129,7 +129,10 @@ def test_with_error_atomic(action_handler: ActionHandler) -> None:
     ]
     response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
-    assert response["results"] == [[], {"success": False, "message": ""}]
+    assert response["results"] == [
+        [],
+        {"success": False, "message": "", "message_args": {}},
+    ]
 
 
 def test_with_error_with_index(action_handler: ActionHandler) -> None:
@@ -152,5 +155,10 @@ def test_with_error_with_index_atomic(action_handler: ActionHandler) -> None:
     assert response["success"] is True
     assert response["results"] == [
         [],
-        {"success": False, "message": "", "action_data_error_index": 2},
+        {
+            "success": False,
+            "message": "",
+            "message_args": {},
+            "action_data_error_index": 2,
+        },
     ]
