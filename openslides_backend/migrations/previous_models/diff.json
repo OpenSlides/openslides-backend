@@ -1,0 +1,46 @@
+{
+    "rename": {},
+    "remove": {
+        "collections": [
+            [
+                "deleted"
+            ],
+            {
+                "assignment": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "candidate_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "assignment_candidate": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "assignment_id": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "add": null,
+    "edit": null
+}

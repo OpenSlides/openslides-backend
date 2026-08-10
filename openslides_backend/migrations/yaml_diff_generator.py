@@ -1,6 +1,8 @@
 import os
 import sys
 from argparse import ArgumentParser
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, TypedDict
 
 import simplejson as json
@@ -209,11 +211,7 @@ def create_remove_recursive(
         if key not in curr_models:
             if key == "id" or len(path) >= 3 and path[2] == "id":
                 continue
-            if key in [
-                *CollectionAttributes.unique_together,
-                "log_triggers",
-                "equal_fields",
-            ]:
+            if key in [*CollectionAttributes.unique_together, "log_triggers"]:
                 # Old definitions are needed to re-build the trigger definitions names
                 tree[key] = prev_value
             elif key == "maxLength":
@@ -236,7 +234,7 @@ def create_remove_recursive(
                     if not (
                         "type" in prev_value
                         and prev_value.get("to")
-                        and is_view_field(path[0], key, prev_value)
+                        and was_view_field(path[0], key, prev_value)
                     ):
                         missing_entries.append(key)
                 else:
@@ -367,17 +365,25 @@ def is_field_enum(value: Any) -> bool:
     )
 
 
-def is_view_field(
+def was_view_field(
     collection_name: str, field_name: str, field_data: dict[str, Any]
 ) -> bool:
-    new_models = InternalHelper.MODELS
-    InternalHelper.MODELS = PREV_MODELS
-    is_view_field, _, write_fields = get_view_field_state_write_fields(
-        collection_name, field_name, field_data
-    )
-    InternalHelper.MODELS = new_models
+    with prev_models_context():
+        is_view_field, _, write_fields = get_view_field_state_write_fields(
+            collection_name, field_name, field_data
+        )
 
     return is_view_field or bool(write_fields)
+
+
+@contextmanager
+def prev_models_context() -> Iterator[None]:
+    curr_models = InternalHelper.MODELS
+    InternalHelper.MODELS = PREV_MODELS
+    try:
+        yield
+    finally:
+        InternalHelper.MODELS = curr_models
 
 
 if __name__ == "__main__":

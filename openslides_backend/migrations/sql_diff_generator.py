@@ -1,6 +1,7 @@
 import os
 import sys
 from argparse import ArgumentParser
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, cast
 
@@ -9,7 +10,12 @@ import simplejson as json
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
-from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
+)
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
@@ -23,6 +29,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     Renames,
     dumpjson,
     generate_diff,
+    prev_models_context,
 )
 from openslides_backend.shared.exceptions import BadCodingException
 
@@ -34,6 +41,8 @@ The sql diff will be written to 'migrations/mig_[last migration number].*/schema
 """
 
 alter_views: set[str] = set()
+checked_equal_fields: dict[str, set[str]] = defaultdict(set)
+equal_fields_diff: dict[str, set[str]] = defaultdict(set)
 
 
 def main() -> int:
@@ -411,6 +420,127 @@ def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str
     return result
 
 
+def update_equal_fields_diff(collection_name: str, field_name: str) -> None:
+    if field_name in checked_equal_fields.get(collection_name, set()):
+        return
+
+    own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+    own_table_field = TableFieldType(collection_name, field_name, own_field_def)
+    type_ = own_field_def["type"]
+
+    if type_ in ["generic-relation", "generic-relation-list"]:
+        foreign_table_fields: list[TableFieldType] = (
+            InternalHelper.get_definitions_from_foreign_list(
+                own_field_def.get("to"), own_field_def.get("reference")
+            )
+        )
+        equal_fields_diff[collection_name].add(field_name)
+        for foreign_field in foreign_table_fields:
+            checked_equal_fields[foreign_field.table].add(foreign_field.column)
+    else:
+        foreign_table_field: TableFieldType = (
+            TableFieldType.get_definitions_from_foreign(
+                own_field_def.get("to"),
+                own_field_def.get("reference"),
+            )
+        )
+        state, primary, *_ = InternalHelper.check_relation_definitions(
+            own_table_field, [foreign_table_field]
+        )
+        condition = (
+            state == FieldSqlErrorType.FIELD
+            if type_ == "relation"
+            else (
+                state != FieldSqlErrorType.ERROR
+                and primary
+                and foreign_table_field.field_def.get("type") == "relation-list"
+            )
+        )
+        if condition:
+            equal_fields_diff[collection_name].add(field_name)
+        else:
+            equal_fields_diff[foreign_table_field.table].add(foreign_table_field.column)
+        checked_equal_fields[foreign_table_field.table].add(foreign_table_field.column)
+    checked_equal_fields[collection_name].add(field_name)
+
+
+def handle_alter_equal_fields() -> str:
+    result = ""
+    for collection_name, field_names in equal_fields_diff.items():
+        for field_name in field_names:
+            prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+            prev_own_table_field = TableFieldType(
+                collection_name, field_name, prev_own_field_def
+            )
+            curr_own_field_def = CURR_MODELS[collection_name]["fields"][field_name]
+            curr_own_table_field = TableFieldType(
+                collection_name, field_name, curr_own_field_def
+            )
+            match prev_own_field_def["type"]:
+                case "relation":
+                    curr_foreign_table_field: TableFieldType = (
+                        TableFieldType.get_definitions_from_foreign(
+                            curr_own_field_def.get("to"),
+                            curr_own_field_def.get("reference"),
+                        )
+                    )
+
+                    with prev_models_context():
+                        prev_foreign_table_field: TableFieldType = (
+                            TableFieldType.get_definitions_from_foreign(
+                                prev_own_field_def.get("to"),
+                                prev_own_field_def.get("reference"),
+                            )
+                        )
+
+                    prev_equal_fields = set(
+                        GenerateCodeBlocks.get_equal_fields(
+                            prev_own_table_field, prev_foreign_table_field
+                        )
+                    )
+                    curr_equal_fields = set(
+                        GenerateCodeBlocks.get_equal_fields(
+                            curr_own_table_field, curr_foreign_table_field
+                        )
+                    )
+                    if removed_equal_fields := prev_equal_fields - curr_equal_fields:
+                        for equal_field in removed_equal_fields:
+                            (
+                                own_trigger_name,
+                                own_table,
+                                foreign_trigger_name,
+                                foreign_table,
+                                *_,
+                            ) = Helper.get_config_for_trigger_definitions_check_equals(
+                                prev_own_table_field,
+                                prev_foreign_table_field,
+                                equal_field,
+                            )
+
+                            result += AlterSchemaHelper.get_drop_trigger_statement(
+                                own_table, own_trigger_name
+                            )
+                            if foreign_trigger_name:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    foreign_table, foreign_trigger_name
+                                )
+                    if added_equal_fields := curr_equal_fields - prev_equal_fields:
+                        for equal_field in added_equal_fields:
+                            (
+                                own_trigger_name,
+                                own_table,
+                                foreign_trigger_name,
+                                foreign_table,
+                                *_,
+                            ) = Helper.get_config_for_trigger_definitions_check_equals(
+                                curr_own_table_field,
+                                curr_foreign_table_field,
+                                equal_field,
+                            )
+                            # TODO: generate statements to add fields
+    return result
+
+
 def handle_remove_tree(
     remove_tree_dict: dict[str, Any],
     dc_remove_tree_dict: dict[str, Any],
@@ -423,13 +553,14 @@ def handle_remove_tree(
                     for field_name in data[0]:
                         field_def = PREV_MODELS[collection_name]["fields"][field_name]
 
-                        InternalHelper.MODELS = PREV_MODELS
-                        is_view_field, _, write_fields = (
-                            get_view_field_state_write_fields(
-                                collection_name, field_name, field_def
+                        with prev_models_context():
+                            is_view_field, _, write_fields = (
+                                get_view_field_state_write_fields(
+                                    collection_name, field_name, field_def
+                                )
                             )
-                        )
-                        InternalHelper.MODELS = CURR_MODELS
+                            if field_def.get("equal_fields"):
+                                update_equal_fields_diff(collection_name, field_name)
 
                         alter_views_conditionally(
                             collection_name, bool(write_fields), is_view_field
@@ -481,6 +612,11 @@ def handle_remove_tree(
                                             collection_name, field_name
                                         ),
                                     )
+                                case "equal_fields":
+                                    with prev_models_context():
+                                        update_equal_fields_diff(
+                                            collection_name, field_name
+                                        )
                                 case value if (
                                     value in FieldAttributes.skipped_in_schema
                                 ):
@@ -523,9 +659,6 @@ def handle_remove_tree(
                                             result += AlterSchemaHelper.get_drop_trigger_statement(
                                                 log_trigger["on_table"], trigger_name
                                             )
-                                # case "equal_fields":
-                                #     pass
-                                #     TODO: correctly handle deleted equal_fields
                                 case _:
                                     raise NotImplementedError(
                                         f"{collection_name}/{field_name}: {attr}"
@@ -556,6 +689,7 @@ def handle_remove_tree(
                             "unique_together",
                         )
                     remove_empty(dc_remove_tree_dict, collection_name)
+    result += handle_alter_equal_fields()
     return result
 
 
