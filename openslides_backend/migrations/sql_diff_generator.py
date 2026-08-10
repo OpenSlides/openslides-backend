@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import simplejson as json
 
+from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
@@ -317,7 +318,7 @@ def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str
             collection_names := collections_remove_list[0], list
         ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
             for collection_name in collection_names:
-                result += Helper.get_drop_table_statement(collection_name)
+                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
                 dc_collection_names.remove(collection_name)
         if isinstance(
             remove_tree_dict := collections_remove_list[1], dict
@@ -353,7 +354,7 @@ def handle_remove_tree(
             match key:
                 case "fields":
                     for field_name in data[0]:
-                        result += Helper.get_drop_column_statement(
+                        result += AlterSchemaHelper.get_drop_column_statement(
                             collection_name, field_name
                         )
                         dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
@@ -363,16 +364,12 @@ def handle_remove_tree(
                         for attr in attrs[0]:
                             match attr:
                                 case "default":
-                                    result += (
-                                        Helper.get_drop_column_attribute_statement(
-                                            collection_name, field_name, "DEFAULT"
-                                        )
+                                    result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                                        collection_name, field_name, "DEFAULT"
                                     )
                                 case "required":
-                                    result += (
-                                        Helper.get_drop_column_attribute_statement(
-                                            collection_name, field_name, "NOT NULL"
-                                        )
+                                    result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                                        collection_name, field_name, "NOT NULL"
                                     )
                                 case "minimum" | "maximum" | "minLength" | "unique":
                                     constraint_name_func = getattr(
@@ -387,17 +384,15 @@ def handle_remove_tree(
                                             else field_name
                                         ),
                                     )
-                                    result += (
-                                        Helper.get_drop_table_constraint_statement(
-                                            collection_name, constraint_name
-                                        )
+                                    result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                                        collection_name, constraint_name
                                     )
                                 case "sql":
-                                    result += Helper.get_drop_view_statement(
+                                    result += AlterSchemaHelper.get_drop_view_statement(
                                         collection_name
                                     )
                                 case "constant":
-                                    result += Helper.get_drop_trigger_statement(
+                                    result += AlterSchemaHelper.get_drop_trigger_statement(
                                         collection_name,
                                         HelperGetNames.get_constant_field_trigger_name(
                                             collection_name, field_name
@@ -442,7 +437,7 @@ def handle_remove_tree(
                                             trigger_name_iu,
                                             trigger_name_ud,
                                         ]:
-                                            result += Helper.get_drop_trigger_statement(
+                                            result += AlterSchemaHelper.get_drop_trigger_statement(
                                                 log_trigger["on_table"], trigger_name
                                             )
                                 # case "equal_fields":
@@ -463,7 +458,7 @@ def handle_remove_tree(
                     remove_empty(dc_remove_tree_dict, collection_name)
                 case "unique_together":
                     for fields in data:
-                        result += Helper.get_drop_table_constraint_statement(
+                        result += AlterSchemaHelper.get_drop_table_constraint_statement(
                             collection_name,
                             HelperGetNames.get_unique_constraint_name(
                                 collection_name,
@@ -488,7 +483,7 @@ def handle_remove_enum_types(
     result = ""
     for collection_name, field_names in remove_tree_dict.items():
         for field_name in field_names:
-            result += Helper.get_drop_enum_type_statement_from_collection_and_column(
+            result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
                 collection_name, field_name
             )
             dc_remove_tree_dict[collection_name].remove(field_name)
@@ -508,7 +503,7 @@ def handle_remove_meta_attributes(
             match attr:
                 case "enum_definitions":
                     for enum in data[0]:
-                        result += Helper.get_drop_type_statement(
+                        result += AlterSchemaHelper.get_drop_type_statement(
                             HelperGetNames.get_enum_name(enum)
                         )
                         dc_remove_meta_attributes_list[1][attr][0].remove(enum)
