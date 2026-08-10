@@ -37,6 +37,38 @@
                             }
                         ]
                     }
+                ],
+                "chat_group": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "read_group_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "group": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "read_chat_group_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
                 ]
             }
         ]

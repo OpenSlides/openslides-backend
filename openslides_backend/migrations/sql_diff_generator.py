@@ -466,6 +466,8 @@ def update_equal_fields_diff(collection_name: str, field_name: str) -> None:
 
 def handle_alter_equal_fields() -> str:
     result = ""
+    to_drop = []
+    to_add = []
     for collection_name, field_names in equal_fields_diff.items():
         for field_name in field_names:
             prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
@@ -476,34 +478,37 @@ def handle_alter_equal_fields() -> str:
             curr_own_table_field = TableFieldType(
                 collection_name, field_name, curr_own_field_def
             )
-            match prev_own_field_def["type"]:
-                case "relation":
-                    curr_foreign_table_field: TableFieldType = (
+            type_ = prev_own_field_def["type"]
+            if type_ in ["relation", "relation-list"]:
+                curr_foreign_table_field: TableFieldType = (
+                    TableFieldType.get_definitions_from_foreign(
+                        curr_own_field_def.get("to"),
+                        curr_own_field_def.get("reference"),
+                    )
+                )
+
+                with prev_models_context():
+                    prev_foreign_table_field: TableFieldType = (
                         TableFieldType.get_definitions_from_foreign(
-                            curr_own_field_def.get("to"),
-                            curr_own_field_def.get("reference"),
+                            prev_own_field_def.get("to"),
+                            prev_own_field_def.get("reference"),
                         )
                     )
 
-                    with prev_models_context():
-                        prev_foreign_table_field: TableFieldType = (
-                            TableFieldType.get_definitions_from_foreign(
-                                prev_own_field_def.get("to"),
-                                prev_own_field_def.get("reference"),
-                            )
-                        )
-
-                    prev_equal_fields = set(
-                        GenerateCodeBlocks.get_equal_fields(
-                            prev_own_table_field, prev_foreign_table_field
-                        )
+                prev_equal_fields = set(
+                    GenerateCodeBlocks.get_equal_fields(
+                        prev_own_table_field, prev_foreign_table_field
                     )
-                    curr_equal_fields = set(
-                        GenerateCodeBlocks.get_equal_fields(
-                            curr_own_table_field, curr_foreign_table_field
-                        )
+                )
+                curr_equal_fields = set(
+                    GenerateCodeBlocks.get_equal_fields(
+                        curr_own_table_field, curr_foreign_table_field
                     )
-                    if removed_equal_fields := prev_equal_fields - curr_equal_fields:
+                )
+                removed_equal_fields = prev_equal_fields - curr_equal_fields
+                added_equal_fields = curr_equal_fields - prev_equal_fields
+                if type_ == "relation":
+                    if removed_equal_fields:
                         for equal_field in removed_equal_fields:
                             (
                                 own_trigger_name,
@@ -516,15 +521,14 @@ def handle_alter_equal_fields() -> str:
                                 prev_foreign_table_field,
                                 equal_field,
                             )
-
-                            result += AlterSchemaHelper.get_drop_trigger_statement(
-                                own_table, own_trigger_name
-                            )
+                            # TODO: split method into (at least) 3:
+                            #   - to get removed and added
+                            #   - to process removed and added (get list of tuples (trigger_name, table_name))
+                            #   - parent method - to call upper 2 based on field type (if too long, extract into the 4th method) and build result
+                            to_drop.append((own_table, own_trigger_name))
                             if foreign_trigger_name:
-                                result += AlterSchemaHelper.get_drop_trigger_statement(
-                                    foreign_table, foreign_trigger_name
-                                )
-                    if added_equal_fields := curr_equal_fields - prev_equal_fields:
+                                to_drop.append((foreign_table, foreign_trigger_name))
+                    if added_equal_fields:
                         for equal_field in added_equal_fields:
                             (
                                 own_trigger_name,
@@ -537,7 +541,66 @@ def handle_alter_equal_fields() -> str:
                                 curr_foreign_table_field,
                                 equal_field,
                             )
-                            # TODO: generate statements to add fields
+                            to_add.append((own_table, own_trigger_name))
+                            if foreign_trigger_name:
+                                to_add.append((foreign_table, foreign_trigger_name))
+                else:
+                    if removed_equal_fields:
+                        for equal_field in removed_equal_fields:
+                            own_table = HelperGetNames.get_table_name(collection_name)
+                            foreign_table = HelperGetNames.get_table_name(
+                                prev_foreign_table_field.table
+                            )
+                            nm_table_name, *_ = (
+                                Helper.get_nm_table_for_n_m_relation_lists(
+                                    prev_own_table_field, prev_foreign_table_field
+                                )
+                            )
+                            (
+                                own_trigger_name,
+                                foreign_trigger_name,
+                                intermediate_trigger_name,
+                            ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
+                                equal_field,
+                                own_table,
+                                field_name,
+                                foreign_table,
+                                prev_foreign_table_field.column,
+                                is_generic_list=False,
+                            )
+                            to_drop.append((own_table, own_trigger_name))
+                            to_drop.append((foreign_table, foreign_trigger_name))
+                            to_drop.append((nm_table_name, intermediate_trigger_name))
+                    if added_equal_fields:
+                        for equal_field in added_equal_fields:
+                            own_table = HelperGetNames.get_table_name(collection_name)
+                            foreign_table = HelperGetNames.get_table_name(
+                                prev_foreign_table_field.table
+                            )
+                            nm_table_name, *_ = (
+                                Helper.get_nm_table_for_n_m_relation_lists(
+                                    curr_own_table_field, curr_foreign_table_field
+                                )
+                            )
+                            (
+                                own_trigger_name,
+                                foreign_trigger_name,
+                                intermediate_trigger_name,
+                            ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
+                                equal_field,
+                                own_table,
+                                field_name,
+                                foreign_table,
+                                curr_foreign_table_field.column,
+                                is_generic_list=False,
+                            )
+                            to_add.append((own_table, own_trigger_name))
+                            to_add.append((foreign_table, foreign_trigger_name))
+                            to_add.append((nm_table_name, intermediate_trigger_name))
+    for table_name, trigger_name in to_drop:
+        result += AlterSchemaHelper.get_drop_trigger_statement(table_name, trigger_name)
+    for table_name, trigger_name in to_add:
+        pass  # TODO
     return result
 
 
