@@ -160,7 +160,6 @@ def handle_add_field_attributes(
         unique_together_strict
         maxLength
         maximum
-        deferred
         calculated
         minLength
         """
