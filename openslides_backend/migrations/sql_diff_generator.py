@@ -340,7 +340,6 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
         del dc_rename_dict[0][collection_name_old]
 
     for collection_name, collection_diff in field_renames.items():
-        table_name_old = f"{HelperGetNames.get_table_name(collection_name_old)}"
         dc_collection = cast(dict, dc_rename_dict[1][collection_name])
         for field_name_old, field_name_new in collection_diff.items():
             assert isinstance(field_name_new, str)
@@ -356,7 +355,9 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
             )
             if not is_view_field:
                 result += AlterSchemaHelper.get_rename_table_column(
-                    table_name_old, field_name_old, field_name_new
+                    HelperGetNames.get_table_name(collection_name),
+                    field_name_old,
+                    field_name_new,
                 )
 
             # TODO recreate dependend triggers and intermediate tables
