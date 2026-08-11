@@ -25,14 +25,13 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
-PREVIOUS_MODELS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "previous_models"
-)
-
-
+Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
 CollectionsRemoveList = list[list[str] | dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
 MetaAttributesRemoveList = list[list[str] | dict[str, Any]]
+PREVIOUS_MODELS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "previous_models"
+)
 
 
 class RemoveDiffDict(TypedDict):
@@ -94,6 +93,58 @@ class CollectionAttributes:
     ]
 
 
+def load_models(mig_data_path: str) -> dict[str, Any]:
+    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
+    collections_dir = os.path.join(mig_data_path, "collections")
+    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
+
+
+def check_renames_node(renames: dict[str, str], collection_name: str | None) -> None:
+    if collection_name:
+        prev_tree = PREV_MODELS[collection_name]["fields"]
+        curr_tree = CURR_MODELS[collection_name]["fields"]
+        s = ""
+    else:
+        prev_tree = PREV_MODELS
+        curr_tree = CURR_MODELS
+        collection_name = "collection"
+        s = "s"
+    err_msg_base = f"Faulty {collection_name} yml file{s}. "
+    for name_old, name_new in renames.items():
+        if name_old not in prev_tree:
+            raise Exception(f"{err_msg_base}{name_old} not in old yml file{s}.")
+        elif name_new not in curr_tree:
+            raise Exception(f"{err_msg_base}{name_new} not in new yml file{s}.")
+        elif name_new in prev_tree:
+            raise Exception(
+                f"{err_msg_base}{name_new} already existed in old yml file{s}."
+            )
+        elif name_old in curr_tree:
+            raise Exception(
+                f"{err_msg_base}{name_old} still exists in new yml file{s}."
+            )
+
+
+def validate_renames(renames: Renames) -> None:
+    collection_renames = renames[0]
+    field_renames = renames[1]
+    check_renames_node(collection_renames, None)
+    for collection_old, value in field_renames.items():
+        check_renames_node(value, collection_old)
+
+
+def load_renames() -> Renames:
+    directory = MigrationHelper.get_last_migration_directory()
+    renames = MigrationHelper.get_migration_class(directory).renames
+    validate_renames(renames)
+    return renames
+
+
+PREV_MODELS = load_models(PREVIOUS_MODELS_DIR)
+CURR_MODELS = load_models(CURR_MODELS_DIR)
+RENAMES = load_renames()
+
+
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--dumpjson", action="store_true")
@@ -110,51 +161,19 @@ def dumpjson(diff: dict[str, Any]) -> None:
 
 
 def generate_diff() -> dict[str, Any]:
-    prev_models = load_models(PREVIOUS_MODELS_DIR)
-    curr_models = load_models(CURR_MODELS_DIR)
-    directory = MigrationHelper.get_last_migration_directory()
-    renames = MigrationHelper.get_migration_class(directory).renames
-
-    validate_renames(prev_models, curr_models, renames)
     # Edits caused by adding or removing field attributes
     secondary_edits: dict[str, Any] = {}
 
     return {
-        "rename": renames,
+        "rename": RENAMES,
         "remove": create_remove_recursive(
-            prev_models, curr_models, renames, prev_models, secondary_edits
+            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
         ),
-        "add": create_add_recursive(prev_models, curr_models, renames),
+        "add": create_add_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
         "edit": create_edit_recursive(
-            prev_models, curr_models, renames, secondary_edits
+            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
         ),
     }
-
-
-def validate_renames(
-    prev_models: dict[str, Any],
-    curr_models: dict[str, Any],
-    renames_dict: dict[str, Any],
-) -> None:
-    for key, rena_value in renames_dict.items():
-        if isinstance(rena_value, dict):
-            validate_renames(prev_models[key], curr_models[key], rena_value)
-        elif key not in prev_models:
-            raise Exception(
-                f"Faulty renames or collection yml files. {key} not in old yml files."
-            )
-        elif rena_value not in curr_models:
-            raise Exception(
-                f"Faulty renames or collection yml files. {rena_value} not in new yml files."
-            )
-        elif rena_value in prev_models:
-            raise Exception(
-                f"Faulty renames or collection yml files. {rena_value} already existed in old yml files."
-            )
-        elif key in curr_models:
-            raise Exception(
-                f"Faulty renames or collection yml files. {key} already existed in new yml files."
-            )
 
 
 def update_edits_tree(
@@ -168,8 +187,7 @@ def update_edits_tree(
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
-    renames_dict: dict[str, Any],
-    all_prev_models: dict[str, Any],
+    renames: Renames | dict,
     secondary_edits: dict[str, Any],
     enum_tree: EnumTypesRemoveDict = {},
     path: tuple[str, ...] = (),
@@ -181,6 +199,13 @@ def create_remove_recursive(
     """
     missing_entries = []
     tree = {}
+    if isinstance(renames, tuple):
+        renames_dict = renames[0]
+        recurse_renames = {"fields": renames[1]}
+    else:
+        renames_dict = renames
+        recurse_renames = renames
+
     for key, prev_value in prev_models.items():
         if isinstance(renames_dict.get(key), str):
             print(key + " renamed -> skip for remove")
@@ -217,11 +242,11 @@ def create_remove_recursive(
                         field_def = prev_value
                     else:
                         field_name = path[2]
-                        field_def = all_prev_models[path[0]][path[1]][path[2]]
+                        field_def = PREV_MODELS[path[0]][path[1]][path[2]]
                     if not (
-                        "type" in field_def 
+                        "type" in field_def
                         and is_relational_field(field_def["type"])
-                        and is_view_field(path[0], field_name, field_def, all_prev_models)
+                        and is_view_field(path[0], field_name, field_def, PREV_MODELS)
                     ):
                         missing_entries.append(key)
                 else:
@@ -230,8 +255,7 @@ def create_remove_recursive(
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
-                renames_dict.get(key, {}),
-                all_prev_models,
+                recurse_renames.get(key, {}),
                 secondary_edits,
                 enum_tree,
                 path + (key,),
@@ -261,23 +285,31 @@ def create_remove_recursive(
 def create_add_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
-    renames_dict: dict[str, Any],
+    renames: Renames | dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the additional entries on pos 0 and the sub trees on pos 1.
     """
     additional_entries = {}
     tree = {}
+    if isinstance(renames, tuple):
+        renames_dict = renames[0]
+    else:
+        renames_dict = renames
+
+    new_names = {v: k for k, v in renames_dict.items() if isinstance(v, str)}
     for key, curr_value in curr_models.items():
-        if key in list(renames_dict.values()):
-            print(key + " renamed -> skip for add")
+        if key in new_names:
+            print(f"{new_names[key]} renamed to {key} -> skip for add")
             continue
         if key not in prev_models:
             additional_entries[key] = curr_models[key]
         elif isinstance(curr_value, dict):
-            result = create_add_recursive(
-                prev_models[key], curr_value, renames_dict.get(key, {})
-            )
+            if isinstance(renames, tuple):
+                recurse_renames = {"fields": renames[1].get(key, {})}
+            else:
+                recurse_renames = renames.get(key, {})
+            result = create_add_recursive(prev_models[key], curr_value, recurse_renames)
             if result is not None:
                 tree[key] = result
     if additional_entries or tree:
@@ -289,7 +321,7 @@ def create_add_recursive(
 def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
-    renames_dict: dict[str, Any],
+    renames: Renames | dict[str, Any],
     secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
@@ -300,16 +332,26 @@ def create_edit_recursive(
     """
     edited_entries = {}
     tree = {}
+    if isinstance(renames, tuple):
+        renames_dict = renames[0]
+    else:
+        renames_dict = renames
+
+    new_names = {v: k for k, v in renames_dict.items() if isinstance(v, str)}
     for key, curr_value in curr_models.items():
-        if key in list(renames_dict.values()):
-            print(key + " renamed -> skip for edit")
+        if key in new_names:
+            print(f"{new_names[key]} renamed to {key} -> skip for edit")
             continue
         if key in prev_models:
             if not isinstance(curr_value, dict) and curr_value != prev_models[key]:
                 edited_entries[key] = curr_models[key]
             elif isinstance(curr_value, dict):
+                if isinstance(renames, tuple):
+                    recurse_renames = {"fields": renames[1].get(key, {})}
+                else:
+                    recurse_renames = renames.get(key, {})
                 result = create_edit_recursive(
-                    prev_models[key], curr_value, renames_dict.get(key, {})
+                    prev_models[key], curr_value, recurse_renames
                 )
                 if result is not None:
                     tree[key] = result
@@ -322,12 +364,6 @@ def create_edit_recursive(
         return (edited_entries, tree)
     else:
         return None
-
-
-def load_models(mig_data_path: str) -> dict[str, Any]:
-    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
-    collections_dir = os.path.join(mig_data_path, "collections")
-    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
 
 
 def is_enum(key: str) -> bool:
