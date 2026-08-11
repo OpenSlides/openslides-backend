@@ -87,8 +87,8 @@ class IDPMixin(Action):
                             'orQuery': {
                                 'queries': [
                                     {
-                                        'loginNameQuery': {
-                                            'loginName': user['username'],
+                                        'userNameQuery': {
+                                            'userName': user['username'],
                                             'method': 'TEXT_QUERY_METHOD_EQUALS',
                                         }
                                     },
@@ -132,10 +132,7 @@ class IDPMixin(Action):
 
             found_users = json_response['result']
 
-            logger.warning(f"--- {found_users}")
             for user in found_users:
-                logger.warning(f"Found user: {user}")
-
                 self.delete_user(user['id'])
 
         except Exception as e:
@@ -229,7 +226,7 @@ class IDPMixin(Action):
             )
 
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}")
 
@@ -249,22 +246,26 @@ class IDPMixin(Action):
         try:
             response = requests.post(self.idp_admin_route + "sessions/search",
                 json={
+                    "query": {
+                        "offset": 0,
+                        "limit": 100,
+                        "asc": True
+                    },
                     "queries": [
-                    {
-                        "userIdQuery": {
-                            "id": f"{idp_id}"
-                        }
-                    }
-                ]
+                        {
+                            "userIdQuery": {
+                                "id": f"{idp_id}"
+                            }
+                        },
+                    ],
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                     'Host': f'{self.external_host}'
                 }
             )
-
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                self.idp_error(response)
 
             json_response = response.json()
 
@@ -272,8 +273,8 @@ class IDPMixin(Action):
                 logger.warning(f"No session has been found")
                 return
 
-            for session in json_response:
-                logger.warning(f"Testing logut specific session: {session}")
+            for session in json_response["sessions"]:
+                logger.warning(f"Found session: {session['id']}")
                 response = requests.delete(self.idp_admin_route + "sessions/" + session["id"],
                     json={},
                     headers={
@@ -283,7 +284,7 @@ class IDPMixin(Action):
                 )
 
                 if response.status_code != 200:
-                    raise ActionException(f"{response.status_code} {response.json()}")
+                    self.idp_error(response)
 
         except Exception as e:
             raise ActionException(f"Error logout of user: {e}")
@@ -319,7 +320,11 @@ class IDPMixin(Action):
                 }
             )
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                if response.status_code == 400 and response.json()["code"] == 9:
+                    self.logger.warning("User was supposed to be activated/deactivated, but was already active/inactive in IDP")
+                    return
+
+                self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error setting enable status of user: {e}")
 
@@ -386,7 +391,7 @@ class IDPMixin(Action):
                 }
             )
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating email of user: {e}")
 
@@ -420,7 +425,7 @@ class IDPMixin(Action):
                 }
             )
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating username of user: {e}")
 
@@ -445,12 +450,14 @@ class IDPMixin(Action):
 
         try:
 
-            ## Change email of IDP user
+            ## Change password of IDP user
             response = requests.patch(self.idp_admin_route + "users/" + idp_id,
                 json={
-                    'human': {
-                        'hashedPassword': {
-                            'hash': password
+                     'human': {
+                        'password': {
+                            'hashedPassword': {
+                                'hash': f'{password}'
+                            }
                         }
                     }
                 },
@@ -486,8 +493,15 @@ class IDPMixin(Action):
                 }
             )"""
 
+            # Logout user
+            self.revoke_all_sessions_of_user(idp_id)
+
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.json()}")
+                self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating password for IDP user directly {idp_id}: {e}")
 
+    # Throws a generic error to the client while logging the real issue
+    def idp_error(self, fromResponse):
+        self.logger.error(f"{fromResponse.status_code} - {fromResponse.json()}")
+        raise ActionException("An IDP error occured. Please contact your administrator")
