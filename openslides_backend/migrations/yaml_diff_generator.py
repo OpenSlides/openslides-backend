@@ -30,15 +30,6 @@ PREVIOUS_MODELS_DIR = os.path.join(
 )
 
 
-def load_models(mig_data_path: str) -> dict[str, Any]:
-    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
-    collections_dir = os.path.join(mig_data_path, "collections")
-    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
-
-
-PREV_MODELS = load_models(PREVIOUS_MODELS_DIR)
-CURR_MODELS = load_models(CURR_MODELS_DIR)
-
 CollectionsRemoveList = list[list[str] | dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
 MetaAttributesRemoveList = list[list[str] | dict[str, Any]]
@@ -119,21 +110,23 @@ def dumpjson(diff: dict[str, Any]) -> None:
 
 
 def generate_diff() -> dict[str, Any]:
+    prev_models = load_models(PREVIOUS_MODELS_DIR)
+    curr_models = load_models(CURR_MODELS_DIR)
     directory = MigrationHelper.get_last_migration_directory()
     renames = MigrationHelper.get_migration_class(directory).renames
 
-    validate_renames(PREV_MODELS, CURR_MODELS, renames)
+    validate_renames(prev_models, curr_models, renames)
     # Edits caused by adding or removing field attributes
     secondary_edits: dict[str, Any] = {}
 
     return {
         "rename": renames,
         "remove": create_remove_recursive(
-            PREV_MODELS, CURR_MODELS, renames, secondary_edits
+            prev_models, curr_models, renames, prev_models, secondary_edits
         ),
-        "add": create_add_recursive(PREV_MODELS, CURR_MODELS, renames),
+        "add": create_add_recursive(prev_models, curr_models, renames),
         "edit": create_edit_recursive(
-            PREV_MODELS, CURR_MODELS, renames, secondary_edits
+            prev_models, curr_models, renames, secondary_edits
         ),
     }
 
@@ -176,6 +169,7 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames_dict: dict[str, Any],
+    all_prev_models: dict[str, Any],
     secondary_edits: dict[str, Any],
     enum_tree: EnumTypesRemoveDict = {},
     path: tuple[str, ...] = (),
@@ -223,11 +217,11 @@ def create_remove_recursive(
                         field_def = prev_value
                     else:
                         field_name = path[2]
-                        field_def = PREV_MODELS[path[0]][path[1]][path[2]]
+                        field_def = all_prev_models[path[0]][path[1]][path[2]]
                     if not (
-                        "type" in field_def
+                        "type" in field_def 
                         and is_relational_field(field_def["type"])
-                        and is_view_field(path[0], field_name, field_def)
+                        and is_view_field(path[0], field_name, field_def, all_prev_models)
                     ):
                         missing_entries.append(key)
                 else:
@@ -237,6 +231,7 @@ def create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 renames_dict.get(key, {}),
+                all_prev_models,
                 secondary_edits,
                 enum_tree,
                 path + (key,),
@@ -329,6 +324,12 @@ def create_edit_recursive(
         return None
 
 
+def load_models(mig_data_path: str) -> dict[str, Any]:
+    meta_file = os.path.join(mig_data_path, "collection-meta.yml")
+    collections_dir = os.path.join(mig_data_path, "collections")
+    return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
+
+
 def is_enum(key: str) -> bool:
     return key in FieldAttributes.enum_definitions
 
@@ -350,18 +351,22 @@ def is_relational_field(field_type: str) -> bool:
 
 
 def is_view_field(
-    collection_name: str, field_name: str, field_data: dict[str, Any]
+    collection_name: str,
+    field_name: str,
+    field_data: dict[str, Any],
+    all_prev_models: dict[str, dict[str, Any]],
 ) -> bool:
-    own_field = TableFieldType(collection_name, field_name, field_data)
+    own = TableFieldType(collection_name, field_name, field_data)
 
-    InternalHelper.MODELS = PREV_MODELS
+    new_models = InternalHelper.MODELS
+    InternalHelper.MODELS = all_prev_models
     foreign_fields = InternalHelper.get_definitions_from_foreign_list(
         field_data.get("to", None),
         field_data.get("reference", None),
     )
-    InternalHelper.MODELS = CURR_MODELS
+    InternalHelper.MODELS = new_models
 
-    state, *_ = InternalHelper.check_relation_definitions(own_field, foreign_fields)
+    state, *_ = InternalHelper.check_relation_definitions(own, foreign_fields)
     return state == FieldSqlErrorType.SQL
 
 
