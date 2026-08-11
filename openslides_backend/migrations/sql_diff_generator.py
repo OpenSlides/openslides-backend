@@ -10,7 +10,10 @@ from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
-from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_helper import (
+    MIGRATIONS_PATH,
+    MigrationHelper,
+)
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     RENAMES,
@@ -72,10 +75,9 @@ def main() -> int:
         for collection_name in sorted(alter_views)
     )
     sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
-    # TODO Do this in a sub folder migrations?
     with open(
         os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
+            MIGRATIONS_PATH,
             MigrationHelper.get_last_migration_directory(),
             "schema_diff.sql",
         ),
