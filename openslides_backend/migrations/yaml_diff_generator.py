@@ -7,13 +7,9 @@ import simplejson as json
 import yaml
 from typing_extensions import NotRequired
 
+from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
-from meta.dev.src.helper_get_names import (
-    FieldSqlErrorType,
-    InternalHelper,
-    TableFieldType,
-    build_models_yaml_content,
-)
+from meta.dev.src.helper_get_names import InternalHelper, build_models_yaml_content
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -236,22 +232,16 @@ def create_remove_recursive(
                 # TODO: currently `constant` on the reading side of the relation
                 # is being excluded from diff within this check. This has to be changed
                 # after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                if len(path) >= 2 and key != "sql":
-                    if len(path) == 2:
-                        field_name = key
-                        field_def = prev_value
-                    else:
-                        field_name = path[2]
-                        field_def = PREV_MODELS[path[0]][path[1]][path[2]]
+                if len(path) > 2 and key != "sql":
                     if not (
-                        "type" in field_def
-                        and is_relational_field(field_def["type"])
-                        and is_view_field(path[0], field_name, field_def, PREV_MODELS)
+                        "type" in prev_value
+                        and prev_value.get("to")
+                        and is_view_field(path[0], key, prev_value)
                     ):
                         missing_entries.append(key)
                 else:
                     missing_entries.append(key)
-        if isinstance(prev_value, dict) and key != "items":
+        if key in curr_models and isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
@@ -377,33 +367,17 @@ def is_field_enum(value: Any) -> bool:
     )
 
 
-def is_relational_field(field_type: str) -> bool:
-    return field_type in [
-        "relation",
-        "generic-relation",
-        "relation-list",
-        "generic-relation-list",
-    ]
-
-
 def is_view_field(
-    collection_name: str,
-    field_name: str,
-    field_data: dict[str, Any],
-    all_prev_models: dict[str, dict[str, Any]],
+    collection_name: str, field_name: str, field_data: dict[str, Any]
 ) -> bool:
-    own = TableFieldType(collection_name, field_name, field_data)
-
     new_models = InternalHelper.MODELS
-    InternalHelper.MODELS = all_prev_models
-    foreign_fields = InternalHelper.get_definitions_from_foreign_list(
-        field_data.get("to", None),
-        field_data.get("reference", None),
+    InternalHelper.MODELS = PREV_MODELS
+    is_view_field, _, write_fields = get_view_field_state_write_fields(
+        collection_name, field_name, field_data
     )
     InternalHelper.MODELS = new_models
 
-    state, *_ = InternalHelper.check_relation_definitions(own, foreign_fields)
-    return state == FieldSqlErrorType.SQL
+    return is_view_field or bool(write_fields)
 
 
 if __name__ == "__main__":
