@@ -32,6 +32,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     prev_models_context,
 )
 from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.patterns import CollectionField
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -597,6 +598,107 @@ def handle_alter_equal_fields() -> str:
                             to_add.append((own_table, own_trigger_name))
                             to_add.append((foreign_table, foreign_trigger_name))
                             to_add.append((nm_table_name, intermediate_trigger_name))
+            else:
+                with prev_models_context():
+                    prev_foreign_table_fields: dict[CollectionField, TableFieldType] = {
+                        field.collectionfield: field
+                        for field in InternalHelper.get_definitions_from_foreign_list(
+                            prev_own_field_def.get("to"),
+                            prev_own_field_def.get("reference"),
+                        )
+                    }
+                curr_foreign_table_fields: dict[CollectionField, TableFieldType] = {
+                    field.collectionfield: field
+                    for field in InternalHelper.get_definitions_from_foreign_list(
+                        curr_own_field_def.get("to"),
+                        curr_own_field_def.get("reference"),
+                    )
+                }
+                prev_collectionfields = set(prev_foreign_table_fields.keys())
+                curr_collectionfields = set(curr_foreign_table_fields.keys())
+                # TODO: evaluate on field add if we need to process added_collectionfields here
+                # added_collectionfields = curr_collectionfields - prev_collectionfields
+
+                removed_collectionfields = prev_collectionfields - curr_collectionfields
+                remaining_collectionfields = (
+                    prev_collectionfields - removed_collectionfields
+                )
+
+                if remaining_collectionfields:
+                    own_has_changed = prev_own_field_def.get(
+                        "equal_fields"
+                    ) != curr_own_field_def.get("equal_fields")
+                    for collectionfield in remaining_collectionfields:
+                        prev_foreign_table_field = prev_foreign_table_fields[
+                            collectionfield
+                        ]
+                        curr_foreign_table_field = curr_foreign_table_fields[
+                            collectionfield
+                        ]
+                        if own_has_changed or prev_foreign_table_field.field_def.get(
+                            "equal_fields"
+                        ) != curr_foreign_table_field.field_def.get("equal_fields"):
+                            prev_equal_fields = set(
+                                GenerateCodeBlocks.get_equal_fields(
+                                    prev_own_table_field, prev_foreign_table_field
+                                )
+                            )
+                            curr_equal_fields = set(
+                                GenerateCodeBlocks.get_equal_fields(
+                                    curr_own_table_field, curr_foreign_table_field
+                                )
+                            )
+                            removed_equal_fields = prev_equal_fields - curr_equal_fields
+                            added_equal_fields = curr_equal_fields - prev_equal_fields
+                            for equal_field in removed_equal_fields:
+                                # TODO: Type-based equal_fields processing
+                                if type_ == "generic-relation":
+                                    generic_plain_field_name = (
+                                        HelperGetNames.get_generic_plain_field_name(
+                                            prev_own_table_field.column,
+                                            prev_foreign_table_field.table,
+                                            prev_foreign_table_field.ref_column,
+                                        )
+                                    )
+                                    (
+                                        own_trigger_name,
+                                        own_table,
+                                        foreign_trigger_name,
+                                        foreign_table,
+                                        *_,
+                                    ) = Helper.get_config_for_trigger_definitions_check_equals(
+                                        prev_own_table_field,
+                                        prev_foreign_table_field,
+                                        equal_field,
+                                        generic_plain_field_name,
+                                    )
+                                    to_drop.append((own_table, own_trigger_name))
+                                    if foreign_trigger_name:
+                                        to_drop.append(
+                                            (foreign_table, foreign_trigger_name)
+                                        )
+                            # TODO: just the same with add. No need to duplicate
+                if removed_collectionfields:
+                    for collectionfield in removed_collectionfields:
+                        field_def = prev_foreign_table_fields[collectionfield]
+                        prev_equal_fields = set(
+                            GenerateCodeBlocks.get_equal_fields(
+                                prev_own_table_field, prev_foreign_table_field
+                            )
+                        )
+                        # TODO: Type-based equal_fields processing
+                        # Don't process own
+
+                # TODO (when working on add): uncomment and complete or delete commented out lines
+                # if added_collectionfields:
+                #     for collectionfield in added_collectionfields:
+                #         field_def = curr_foreign_table_fields[collectionfield]
+                #         curr_equal_fields = set(
+                #             GenerateCodeBlocks.get_equal_fields(
+                #                 curr_own_table_field, curr_foreign_table_field
+                #             )
+                #         )
+
     for table_name, trigger_name in to_drop:
         result += AlterSchemaHelper.get_drop_trigger_statement(table_name, trigger_name)
     for table_name, trigger_name in to_add:
