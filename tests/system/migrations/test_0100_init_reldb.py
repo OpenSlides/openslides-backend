@@ -10,10 +10,6 @@ from zoneinfo import ZoneInfo
 
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
-from openslides_backend.migrations.mig_0100_init_reldb.migration import (
-    Migration,
-    Sql_helper,
-)
 from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.migrations.migration_helper import (
     MIN_NON_REL_MIGRATION,
@@ -21,6 +17,10 @@ from openslides_backend.migrations.migration_helper import (
     MigrationState,
 )
 from openslides_backend.migrations.migration_manager import MigrationManager
+from openslides_backend.migrations.migrations.mig_0100_init_reldb.migration import (
+    Migration,
+    Sql_helper,
+)
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
