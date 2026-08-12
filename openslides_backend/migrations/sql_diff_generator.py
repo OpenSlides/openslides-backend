@@ -133,295 +133,6 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
     return sql
 
 
-def handle_add_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: dict[str, Any],
-) -> str:
-    constraints_sql = ""
-    collection_name = table_name[:-2]
-    for constraint, value in field_def_diff.items():
-        """
-        TODO other constraints type etc
-        This is a full list of leaf types we have. (Including _meta.)
-        Some of which aren't constraints but need to be implemented/considered elsewhere.
-
-        languages
-        ballot_paper_selection
-        poll_backends
-        onehundred_percent_bases
-        type
-        restriction_mode
-        constant
-        required
-        enum
-        description
-        default
-        minimum
-        read_only
-        reference
-        collections
-        field
-        equal_fields
-        to
-        on_delete
-        sequence_scope
-        unique_together
-        constant_legacy
-        unique
-        sql
-        log_triggers
-        unique_together_strict
-        maxLength
-        maximum
-        calculated
-        minLength
-        """
-        match constraint:
-            case "type":
-                match value:
-                    case "color":
-                        constraints_sql += Helper.get_inline_color_constraint(
-                            table_name, field_name
-                        )
-                    case "timezone":
-                        constraints_sql += Helper.get_inline_timezone_constraint(
-                            table_name, field_name
-                        )
-                    case (
-                        "string"
-                        | "number"
-                        | "boolean"
-                        | "JSON"
-                        | "HTMLStrict"
-                        | "HTMLPermissive"
-                        | "float"
-                        | "decimal(6)"
-                        | "timestamp"
-                        | "string[]"
-                        | "number[]"
-                        | "text"
-                        | "text[]"
-                    ):
-                        pass
-                    case (
-                        "relation"
-                        | "relation-list"
-                        | "generic-relation"
-                        | "generic-relation-list"
-                    ):
-                        # TODO
-                        pass
-                    case _:
-                        raise NotImplementedError(
-                            f"{table_name}/{field_name}: {constraint}, {value}"
-                        )
-            case "constant":
-                # TODO
-                pass
-            case "required":
-                constraints_sql += Helper.get_inline_required_constraint(
-                    table_name, field_name
-                )
-            case "enum":
-                # TODO
-                pass
-            case "equal_fields":
-                # TODO
-                pass
-            case "sequence_scope":
-                # TODO
-                pass
-            case "unique":
-                constraints_sql += Helper.get_inline_unique_constraint(
-                    table_name, field_name
-                )
-            case "unique_together_strict":
-                # TODO
-                pass
-            case "maximum":
-                constraints_sql += Helper.get_inline_maximum_constraint(
-                    table_name, field_name, value
-                )
-            case "minimum":
-                constraints_sql += Helper.get_inline_minimum_constraint(
-                    table_name, field_name, value
-                )
-            case "maxLength":
-                # TODO
-                pass
-            case "minLength":
-                constraints_sql += Helper.get_inline_minlength_constraint(
-                    table_name, field_name, value
-                )
-            case "default":
-                constraints_sql += Helper.get_inline_default_constraint(
-                    table_name, field_name, value
-                )
-            case "sql":
-                alter_views.add(collection_name)
-            case "to":
-                # This essentially would be an integer field being turned into a real relation
-                # Should probably be handled together with reference and type
-                # TODO
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name,
-                    field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
-                )
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
-                )
-            case "reference":
-                # TODO
-                pass
-            case "restriction_mode" | "description" | "on_delete" | "constant_legacy":
-                # this is irrelevant, thus omitted
-                pass
-            case _:
-                raise NotImplementedError(
-                    f"{table_name}/{field_name}: {constraint}, {value}"
-                )
-        del dc_field_def[constraint]
-    return constraints_sql
-
-
-def handle_edit_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: tuple[dict[str, Any], dict[str, Any]],
-) -> str:
-    constraints_sql = ""
-    collection_name = table_name[:-2]
-    for constraint, value in field_def_diff.items():
-        field_def = CURR_MODELS[collection_name]["fields"][field_name]
-        match constraint:
-            case "default":
-                default = Helper.get_formatted_default_value(
-                    table_name, field_name, field_def_diff["default"], field_def["type"]
-                )
-                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
-            case "description":
-                pass
-            case "sql":
-                alter_views.add(collection_name)
-            case "reference" | "to":
-                if table_name in RENAMES[0] or field_name in RENAMES[1].get(
-                    table_name, {}
-                ):
-                    # Shouldn't be a case since this is already skipped in yaml diff generator.
-                    # TODO decide whether to fail or delete this check
-                    print(
-                        f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
-                    )
-                    continue
-                else:
-                    NotImplementedError(
-                        f"{constraint}: {value} is probably a view field or unmentioned in renames."
-                    )
-
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name,
-                    field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
-                )
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
-                )
-                # TODO recreate affected triggers
-            case _:
-                raise NotImplementedError(f"{constraint}: {value}")
-        del dc_field_def[0][constraint]
-    return constraints_sql
-
-
-def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
-    result = ""
-    collection_renames = renames[0]
-    field_renames = renames[1]
-
-    for collection_name_old, collection_name_new in collection_renames.items():
-        result += AlterSchemaHelper.get_rename_table(
-            HelperGetNames.get_table_name(collection_name_old),
-            HelperGetNames.get_table_name(collection_name_new),
-        )
-        result += AlterSchemaHelper.get_rename_view(
-            collection_name_old, collection_name_new
-        )
-        # TODO recreate dependend triggers
-        del dc_rename_dict[0][collection_name_old]
-
-    for collection_name, collection_diff in field_renames.items():
-        dc_collection = cast(dict, dc_rename_dict[1][collection_name])
-        for field_name_old, field_name_new in collection_diff.items():
-            assert isinstance(field_name_new, str)
-            field_def = CURR_MODELS[collection_name]["fields"][field_name_new]
-            is_view_field = False
-            if field_def.get("to"):
-                # This also includes all sql fields
-                is_view_field, *_ = get_view_field_state_write_fields(
-                    collection_name, field_name_new, field_def
-                )
-            result += AlterSchemaHelper.get_rename_view_column(
-                collection_name, field_name_old, field_name_new
-            )
-            if not is_view_field:
-                result += AlterSchemaHelper.get_rename_table_column(
-                    HelperGetNames.get_table_name(collection_name),
-                    field_name_old,
-                    field_name_new,
-                )
-
-            # TODO recreate dependend triggers and intermediate tables
-            del dc_collection[field_name_old]
-        # TODO Renaming and redefining constraints
-        remove_empty(dc_rename_dict[1], collection_name)
-    return result
-
-
-def alter_views_conditionally(
-    collection_name: str, has_write_fields: bool, is_view_field: bool
-) -> None:
-    if has_write_fields or is_view_field:
-        alter_views.add(collection_name)
-
-
-def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str:
-    result = ""
-    if "collections" in remove:
-        collections_remove_list: CollectionsRemoveList = remove["collections"]
-        if isinstance(
-            collection_names := collections_remove_list[0], list
-        ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
-            for collection_name in collection_names:
-                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
-                dc_collection_names.remove(collection_name)
-        if isinstance(
-            remove_tree_dict := collections_remove_list[1], dict
-        ) and isinstance(dc_remove_tree_dict := dc_remove_dict["collections"][1], dict):
-            result += handle_remove_tree(remove_tree_dict, dc_remove_tree_dict)
-        remove_empty(dc_remove_dict, "collections")
-
-    if "enum_types" in remove and isinstance(
-        remove_enum_types_dict := remove["enum_types"], dict
-    ):
-        result += handle_remove_enum_types(
-            remove_enum_types_dict, dc_remove_dict["enum_types"]
-        )
-        remove_empty(dc_remove_dict, "enum_types")
-
-    if "_meta" in remove and isinstance(
-        remove_meta_attributes_list := remove["_meta"], list
-    ):
-        result += handle_remove_meta_attributes(
-            remove_meta_attributes_list, dc_remove_dict["_meta"]
-        )
-        remove_empty(dc_remove_dict, "_meta")
-    return result
-
-
 class EqualFieldsHelper:
     checked_equal_fields: dict[str, set[str]] = defaultdict(set)
     equal_fields_diff: dict[str, set[str]] = defaultdict(set)
@@ -780,6 +491,295 @@ class EqualFieldsHelper:
         prev_field_def: dict[str, Any], curr_field_def: dict[str, Any]
     ) -> bool:
         return prev_field_def.get("equal_fields") != curr_field_def.get("equal_fields")
+
+
+def handle_add_field_attributes(
+    table_name: str,
+    field_name: str,
+    field_def_diff: dict[str, Any],
+    dc_field_def: dict[str, Any],
+) -> str:
+    constraints_sql = ""
+    collection_name = table_name[:-2]
+    for constraint, value in field_def_diff.items():
+        """
+        TODO other constraints type etc
+        This is a full list of leaf types we have. (Including _meta.)
+        Some of which aren't constraints but need to be implemented/considered elsewhere.
+
+        languages
+        ballot_paper_selection
+        poll_backends
+        onehundred_percent_bases
+        type
+        restriction_mode
+        constant
+        required
+        enum
+        description
+        default
+        minimum
+        read_only
+        reference
+        collections
+        field
+        equal_fields
+        to
+        on_delete
+        sequence_scope
+        unique_together
+        constant_legacy
+        unique
+        sql
+        log_triggers
+        unique_together_strict
+        maxLength
+        maximum
+        calculated
+        minLength
+        """
+        match constraint:
+            case "type":
+                match value:
+                    case "color":
+                        constraints_sql += Helper.get_inline_color_constraint(
+                            table_name, field_name
+                        )
+                    case "timezone":
+                        constraints_sql += Helper.get_inline_timezone_constraint(
+                            table_name, field_name
+                        )
+                    case (
+                        "string"
+                        | "number"
+                        | "boolean"
+                        | "JSON"
+                        | "HTMLStrict"
+                        | "HTMLPermissive"
+                        | "float"
+                        | "decimal(6)"
+                        | "timestamp"
+                        | "string[]"
+                        | "number[]"
+                        | "text"
+                        | "text[]"
+                    ):
+                        pass
+                    case (
+                        "relation"
+                        | "relation-list"
+                        | "generic-relation"
+                        | "generic-relation-list"
+                    ):
+                        # TODO
+                        pass
+                    case _:
+                        raise NotImplementedError(
+                            f"{table_name}/{field_name}: {constraint}, {value}"
+                        )
+            case "constant":
+                # TODO
+                pass
+            case "required":
+                constraints_sql += Helper.get_inline_required_constraint(
+                    table_name, field_name
+                )
+            case "enum":
+                # TODO
+                pass
+            case "equal_fields":
+                # TODO
+                pass
+            case "sequence_scope":
+                # TODO
+                pass
+            case "unique":
+                constraints_sql += Helper.get_inline_unique_constraint(
+                    table_name, field_name
+                )
+            case "unique_together_strict":
+                # TODO
+                pass
+            case "maximum":
+                constraints_sql += Helper.get_inline_maximum_constraint(
+                    table_name, field_name, value
+                )
+            case "minimum":
+                constraints_sql += Helper.get_inline_minimum_constraint(
+                    table_name, field_name, value
+                )
+            case "maxLength":
+                # TODO
+                pass
+            case "minLength":
+                constraints_sql += Helper.get_inline_minlength_constraint(
+                    table_name, field_name, value
+                )
+            case "default":
+                constraints_sql += Helper.get_inline_default_constraint(
+                    table_name, field_name, value
+                )
+            case "sql":
+                alter_views.add(collection_name)
+            case "to":
+                # This essentially would be an integer field being turned into a real relation
+                # Should probably be handled together with reference and type
+                # TODO
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                )
+                alter_views_conditionally(
+                    collection_name, bool(write_fields), is_view_field
+                )
+            case "reference":
+                # TODO
+                pass
+            case "restriction_mode" | "description" | "on_delete" | "constant_legacy":
+                # this is irrelevant, thus omitted
+                pass
+            case _:
+                raise NotImplementedError(
+                    f"{table_name}/{field_name}: {constraint}, {value}"
+                )
+        del dc_field_def[constraint]
+    return constraints_sql
+
+
+def handle_edit_field_attributes(
+    table_name: str,
+    field_name: str,
+    field_def_diff: dict[str, Any],
+    dc_field_def: tuple[dict[str, Any], dict[str, Any]],
+) -> str:
+    constraints_sql = ""
+    collection_name = table_name[:-2]
+    for constraint, value in field_def_diff.items():
+        field_def = CURR_MODELS[collection_name]["fields"][field_name]
+        match constraint:
+            case "default":
+                default = Helper.get_formatted_default_value(
+                    table_name, field_name, field_def_diff["default"], field_def["type"]
+                )
+                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
+            case "description":
+                pass
+            case "sql":
+                alter_views.add(collection_name)
+            case "reference" | "to":
+                if table_name in RENAMES[0] or field_name in RENAMES[1].get(
+                    table_name, {}
+                ):
+                    # Shouldn't be a case since this is already skipped in yaml diff generator.
+                    # TODO decide whether to fail or delete this check
+                    print(
+                        f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
+                    )
+                    continue
+                else:
+                    NotImplementedError(
+                        f"{constraint}: {value} is probably a view field or unmentioned in renames."
+                    )
+
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                )
+                alter_views_conditionally(
+                    collection_name, bool(write_fields), is_view_field
+                )
+                # TODO recreate affected triggers
+            case _:
+                raise NotImplementedError(f"{constraint}: {value}")
+        del dc_field_def[0][constraint]
+    return constraints_sql
+
+
+def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
+    result = ""
+    collection_renames = renames[0]
+    field_renames = renames[1]
+
+    for collection_name_old, collection_name_new in collection_renames.items():
+        result += AlterSchemaHelper.get_rename_table(
+            HelperGetNames.get_table_name(collection_name_old),
+            HelperGetNames.get_table_name(collection_name_new),
+        )
+        result += AlterSchemaHelper.get_rename_view(
+            collection_name_old, collection_name_new
+        )
+        # TODO recreate dependend triggers
+        del dc_rename_dict[0][collection_name_old]
+
+    for collection_name, collection_diff in field_renames.items():
+        dc_collection = cast(dict, dc_rename_dict[1][collection_name])
+        for field_name_old, field_name_new in collection_diff.items():
+            assert isinstance(field_name_new, str)
+            field_def = CURR_MODELS[collection_name]["fields"][field_name_new]
+            is_view_field = False
+            if field_def.get("to"):
+                # This also includes all sql fields
+                is_view_field, *_ = get_view_field_state_write_fields(
+                    collection_name, field_name_new, field_def
+                )
+            result += AlterSchemaHelper.get_rename_view_column(
+                collection_name, field_name_old, field_name_new
+            )
+            if not is_view_field:
+                result += AlterSchemaHelper.get_rename_table_column(
+                    HelperGetNames.get_table_name(collection_name),
+                    field_name_old,
+                    field_name_new,
+                )
+
+            # TODO recreate dependend triggers and intermediate tables
+            del dc_collection[field_name_old]
+        # TODO Renaming and redefining constraints
+        remove_empty(dc_rename_dict[1], collection_name)
+    return result
+
+
+def alter_views_conditionally(
+    collection_name: str, has_write_fields: bool, is_view_field: bool
+) -> None:
+    if has_write_fields or is_view_field:
+        alter_views.add(collection_name)
+
+
+def handle_remove(remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]) -> str:
+    result = ""
+    if "collections" in remove:
+        collections_remove_list: CollectionsRemoveList = remove["collections"]
+        if isinstance(
+            collection_names := collections_remove_list[0], list
+        ) and isinstance(dc_collection_names := dc_remove_dict["collections"][0], list):
+            for collection_name in collection_names:
+                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
+                dc_collection_names.remove(collection_name)
+        if isinstance(
+            remove_tree_dict := collections_remove_list[1], dict
+        ) and isinstance(dc_remove_tree_dict := dc_remove_dict["collections"][1], dict):
+            result += handle_remove_tree(remove_tree_dict, dc_remove_tree_dict)
+        remove_empty(dc_remove_dict, "collections")
+
+    if "enum_types" in remove and isinstance(
+        remove_enum_types_dict := remove["enum_types"], dict
+    ):
+        result += handle_remove_enum_types(
+            remove_enum_types_dict, dc_remove_dict["enum_types"]
+        )
+        remove_empty(dc_remove_dict, "enum_types")
+
+    if "_meta" in remove and isinstance(
+        remove_meta_attributes_list := remove["_meta"], list
+    ):
+        result += handle_remove_meta_attributes(
+            remove_meta_attributes_list, dc_remove_dict["_meta"]
+        )
+        remove_empty(dc_remove_dict, "_meta")
+    return result
 
 
 def handle_remove_tree(
