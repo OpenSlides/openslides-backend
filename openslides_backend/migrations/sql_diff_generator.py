@@ -677,6 +677,41 @@ def handle_alter_equal_fields() -> str:
                                         to_drop.append(
                                             (foreign_table, foreign_trigger_name)
                                         )
+                                else:
+                                    own_table = HelperGetNames.get_table_name(
+                                        prev_own_table_field.table
+                                    )
+                                    foreign_table = HelperGetNames.get_table_name(
+                                        prev_foreign_table_field.table
+                                    )
+                                    intermediate_table = (
+                                        HelperGetNames.get_gm_table_name(
+                                            prev_own_table_field
+                                        )
+                                    )
+                                    (
+                                        own_trigger_name,
+                                        foreign_trigger_name,
+                                        intermediate_trigger_name,
+                                    ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
+                                        equal_field,
+                                        own_table,
+                                        prev_own_table_field.column,
+                                        foreign_table,
+                                        prev_foreign_table_field.column,
+                                        is_generic_list=True,
+                                    )
+                                    to_drop.extend(
+                                        [
+                                            (own_table, own_trigger_name),
+                                            (foreign_table, foreign_trigger_name),
+                                            (
+                                                intermediate_table,
+                                                intermediate_trigger_name,
+                                            ),
+                                        ]
+                                    )
+
                             # TODO: just the same with add. No need to duplicate
                 if removed_collectionfields:
                     for collectionfield in removed_collectionfields:

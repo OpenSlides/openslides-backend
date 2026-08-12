@@ -39,6 +39,12 @@
                                         "equal_fields"
                                     ],
                                     {}
+                                ],
+                                "attachment_meeting_mediafile_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
                                 ]
                             }
                         ]
@@ -83,6 +89,22 @@
                             [],
                             {
                                 "read_chat_group_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "meeting_mediafile": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "attachment_ids": [
                                     [
                                         "equal_fields"
                                     ],
