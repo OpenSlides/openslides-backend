@@ -473,9 +473,13 @@ class EqualFieldsHelper:
 
     @classmethod
     def handle_alter_equal_fields(cls) -> str:
+        # TODO: This method includes commented out lines for cases when triggers have to added.
+        # handle_add and handle edit sould probably already handle all such cases. If it's true,
+        # the commented out lines should be removed.
+
         result = ""
         to_drop = []
-        to_add = []
+        # to_add = []
         for collection_name, field_names in cls.equal_fields_diff.items():
             for field_name in field_names:
                 prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
@@ -514,7 +518,7 @@ class EqualFieldsHelper:
                         )
                     )
                     removed_equal_fields = prev_equal_fields - curr_equal_fields
-                    added_equal_fields = curr_equal_fields - prev_equal_fields
+                    # added_equal_fields = curr_equal_fields - prev_equal_fields
                     if type_ == "relation":
                         if removed_equal_fields:
                             for equal_field in removed_equal_fields:
@@ -538,22 +542,8 @@ class EqualFieldsHelper:
                                     to_drop.append(
                                         (foreign_table, foreign_trigger_name)
                                     )
-                        if added_equal_fields:
-                            for equal_field in added_equal_fields:
-                                (
-                                    own_trigger_name,
-                                    own_table,
-                                    foreign_trigger_name,
-                                    foreign_table,
-                                    *_,
-                                ) = Helper.get_config_for_trigger_definitions_check_equals(
-                                    curr_own_table_field,
-                                    curr_foreign_table_field,
-                                    equal_field,
-                                )
-                                to_add.append((own_table, own_trigger_name))
-                                if foreign_trigger_name:
-                                    to_add.append((foreign_table, foreign_trigger_name))
+                        # if added_equal_fields:
+                        #     pass
                     else:
                         if removed_equal_fields:
                             for equal_field in removed_equal_fields:
@@ -585,36 +575,8 @@ class EqualFieldsHelper:
                                 to_drop.append(
                                     (nm_table_name, intermediate_trigger_name)
                                 )
-                        if added_equal_fields:
-                            for equal_field in added_equal_fields:
-                                own_table = HelperGetNames.get_table_name(
-                                    collection_name
-                                )
-                                foreign_table = HelperGetNames.get_table_name(
-                                    prev_foreign_table_field.table
-                                )
-                                nm_table_name, *_ = (
-                                    Helper.get_nm_table_for_n_m_relation_lists(
-                                        curr_own_table_field, curr_foreign_table_field
-                                    )
-                                )
-                                (
-                                    own_trigger_name,
-                                    foreign_trigger_name,
-                                    intermediate_trigger_name,
-                                ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
-                                    equal_field,
-                                    own_table,
-                                    field_name,
-                                    foreign_table,
-                                    curr_foreign_table_field.column,
-                                    is_generic_list=False,
-                                )
-                                to_add.append((own_table, own_trigger_name))
-                                to_add.append((foreign_table, foreign_trigger_name))
-                                to_add.append(
-                                    (nm_table_name, intermediate_trigger_name)
-                                )
+                        # if added_equal_fields:
+                        #     pass
                 else:
                     with prev_models_context():
                         prev_foreign_table_fields: dict[
@@ -635,8 +597,6 @@ class EqualFieldsHelper:
                     }
                     prev_collectionfields = set(prev_foreign_table_fields.keys())
                     curr_collectionfields = set(curr_foreign_table_fields.keys())
-                    # TODO: evaluate on field add if we need to process added_collectionfields here
-                    # added_collectionfields = curr_collectionfields - prev_collectionfields
 
                     removed_collectionfields = (
                         prev_collectionfields - curr_collectionfields
@@ -644,6 +604,10 @@ class EqualFieldsHelper:
                     remaining_collectionfields = (
                         prev_collectionfields - removed_collectionfields
                     )
+
+                    # added_collectionfields = (
+                    #     curr_collectionfields - prev_collectionfields
+                    # )
 
                     if remaining_collectionfields:
                         own_has_changed = prev_own_field_def.get(
@@ -678,9 +642,10 @@ class EqualFieldsHelper:
                                 removed_equal_fields = (
                                     prev_equal_fields - curr_equal_fields
                                 )
-                                added_equal_fields = (
-                                    curr_equal_fields - prev_equal_fields
-                                )
+                                # added_equal_fields = (
+                                #     curr_equal_fields - prev_equal_fields
+                                # )
+
                                 for equal_field in removed_equal_fields:
                                     # TODO: Type-based equal_fields processing
                                     if type_ == "generic-relation":
@@ -743,7 +708,6 @@ class EqualFieldsHelper:
                                             ]
                                         )
 
-                                # TODO: just the same with add. No need to duplicate
                     if removed_collectionfields:
                         for collectionfield in removed_collectionfields:
                             prev_foreign_table_field = prev_foreign_table_fields[
@@ -816,22 +780,16 @@ class EqualFieldsHelper:
                                     )
                             # TODO: Type-based equal_fields processing
 
-                    # TODO (when working on add): uncomment and complete or delete commented out lines
                     # if added_collectionfields:
                     #     for collectionfield in added_collectionfields:
-                    #         field_def = curr_foreign_table_fields[collectionfield]
-                    #         curr_equal_fields = set(
-                    #             GenerateCodeBlocks.get_equal_fields(
-                    #                 curr_own_table_field, curr_foreign_table_field
-                    #             )
-                    #         )
+                    #         pass
 
         for table_name, trigger_name in to_drop:
             result += AlterSchemaHelper.get_drop_trigger_statement(
                 table_name, trigger_name
             )
-        for table_name, trigger_name in to_add:
-            pass  # TODO
+        # for table in to_add:
+        #     pass
         return result
 
 
