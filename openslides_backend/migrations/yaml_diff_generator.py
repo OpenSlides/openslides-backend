@@ -133,7 +133,9 @@ def validate_renames(renames: Renames) -> None:
 
 def load_renames() -> Renames:
     directory = MigrationHelper.get_last_migration_directory()
-    renames = MigrationHelper.get_migration_class(directory).renames
+    renames: Renames = getattr(
+        MigrationHelper.get_migration_class(directory), "renames", ({}, {})
+    )
     validate_renames(renames)
     return renames
 
