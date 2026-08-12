@@ -495,126 +495,19 @@ class EqualFieldsHelper:
                     collection_name, field_name, curr_own_field_def
                 )
                 type_ = prev_own_field_def["type"]
-
-                if type_ in ["relation", "relation-list"]:
-                    curr_foreign_table_field: TableFieldType = (
-                        TableFieldType.get_definitions_from_foreign(
-                            curr_own_field_def.get("to"),
-                            curr_own_field_def.get("reference"),
-                        )
-                    )
-
-                    with prev_models_context():
-                        prev_foreign_table_field: TableFieldType = (
-                            TableFieldType.get_definitions_from_foreign(
-                                prev_own_field_def.get("to"),
-                                prev_own_field_def.get("reference"),
-                            )
-                        )
-
-                    prev_equal_fields = set(
-                        GenerateCodeBlocks.get_equal_fields(
-                            prev_own_table_field, prev_foreign_table_field
-                        )
-                    )
-                    curr_equal_fields = set(
-                        GenerateCodeBlocks.get_equal_fields(
-                            curr_own_table_field, curr_foreign_table_field
-                        )
-                    )
-
-                    cls.update_to_drop(
-                        prev_own_table_field,
-                        prev_foreign_table_field,
-                        prev_equal_fields - curr_equal_fields,
-                        type_,
-                        to_drop,
-                    )
-
-                    # if added_equal_fields := curr_equal_fields - prev_equal_fields:
-
-                else:
-                    with prev_models_context():
-                        prev_foreign_table_fields: dict[
-                            CollectionField, TableFieldType
-                        ] = {
-                            field.collectionfield: field
-                            for field in InternalHelper.get_definitions_from_foreign_list(
-                                prev_own_field_def.get("to"),
-                                prev_own_field_def.get("reference"),
-                            )
-                        }
-                    curr_foreign_table_fields: dict[CollectionField, TableFieldType] = {
-                        field.collectionfield: field
-                        for field in InternalHelper.get_definitions_from_foreign_list(
-                            curr_own_field_def.get("to"),
-                            curr_own_field_def.get("reference"),
-                        )
-                    }
-                    prev_collectionfields = set(prev_foreign_table_fields.keys())
-                    curr_collectionfields = set(curr_foreign_table_fields.keys())
-
-                    removed_collectionfields = (
-                        prev_collectionfields - curr_collectionfields
-                    )
-                    remaining_collectionfields = (
-                        prev_collectionfields - removed_collectionfields
-                    )
-
-                    # if added_collectionfields := (
-                    #     curr_collectionfields - prev_collectionfields
-                    # ):
-
-                    if remaining_collectionfields:
-                        own_equal_fields_changed = cls.equal_fields_changed(
-                            prev_own_field_def, curr_own_field_def
-                        )
-                        for collectionfield in remaining_collectionfields:
-                            prev_foreign_table_field = prev_foreign_table_fields[
-                                collectionfield
-                            ]
-                            curr_foreign_table_field = curr_foreign_table_fields[
-                                collectionfield
-                            ]
-                            if own_equal_fields_changed or cls.equal_fields_changed(
-                                prev_foreign_table_field.field_def,
-                                curr_foreign_table_field.field_def,
-                            ):
-                                cls.update_to_drop_for_generic(
-                                    prev_own_table_field,
-                                    prev_foreign_table_field,
-                                    type_,
-                                    to_drop,
-                                    curr_own_table_field,
-                                    curr_foreign_table_field,
-                                )
-
-                                # prev_equal_fields = set(
-                                #     GenerateCodeBlocks.get_equal_fields(
-                                #         prev_own_table_field, prev_foreign_table_field
-                                #     )
-                                # )
-                                # curr_equal_fields = set(
-                                #     GenerateCodeBlocks.get_equal_fields(
-                                #         curr_own_table_field, curr_foreign_table_field
-                                #     )
-                                # )
-                                # if added_equal_fields := (
-                                #     curr_equal_fields - prev_equal_fields
-                                # ):
-
-                    if removed_collectionfields:
-                        for collectionfield in removed_collectionfields:
-                            prev_foreign_table_field = prev_foreign_table_fields[
-                                collectionfield
-                            ]
-                            cls.update_to_drop_for_generic(
-                                prev_own_table_field,
-                                prev_foreign_table_field,
-                                type_,
-                                to_drop,
-                            )
-
+                handle_func = (
+                    cls.handle_generic_relations
+                    if "generic" in type_
+                    else cls.handle_plain_relations
+                )
+                handle_func(
+                    curr_own_table_field,
+                    curr_own_field_def,
+                    prev_own_table_field,
+                    prev_own_field_def,
+                    type_,
+                    to_drop,
+                )
         for table_name, trigger_name in to_drop:
             result += AlterSchemaHelper.get_drop_trigger_statement(
                 table_name, trigger_name
@@ -622,6 +515,130 @@ class EqualFieldsHelper:
         # for table in to_add:
         #     pass
         return result
+
+    @classmethod
+    def handle_plain_relations(
+        cls,
+        curr_own_table_field: TableFieldType,
+        curr_own_field_def: dict[str, Any],
+        prev_own_table_field: TableFieldType,
+        prev_own_field_def: dict[str, Any],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        curr_foreign_table_field: TableFieldType = (
+            TableFieldType.get_definitions_from_foreign(
+                curr_own_field_def.get("to"),
+                curr_own_field_def.get("reference"),
+            )
+        )
+
+        with prev_models_context():
+            prev_foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    prev_own_field_def.get("to"),
+                    prev_own_field_def.get("reference"),
+                )
+            )
+
+        prev_equal_fields = set(
+            GenerateCodeBlocks.get_equal_fields(
+                prev_own_table_field, prev_foreign_table_field
+            )
+        )
+        curr_equal_fields = set(
+            GenerateCodeBlocks.get_equal_fields(
+                curr_own_table_field, curr_foreign_table_field
+            )
+        )
+
+        cls.update_to_drop(
+            prev_own_table_field,
+            prev_foreign_table_field,
+            prev_equal_fields - curr_equal_fields,
+            type_,
+            to_drop,
+        )
+        # if added_equal_fields := curr_equal_fields - prev_equal_fields:
+
+    @classmethod
+    def handle_generic_relations(
+        cls,
+        curr_own_table_field: TableFieldType,
+        curr_own_field_def: dict[str, Any],
+        prev_own_table_field: TableFieldType,
+        prev_own_field_def: dict[str, Any],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        with prev_models_context():
+            prev_foreign_table_fields: dict[CollectionField, TableFieldType] = {
+                field.collectionfield: field
+                for field in InternalHelper.get_definitions_from_foreign_list(
+                    prev_own_field_def.get("to"),
+                    prev_own_field_def.get("reference"),
+                )
+            }
+        curr_foreign_table_fields: dict[CollectionField, TableFieldType] = {
+            field.collectionfield: field
+            for field in InternalHelper.get_definitions_from_foreign_list(
+                curr_own_field_def.get("to"),
+                curr_own_field_def.get("reference"),
+            )
+        }
+        prev_collectionfields = set(prev_foreign_table_fields.keys())
+        curr_collectionfields = set(curr_foreign_table_fields.keys())
+
+        removed_collectionfields = prev_collectionfields - curr_collectionfields
+        remaining_collectionfields = prev_collectionfields - removed_collectionfields
+
+        # if added_collectionfields := (
+        #     curr_collectionfields - prev_collectionfields
+        # ):
+
+        if remaining_collectionfields:
+            own_equal_fields_changed = cls.equal_fields_changed(
+                prev_own_field_def, curr_own_field_def
+            )
+            for collectionfield in remaining_collectionfields:
+                prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
+                curr_foreign_table_field = curr_foreign_table_fields[collectionfield]
+                if own_equal_fields_changed or cls.equal_fields_changed(
+                    prev_foreign_table_field.field_def,
+                    curr_foreign_table_field.field_def,
+                ):
+                    cls.update_to_drop_for_generic(
+                        prev_own_table_field,
+                        prev_foreign_table_field,
+                        type_,
+                        to_drop,
+                        curr_own_table_field,
+                        curr_foreign_table_field,
+                    )
+
+                    # prev_equal_fields = set(
+                    #     GenerateCodeBlocks.get_equal_fields(
+                    #         prev_own_table_field, prev_foreign_table_field
+                    #     )
+                    # )
+                    # curr_equal_fields = set(
+                    #     GenerateCodeBlocks.get_equal_fields(
+                    #         curr_own_table_field, curr_foreign_table_field
+                    #     )
+                    # )
+                    # if added_equal_fields := (
+                    #     curr_equal_fields - prev_equal_fields
+                    # ):
+
+        if removed_collectionfields:
+            for collectionfield in removed_collectionfields:
+                prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
+                cls.update_to_drop_for_generic(
+                    prev_own_table_field,
+                    prev_foreign_table_field,
+                    type_,
+                    to_drop,
+                )
 
     # Type-based generation of table-trigger pairs
     @classmethod
