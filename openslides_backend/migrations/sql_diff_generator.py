@@ -680,14 +680,42 @@ def handle_alter_equal_fields() -> str:
                             # TODO: just the same with add. No need to duplicate
                 if removed_collectionfields:
                     for collectionfield in removed_collectionfields:
-                        field_def = prev_foreign_table_fields[collectionfield]
+                        prev_foreign_table_field = prev_foreign_table_fields[
+                            collectionfield
+                        ]
                         prev_equal_fields = set(
                             GenerateCodeBlocks.get_equal_fields(
                                 prev_own_table_field, prev_foreign_table_field
                             )
                         )
+                        for equal_field in prev_equal_fields:
+                            if type_ == "generic-relation":
+                                generic_plain_field_name = (
+                                    HelperGetNames.get_generic_plain_field_name(
+                                        prev_own_table_field.column,
+                                        prev_foreign_table_field.table,
+                                        prev_foreign_table_field.ref_column,
+                                    )
+                                )
+                                (
+                                    own_trigger_name,
+                                    own_table,
+                                    foreign_trigger_name,
+                                    foreign_table,
+                                    *_,
+                                ) = Helper.get_config_for_trigger_definitions_check_equals(
+                                    prev_own_table_field,
+                                    prev_foreign_table_field,
+                                    equal_field,
+                                    generic_plain_field_name,
+                                )
+                                to_drop.append((own_table, own_trigger_name))
+                                if foreign_trigger_name:
+                                    to_drop.append(
+                                        (foreign_table, foreign_trigger_name)
+                                    )
+
                         # TODO: Type-based equal_fields processing
-                        # Don't process own
 
                 # TODO (when working on add): uncomment and complete or delete commented out lines
                 # if added_collectionfields:

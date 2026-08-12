@@ -6,6 +6,22 @@
                 "deleted"
             ],
             {
+                "agenda_item": [
+                    [],
+                    {
+                        "fields": [
+                            [],
+                            {
+                                "content_object_id": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ]
+                            }
+                        ]
+                    }
+                ],
                 "assignment": [
                     [],
                     {
@@ -13,6 +29,12 @@
                             [],
                             {
                                 "candidate_ids": [
+                                    [
+                                        "equal_fields"
+                                    ],
+                                    {}
+                                ],
+                                "agenda_item_id": [
                                     [
                                         "equal_fields"
                                     ],
@@ -69,10 +91,56 @@
                             }
                         ]
                     }
+                ],
+                "motion": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "agenda_item_id"
+                            ],
+                            {}
+                        ]
+                    }
                 ]
             }
         ]
     },
     "add": null,
-    "edit": null
+    "edit": [
+        {},
+        {
+            "agenda_item": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "content_object_id": [
+                                {
+                                    "reference": [
+                                        "motion_block",
+                                        "assignment",
+                                        "topic"
+                                    ]
+                                },
+                                {
+                                    "to": [
+                                        {
+                                            "collections": [
+                                                "motion_block",
+                                                "assignment",
+                                                "topic"
+                                            ]
+                                        },
+                                        {}
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }
