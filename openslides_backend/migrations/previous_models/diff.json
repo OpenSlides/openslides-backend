@@ -124,6 +124,17 @@
                             {}
                         ]
                     }
+                ],
+                "topic": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "attachment_meeting_mediafile_ids"
+                            ],
+                            {}
+                        ]
+                    }
                 ]
             }
         ]
@@ -153,6 +164,30 @@
                                                 "motion_block",
                                                 "assignment",
                                                 "topic"
+                                            ]
+                                        },
+                                        {}
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meeting_mediafile": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "attachment_ids": [
+                                {},
+                                {
+                                    "to": [
+                                        {
+                                            "collections": [
+                                                "motion",
+                                                "assignment"
                                             ]
                                         },
                                         {}
