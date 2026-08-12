@@ -32,7 +32,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     prev_models_context,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.patterns import CollectionField
+from openslides_backend.shared.patterns import Collection, CollectionField
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -40,6 +40,9 @@ To use this script create a folder 'previous_models' next to it and copy the unc
 It will generate the sql diff comparing it to the changes made to the model definitions present in the meta.
 The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'.
 """
+
+Table = str
+TriggerName = str
 
 alter_views: set[str] = set()
 
@@ -478,8 +481,9 @@ class EqualFieldsHelper:
         # the commented out lines should be removed.
 
         result = ""
-        to_drop = []
+        to_drop: list[tuple[Table, TriggerName]] = []
         # to_add = []
+
         for collection_name, field_names in cls.equal_fields_diff.items():
             for field_name in field_names:
                 prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
@@ -491,6 +495,7 @@ class EqualFieldsHelper:
                     collection_name, field_name, curr_own_field_def
                 )
                 type_ = prev_own_field_def["type"]
+
                 if type_ in ["relation", "relation-list"]:
                     curr_foreign_table_field: TableFieldType = (
                         TableFieldType.get_definitions_from_foreign(
@@ -517,66 +522,17 @@ class EqualFieldsHelper:
                             curr_own_table_field, curr_foreign_table_field
                         )
                     )
-                    removed_equal_fields = prev_equal_fields - curr_equal_fields
-                    # added_equal_fields = curr_equal_fields - prev_equal_fields
-                    if type_ == "relation":
-                        if removed_equal_fields:
-                            for equal_field in removed_equal_fields:
-                                (
-                                    own_trigger_name,
-                                    own_table,
-                                    foreign_trigger_name,
-                                    foreign_table,
-                                    *_,
-                                ) = Helper.get_config_for_trigger_definitions_check_equals(
-                                    prev_own_table_field,
-                                    prev_foreign_table_field,
-                                    equal_field,
-                                )
-                                # TODO: split method into (at least) 3:
-                                #   - to get removed and added
-                                #   - to process removed and added (get list of tuples (trigger_name, table_name))
-                                #   - parent method - to call upper 2 based on field type (if too long, extract into the 4th method) and build result
-                                to_drop.append((own_table, own_trigger_name))
-                                if foreign_trigger_name:
-                                    to_drop.append(
-                                        (foreign_table, foreign_trigger_name)
-                                    )
-                        # if added_equal_fields:
-                        #     pass
-                    else:
-                        if removed_equal_fields:
-                            for equal_field in removed_equal_fields:
-                                own_table = HelperGetNames.get_table_name(
-                                    collection_name
-                                )
-                                foreign_table = HelperGetNames.get_table_name(
-                                    prev_foreign_table_field.table
-                                )
-                                nm_table_name, *_ = (
-                                    Helper.get_nm_table_for_n_m_relation_lists(
-                                        prev_own_table_field, prev_foreign_table_field
-                                    )
-                                )
-                                (
-                                    own_trigger_name,
-                                    foreign_trigger_name,
-                                    intermediate_trigger_name,
-                                ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
-                                    equal_field,
-                                    own_table,
-                                    field_name,
-                                    foreign_table,
-                                    prev_foreign_table_field.column,
-                                    is_generic_list=False,
-                                )
-                                to_drop.append((own_table, own_trigger_name))
-                                to_drop.append((foreign_table, foreign_trigger_name))
-                                to_drop.append(
-                                    (nm_table_name, intermediate_trigger_name)
-                                )
-                        # if added_equal_fields:
-                        #     pass
+
+                    cls.update_to_drop(
+                        prev_own_table_field,
+                        prev_foreign_table_field,
+                        prev_equal_fields - curr_equal_fields,
+                        type_,
+                        to_drop,
+                    )
+
+                    # if added_equal_fields := curr_equal_fields - prev_equal_fields:
+
                 else:
                     with prev_models_context():
                         prev_foreign_table_fields: dict[
@@ -605,14 +561,14 @@ class EqualFieldsHelper:
                         prev_collectionfields - removed_collectionfields
                     )
 
-                    # added_collectionfields = (
+                    # if added_collectionfields := (
                     #     curr_collectionfields - prev_collectionfields
-                    # )
+                    # ):
 
                     if remaining_collectionfields:
-                        own_has_changed = prev_own_field_def.get(
-                            "equal_fields"
-                        ) != curr_own_field_def.get("equal_fields")
+                        own_equal_fields_changed = cls.equal_fields_changed(
+                            prev_own_field_def, curr_own_field_def
+                        )
                         for collectionfield in remaining_collectionfields:
                             prev_foreign_table_field = prev_foreign_table_fields[
                                 collectionfield
@@ -620,14 +576,9 @@ class EqualFieldsHelper:
                             curr_foreign_table_field = curr_foreign_table_fields[
                                 collectionfield
                             ]
-                            if (
-                                own_has_changed
-                                or prev_foreign_table_field.field_def.get(
-                                    "equal_fields"
-                                )
-                                != curr_foreign_table_field.field_def.get(
-                                    "equal_fields"
-                                )
+                            if own_equal_fields_changed or cls.equal_fields_changed(
+                                prev_foreign_table_field.field_def,
+                                curr_foreign_table_field.field_def,
                             ):
                                 prev_equal_fields = set(
                                     GenerateCodeBlocks.get_equal_fields(
@@ -639,74 +590,18 @@ class EqualFieldsHelper:
                                         curr_own_table_field, curr_foreign_table_field
                                     )
                                 )
-                                removed_equal_fields = (
-                                    prev_equal_fields - curr_equal_fields
-                                )
-                                # added_equal_fields = (
-                                #     curr_equal_fields - prev_equal_fields
-                                # )
 
-                                for equal_field in removed_equal_fields:
-                                    # TODO: Type-based equal_fields processing
-                                    if type_ == "generic-relation":
-                                        generic_plain_field_name = (
-                                            HelperGetNames.get_generic_plain_field_name(
-                                                prev_own_table_field.column,
-                                                prev_foreign_table_field.table,
-                                                prev_foreign_table_field.ref_column,
-                                            )
-                                        )
-                                        (
-                                            own_trigger_name,
-                                            own_table,
-                                            foreign_trigger_name,
-                                            foreign_table,
-                                            *_,
-                                        ) = Helper.get_config_for_trigger_definitions_check_equals(
-                                            prev_own_table_field,
-                                            prev_foreign_table_field,
-                                            equal_field,
-                                            generic_plain_field_name,
-                                        )
-                                        to_drop.append((own_table, own_trigger_name))
-                                        if foreign_trigger_name:
-                                            to_drop.append(
-                                                (foreign_table, foreign_trigger_name)
-                                            )
-                                    else:
-                                        own_table = HelperGetNames.get_table_name(
-                                            prev_own_table_field.table
-                                        )
-                                        foreign_table = HelperGetNames.get_table_name(
-                                            prev_foreign_table_field.table
-                                        )
-                                        intermediate_table = (
-                                            HelperGetNames.get_gm_table_name(
-                                                prev_own_table_field
-                                            )
-                                        )
-                                        (
-                                            own_trigger_name,
-                                            foreign_trigger_name,
-                                            intermediate_trigger_name,
-                                        ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
-                                            equal_field,
-                                            own_table,
-                                            prev_own_table_field.column,
-                                            foreign_table,
-                                            prev_foreign_table_field.column,
-                                            is_generic_list=True,
-                                        )
-                                        to_drop.extend(
-                                            [
-                                                (own_table, own_trigger_name),
-                                                (foreign_table, foreign_trigger_name),
-                                                (
-                                                    intermediate_table,
-                                                    intermediate_trigger_name,
-                                                ),
-                                            ]
-                                        )
+                                cls.update_to_drop(
+                                    prev_own_table_field,
+                                    prev_foreign_table_field,
+                                    prev_equal_fields - curr_equal_fields,
+                                    type_,
+                                    to_drop,
+                                )
+
+                                # if added_equal_fields := (
+                                #     curr_equal_fields - prev_equal_fields
+                                # ):
 
                     if removed_collectionfields:
                         for collectionfield in removed_collectionfields:
@@ -718,71 +613,14 @@ class EqualFieldsHelper:
                                     prev_own_table_field, prev_foreign_table_field
                                 )
                             )
-                            for equal_field in prev_equal_fields:
-                                if type_ == "generic-relation":
-                                    generic_plain_field_name = (
-                                        HelperGetNames.get_generic_plain_field_name(
-                                            prev_own_table_field.column,
-                                            prev_foreign_table_field.table,
-                                            prev_foreign_table_field.ref_column,
-                                        )
-                                    )
-                                    (
-                                        own_trigger_name,
-                                        own_table,
-                                        foreign_trigger_name,
-                                        foreign_table,
-                                        *_,
-                                    ) = Helper.get_config_for_trigger_definitions_check_equals(
-                                        prev_own_table_field,
-                                        prev_foreign_table_field,
-                                        equal_field,
-                                        generic_plain_field_name,
-                                    )
-                                    to_drop.append((own_table, own_trigger_name))
-                                    if foreign_trigger_name:
-                                        to_drop.append(
-                                            (foreign_table, foreign_trigger_name)
-                                        )
-                                else:
-                                    own_table = HelperGetNames.get_table_name(
-                                        prev_own_table_field.table
-                                    )
-                                    foreign_table = HelperGetNames.get_table_name(
-                                        prev_foreign_table_field.table
-                                    )
-                                    intermediate_table = (
-                                        HelperGetNames.get_gm_table_name(
-                                            prev_own_table_field
-                                        )
-                                    )
-                                    (
-                                        own_trigger_name,
-                                        foreign_trigger_name,
-                                        intermediate_trigger_name,
-                                    ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
-                                        equal_field,
-                                        own_table,
-                                        prev_own_table_field.column,
-                                        foreign_table,
-                                        prev_foreign_table_field.column,
-                                        is_generic_list=True,
-                                    )
-                                    to_drop.extend(
-                                        [
-                                            (own_table, own_trigger_name),
-                                            (foreign_table, foreign_trigger_name),
-                                            (
-                                                intermediate_table,
-                                                intermediate_trigger_name,
-                                            ),
-                                        ]
-                                    )
-                            # TODO: Type-based equal_fields processing
 
-                    # if added_collectionfields:
-                    #     for collectionfield in added_collectionfields:
-                    #         pass
+                            cls.update_to_drop(
+                                prev_own_table_field,
+                                prev_foreign_table_field,
+                                prev_equal_fields,
+                                type_,
+                                to_drop,
+                            )
 
         for table_name, trigger_name in to_drop:
             result += AlterSchemaHelper.get_drop_trigger_statement(
@@ -791,6 +629,114 @@ class EqualFieldsHelper:
         # for table in to_add:
         #     pass
         return result
+
+    # Type-based generation of table-trigger pairs
+    @classmethod
+    def update_to_drop(
+        cls,
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        if not equal_fields:
+            return
+
+        get_drop_data_func = (
+            cls._get_drop_triggers_data_for_relation_list
+            if "list" in type_
+            else cls._get_drop_triggers_data_for_relation
+        )
+        to_drop.extend(
+            get_drop_data_func(
+                own_table_field,
+                foreign_table_field,
+                equal_fields,
+                is_generic_relation="generic" in type_,
+            )
+        )
+
+    @staticmethod
+    def _get_drop_triggers_data_for_relation(
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        is_generic_relation: bool,
+    ) -> list[tuple[Collection, TriggerName]]:
+        to_drop = []
+        for equal_field in equal_fields:
+            if is_generic_relation:
+                generic_plain_field_name = HelperGetNames.get_generic_plain_field_name(
+                    own_table_field.column,
+                    foreign_table_field.table,
+                    foreign_table_field.ref_column,
+                )
+            else:
+                generic_plain_field_name = None
+
+            (
+                own_trigger_name,
+                own_table,
+                foreign_trigger_name,
+                foreign_table,
+                *_,
+            ) = Helper.get_config_for_trigger_definitions_check_equals(
+                own_table_field,
+                foreign_table_field,
+                equal_field,
+                generic_plain_field_name,
+            )
+            to_drop.append((own_table, own_trigger_name))
+            if foreign_trigger_name:
+                to_drop.append((foreign_table, foreign_trigger_name))
+        return to_drop
+
+    @staticmethod
+    def _get_drop_triggers_data_for_relation_list(
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        is_generic_relation: bool,
+    ) -> list[tuple[Collection, TriggerName]]:
+        to_drop = []
+        for equal_field in equal_fields:
+            own_table = HelperGetNames.get_table_name(own_table_field.table)
+            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+            if is_generic_relation:
+                intermediate_table = HelperGetNames.get_gm_table_name(own_table_field)
+            else:
+                intermediate_table, *_ = Helper.get_nm_table_for_n_m_relation_lists(
+                    own_table_field, foreign_table_field
+                )
+
+            (
+                own_trigger_name,
+                foreign_trigger_name,
+                intermediate_trigger_name,
+            ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
+                equal_field,
+                own_table,
+                own_table_field.column,
+                foreign_table,
+                foreign_table_field.column,
+                is_generic_list=is_generic_relation,
+            )
+            to_drop.extend(
+                [
+                    (own_table, own_trigger_name),
+                    (foreign_table, foreign_trigger_name),
+                    (intermediate_table, intermediate_trigger_name),
+                ]
+            )
+        return to_drop
+
+    # Helpers
+    @staticmethod
+    def equal_fields_changed(
+        prev_field_def: dict[str, Any], curr_field_def: dict[str, Any]
+    ) -> bool:
+        return prev_field_def.get("equal_fields") != curr_field_def.get("equal_fields")
 
 
 def handle_remove_tree(
