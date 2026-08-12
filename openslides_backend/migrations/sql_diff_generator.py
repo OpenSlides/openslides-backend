@@ -580,25 +580,25 @@ class EqualFieldsHelper:
                                 prev_foreign_table_field.field_def,
                                 curr_foreign_table_field.field_def,
                             ):
-                                prev_equal_fields = set(
-                                    GenerateCodeBlocks.get_equal_fields(
-                                        prev_own_table_field, prev_foreign_table_field
-                                    )
-                                )
-                                curr_equal_fields = set(
-                                    GenerateCodeBlocks.get_equal_fields(
-                                        curr_own_table_field, curr_foreign_table_field
-                                    )
-                                )
-
-                                cls.update_to_drop(
+                                cls.update_to_drop_for_generic(
                                     prev_own_table_field,
                                     prev_foreign_table_field,
-                                    prev_equal_fields - curr_equal_fields,
                                     type_,
                                     to_drop,
+                                    curr_own_table_field,
+                                    curr_foreign_table_field,
                                 )
 
+                                # prev_equal_fields = set(
+                                #     GenerateCodeBlocks.get_equal_fields(
+                                #         prev_own_table_field, prev_foreign_table_field
+                                #     )
+                                # )
+                                # curr_equal_fields = set(
+                                #     GenerateCodeBlocks.get_equal_fields(
+                                #         curr_own_table_field, curr_foreign_table_field
+                                #     )
+                                # )
                                 # if added_equal_fields := (
                                 #     curr_equal_fields - prev_equal_fields
                                 # ):
@@ -608,16 +608,9 @@ class EqualFieldsHelper:
                             prev_foreign_table_field = prev_foreign_table_fields[
                                 collectionfield
                             ]
-                            prev_equal_fields = set(
-                                GenerateCodeBlocks.get_equal_fields(
-                                    prev_own_table_field, prev_foreign_table_field
-                                )
-                            )
-
-                            cls.update_to_drop(
+                            cls.update_to_drop_for_generic(
                                 prev_own_table_field,
                                 prev_foreign_table_field,
-                                prev_equal_fields,
                                 type_,
                                 to_drop,
                             )
@@ -655,6 +648,39 @@ class EqualFieldsHelper:
                 equal_fields,
                 is_generic_relation="generic" in type_,
             )
+        )
+
+    @classmethod
+    def update_to_drop_for_generic(
+        cls,
+        prev_own_table_field: TableFieldType,
+        prev_foreign_table_field: TableFieldType,
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+        curr_own_table_field: TableFieldType | None = None,
+        curr_foreign_table_field: TableFieldType | None = None,
+    ) -> None:
+        prev_equal_fields = set(
+            GenerateCodeBlocks.get_equal_fields(
+                prev_own_table_field, prev_foreign_table_field
+            )
+        )
+        if curr_own_table_field and curr_foreign_table_field:
+            curr_equal_fields = set(
+                GenerateCodeBlocks.get_equal_fields(
+                    curr_own_table_field, curr_foreign_table_field
+                )
+            )
+            equal_fields = prev_equal_fields - curr_equal_fields
+        else:
+            equal_fields = prev_equal_fields
+
+        cls.update_to_drop(
+            prev_own_table_field,
+            prev_foreign_table_field,
+            equal_fields,
+            type_,
+            to_drop,
         )
 
     @staticmethod
