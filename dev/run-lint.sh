@@ -44,6 +44,8 @@ then
     eval "$DC exec -T backend flake8 $PATHS"
     echo "Running mypy"
     eval "$DC exec -T backend mypy $PATHS"
+    echo "Running sqruff"
+    eval "$DC exec -T backend sqruff fix $PATHS --config setup.cfg"
 else
     # Local Mode
     echo "Running pyupgrade"
@@ -58,4 +60,6 @@ else
     eval "flake8 $PATHS"
     echo "Running mypy"
     eval "mypy $PATHS"
+    echo "Running sqruff"
+    eval "sqruff fix $PATHS --config setup.cfg"
 fi

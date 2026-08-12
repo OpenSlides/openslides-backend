@@ -37,13 +37,16 @@ CREATE TABLE IF NOT EXISTS events (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     position INTEGER REFERENCES positions(position) ON DELETE CASCADE,
     fqid VARCHAR(48) NOT NULL,
-    type event_type NOT NULL,
+    type EVENT_TYPE NOT NULL,
     data JSONB,
     weight INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS event_position_idx ON events (position);
 CREATE INDEX IF NOT EXISTS event_fqid_idx ON events (fqid);
-CREATE INDEX IF NOT EXISTS event_data_meeting_id_idx ON events ((data->>'meeting_id')) WHERE data->>'meeting_id' IS NOT NULL;
+CREATE INDEX IF NOT EXISTS event_data_meeting_id_idx ON events (
+    (data ->> 'meeting_id')
+) WHERE data
+->> 'meeting_id' IS NOT NULL;
 
 -- For the `reserve_ids` feature
 CREATE TABLE IF NOT EXISTS id_sequences (
@@ -57,7 +60,9 @@ CREATE TABLE IF NOT EXISTS collectionfields (
     collectionfield VARCHAR(255) UNIQUE NOT NULL,
     position INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS collectionfields_collectionfield_idx on collectionfields (collectionfield);
+CREATE INDEX IF NOT EXISTS collectionfields_collectionfield_idx ON collectionfields (
+    collectionfield
+);
 
 CREATE TABLE IF NOT EXISTS events_to_collectionfields (
     event_id BIGINT, -- no reference to events(id) here since it is swapped with migration_events on
@@ -65,7 +70,8 @@ CREATE TABLE IF NOT EXISTS events_to_collectionfields (
     -- cleared there), we does not have to worry about data cosistency. Joining etc. still works, even
     -- if there is no foreign key relationship.
     collectionfield_id BIGINT REFERENCES collectionfields(id) ON DELETE CASCADE,
-    CONSTRAINT events_to_collectionfields_pkey PRIMARY KEY (event_id, collectionfield_id)
+    CONSTRAINT events_to_collectionfields_pkey
+        PRIMARY KEY (event_id, collectionfield_id)
 );
 
 CREATE TABLE IF NOT EXISTS models (
@@ -77,7 +83,7 @@ CREATE TABLE IF NOT EXISTS models (
 
 -- The following field was introduced with an update. To make sure the column exists the table
 -- is altered and the column added. This could maybe be deleted in the future.
-ALTER TABLE models ADD COLUMN IF NOT EXISTS updated timestamp NOT NULL DEFAULT current_timestamp;
+ALTER TABLE models ADD COLUMN IF NOT EXISTS updated TIMESTAMP NOT NULL DEFAULT current_timestamp;
 
 -- Trigger for setting the models updated column
 DROP TRIGGER IF EXISTS models_updated_trigger ON models;
@@ -92,17 +98,23 @@ CREATE TABLE IF NOT EXISTS migration_keyframes (
     migration_index INTEGER NOT NULL,
     UNIQUE (position, migration_index)
 );
-CREATE INDEX IF NOT EXISTS migration_keyframes_idx ON migration_keyframes (position, migration_index);
+CREATE INDEX IF NOT EXISTS migration_keyframes_idx ON migration_keyframes (
+    position, migration_index
+);
 
 CREATE TABLE IF NOT EXISTS migration_keyframe_models (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    keyframe_id INTEGER REFERENCES migration_keyframes(id) ON DELETE CASCADE NOT NULL,
+    keyframe_id INTEGER REFERENCES migration_keyframes(
+        id
+    ) ON DELETE CASCADE NOT NULL,
     fqid VARCHAR(48) NOT NULL,
     data JSONB NOT NULL,
     deleted BOOLEAN NOT NULL,
     UNIQUE (keyframe_id, fqid)
 );
-CREATE INDEX IF NOT EXISTS migration_keyframe_models_idx ON migration_keyframe_models (keyframe_id, fqid);
+CREATE INDEX IF NOT EXISTS migration_keyframe_models_idx ON migration_keyframe_models (
+    keyframe_id, fqid
+);
 
 CREATE TABLE IF NOT EXISTS migration_events (LIKE events INCLUDING ALL);
 

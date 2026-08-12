@@ -74,6 +74,9 @@ flake8:
 mypy:
 	mypy $(paths)
 
+sqruff:
+	sqruff fix $(paths) --config setup.cfg
+
 # Models
 
 join-models-yml:

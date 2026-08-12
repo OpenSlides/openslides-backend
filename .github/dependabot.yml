@@ -31,7 +31,7 @@ updates:
         patterns:
           - "psycopg*"
           - "python-sql"
-          - "sqlfluff"
+          - "sqruff"
       general-dependencies:
         patterns:
           - "dependency_injector"
