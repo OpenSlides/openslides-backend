@@ -6,6 +6,8 @@ ALTER TABLE agenda_item_t DROP COLUMN closed CASCADE;
 ALTER TABLE chat_group_t DROP CONSTRAINT unique_chat_group_meeting_id_name;
 ALTER TABLE committee_t DROP COLUMN parent_id CASCADE;
 ALTER TABLE history_entry_t DROP COLUMN model_id CASCADE;
+DROP TABLE nm_group_meeting_user_ids_meeting_user_t CASCADE;
+DROP TABLE gm_meeting_mediafile_attachment_ids_t CASCADE;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_assieb89ee8 ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_assignment_t_agenda_item_id ON assignment_t;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_motion_id ON agenda_item_t;
@@ -79,7 +81,36 @@ FROM committee_t c;
 
 comment on column "committee".user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
 
+CREATE OR REPLACE VIEW "group" AS SELECT *,
+(select m.id from meeting_t m where m.default_group_id = g.id) as default_group_for_meeting_id,
+(select m.id from meeting_t m where m.admin_group_id = g.id) as admin_group_for_meeting_id,
+(select m.id from meeting_t m where m.anonymous_group_id = g.id) as anonymous_group_for_meeting_id,
+(select array_agg(n.meeting_mediafile_id ORDER BY n.meeting_mediafile_id) from nm_group_mmagi_meeting_mediafile_t n where n.group_id = g.id) as meeting_mediafile_access_group_ids,
+(select array_agg(n.meeting_mediafile_id ORDER BY n.meeting_mediafile_id) from nm_group_mmiagi_meeting_mediafile_t n where n.group_id = g.id) as meeting_mediafile_inherited_access_group_ids,
+(select array_agg(n.motion_comment_section_id ORDER BY n.motion_comment_section_id) from nm_group_read_comment_section_ids_motion_comment_section_t n where n.group_id = g.id) as read_comment_section_ids,
+(select array_agg(n.motion_comment_section_id ORDER BY n.motion_comment_section_id) from nm_group_write_comment_section_ids_motion_comment_section_t n where n.group_id = g.id) as write_comment_section_ids,
+(select array_agg(n.chat_group_id ORDER BY n.chat_group_id) from nm_chat_group_read_group_ids_group_t n where n.group_id = g.id) as read_chat_group_ids,
+(select array_agg(n.chat_group_id ORDER BY n.chat_group_id) from nm_chat_group_write_group_ids_group_t n where n.group_id = g.id) as write_chat_group_ids,
+(select array_agg(n.poll_id ORDER BY n.poll_id) from nm_group_poll_ids_poll_t n where n.group_id = g.id) as poll_ids
+FROM group_t g;
+
+comment on column "group".meeting_mediafile_inherited_access_group_ids is 'Calculated field.';
+
 CREATE OR REPLACE VIEW "history_entry" AS SELECT * FROM history_entry_t h;
+
+
+CREATE OR REPLACE VIEW "meeting_user" AS SELECT *,
+(select array_agg(p.id ORDER BY p.id) from personal_note_t p where p.meeting_user_id = m.id) as personal_note_ids,
+(select array_agg(s.id ORDER BY s.id) from speaker_t s where s.meeting_user_id = m.id) as speaker_ids,
+(select array_agg(ms.id ORDER BY ms.id) from motion_supporter_t ms where ms.meeting_user_id = m.id) as motion_supporter_ids,
+(select array_agg(me.id ORDER BY me.id) from motion_editor_t me where me.meeting_user_id = m.id) as motion_editor_ids,
+(select array_agg(mw.id ORDER BY mw.id) from motion_working_group_speaker_t mw where mw.meeting_user_id = m.id) as motion_working_group_speaker_ids,
+(select array_agg(ms.id ORDER BY ms.id) from motion_submitter_t ms where ms.meeting_user_id = m.id) as motion_submitter_ids,
+(select array_agg(a.id ORDER BY a.id) from assignment_candidate_t a where a.meeting_user_id = m.id) as assignment_candidate_ids,
+(select array_agg(mu.id ORDER BY mu.id) from meeting_user_t mu where mu.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
+(select array_agg(c.id ORDER BY c.id) from chat_message_t c where c.meeting_user_id = m.id) as chat_message_ids,
+(select array_agg(n.structure_level_id ORDER BY n.structure_level_id) from nm_meeting_user_structure_level_ids_structure_level_t n where n.meeting_user_id = m.id) as structure_level_ids
+FROM meeting_user_t m;
 
 
 CREATE OR REPLACE VIEW "motion" AS SELECT *,

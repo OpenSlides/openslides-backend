@@ -30,7 +30,6 @@ from openslides_backend.migrations.yaml_diff_generator import (
     dumpjson,
     generate_diff,
     prev_models_context,
-    was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import Collection, CollectionField
@@ -516,6 +515,8 @@ class EqualFieldsHelper:
 
 
 class RemoveHelper:
+    intermediate_tables_to_remove: set[Table] = set()
+
     @classmethod
     def handle_remove(
         cls, remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]
@@ -587,6 +588,8 @@ class RemoveHelper:
                             "unique_together",
                         )
                         remove_empty(dc_remove_tree_dict, collection_name)
+        for table in sorted(cls.intermediate_tables_to_remove):
+            result += AlterSchemaHelper.get_drop_table_statement(table)
         result += EqualFieldsHelper.handle_alter_equal_fields()
         return result
 
@@ -618,8 +621,9 @@ class RemoveHelper:
             )
         return result
 
-    @staticmethod
+    @classmethod
     def handle_remove_table_fields(
+        cls,
         remove_list: list[str],
         dc_remove_list: list[str],
         collection_name: str,
@@ -631,9 +635,15 @@ class RemoveHelper:
 
             if field_def.get("to"):
                 alter_views.add(collection_name)
-                if was_view_field(collection_name, field_name, field_def):
-                    drop_column = False
                 with prev_models_context():
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
+                        collection_name, field_name, field_def
+                    )
+                    if write_fields:
+                        cls.intermediate_tables_to_remove.add(write_fields[0])
+                    if write_fields or is_view_field:
+                        drop_column = False
+
                     if field_def.get("equal_fields"):
                         EqualFieldsHelper.update_equal_fields_diff(
                             collection_name, field_name
