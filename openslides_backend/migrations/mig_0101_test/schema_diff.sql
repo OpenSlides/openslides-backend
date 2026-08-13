@@ -2,6 +2,8 @@
 
 -- REMOVE SECTION --
 DROP TABLE deleted_t CASCADE;
+ALTER TABLE agenda_item_t DROP COLUMN closed CASCADE;
+ALTER TABLE committee_t DROP COLUMN parent_id CASCADE;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_assieb89ee8 ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_assignment_t_agenda_item_id ON assignment_t;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_motion_id ON agenda_item_t;
@@ -23,6 +25,44 @@ DROP TRIGGER equal_meeting_id_on_chat_group_t_read_group_ids_intermediate ON nm_
 -- ADD SECTION --
 
 -- VIEWS UPDATE SECTION --
+CREATE OR REPLACE VIEW "committee" AS SELECT *,
+(select array_agg(m.id ORDER BY m.id) from meeting_t m where m.committee_id = c.id) as meeting_ids,
+(
+  SELECT array_agg(DISTINCT user_id ORDER BY user_id)
+  FROM (
+    -- Select user_ids from committees meetings
+    SELECT mu.user_id
+    FROM meeting_t AS m
+    INNER JOIN meeting_user_t AS mu ON mu.meeting_id = m.id
+    WHERE m.committee_id = c.id
+
+    UNION
+
+    -- Select user_ids from committee managers
+    SELECT cmu.user_id
+    FROM nm_committee_manager_ids_user_t cmu
+    WHERE cmu.committee_id = c.id
+
+    UNION
+
+    -- Select user_id from home committees
+    SELECT u.id
+    FROM user_t u
+    WHERE u.home_committee_id = c.id
+  ) _
+) AS user_ids
+,
+(select array_agg(n.user_id ORDER BY n.user_id) from nm_committee_manager_ids_user_t n where n.committee_id = c.id) as manager_ids,
+(select array_agg(n.all_parent_id ORDER BY n.all_parent_id) from nm_committee_all_child_ids_committee_t n where n.all_child_id = c.id) as all_parent_ids,
+(select array_agg(n.all_child_id ORDER BY n.all_child_id) from nm_committee_all_child_ids_committee_t n where n.all_parent_id = c.id) as all_child_ids,
+(select array_agg(u.id ORDER BY u.id) from user_t u where u.home_committee_id = c.id) as native_user_ids,
+(select array_agg(n.forward_to_committee_id ORDER BY n.forward_to_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.receive_forwardings_from_committee_id = c.id) as forward_to_committee_ids,
+(select array_agg(n.receive_forwardings_from_committee_id ORDER BY n.receive_forwardings_from_committee_id) from nm_committee_forward_to_committee_ids_committee_t n where n.forward_to_committee_id = c.id) as receive_forwardings_from_committee_ids,
+(select array_agg(g.organization_tag_id ORDER BY g.organization_tag_id) from gm_organization_tag_tagged_ids_t g where g.tagged_id_committee_id = c.id) as organization_tag_ids
+FROM committee_t c;
+
+comment on column "committee".user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
+
 CREATE OR REPLACE VIEW "motion" AS SELECT *,
 (select array_agg(mt.id ORDER BY mt.id) from motion_t mt where mt.lead_motion_id = m.id) as amendment_ids,
 (select array_agg(mt.id ORDER BY mt.id) from motion_t mt where mt.sort_parent_id = m.id) as sort_child_ids,

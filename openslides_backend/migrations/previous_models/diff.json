@@ -10,7 +10,9 @@
                     [],
                     {
                         "fields": [
-                            [],
+                            [
+                                "closed"
+                            ],
                             {
                                 "content_object_id": [
                                     [
@@ -79,6 +81,18 @@
                                     {}
                                 ]
                             }
+                        ]
+                    }
+                ],
+                "committee": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "parent_id",
+                                "child_ids"
+                            ],
+                            {}
                         ]
                     }
                 ],

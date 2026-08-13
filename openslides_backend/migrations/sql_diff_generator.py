@@ -613,18 +613,19 @@ class RemoveHelper:
         for field_name in remove_list:
             field_def = PREV_MODELS[collection_name]["fields"][field_name]
 
-            with prev_models_context():
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name, field_name, field_def
-                )
-                if field_def.get("equal_fields"):
-                    EqualFieldsHelper.update_equal_fields_diff(
-                        collection_name, field_name
+            if field_def.get("to"):
+                with prev_models_context():
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
+                        collection_name, field_name, field_def
                     )
+                    if field_def.get("equal_fields"):
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name
+                        )
 
-            alter_views_conditionally(
-                collection_name, bool(write_fields), is_view_field
-            )
+                alter_views_conditionally(
+                    collection_name, bool(write_fields), is_view_field
+                )
 
             if collection_name not in alter_views:
                 result += AlterSchemaHelper.get_drop_column_statement(
@@ -665,9 +666,7 @@ class RemoveHelper:
                             collection_name, constraint_name
                         )
                     case "sql":
-                        result += AlterSchemaHelper.get_drop_view_statement(
-                            collection_name
-                        )
+                        alter_views.add(collection_name)
                     case "constant":
                         result += AlterSchemaHelper.get_drop_trigger_statement(
                             collection_name,
