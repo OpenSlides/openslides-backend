@@ -450,17 +450,17 @@ class EqualFieldsHelper:
             else:
                 generic_plain_field_name = None
 
-            (
-                own_trigger_name,
-                own_table,
-                foreign_trigger_name,
-                foreign_table,
-                *_,
-            ) = Helper.get_config_for_trigger_definitions_check_equals(
-                own_table_field,
-                foreign_table_field,
-                equal_field,
-                generic_plain_field_name,
+            own_table = HelperGetNames.get_table_name(own_table_field.table)
+            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+            own_trigger_name, foreign_trigger_name = (
+                HelperGetNames.get_trigger_names_for_check_equals(
+                    equal_field,
+                    own_table,
+                    generic_plain_field_name or own_table_field.column,
+                    foreign_table,
+                    foreign_table_field.column,
+                    foreign_table_field.table,
+                )
             )
             to_drop.append((own_table, own_trigger_name))
             if foreign_trigger_name:

@@ -142,7 +142,8 @@
                         "fields": [
                             [
                                 "parent_id",
-                                "child_ids"
+                                "child_ids",
+                                "owner_id"
                             ],
                             {}
                         ]
@@ -153,6 +154,7 @@
                     {
                         "fields": [
                             [
+                                "mediafile_ids",
                                 "organization_tag_ids"
                             ],
                             {}
@@ -195,6 +197,17 @@
                                 "referenced_in_motion_state_extension_ids",
                                 "agenda_item_id",
                                 "history_entry_ids"
+                            ],
+                            {}
+                        ]
+                    }
+                ],
+                "organization": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "mediafile_ids"
                             ],
                             {}
                         ]

@@ -8,16 +8,17 @@ ALTER TABLE chat_group_t DROP CONSTRAINT unique_chat_group_meeting_id_name;
 ALTER TABLE committee_t DROP COLUMN parent_id CASCADE;
 ALTER TABLE history_entry_t DROP COLUMN model_id CASCADE;
 ALTER TABLE mediafile_t DROP COLUMN parent_id CASCADE;
+ALTER TABLE mediafile_t DROP COLUMN owner_id CASCADE;
 DROP TABLE gm_meeting_mediafile_attachment_ids_t CASCADE;
 DROP TABLE gm_motion_state_extension_reference_ids_t CASCADE;
 DROP TABLE gm_organization_tag_tagged_ids_t CASCADE;
 DROP TABLE nm_group_meeting_user_ids_meeting_user_t CASCADE;
+DROP TRIGGER equal_meeting_id_on_agenda_item_t_parent_id ON agenda_item_t;
+DROP TRIGGER equal_meeting_id_on_agenda_item_t_child_ids ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_assieb89ee8 ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_assignment_t_agenda_item_id ON assignment_t;
 DROP TRIGGER equal_meeting_id_on_agenda_item_t_content_object_id_motion_id ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_motion_t_agenda_item_id ON motion_t;
-DROP TRIGGER equal_meeting_id_on_agenda_item_t_parent_id ON agenda_item_t;
-DROP TRIGGER equal_meeting_id_on_agenda_item_t_child_ids ON agenda_item_t;
 DROP TRIGGER equal_meeting_id_on_assignment_candidate_t_assignment_id ON assignment_candidate_t;
 DROP TRIGGER equal_meeting_id_on_assignment_t_candidate_ids ON assignment_t;
 DROP TRIGGER equal_meeting_id_on_meeting_mediafile_t_attachment_ids_a02016b9 ON meeting_mediafile_t;
@@ -137,7 +138,6 @@ CREATE OR REPLACE VIEW "meeting" AS SELECT *,
 (select array_agg(t.id ORDER BY t.id) from topic_t t where t.meeting_id = m.id) as topic_ids,
 (select array_agg(g.id ORDER BY g.id) from group_t g where g.meeting_id = m.id) as group_ids,
 (select array_agg(mm.id ORDER BY mm.id) from meeting_mediafile_t mm where mm.meeting_id = m.id) as meeting_mediafile_ids,
-(select array_agg(mt.id ORDER BY mt.id) from mediafile_t mt where mt.owner_id_meeting_id = m.id) as mediafile_ids,
 (select array_agg(mt.id ORDER BY mt.id) from motion_t mt where mt.meeting_id = m.id) as motion_ids,
 (select array_agg(mt.id ORDER BY mt.id) from motion_t mt where mt.origin_meeting_id = m.id) as forwarded_motion_ids,
 (select array_agg(mc.id ORDER BY mc.id) from motion_comment_section_t mc where mc.meeting_id = m.id) as motion_comment_section_ids,
@@ -225,6 +225,19 @@ CREATE OR REPLACE VIEW "motion" AS SELECT *,
 (select array_agg(p.id ORDER BY p.id) from projection_t p where p.content_object_id_motion_id = m.id) as projection_ids,
 (select array_agg(p.id ORDER BY p.id) from personal_note_t p where p.content_object_id_motion_id = m.id) as personal_note_ids
 FROM motion_t m;
+
+
+CREATE OR REPLACE VIEW "organization" AS SELECT *,
+(select array_agg(g.id ORDER BY g.id) from gender_t g where g.organization_id = o.id) as gender_ids,
+(select array_agg(c.id ORDER BY c.id) from committee_t c where c.organization_id = o.id) as committee_ids,
+(select array_agg(m.id ORDER BY m.id) from meeting_t m where m.is_active_in_organization_id = o.id) as active_meeting_ids,
+(select array_agg(m.id ORDER BY m.id) from meeting_t m where m.is_archived_in_organization_id = o.id) as archived_meeting_ids,
+(select array_agg(m.id ORDER BY m.id) from meeting_t m where m.template_for_organization_id = o.id) as template_meeting_ids,
+(select array_agg(ot.id ORDER BY ot.id) from organization_tag_t ot where ot.organization_id = o.id) as organization_tag_ids,
+(select array_agg(t.id ORDER BY t.id) from theme_t t where t.organization_id = o.id) as theme_ids,
+(select array_agg(m.id ORDER BY m.id) from mediafile_t m where m.published_to_meetings_in_organization_id = o.id) as published_mediafile_ids,
+(select array_agg(u.id ORDER BY u.id) from user_t u where u.organization_id = o.id) as user_ids
+FROM organization_t o;
 
 
 CREATE OR REPLACE VIEW "organization_tag" AS SELECT * FROM organization_tag_t o;
