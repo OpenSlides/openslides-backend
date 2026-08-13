@@ -22,6 +22,16 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Authentication data must be set beforehand via set_authentication.
         """
 
+    def backchannel_logout(self, request: dict[str, Any])  -> None:
+        """
+        A request to logout and block an active session id. Request has to be in the form of a valid
+        OIDC logout token request.
+
+        Used to signal a backchannel logout originating from an IDP to all OS services.
+
+        Throws an exception, if the request is invalid
+        """
+
     def hash(self, toHash: str) -> str:
         """
         Hashes a given value. A random salt (64bit) is generated and added to the hashed value.
@@ -39,6 +49,16 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
     def is_anonymous(self, user_id: int) -> bool:
         """
         Checks if the given user is anonymous or not.
+        """
+
+    def block_session_id(self, session_id: int) -> None:
+        """
+        Blocks session_id, invalidating their authentication requests
+        """
+
+    def is_session_id_blocked(self, session_id: int) -> bool:
+        """
+        Checks if session_id is blocked and thereby invalid
         """
 
     def clear_all_sessions(self) -> None:

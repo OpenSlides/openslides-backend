@@ -7,6 +7,7 @@ import requests
 import jwt
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 from argon2 import PasswordHasher
+from typing import Any
 
 from ...shared.filters import FilterOperator
 from ...shared.exceptions import AuthenticationException
@@ -32,6 +33,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
     passwordHasher = PasswordHasher()
     ANONYMOUS_USER = 0
+    blocked_session_ids = []
 
     def __init__(self, env: Environment, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
@@ -64,23 +66,81 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         if not payload or not payload.sub or not payload.os_id:
             return (0, "")
 
+        if self.is_session_id_blocked(payload.sid):
+            self.logger.warning(f"Session ID {payload.sid} is blocked by blocklist")
+            return (0, "")
+
         return (int(payload.os_id), header_value)
 
-    def _extract_payload(self, token_string: str) -> IDPPayload:
+    def backchannel_logout(self, request: dict[str, Any]) -> str:
+        # Extract Logout Token
+        self.logger.debug(
+            f"Logout token with the following data: {self.request}"
+        )
+
+        # Fetch JWT
+        header_value = request.headers.get("Authorization")
+        if not header_value or not header_value.startswith("Bearer: "):
+            raise AuthenticationException(f"Logout Token does not contain 'Bearer:', instead {header_value}")
+
+        logout_token = header_value[len("Bearer: "):]
+
+        # Extract session ID
         try:
-            unverified_header = jwt.get_unverified_header(token_string)
+            session_id = self._fetch_session_id(logout_token)
+
+            # Block session ID
+            self.block_session_id(session_id)
+        except Exception as e:
+            raise AuthenticationException(f"Fetching session ID from logout token: {e}")
+
+
+        return session_id
+
+    def _extract_payload(self, token_string: str) -> IDPPayload:
+        claims = self._extract_claims(token_string)
+
+        payload = IDPPayload(claims)
+
+        if payload.iss != self.issuer_url:
+            raise AuthenticationException(f"Invalid issuer: got {payload.iss}, want {self.issuer_url}")
+
+        return payload
+
+    def _fetch_session_id(self, logout_token: str) -> str:
+        claims = self._extract_claims(logout_token)
+
+        # Required per OIDC backchannel logout: events must include the backchannel logout event
+        backchannel_event_key = "http://schemas.openid.net/event/backchannel-logout"
+        events = claims.get("events")
+        if not isinstance(events, dict) or backchannel_event_key not in events:
+            raise AuthenticationException("Token is not a valid backchannel logout token (missing events)")
+
+        # Validate issuer
+        if claims.get("iss") != self.issuer_url:
+            raise AuthenticationException(f"Invalid issuer: got {claims.get('iss')}, want {self.issuer_url}")
+
+        # Extract session ID
+        if "sid" not in claims or not claims.get("sid"):
+            raise AuthenticationException(f"Logout token does not contain session ID \n {claims}")
+
+        return claims["sid"]
+
+    def _extract_claims(self, token: str) -> dict[str, Any]:
+        try:
+            unverified_header = jwt.get_unverified_header(token)
         except jwt.exceptions.DecodeError as e:
-            raise AuthenticationException(f"Parsing JWT token header: {e}")
+            raise AuthenticationException(f"Parsing JWT header: {e}")
 
         kid = unverified_header.get("kid")
         if not kid:
-            raise AuthenticationException("No IDP id in auth headers")
+            raise AuthenticationException("No IDP id in token header")
 
         public_key = self._get_key(kid)
 
         try:
             claims = jwt.decode(
-                token_string,
+                token,
                 public_key,
                 algorithms=["RS256"],
                 options={"verify_aud": False},
@@ -90,12 +150,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         except jwt.exceptions.InvalidTokenError as e:
             raise AuthenticationException(f"Validating JWT token: {e}")
 
-        payload = IDPPayload(claims)
-
-        if payload.iss != self.issuer_url:
-            raise AuthenticationException(f"Invalid issuer i {self.env.IDP_URL_INTERNAL} e {self.env.IDP_URL_EXTERNAL}: got {payload.iss}, want {self.issuer_url}")
-
-        return payload
+        return claims
 
     def _get_key(self, kid: str):
         if kid in self._keys and time.time() < self._keys_expires_at:
@@ -128,8 +183,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         return self._keys[kid]
 
-    @staticmethod
-    def _parse_rsa_public_key(n_str: str, e_str: str):
+    def _parse_rsa_public_key(self, n_str: str, e_str: str):
         def b64url_to_int(s: str) -> int:
             padded = s + "=" * (-len(s) % 4)
             return int.from_bytes(base64.urlsafe_b64decode(padded), "big")
@@ -143,9 +197,15 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     def is_equal(self, toHash: str, toCompare: str) -> bool:
         return toHash == toCompare
 
-
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == self.ANONYMOUS_USER
+
+    def block_session_id(self, session_id: str):
+        self.blocked_session_ids.append(session_id)
+        return
+
+    def is_session_id_blocked(self, session_id: str) -> bool:
+        return session_id in self.blocked_session_ids
 
     def clear_all_sessions(self) -> None:
         self.auth_handler.clear_all_sessions(

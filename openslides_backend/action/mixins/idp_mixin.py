@@ -79,6 +79,7 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         try:
+            """
             response = requests.post(self.idp_admin_route + "users",
                 json={
                     'queries':
@@ -113,7 +114,32 @@ class IDPMixin(Action):
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "query": {
+                        "offset": 0,
+                        "limit": 100
+                    }
+                },
+                headers={
+                    'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_host}'
+                }
+            )
+            """
+
+            response = requests.post(self.idp_admin_route + "users",
+                json={
+                    'queries': [
+                        {
+                            'userNameQuery': {
+                                'userName': user['username'],
+                            }
+                        },
+                    ],
+                    "query": {
+                        "offset": 0,
+                        "limit": 100
+                    }
                 },
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
@@ -122,18 +148,18 @@ class IDPMixin(Action):
             )
 
             if response.status_code != 200:
-                raise ActionException(f"{response.status_code} {response.text}")
+                raise self.idp_error(response)
 
             json_response = response.json()
 
-            if "result" not in json_response or "totalResult" not in json_response["details"] or json_response["details"]["totalResult"] <= 0:
+            if "result" not in json_response or "totalResult" not in json_response["details"] or int(json_response["details"]["totalResult"]) <= 0:
                 # User does not exist
                 return
 
             found_users = json_response['result']
 
             for user in found_users:
-                self.delete_user(user['id'])
+                self.delete_user(user["userId"])
 
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
