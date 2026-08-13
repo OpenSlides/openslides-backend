@@ -1,6 +1,8 @@
 import os
+import re
 import sys
 from argparse import ArgumentParser
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, cast
 
@@ -10,17 +12,30 @@ from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import HelperGetNames
+from meta.dev.src.typing import SchemaZoneKey
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
+    PREV_MODELS,
     RENAMES,
     Renames,
     dumpjson,
     generate_diff,
 )
+
+TRIGGER_KEYS: list[SchemaZoneKey] = [
+    "create_trigger_partitioned_sequences",
+    "create_trigger_1_1_relation_not_null",
+    "create_trigger_1_n_relation_not_null",
+    "create_trigger_n_m_relation_not_null",
+    "create_trigger_prevent_updates_code",
+    "create_trigger_unique_ids_pair_code",
+    "create_trigger_equal_fields_code",
+    "create_trigger_notify",
+]
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -330,14 +345,31 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
     field_renames = renames[1]
 
     for collection_name_old, collection_name_new in collection_renames.items():
+        table_name_new = HelperGetNames.get_table_name(collection_name_new)
         result += AlterSchemaHelper.get_rename_table(
-            HelperGetNames.get_table_name(collection_name_old),
-            HelperGetNames.get_table_name(collection_name_new),
+            HelperGetNames.get_table_name(collection_name_old), table_name_new
         )
         result += AlterSchemaHelper.get_rename_view(
             collection_name_old, collection_name_new
         )
-        # TODO recreate dependend triggers
+        model_def_new = CURR_MODELS[collection_name_new]["fields"]
+        trigger_names_new = get_trigger_names(collection_name_new, model_def_new)
+        model_def_old = PREV_MODELS[collection_name_old]["fields"]
+        trigger_names_old = get_trigger_names(collection_name_old, model_def_old)
+        for field_name, field_old in trigger_names_old.items():
+            if atf_old := field_old.get("alter_table_final"):
+                atf_new = trigger_names_new[field_name]["alter_table_final"]
+                constraint_name_new = atf_new[0]
+                constraint_name_old = atf_old[0]
+                idx_name_new = atf_new[1]
+                idx_name_old = atf_old[1]
+                result += f"ALTER INDEX {idx_name_old} RENAME TO {idx_name_new};\n"
+                result += f"ALTER TABLE {table_name_new} RENAME CONSTRAINT {constraint_name_old} TO {constraint_name_new};\n"
+            for trigger_key in TRIGGER_KEYS:
+                if tk_old := field_old.get(trigger_key):
+                    tk_new = trigger_names_new[field_name][trigger_key]
+                    for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
+                        result += f"ALTER TRIGGER {trigger_name_old} ON {table_name_new} RENAME TO {trigger_name_new};\n"
         del dc_rename_dict[0][collection_name_old]
 
     for collection_name, collection_diff in field_renames.items():
@@ -366,6 +398,46 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
         # TODO Renaming and redefining constraints
         remove_empty(dc_rename_dict[1], collection_name)
     return result
+
+
+def get_trigger_names(
+    collection_name: str, fields: dict[str, Any]
+) -> dict[str, dict[str, list[str]]]:
+    schema_zone_texts_per_field: dict[str, dict[str, list[str]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    errors: list[str] = []
+
+    for fname, fdata in fields.items():
+        method_or_str, type_ = GenerateCodeBlocks.get_method(fname, fdata)
+        if isinstance(method_or_str, str):
+            error = Helper.prefix_error(method_or_str, collection_name, fname)
+            schema_zone_texts_per_field[fname]["undecided"].append(error)
+            errors.append(error)
+        else:
+            result, error = method_or_str(collection_name, fname, fdata, type_)
+            for k, v in result.items():
+                assert isinstance(v, str)
+                if k == "alter_table_final" and (
+                    matched := re.search(
+                        r"CONSTRAINT\s+(\w+)\s+FOREIGN.*?INDEX\s+(\w+)", v, re.DOTALL
+                    )
+                ):
+                    schema_zone_texts_per_field[fname][k].append(matched.group(1))
+                    schema_zone_texts_per_field[fname][k].append(matched.group(2))
+                elif k in TRIGGER_KEYS and (
+                    matched := re.search(r"TRIGGER\s+(\w+)\s+AFTER", v, re.DOTALL)
+                ):
+                    schema_zone_texts_per_field[fname][k].append(matched.group(1))
+                else:
+                    errors.append(
+                        Helper.prefix_error(
+                            "Could not extract " + k, collection_name, fname
+                        )
+                    )
+            if error:
+                errors.append(Helper.prefix_error(error, collection_name, fname))
+    return schema_zone_texts_per_field
 
 
 def alter_views_conditionally(
