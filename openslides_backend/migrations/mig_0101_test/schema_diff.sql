@@ -4,10 +4,16 @@
 DROP TABLE deleted_t CASCADE;
 ALTER TABLE agenda_item_t DROP COLUMN closed CASCADE;
 ALTER TABLE agenda_item_t DROP COLUMN parent_id CASCADE;
+ALTER TABLE agenda_item_t DROP CONSTRAINT fk_agenda_item_t_parent_id_agenda_item_t_id;
+ALTER TABLE agenda_item_t DROP INDEX idx_agenda_item_t_parent_id;
 ALTER TABLE chat_group_t DROP CONSTRAINT unique_chat_group_meeting_id_name;
 ALTER TABLE committee_t DROP COLUMN parent_id CASCADE;
+ALTER TABLE committee_t DROP CONSTRAINT fk_committee_t_parent_id_committee_t_id;
+ALTER TABLE committee_t DROP INDEX idx_committee_t_parent_id;
 ALTER TABLE history_entry_t DROP COLUMN model_id CASCADE;
 ALTER TABLE mediafile_t DROP COLUMN parent_id CASCADE;
+ALTER TABLE mediafile_t DROP CONSTRAINT fk_mediafile_t_parent_id_mediafile_t_id;
+ALTER TABLE mediafile_t DROP INDEX idx_mediafile_t_parent_id;
 ALTER TABLE mediafile_t DROP COLUMN owner_id CASCADE;
 DROP TABLE gm_meeting_mediafile_attachment_ids_t CASCADE;
 DROP TABLE gm_motion_state_extension_reference_ids_t CASCADE;

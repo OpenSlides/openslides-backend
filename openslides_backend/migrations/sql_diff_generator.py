@@ -655,6 +655,26 @@ class RemoveHelper:
                 result += AlterSchemaHelper.get_drop_column_statement(
                     collection_name, field_name
                 )
+                type_ = field_def["type"]
+                if "relation" in type_ and "generic" not in type_:
+                    with prev_models_context():
+                        foreign_table_field: TableFieldType = (
+                            TableFieldType.get_definitions_from_foreign(
+                                field_def.get("to"), field_def.get("reference")
+                            )
+                        )
+                    fk, idx = HelperGetNames.get_fk_and_index_name(
+                        HelperGetNames.get_table_name(collection_name),
+                        field_name,
+                        HelperGetNames.get_table_name(foreign_table_field.table),
+                        foreign_table_field.ref_column,
+                    )
+                    result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                        collection_name, fk
+                    )
+                    result += AlterSchemaHelper.get_drop_index_statement(
+                        collection_name, idx
+                    )
 
             dc_remove_list.remove(field_name)
         return result
