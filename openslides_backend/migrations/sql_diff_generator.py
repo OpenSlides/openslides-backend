@@ -501,9 +501,11 @@ class EqualFieldsHelper:
                 [
                     (own_table, own_trigger_name),
                     (foreign_table, foreign_trigger_name),
-                    (intermediate_table, intermediate_trigger_name),
                 ]
             )
+            if intermediate_table not in RemoveHelper.intermediate_tables_to_remove:
+                to_drop.append((intermediate_table, intermediate_trigger_name))
+
         return to_drop
 
     # Helpers
