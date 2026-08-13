@@ -28,7 +28,9 @@
                     [],
                     {
                         "fields": [
-                            [],
+                            [
+                                "history_entry_ids"
+                            ],
                             {
                                 "candidate_ids": [
                                     [
@@ -103,7 +105,9 @@
                     [],
                     {
                         "fields": [
-                            [],
+                            [
+                                "meeting_user_ids"
+                            ],
                             {
                                 "read_chat_group_ids": [
                                     [
@@ -112,6 +116,17 @@
                                     {}
                                 ]
                             }
+                        ]
+                    }
+                ],
+                "history_entry": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "model_id"
+                            ],
+                            {}
                         ]
                     }
                 ],
@@ -131,12 +146,24 @@
                         ]
                     }
                 ],
+                "meeting_user": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "group_ids"
+                            ],
+                            {}
+                        ]
+                    }
+                ],
                 "motion": [
                     [],
                     {
                         "fields": [
                             [
-                                "agenda_item_id"
+                                "agenda_item_id",
+                                "history_entry_ids"
                             ],
                             {}
                         ]
@@ -152,9 +179,28 @@
                             {}
                         ]
                     }
+                ],
+                "user": [
+                    [],
+                    {
+                        "fields": [
+                            [
+                                "history_entry_ids"
+                            ],
+                            {}
+                        ]
+                    }
                 ]
             }
-        ]
+        ],
+        "enum_types": {
+            "assignment": [
+                "phase"
+            ],
+            "group": [
+                "permissions"
+            ]
+        }
     },
     "add": null,
     "edit": [

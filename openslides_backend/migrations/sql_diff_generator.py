@@ -30,6 +30,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     dumpjson,
     generate_diff,
     prev_models_context,
+    was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import Collection, CollectionField
@@ -208,9 +209,15 @@ class EqualFieldsHelper:
                 prev_own_table_field = TableFieldType(
                     collection_name, field_name, prev_own_field_def
                 )
-                curr_own_field_def = CURR_MODELS[collection_name]["fields"][field_name]
-                curr_own_table_field = TableFieldType(
-                    collection_name, field_name, curr_own_field_def
+                curr_own_field_def = (
+                    CURR_MODELS.get(collection_name, {})
+                    .get("fields", {})
+                    .get(field_name, {})
+                )
+                curr_own_table_field = (
+                    TableFieldType(collection_name, field_name, curr_own_field_def)
+                    if curr_own_field_def
+                    else None
                 )
                 type_ = prev_own_field_def["type"]
                 handle_func = (
@@ -237,20 +244,13 @@ class EqualFieldsHelper:
     @classmethod
     def handle_plain_relations(
         cls,
-        curr_own_table_field: TableFieldType,
+        curr_own_table_field: TableFieldType | None,
         curr_own_field_def: dict[str, Any],
         prev_own_table_field: TableFieldType,
         prev_own_field_def: dict[str, Any],
         type_: str,
         to_drop: list[tuple[Table, TriggerName]],
     ) -> None:
-        curr_foreign_table_field: TableFieldType = (
-            TableFieldType.get_definitions_from_foreign(
-                curr_own_field_def.get("to"),
-                curr_own_field_def.get("reference"),
-            )
-        )
-
         with prev_models_context():
             prev_foreign_table_field: TableFieldType = (
                 TableFieldType.get_definitions_from_foreign(
@@ -258,17 +258,27 @@ class EqualFieldsHelper:
                     prev_own_field_def.get("reference"),
                 )
             )
-
         prev_equal_fields = set(
             GenerateCodeBlocks.get_equal_fields(
                 prev_own_table_field, prev_foreign_table_field
             )
         )
-        curr_equal_fields = set(
-            GenerateCodeBlocks.get_equal_fields(
-                curr_own_table_field, curr_foreign_table_field
+
+        if curr_own_table_field:
+            curr_foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    curr_own_field_def.get("to"),
+                    curr_own_field_def.get("reference"),
+                )
             )
-        )
+
+            curr_equal_fields = set(
+                GenerateCodeBlocks.get_equal_fields(
+                    curr_own_table_field, curr_foreign_table_field
+                )
+            )
+        else:
+            curr_equal_fields = set()
 
         cls.update_to_drop(
             prev_own_table_field,
@@ -282,7 +292,7 @@ class EqualFieldsHelper:
     @classmethod
     def handle_generic_relations(
         cls,
-        curr_own_table_field: TableFieldType,
+        curr_own_table_field: TableFieldType | None,
         curr_own_field_def: dict[str, Any],
         prev_own_table_field: TableFieldType,
         prev_own_field_def: dict[str, Any],
@@ -297,13 +307,18 @@ class EqualFieldsHelper:
                     prev_own_field_def.get("reference"),
                 )
             }
-        curr_foreign_table_fields: dict[CollectionField, TableFieldType] = {
-            field.collectionfield: field
-            for field in InternalHelper.get_definitions_from_foreign_list(
-                curr_own_field_def.get("to"),
-                curr_own_field_def.get("reference"),
-            )
-        }
+        curr_foreign_table_fields: dict[CollectionField, TableFieldType] = (
+            {
+                field.collectionfield: field
+                for field in InternalHelper.get_definitions_from_foreign_list(
+                    curr_own_field_def.get("to"),
+                    curr_own_field_def.get("reference"),
+                )
+            }
+            if curr_own_table_field
+            else {}
+        )
+
         prev_collectionfields = set(prev_foreign_table_fields.keys())
         curr_collectionfields = set(curr_foreign_table_fields.keys())
 
@@ -612,22 +627,19 @@ class RemoveHelper:
         result = ""
         for field_name in remove_list:
             field_def = PREV_MODELS[collection_name]["fields"][field_name]
+            drop_column = True
 
             if field_def.get("to"):
+                alter_views.add(collection_name)
+                if was_view_field(collection_name, field_name, field_def):
+                    drop_column = False
                 with prev_models_context():
-                    is_view_field, _, write_fields = get_view_field_state_write_fields(
-                        collection_name, field_name, field_def
-                    )
                     if field_def.get("equal_fields"):
                         EqualFieldsHelper.update_equal_fields_diff(
                             collection_name, field_name
                         )
 
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
-                )
-
-            if collection_name not in alter_views:
+            if drop_column:
                 result += AlterSchemaHelper.get_drop_column_statement(
                     collection_name, field_name
                 )
