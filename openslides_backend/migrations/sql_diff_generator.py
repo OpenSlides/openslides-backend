@@ -543,8 +543,9 @@ class RemoveHelper:
             remove_empty(dc_remove_dict, "_meta")
         return result
 
-    @staticmethod
+    @classmethod
     def handle_remove_tree(
+        cls,
         remove_tree_dict: dict[str, Any],
         dc_remove_tree_dict: dict[str, Any],
     ) -> str:
@@ -553,159 +554,192 @@ class RemoveHelper:
             for key, data in collection_data[1].items():
                 match key:
                     case "fields":
-                        for field_name in data[0]:
-                            field_def = PREV_MODELS[collection_name]["fields"][
-                                field_name
-                            ]
-
-                            with prev_models_context():
-                                is_view_field, _, write_fields = (
-                                    get_view_field_state_write_fields(
-                                        collection_name, field_name, field_def
-                                    )
-                                )
-                                if field_def.get("equal_fields"):
-                                    EqualFieldsHelper.update_equal_fields_diff(
-                                        collection_name, field_name
-                                    )
-
-                            alter_views_conditionally(
-                                collection_name, bool(write_fields), is_view_field
-                            )
-
-                            if collection_name not in alter_views:
-                                result += AlterSchemaHelper.get_drop_column_statement(
-                                    collection_name, field_name
-                                )
-
-                            dc_remove_tree_dict[collection_name][1]["fields"][0].remove(
-                                field_name
-                            )
-                        for field_name, attrs in data[1].items():
-                            for attr in attrs[0]:
-                                match attr:
-                                    case "default":
-                                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                                            collection_name, field_name, "DEFAULT"
-                                        )
-                                    case "required":
-                                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                                            collection_name, field_name, "NOT NULL"
-                                        )
-                                    case "minimum" | "maximum" | "minLength" | "unique":
-                                        constraint_name_func = getattr(
-                                            HelperGetNames,
-                                            f"get_{attr.lower()}_constraint_name",
-                                        )
-                                        constraint_name = constraint_name_func(
-                                            collection_name,
-                                            (
-                                                [field_name]
-                                                if attr == "unique"
-                                                else field_name
-                                            ),
-                                        )
-                                        result += AlterSchemaHelper.get_drop_table_constraint_statement(
-                                            collection_name, constraint_name
-                                        )
-                                    case "sql":
-                                        result += (
-                                            AlterSchemaHelper.get_drop_view_statement(
-                                                collection_name
-                                            )
-                                        )
-                                    case "constant":
-                                        result += AlterSchemaHelper.get_drop_trigger_statement(
-                                            collection_name,
-                                            HelperGetNames.get_constant_field_trigger_name(
-                                                collection_name, field_name
-                                            ),
-                                        )
-                                    case "equal_fields":
-                                        with prev_models_context():
-                                            EqualFieldsHelper.update_equal_fields_diff(
-                                                collection_name, field_name
-                                            )
-                                    case value if (
-                                        value in FieldAttributes.skipped_in_schema
-                                    ):
-                                        pass
-                                    case "type":
-                                        raise BadCodingException(
-                                            f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
-                                        )
-                                    case _:
-                                        # Skipped as not likely to be removed in the foreseeable future:
-                                        # "to" and "reference": can only be removed if type changes to not relational field
-                                        # "sequence_scope": would turn a sequence field into a regular number field
-                                        raise NotImplementedError(
-                                            f"{collection_name}/{field_name}: {attr}"
-                                        )
-                                dc_remove_tree_dict[collection_name][1]["fields"][1][
-                                    field_name
-                                ][0].remove(attr)
-                                remove_empty(
-                                    dc_remove_tree_dict[collection_name][1]["fields"][
-                                        1
-                                    ],
-                                    field_name,
-                                )
-                            for attr, attr_data in attrs[1].items():
-                                match attr:
-                                    case "log_triggers":
-                                        processed_tables: dict[str, int] = {}
-                                        for log_trigger in attr_data:
-                                            trigger_name_iu, trigger_name_ud, *_ = (
-                                                Helper.get_log_calculated_id_array_trigger_data(
-                                                    collection_name,
-                                                    field_name,
-                                                    log_trigger,
-                                                    processed_tables,
-                                                )
-                                            )
-                                            for trigger_name in [
-                                                trigger_name_iu,
-                                                trigger_name_ud,
-                                            ]:
-                                                result += AlterSchemaHelper.get_drop_trigger_statement(
-                                                    log_trigger["on_table"],
-                                                    trigger_name,
-                                                )
-                                    case _:
-                                        raise NotImplementedError(
-                                            f"{collection_name}/{field_name}: {attr}"
-                                        )
-                                dc_remove_tree_dict[collection_name][1]["fields"][1][
-                                    field_name
-                                ][1].pop(attr)
-                                remove_empty(
-                                    dc_remove_tree_dict[collection_name][1]["fields"][
-                                        1
-                                    ],
-                                    field_name,
-                                )
+                        result += cls.handle_remove_fields(
+                            data,
+                            dc_remove_tree_dict[collection_name][1]["fields"],
+                            collection_name,
+                        )
                         remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
                         remove_empty(dc_remove_tree_dict, collection_name)
                     case "unique_together":
-                        for fields in data:
-                            result += (
-                                AlterSchemaHelper.get_drop_table_constraint_statement(
-                                    collection_name,
-                                    HelperGetNames.get_unique_constraint_name(
-                                        collection_name,
-                                        Helper.split_unique_together_fields(fields),
-                                    ),
-                                )
-                            )
-                            dc_remove_tree_dict[collection_name][1][
-                                "unique_together"
-                            ].remove(fields)
-                            remove_empty(
-                                dc_remove_tree_dict[collection_name][1],
-                                "unique_together",
-                            )
+                        cls.handle_remove_unique_together(
+                            data,
+                            dc_remove_tree_dict[collection_name][1]["unique_together"],
+                            collection_name,
+                        )
+                        remove_empty(
+                            dc_remove_tree_dict[collection_name][1],
+                            "unique_together",
+                        )
                         remove_empty(dc_remove_tree_dict, collection_name)
         result += EqualFieldsHelper.handle_alter_equal_fields()
+        return result
+
+    @classmethod
+    def handle_remove_fields(
+        cls,
+        remove_list: list[list[str] | dict[str, Any]],
+        dc_remove_list: list[list[str] | dict[str, Any]],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        if (
+            len(fields_to_remove := remove_list[0])
+            and isinstance(fields_to_remove, list)
+            and isinstance(dc_fields_to_remove := dc_remove_list[0], list)
+        ):
+            result += cls.handle_remove_table_fields(
+                fields_to_remove,
+                dc_fields_to_remove,
+                collection_name,
+            )
+        if (
+            len(field_attrs_to_remove := remove_list[1])
+            and isinstance(field_attrs_to_remove, dict)
+            and isinstance(dc_field_attrs_to_remove := dc_remove_list[1], dict)
+        ):
+            result += cls.handle_remove_field_attributes(
+                field_attrs_to_remove, dc_field_attrs_to_remove, collection_name
+            )
+        return result
+
+    @staticmethod
+    def handle_remove_table_fields(
+        remove_list: list[str],
+        dc_remove_list: list[str],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for field_name in remove_list:
+            field_def = PREV_MODELS[collection_name]["fields"][field_name]
+
+            with prev_models_context():
+                is_view_field, _, write_fields = get_view_field_state_write_fields(
+                    collection_name, field_name, field_def
+                )
+                if field_def.get("equal_fields"):
+                    EqualFieldsHelper.update_equal_fields_diff(
+                        collection_name, field_name
+                    )
+
+            alter_views_conditionally(
+                collection_name, bool(write_fields), is_view_field
+            )
+
+            if collection_name not in alter_views:
+                result += AlterSchemaHelper.get_drop_column_statement(
+                    collection_name, field_name
+                )
+
+            dc_remove_list.remove(field_name)
+        return result
+
+    @staticmethod
+    def handle_remove_field_attributes(
+        remove_tree_dict: dict[str, Any],
+        dc_remove_tree_dict: dict[str, Any],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for field_name, attrs in remove_tree_dict.items():
+            for attr in attrs[0]:
+                match attr:
+                    case "default":
+                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                            collection_name, field_name, "DEFAULT"
+                        )
+                    case "required":
+                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                            collection_name, field_name, "NOT NULL"
+                        )
+                    case "minimum" | "maximum" | "minLength" | "unique":
+                        constraint_name_func = getattr(
+                            HelperGetNames,
+                            f"get_{attr.lower()}_constraint_name",
+                        )
+                        constraint_name = constraint_name_func(
+                            collection_name,
+                            ([field_name] if attr == "unique" else field_name),
+                        )
+                        result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                            collection_name, constraint_name
+                        )
+                    case "sql":
+                        result += AlterSchemaHelper.get_drop_view_statement(
+                            collection_name
+                        )
+                    case "constant":
+                        result += AlterSchemaHelper.get_drop_trigger_statement(
+                            collection_name,
+                            HelperGetNames.get_constant_field_trigger_name(
+                                collection_name, field_name
+                            ),
+                        )
+                    case "equal_fields":
+                        with prev_models_context():
+                            EqualFieldsHelper.update_equal_fields_diff(
+                                collection_name, field_name
+                            )
+                    case value if value in FieldAttributes.skipped_in_schema:
+                        pass
+                    case "type":
+                        raise BadCodingException(
+                            f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
+                        )
+                    case _:
+                        # Skipped as not likely to be removed in the foreseeable future:
+                        # "to" and "reference": can only be removed if type changes to not relational field
+                        # "sequence_scope": would turn a sequence field into a regular number field
+                        raise NotImplementedError(
+                            f"{collection_name}/{field_name}: {attr}"
+                        )
+                dc_remove_tree_dict[field_name][0].remove(attr)
+                remove_empty(dc_remove_tree_dict, field_name)
+            for attr, attr_data in attrs[1].items():
+                match attr:
+                    case "log_triggers":
+                        processed_tables: dict[str, int] = {}
+                        for log_trigger in attr_data:
+                            trigger_name_iu, trigger_name_ud, *_ = (
+                                Helper.get_log_calculated_id_array_trigger_data(
+                                    collection_name,
+                                    field_name,
+                                    log_trigger,
+                                    processed_tables,
+                                )
+                            )
+                            for trigger_name in [
+                                trigger_name_iu,
+                                trigger_name_ud,
+                            ]:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    log_trigger["on_table"],
+                                    trigger_name,
+                                )
+                    case _:
+                        raise NotImplementedError(
+                            f"{collection_name}/{field_name}: {attr}"
+                        )
+                dc_remove_tree_dict[field_name][1].pop(attr)
+                remove_empty(dc_remove_tree_dict, field_name)
+        return result
+
+    @staticmethod
+    def handle_remove_unique_together(
+        remove_list: list[str],
+        dc_remove_list: list[str],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for fields in remove_list:
+            result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                collection_name,
+                HelperGetNames.get_unique_constraint_name(
+                    collection_name,
+                    Helper.split_unique_together_fields(fields),
+                ),
+            )
+            dc_remove_list.remove(fields)
         return result
 
     @staticmethod
