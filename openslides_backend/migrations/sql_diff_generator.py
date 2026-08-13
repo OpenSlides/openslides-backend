@@ -562,7 +562,7 @@ class RemoveHelper:
                         remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
                         remove_empty(dc_remove_tree_dict, collection_name)
                     case "unique_together":
-                        cls.handle_remove_unique_together(
+                        result += cls.handle_remove_unique_together(
                             data,
                             dc_remove_tree_dict[collection_name][1]["unique_together"],
                             collection_name,

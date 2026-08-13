@@ -71,6 +71,9 @@
                 "chat_group": [
                     [],
                     {
+                        "unique_together": [
+                            "meeting_id, name"
+                        ],
                         "fields": [
                             [],
                             {
@@ -189,7 +192,11 @@
                 }
             ],
             "meeting_mediafile": [
-                {},
+                {
+                    "unique_together": [
+                        "mediafile_id, meeting_id"
+                    ]
+                },
                 {
                     "fields": [
                         {},
