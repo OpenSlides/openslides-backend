@@ -27,7 +27,7 @@
     locked_out: boolean;
 
     structure_level_id: Id;
-    vote_delegated_to_id: Id;
+    vote_delegated_to_ids: Id[];
     vote_delegations_from_ids: Id[];
 
 // Group C

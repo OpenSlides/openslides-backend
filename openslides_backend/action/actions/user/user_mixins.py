@@ -12,7 +12,7 @@ from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
 from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
+from ....shared.schema import decimal_schema, id_list_schema
 from ...action import Action, original_instances
 from ...mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ...util.typing import ActionData
@@ -85,7 +85,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
         "structure_level_ids": id_list_schema,
-        "vote_delegated_to_id": optional_id_schema,
+        "vote_delegated_to_ids": id_list_schema,
         "vote_delegations_from_ids": id_list_schema,
         "group_ids": id_list_schema,
         "locked_out": {"type": "boolean"},

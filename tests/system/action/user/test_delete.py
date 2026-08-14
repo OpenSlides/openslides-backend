@@ -310,7 +310,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
-                    "vote_delegated_to_id": 1112,
+                    "vote_delegated_to_ids": [1112],
                 },
                 "meeting_user/1112": {
                     "meeting_id": 1,
@@ -344,7 +344,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
-                    "vote_delegated_to_id": 1112,
+                    "vote_delegated_to_ids": [1112],
                 },
                 "meeting_user/1112": {
                     "meeting_id": 1,
