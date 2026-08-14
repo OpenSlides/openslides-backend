@@ -16,7 +16,10 @@ from meta.dev.src.helper_get_names import (
     InternalHelper,
     TableFieldType,
 )
-from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_helper import (
+    MIGRATIONS_PATH,
+    MigrationHelper,
+)
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
@@ -87,10 +90,9 @@ def main() -> int:
         for collection_name in sorted(alter_views)
     )
     sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
-    # TODO Do this in a sub folder migrations?
     with open(
         os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
+            MIGRATIONS_PATH,
             MigrationHelper.get_last_migration_directory(),
             "schema_diff.sql",
         ),
