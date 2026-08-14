@@ -557,6 +557,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "assignments_export_title": "Elections",
                     "assignment_poll_add_candidates_to_list_of_speakers": False,
                     "assignment_poll_default_method": "rating_approval",
+                    "poll_enable_max_yes_votes": True,
                     "poll_enable_max_votes_per_option": False,
                     "topic_poll_default_method": "rating_approval",
                     "poll_couple_countdown": True,
