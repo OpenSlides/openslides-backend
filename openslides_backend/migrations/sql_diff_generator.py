@@ -11,7 +11,7 @@ import simplejson as json
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
-from meta.dev.src.helper_get_names import HelperGetNames
+from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper
 from meta.dev.src.typing import SchemaZoneKey
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
@@ -36,6 +36,25 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_equal_fields_code",
     "create_trigger_notify",
 ]
+
+
+def get_schema_sql_dict() -> dict[str, dict[str, str]]:
+    return {
+        "table_sql": GenerateCodeBlocks.table_sql,
+        "alter_table_final_sql": GenerateCodeBlocks.alter_table_final_sql,
+        "view_sql": GenerateCodeBlocks.view_sql,
+        "trigger_sql": GenerateCodeBlocks.trigger_sql,
+        "intermediate_sql": GenerateCodeBlocks.intermediate_sql,
+    }
+
+
+# TODO use context
+InternalHelper.MODELS = PREV_MODELS
+GenerateCodeBlocks.generate_the_code()
+CURR_CODE_BLOCKS = get_schema_sql_dict()
+InternalHelper.MODELS = CURR_MODELS
+GenerateCodeBlocks.generate_the_code()
+PREV_CODE_BLOCKS = get_schema_sql_dict()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -73,7 +92,6 @@ def main() -> int:
 
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
-    GenerateCodeBlocks.generate_the_code()
     if isinstance(add, tuple) and isinstance(add[0], dict):
         sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
