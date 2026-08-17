@@ -2,6 +2,7 @@ from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MotionComment
@@ -103,12 +104,16 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         instances = self.get_instances_with_fields(["motion_id", "section_id"])
         _, action = self.name.split(".")
         return {
-            fqid_from_collection_and_id("motion", instance["motion_id"]): [
-                "Comment {} " + action + "d",
-                fqid_from_collection_and_id(
-                    "motion_comment_section", instance["section_id"]
-                ),
-            ]
+            fqid_from_collection_and_id(
+                "motion", instance["motion_id"]
+            ): build_history_information_data(
+                [
+                    "Comment {} " + action + "d",
+                    fqid_from_collection_and_id(
+                        "motion_comment_section", instance["section_id"]
+                    ),
+                ],
+            )
             for instance in instances
         }
 

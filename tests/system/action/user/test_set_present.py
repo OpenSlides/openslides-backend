@@ -8,35 +8,81 @@ class UserSetPresentActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting()
 
-    def test_set_present_add_correct(self) -> None:
-        self.set_models(
-            {
-                "user/111": {"username": "username_srtgb123"},
-            }
-        )
+    def base_test_set_present_add_correct(self, with_meeting_user: bool) -> None:
+        self.set_models({"user/111": {"username": "username_srtgb123"}})
+        if with_meeting_user:
+            self.set_user_groups(111, [3])
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": True}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        assert model.get("is_present_in_meeting_ids") == [1]
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("present_user_ids") == [111]
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": [1]})
+        self.assert_model_exists("meeting/1", {"present_user_ids": [111]})
         self.assert_history_information(
-            "user/111", ["Set present in meeting {}", "meeting/1"]
+            "user/111",
+            ["Set present in meeting {}", "meeting/1"],
         )
+        if with_meeting_user:
+            self.assert_history_information(
+                "meeting_user/1",
+                structured_information={"is_present": True},
+            )
 
-    def test_set_present_del_correct(self) -> None:
+    def test_set_present_add_correct(self) -> None:
+        self.base_test_set_present_add_correct(False)
+
+    def test_set_present_add_correct_with_meeting_user(self) -> None:
+        self.base_test_set_present_add_correct(True)
+
+    def base_test_set_present_add_second_correct(self, with_meeting_user: bool) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "present_user_ids": [111],
-                },
-                "user/111": {
-                    "username": "username_srtgb123",
-                },
+                "meeting/1": {"present_user_ids": [111]},
+                "user/111": {"username": "username_srtgb123"},
             }
         )
+        self.create_meeting(4)
+        if with_meeting_user:
+            self.set_user_groups(111, [3, 6])
+        response = self.request(
+            "user.set_present", {"id": 111, "meeting_id": 4, "present": True}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": [1, 4]})
+        self.assert_model_exists("meeting/1", {"present_user_ids": [111]})
+        self.assert_model_exists("meeting/4", {"present_user_ids": [111]})
+        self.assert_history_information(
+            "user/111",
+            ["Set present in meeting {}", "meeting/4"],
+        )
+        if with_meeting_user:
+            self.assert_model_exists(
+                "meeting_user/1", {"user_id": 111, "meeting_id": 1}
+            )
+            self.assert_history_information("meeting_user/1")
+            self.assert_model_exists(
+                "meeting_user/2", {"user_id": 111, "meeting_id": 4}
+            )
+            self.assert_history_information(
+                "meeting_user/2",
+                structured_information={"is_present": True},
+            )
+
+    def test_set_present_add_second_correct(self) -> None:
+        self.base_test_set_present_add_second_correct(False)
+
+    def test_set_present_add_second_correct_with_meeting_users(self) -> None:
+        self.base_test_set_present_add_second_correct(True)
+
+    def base_test_set_present_del_correct(self, with_meeting_user: bool) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"present_user_ids": [111]},
+                "user/111": {"username": "username_srtgb123"},
+            }
+        )
+        if with_meeting_user:
+            self.set_user_groups(111, [3])
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
@@ -44,8 +90,20 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
         self.assert_model_exists("meeting/1", {"present_user_ids": None})
         self.assert_history_information(
-            "user/111", ["Set not present in meeting {}", "meeting/1"]
+            "user/111",
+            ["Set not present in meeting {}", "meeting/1"],
         )
+        if with_meeting_user:
+            self.assert_history_information(
+                "meeting_user/1",
+                structured_information={"is_present": False},
+            )
+
+    def test_set_present_del_correct(self) -> None:
+        self.base_test_set_present_del_correct(False)
+
+    def test_set_present_del_correct_with_meeting_user(self) -> None:
+        self.base_test_set_present_del_correct(True)
 
     def test_set_present_null_action(self) -> None:
         self.set_models(

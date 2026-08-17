@@ -9,6 +9,7 @@ import fastjsonschema
 from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
+from openslides_backend.shared.history_events import update_history_information_multi
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseRelationField, GenericRelationField
@@ -435,8 +436,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             # sort events: create - update - delete
             events_by_type: dict[EventType, list[Event]] = defaultdict(list)
             for event in self.events:
-                self.apply_event(event)
-                events_by_type[event["type"]].append(event)
+                if event["type"] == "delete" or not self.is_to_be_deleted(
+                    event["fqid"]
+                ):
+                    self.apply_event(event)
+                    events_by_type[event["type"]].append(event)
             information = self.get_full_history_information()
             if self.is_sub_call:
                 write_request.information = information
@@ -540,7 +544,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         if self.history_information is None:
             return None
 
-        information = {}
+        information: HistoryInformation = {}
         instances = (
             self.get_instances_with_fields(["id", self.history_relation_field])
             if self.history_relation_field
@@ -558,8 +562,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 fqids.append(
                     fqid_from_collection_and_id(self.model.collection, instance["id"])
                 )
-            for fqid in fqids:
-                information[fqid] = [self.history_information]
+            update_history_information_multi(
+                information, fqids, [self.history_information]
+            )
         return information
 
     def get_instances_with_fields(
@@ -763,6 +768,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         return None
 
+    def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
+        return self.datastore.is_to_be_deleted(fqid)
+
 
 def merge_history_informations(
     a: HistoryInformation | None, *other: HistoryInformation | None
@@ -777,7 +785,12 @@ def merge_history_informations(
             b = {}
         for fqid, information in b.items():
             if fqid in a:
-                a[fqid].extend(information)
+                if entries := information.get("entries"):
+                    a[fqid].setdefault("entries", list()).extend(entries)
+                if structured_information := information.get("structured_information"):
+                    a[fqid].setdefault("structured_information", dict()).update(
+                        structured_information
+                    )
             else:
                 a[fqid] = information
     return a

@@ -36,7 +36,7 @@ class MeetingUserSetData(
             "about_me",
             "vote_weight",
             "structure_level_ids",
-            "vote_delegated_to_id",
+            "vote_delegated_to_ids",
             "vote_delegations_from_ids",
             "group_ids",
             "locked_out",

@@ -37,7 +37,7 @@
     used_as_default_projector_for_countdown_in_meeting_id: Id,
     used_as_default_projector_for_assignment_poll_in_meeting_id: Id,
     used_as_default_projector_for_motion_poll_in_meeting_id: Id,
-    used_as_default_projector_for_poll_in_meeting_id: Id,
+    used_as_default_projector_for_topic_poll_in_meeting_id: Id,
 }
 ```
 

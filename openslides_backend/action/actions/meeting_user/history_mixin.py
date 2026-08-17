@@ -1,14 +1,24 @@
 from collections.abc import Iterable
 from copy import deepcopy
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.interfaces.event import Event, EventType
 
 from ....services.database.interface import GetManyRequest
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import Field, FullQualifiedId, fqid_from_collection_and_id
 from ....shared.typing import HistoryInformation
 from ...action import Action
+
+
+class ActionHistoryInformationData(TypedDict):
+    entries: NotRequired[list[tuple[str, ...]]]
+    structured_information: NotRequired[dict[Field, Any]]
+
+
+ActionHistoryInformation = dict[FullQualifiedId, ActionHistoryInformationData]
 
 
 class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
@@ -18,7 +28,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         yield from super().create_events(instance)
         db_instance = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["id"]),
-            ["vote_delegated_to_id", "vote_delegations_from_ids"],
+            ["vote_delegated_to_ids", "vote_delegations_from_ids"],
             use_changed_models=False,
             raise_exception=False,
             lock_result=False,
@@ -33,27 +43,24 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             meeting_user_ids.update(db_instance.get("vote_delegations_from_ids", []))
             if added_delegations:
                 db_added_to_ids = [
-                    date["vote_delegated_to_id"]
-                    for date in self.datastore.get_many(
+                    delegatee_id
+                    for delegator in self.datastore.get_many(
                         [
                             GetManyRequest(
                                 "meeting_user",
                                 added_delegations,
-                                ["vote_delegated_to_id"],
+                                ["vote_delegated_to_ids"],
                             )
                         ],
                         use_changed_models=False,
                         lock_result=False,
                     )["meeting_user"].values()
-                    if date.get("vote_delegated_to_id")
+                    for delegatee_id in delegator.get("vote_delegated_to_ids", [])
                 ]
                 meeting_user_ids.update(db_added_to_ids)
-        if muser_id := instance.get("vote_delegated_to_id"):
-            meeting_user_ids.add(muser_id)
-        if "vote_delegated_to_id" in instance and db_instance.get(
-            "vote_delegated_to_id"
-        ):
-            meeting_user_ids.add(db_instance["vote_delegated_to_id"])
+        meeting_user_ids.update(instance.get("vote_delegated_to_ids", []))
+        if "vote_delegated_to_ids" in instance:
+            meeting_user_ids.update(db_instance.get("vote_delegated_to_ids", []))
         if meeting_user_ids:
             user_ids: set[int] = {
                 muser["user_id"]
@@ -76,7 +83,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
     def get_history_information(self) -> HistoryInformation | None:
-        information: dict[str, list[tuple[str, ...]]] = {}
+        information: ActionHistoryInformation = {}
 
         # Scan the instances and collect the info for the history information
         # Copy instances first since they are modified
@@ -97,7 +104,10 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
         return {
-            fqid: [string for entry in history for string in entry]
+            fqid: build_history_information_data(
+                [string for entry in history.get("entries", []) for string in entry],
+                history.get("structured_information", {}),
+            )
             for fqid, history in information.items()
         }
 
@@ -105,9 +115,10 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         self,
         instance: dict[str, Any],
         db_instance: dict[str, Any],
-        information: dict[str, list[tuple[str, ...]]],
+        information: ActionHistoryInformation,
     ) -> None:
-        instance_information: list[tuple[str, ...]] = []
+        user_entries: list[tuple[str, ...]] = []
+        meeting_user_structured_information: dict[str, dict[str, list[int]]] = {}
         user_id = db_instance["user_id"]
         meeting_id = db_instance["meeting_id"]
 
@@ -120,25 +131,36 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         # meeting specific data
         update_fields = ["structure_level_ids", "number", "vote_weight"]
         if any(field in instance for field in update_fields):
-            instance_information.append(
+            user_entries.append(
                 (
                     "Participant data updated in meeting {}",
                     fqid_from_collection_and_id("meeting", meeting_id),
                 )
             )
 
-        self.handle_group_updates(instance_information, instance, db_instance)
-        self.handle_delegations(
-            information, instance_information, instance, db_instance
+        self.handle_group_updates(
+            user_entries,
+            meeting_user_structured_information,
+            instance,
+            db_instance,
         )
+        self.handle_delegations(information, user_entries, instance, db_instance)
 
-        if instance_information:
+        if user_entries:
             self.add_entries_to_history_information(
-                information, instance_information, for_user_id=user_id
+                information,
+                user_entries,
+                for_user_id=user_id,
             )
+        if meeting_user_structured_information:
+            information[
+                fqid_from_collection_and_id("meeting_user", db_instance["id"])
+            ] = {"structured_information": meeting_user_structured_information}
 
     def add_created_meeting_user_history_information(
-        self, instance: dict[str, Any], information: dict[str, list[tuple[str, ...]]]
+        self,
+        instance: dict[str, Any],
+        information: ActionHistoryInformation,
     ) -> None:
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -175,15 +197,32 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
         if instance_information:
             self.add_entries_to_history_information(
-                information, instance_information, for_user_id=db_instance["user_id"]
+                information,
+                instance_information,
+                for_user_id=db_instance["user_id"],
             )
+        if "group_ids" in instance:
+            structured_information: dict[str, dict[str, list[int]] | bool] = {
+                "group_ids": {"added": instance["group_ids"]}
+            }
+            is_present_in_meeting_ids = self.datastore.get(
+                fqid_from_collection_and_id("user", db_instance["user_id"]),
+                ["is_present_in_meeting_ids"],
+                lock_result=False,
+            ).get("is_present_in_meeting_ids", [])
+            if db_instance["meeting_id"] in is_present_in_meeting_ids:
+                structured_information["is_present"] = True
+            information[fqid_from_collection_and_id("meeting_user", instance["id"])] = {
+                "structured_information": structured_information
+            }
 
     def add_entries_to_history_information(
         self,
-        information: dict[str, list[tuple[str, ...]]],
-        entries: list[tuple[str, ...]],
+        information: ActionHistoryInformation,
+        entries: list[tuple[str, ...]] = [],
         for_user_id: int | None = None,
         for_meeting_user_id: int | None = None,
+        structured_information: dict[Field, Any] | None = None,
     ) -> None:
         if not for_user_id:
             if not for_meeting_user_id:
@@ -197,11 +236,18 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_id = for_user_id
         fqid = fqid_from_collection_and_id("user", user_id)
         if fqid not in information:
-            information[fqid] = entries
+            if entries:
+                information[fqid] = {"entries": entries}
+            if structured_information:
+                information[fqid]["structured_information"] = structured_information
         else:
             for entry in entries:
-                if entry not in information[fqid]:
-                    information[fqid].append(entry)
+                if entry not in information[fqid]["entries"]:
+                    information[fqid]["entries"].append(entry)
+            if structured_information:
+                information[fqid].setdefault("structured_information", dict()).update(
+                    structured_information
+                )
 
     def compose_history_string(
         self, fqids_per_collection: list[tuple[str, list[str]]]
@@ -231,7 +277,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
     def handle_group_updates(
         self,
-        instance_information: list[tuple[str, ...]],
+        entries: list[tuple[str, ...]],
+        meeting_user_structured_information: dict[str, dict[str, list[int]]],
         instance: dict[str, Any],
         db_instance: dict[str, Any],
     ) -> None:
@@ -241,6 +288,16 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             db_group_ids = set(db_instance.get("group_ids", []))
             added = instance_group_ids - db_group_ids
             removed = db_group_ids - instance_group_ids
+
+            # Calculate history information for meeting_user
+            if added:
+                meeting_user_structured_information["group_ids"] = {
+                    "added": list(added)
+                }
+            if removed:
+                meeting_user_structured_information.setdefault(
+                    "group_ids", dict()
+                ).update({"removed": list(removed)})
 
             # remove default groups
             meeting = self.datastore.get(
@@ -252,6 +309,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             removed.discard(meeting.get("default_group_id"))
             changed = added | removed
 
+            # Calculate history information for user
             group_information: list[str] = []
             if added and removed:
                 group_information.append("Groups changed")
@@ -273,57 +331,58 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     fqid_from_collection_and_id("meeting", meeting_id)
                 )
             if group_information:
-                instance_information.append(tuple(group_information))
+                entries.append(tuple(group_information))
 
     def handle_delegations(
         self,
-        information: dict[str, list[tuple[str, ...]]],
+        information: ActionHistoryInformation,
         instance_information: list[tuple[str, ...]],
         instance: dict[str, Any],
         db_instance: dict[str, Any],
     ) -> None:
         meeting_id = db_instance["meeting_id"]
         user_id = db_instance["user_id"]
-        if "vote_delegated_to_id" in instance:
-            if (
-                (old_to_muser_id := db_instance.get("vote_delegated_to_id"))
-                and old_to_muser_id != instance["vote_delegated_to_id"]
-                and (
-                    old_to_user_id := self.datastore.get(
-                        fqid_from_collection_and_id("meeting_user", old_to_muser_id),
-                        ["user_id"],
-                        use_changed_models=False,
-                        raise_exception=False,
-                        lock_result=False,
-                    ).get("user_id")
-                )
-            ):
+        if "vote_delegated_to_ids" in instance:
+            old_to_muser_ids = set(db_instance.get("vote_delegated_to_ids", []))
+            new_to_muser_ids = set(instance.get("vote_delegated_to_ids", []))
+            removed_to_muser_ids = old_to_muser_ids - new_to_muser_ids
+            added_to_muser_ids = new_to_muser_ids - old_to_muser_ids
+            meeting_users_to_users = {
+                id_: mu["user_id"]
+                for id_, mu in self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "meeting_user",
+                            [*removed_to_muser_ids, *added_to_muser_ids],
+                            ["user_id"],
+                        )
+                    ],
+                    use_changed_models=True,
+                    lock_result=False,
+                )["meeting_user"].items()
+            }
+
+            if removed_to_muser_ids:
                 instance_information.append(
                     (
                         "Vote delegation canceled in meeting {}",
                         fqid_from_collection_and_id("meeting", meeting_id),
                     )
                 )
-                self.add_entries_to_history_information(
-                    information,
-                    [
-                        (
-                            "Proxy voting rights for {} removed in meeting {}",
-                            fqid_from_collection_and_id("user", user_id),
-                            fqid_from_collection_and_id("meeting", meeting_id),
-                        )
-                    ],
-                    for_user_id=old_to_user_id,
-                )
-            if instance["vote_delegated_to_id"]:
-                to_user_id = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        "meeting_user", instance["vote_delegated_to_id"]
-                    ),
-                    ["user_id"],
-                    use_changed_models=True,
-                    lock_result=False,
-                )["user_id"]
+                for mu_id in removed_to_muser_ids:
+                    self.add_entries_to_history_information(
+                        information,
+                        [
+                            (
+                                "Proxy voting rights for {} removed in meeting {}",
+                                fqid_from_collection_and_id("user", user_id),
+                                fqid_from_collection_and_id("meeting", meeting_id),
+                            )
+                        ],
+                        for_user_id=meeting_users_to_users[mu_id],
+                    )
+            for mu_id in added_to_muser_ids:
+                to_user_id = meeting_users_to_users[mu_id]
                 instance_information.append(
                     (
                         "Vote delegated to {} in meeting {}",
@@ -379,43 +438,6 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         for_meeting_user_id=muser_id,
                     )
             if added:
-                db_added = [
-                    date
-                    for date in self.datastore.get_many(
-                        [
-                            GetManyRequest(
-                                "meeting_user",
-                                list(added),
-                                ["vote_delegated_to_id", "user_id"],
-                            )
-                        ],
-                        use_changed_models=False,
-                        lock_result=False,
-                    )["meeting_user"].values()
-                    if date.get("vote_delegated_to_id")
-                ]
-                for date in db_added:
-                    self.add_entries_to_history_information(
-                        information,
-                        [
-                            (
-                                "Vote delegation canceled in meeting {}",
-                                fqid_from_collection_and_id("meeting", meeting_id),
-                            )
-                        ],
-                        for_user_id=date["user_id"],
-                    )
-                    self.add_entries_to_history_information(
-                        information,
-                        [
-                            (
-                                "Proxy voting rights for {} removed in meeting {}",
-                                fqid_from_collection_and_id("user", date["user_id"]),
-                                fqid_from_collection_and_id("meeting", meeting_id),
-                            )
-                        ],
-                        for_meeting_user_id=date["vote_delegated_to_id"],
-                    )
                 added_user_ids = [
                     str(m_user["user_id"])
                     for m_user in self.datastore.get_many(
@@ -447,3 +469,22 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         ],
                         for_meeting_user_id=muser_id,
                     )
+
+    def get_changed_group_ids(
+        self, user_id: int, update_data: dict[int, list[int]] = {}
+    ) -> list[int]:
+        db_groups: dict[int, dict[str, Any]] = self.datastore.filter(
+            "meeting_user",
+            FilterOperator("user_id", "=", user_id),
+            ["meeting_id", "group_ids"],
+            lock_result=False,
+        )
+        changed_groups = [
+            (
+                updated_groups
+                if (updated_groups := update_data.get(db_data["meeting_id"]))
+                else db_data["group_ids"]
+            )
+            for db_data in db_groups.values()
+        ]
+        return [id_ for group_ids in changed_groups for id_ in group_ids]

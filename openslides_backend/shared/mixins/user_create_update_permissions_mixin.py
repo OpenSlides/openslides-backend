@@ -220,7 +220,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             "about_me",
             "comment",
             "structure_level_ids",
-            "vote_delegated_to_id",
+            "vote_delegated_to_ids",
             "vote_delegations_from_ids",
             "is_present_in_meeting_ids",
             "locked_out",

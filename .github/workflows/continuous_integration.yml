@@ -89,13 +89,6 @@ jobs:
         ref: ${{ env.AUTH_COMMIT_HASH }}
         path: openslides-auth-service
 
-    - name: Clone vote service
-      uses: actions/checkout@v7
-      with:
-        repository: OpenSlides/openslides-vote-service
-        ref: main
-        path: openslides-vote-service
-
     - name: Run local setup
       working-directory: openslides-backend
       run: dev/run-local.sh

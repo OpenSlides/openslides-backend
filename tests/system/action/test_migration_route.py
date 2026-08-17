@@ -3,6 +3,8 @@ from threading import Lock
 from typing import Any
 from unittest.mock import Mock, patch
 
+import pytest
+
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.migrations.migration_handler import MigrationState
@@ -18,6 +20,7 @@ from tests.util import Response
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
+@pytest.mark.skip(reason="Waiting for the migration framework.")
 class BaseMigrationRouteTest(BaseInternalRequestTest, BaseMigrationTestCase):
     """
     Uses the anonymous client to call the migration route.

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....i18n.translator import Translator
@@ -641,22 +642,23 @@ class BaseMotionCreateForwarded(
         return instance
 
     def get_history_information(self) -> HistoryInformation | None:
-        forwarded_entries = defaultdict(list)
+        information: HistoryInformation = {}
         for instance in self.instances:
-            forwarded_entries[
-                fqid_from_collection_and_id("motion", instance["origin_id"])
-            ].extend(
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("motion", instance["origin_id"]),
                 [
                     "Forwarded to {}",
                     fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-                ]
+                ],
             )
-        return forwarded_entries | {
-            fqid_from_collection_and_id("motion", instance["id"]): [
-                "Motion created (forwarded)"
-            ]
-            for instance in self.instances
-        }
+        for instance in self.instances:
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("motion", instance["id"]),
+                ["Motion created (forwarded)"],
+            )
+        return information
 
     def check_can_forward_with_attachments(self) -> None:
         organization = self.datastore.get(

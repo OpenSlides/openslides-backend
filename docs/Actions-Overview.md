@@ -78,6 +78,12 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [meeting.archive](actions/meeting.archive.md)
 - [meeting.unarchive](actions/meeting.unarchive.md)
 
+## Meeting poll defaults
+
+- [meeting_poll_default.create](actions/meeting_poll_default.create.md)
+- [meeting_poll_default.update](actions/meeting_poll_default.delete.md)
+- [meeting_poll_default.update](actions/meeting_poll_default.update.md)
+
 ## Motions
 
 - [motion.create](actions/motion.create.md)
@@ -142,6 +148,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [personal_note.update](actions/personal_note.update.md)
 
 ## Projector and Projection
+
 - [projector.create](actions/projector.create.md)
 - [projector.update](actions/projector.update.md)
 - [projector.delete](actions/projector.delete.md)
@@ -170,6 +177,18 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [point_of_order_category.create](actions/point_of_order_category.create.md)
 - [point_of_order_category.delete](actions/point_of_order_category.delete.md)
 - [point_of_order_category.update](actions/point_of_order_category.update.md)
+
+## Poll related objects
+
+- [poll.delete](actions/poll.delete.md)
+- [poll_ballot.delete](actions/poll_ballot.delete.md)
+- [poll_ballot_user.delete](actions/poll_ballot_user.delete.md)
+- [poll_config_approval.delete](actions/poll_config_approval.delete.md)
+- [poll_config_rating_approval.delete](actions/poll_config_rating_approval.delete.md)
+- [poll_config_rating_score.delete](actions/poll_config_rating_score.delete.md)
+- [poll_config_selection.delete](actions/poll_config_selection.delete.md)
+- [poll_config_stv_scottish.delete](actions/poll_config_stv_scottish.delete.md)
+- [poll_option.delete](actions/poll_option.delete.md)
 
 ## Speaker
 
@@ -219,6 +238,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [topic.import](actions/topic.import.md)
 
 ## Users
+
 - [user.assign_meetings](actions/user.assign_meetings.md)
 - [user.create](actions/user.create.md)
 - [user.delete](actions/user.delete.md)
@@ -243,21 +263,3 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [account.import](actions/account.import.md)
 - [participant.json_upload](actions/participant.json_upload.md)
 - [participant.import](actions/participant.import.md)
-
-## Voting
-
-- [option.update](actions/option.update.md)
-- [poll.create](actions/poll.create.md)
-- [poll.delete](actions/poll.delete.md)
-- [poll.update](actions/poll.update.md)
-- [poll.start](actions/poll.start.md)
-- [poll.stop](actions/poll.stop.md)
-- [poll.publish](actions/poll.publish.md)
-- [poll.reset](actions/poll.reset.md)
-- [poll.anonymize](actions/poll.anonymize.md)
-- [poll.vote](actions/poll.vote.md)
-- [poll_candidate_list.create](actions/poll_candidate_list.create.md)
-- [poll_candidate_list.delete](actions/poll_candidate_list.delete.md)
-- [poll_candidate.create](actions/poll_candidate.create.md)
-- [poll_candidate.delete](actions/poll_candidate.delete.md)
-

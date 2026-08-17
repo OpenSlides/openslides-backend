@@ -890,7 +890,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             self.create_user("delegatee", [1])
             self.set_models(
                 {
-                    "meeting_user/1": {"vote_delegated_to_id": 2},
+                    "meeting_user/1": {"vote_delegated_to_ids": [2]},
                     "meeting_user/2": {"vote_delegations_from_ids": [1]},
                 }
             )

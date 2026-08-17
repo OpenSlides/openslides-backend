@@ -28,11 +28,14 @@ class MeetingUserUpdate(
 
     merge_fields = [
         "assignment_candidate_ids",
+        "history_entry_ids",
         "motion_working_group_speaker_ids",
         "motion_editor_ids",
         "motion_supporter_ids",
         "motion_submitter_ids",
         "chat_message_ids",
+        "acting_ballot_ids",
+        "represented_ballot_ids",
     ]
 
     model = MeetingUser()
@@ -40,6 +43,7 @@ class MeetingUserUpdate(
         optional_properties=[
             "about_me",
             "group_ids",
+            "poll_option_ids",
             *meeting_user_standard_fields,
             *merge_fields,
         ],

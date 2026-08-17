@@ -18,6 +18,7 @@ from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
     AgendaItemModelMixin,
     MeetingModelMixin,
+    MeetingPollDefaultModelMixin,
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
@@ -59,6 +60,7 @@ RELATION_FIELD_CLASSES = {
 MODEL_MIXINS: dict[str, type] = {
     "agenda_item": AgendaItemModelMixin,
     "meeting": MeetingModelMixin,
+    "meeting_poll_default": MeetingPollDefaultModelMixin,
     "poll": PollModelMixin,
 }
 
