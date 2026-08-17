@@ -1,4 +1,5 @@
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.services.database.commands import GetManyRequest
 
@@ -35,10 +36,23 @@ class UserDelete(
         if instance["id"] == self.user_id:
             raise ActionException("You cannot delete yourself.")
 
-        # Delete IDP account
-        self.delete_user(instance)
+        try:
+            self.user_id_to_idp_id[instance["id"]] = self.datastore.get(
+                fqid=f"user/{instance.get('id')}",
+                mapped_fields=["idp_id"]
+                )["idp_id"]
+        except Exception as e:
+            self.logger.warning(f"Getting IDP ID from user {instance.get('id')} that is being deleted {e}")
+            return ""
 
         return super().update_instance(instance)
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            # Delete IDP account
+            self.delete_user(self.user_id_to_idp_id[action_data[0]["id"]])
+
+        return on_success
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
@@ -51,6 +65,7 @@ class UserDelete(
         self.check_meeting_admin_integrity(
             [user_id for date in action_data if (user_id := date.get("id"))]
         )
+        self.user_id_to_idp_id: dict[int, str] = {}
         return super().get_updated_instances(action_data)
 
     def check_meeting_admin_integrity(self, delete_data: list[int] = []) -> None:

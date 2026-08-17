@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -192,26 +193,23 @@ class UserUpdate(
                     "A superadmin is not allowed to set himself inactive."
                 )
 
-        # IDP Changes
-        if user.get("username") != instance.get("username"):
-            self.update_username(instance, instance.get("username"))
-
-        if is_active := instance.get("is_active"):
-            if not user.get("is_active"):
-                self.set_user_enable_status(instance, instance.get("is_active"))
-                self.revoke_all_sessions_of_user(instance)
-        elif is_active is False and user.get("is_active"):
-            self.set_user_enable_status(instance, instance.get("is_active"))
-            self.revoke_all_sessions_of_user(instance)
-        # TODO: What was this about?
-        #if is_active := instance.get("is_active"):
-            #if not user.get("is_active"):
-            #    self.check_limit_of_user(1)
-        #elif is_active is False and user.get("is_active"):
-        #    self.auth.clear_sessions_by_user_id(instance["id"])
-
         check_gender_exists(self.datastore, instance)
         return instance
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            # IDP Changes
+            if "username" in action_data[0]:
+                self.update_username(action_data[0], action_data[0].get("username"))
+
+            if "is_active" in action_data[0]:
+                self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
+                self.revoke_all_sessions_of_user(action_data[0])
+
+            if "email" in action_data[0]:
+                self.update_email(action_data[0], action_data[0].get("email"))
+
+        return on_success
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

@@ -24,7 +24,7 @@ class UserBlockSessionID(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         request = None
 
-        # Validate logout token and extract session_id
+        # Validate logout token and extract session id
         session_id = self.auth.backchannel_logout(request)
 
         # Emit session id block via database signal

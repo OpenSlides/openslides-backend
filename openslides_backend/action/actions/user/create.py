@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -17,7 +18,7 @@ from ...mixins.idp_mixin import IDPMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionResultElement
+from ...util.typing import ActionData, ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
@@ -99,12 +100,6 @@ class UserCreate(
                 raise ActionException(
                     f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
                 )
-        else:
-            # TODO: How should default passwords be managed?
-            if not instance.get("default_password"):
-                instance["default_password"] = get_random_password()
-
-            self.create_user(instance, self.auth.hash(instance["default_password"]))
 
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
@@ -113,6 +108,13 @@ class UserCreate(
                 "Cannot set external to true and set a home committee at the same time."
             )
         return instance
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            # Create IDP account
+            self.create_user(action_data[0], self.auth.hash(get_random_password()))
+
+        return on_success
 
     def create_action_result_element(
         self, instance: dict[str, Any]

@@ -6,6 +6,8 @@ import base64
 
 from ..action import Action
 from openslides_backend.shared.exceptions import ActionException
+from ...shared.interfaces.write_request import WriteRequest
+from ...shared.interfaces.event import Event, EventType
 
 logger = logging.getLogger(__name__)
 
@@ -167,9 +169,9 @@ class IDPMixin(Action):
     def create_user(self, user, password = ""):
         idp_admin_access_token = self._get_admin_key()
 
-        os_id = user["id"]
-        username = user["username"]
-        email = user["email"]
+        os_id = user.get("id")
+        username = user.get("username")
+        email = user.get("email")
         idp_id = user.get("idp_id")
 
         if idp_id is None or idp_id == "":
@@ -220,10 +222,24 @@ class IDPMixin(Action):
         else:
             # A OIDC ID already exists.
             # TODO: Should this be an error? What's to do here?
-            raise ActionException(f"Error creating user {username} in IDP: They already have a IDP ID")
+            raise ActionException(f"Error creating user {username} in IDP: They already have an IDP ID")
 
-        ## Set
-        user['idp_id'] = idp_id
+        ## Write IDP ID in datastore
+        self.datastore.write(
+            WriteRequest(
+                events=[
+                    Event(
+                        type=EventType.Update,
+                        fqid=f"user/{os_id}",
+                        fields={
+                            "idp_id": idp_id,
+                        },
+                    )
+                ],
+                user_id=os_id,
+                locked_fields={},
+            )
+        )
 
     # Deletes the OIDC user belonging to the given os user.
     # Warning: This will not remove the idp_id from the os user in the database!
@@ -296,7 +312,7 @@ class IDPMixin(Action):
             json_response = response.json()
 
             if not "sessions" in json_response:
-                logger.warning(f"No session has been found")
+                # logger.warning(f"No session has been found")
                 return
 
             for session in json_response["sessions"]:
