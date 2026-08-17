@@ -635,6 +635,9 @@ class RemoveHelper:
         result = ""
         for field_name in remove_list:
             field_def = PREV_MODELS[collection_name]["fields"][field_name]
+            if field_def.get("calculated"):
+                continue
+
             drop_column = True
 
             if field_def.get("to"):
