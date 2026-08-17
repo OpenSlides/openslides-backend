@@ -186,6 +186,7 @@ class StopControl(CountdownControl, Action):
         self, poll: dict[str, Any], meeting: dict[str, Any]
     ) -> list[dict[str, Any]]:
         entitled_users = []
+        return []
         all_voted_users = set(poll.get("voted_ids", []))
 
         # get all users from the groups.
