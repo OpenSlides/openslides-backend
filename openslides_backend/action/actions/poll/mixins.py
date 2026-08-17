@@ -168,7 +168,12 @@ class StopControl(CountdownControl, Action):
                 raise VoteServiceException("Invalid response from vote service")
             processed += 1
         self.logger.error("Poll Stop handling: Processed all ballots.")
-        self.execute_other_action(VoteCreate, action_data)
+        steps = 1000
+        vote_amount = len(action_data)
+        for start in range(0, vote_amount, steps):
+            self.logger.error("Poll Stop handling: Creating votes {start} to {start + steps} of {vote_amount}.")
+            self.execute_other_action(VoteCreate, action_data[start:min(start+steps, len(action_data))])
+        # self.execute_other_action(VoteCreate, action_data)
         self.logger.error("Poll Stop handling: Created votes.")
         # update results into option
         self.execute_other_action(

@@ -356,6 +356,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_exists("poll/1", {"voted_ids": user_ids})
+        for i in range(len(user_ids)):
+            self.assert_model_exists(f"vote/{i+1}")
         assert counter.calls == 60
 
     @performance

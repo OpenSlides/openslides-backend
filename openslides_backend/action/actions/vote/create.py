@@ -1,6 +1,4 @@
-from math import floor
-from time import time
-from typing import Any, cast
+from typing import cast
 
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.database.commands import GetManyRequest
@@ -34,9 +32,6 @@ class VoteCreate(CreateActionWithInferredMeeting):
     relation_field_for_meeting = "option_id"
 
     def prefetch(self, action_data: ActionData) -> None:
-        self.start_time = floor(time())
-        self.minutes = 0
-        self.amount_votes = len(list(action_data))
         self.datastore.get_many(
             [
                 GetManyRequest(
@@ -80,12 +75,3 @@ class VoteCreate(CreateActionWithInferredMeeting):
             use_changed_models=False,
             lock_result=False,
         )
-
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        minutes = floor(time()) - self.start_time
-        if minutes > self.minutes:
-            self.minutes = minutes
-            self.logger.error(
-                f"Poll Stop handling: Working on vote {self.index+1}/{self.amount_votes}."
-            )
-        return super().update_instance(instance)
