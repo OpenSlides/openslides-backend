@@ -183,7 +183,7 @@ class StopControl(CountdownControl, Action):
                 for _id, option in option_results.items()
             ],
         )
-        self.logger.error("Poll Stop handling: Set option auot fields.")
+        self.logger.error("Poll Stop handling: Set option auto fields.")
         # set voted ids
         voted_ids = results["user_ids"]
         instance["voted_ids"] = voted_ids
