@@ -78,7 +78,7 @@ class PollPermissionMixin(Action):
 
 class StopControl(CountdownControl, Action):
     def on_stop(self, instance: dict[str, Any]) -> None:
-        self.logger.debug("Poll Stop handling: Loading poll and meeting data.")
+        self.logger.error("Poll Stop handling: Loading poll and meeting data.")
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
@@ -101,14 +101,14 @@ class StopControl(CountdownControl, Action):
             ],
             lock_result=False,
         )
-        self.logger.debug("Poll Stop handling: Resetting poll countdown.")
+        self.logger.error("Poll Stop handling: Resetting poll countdown.")
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], CountdownCommand.RESET)
 
         # stop poll in vote service and create vote objects
-        self.logger.debug("Poll Stop handling: Calling stop on vote service.")
+        self.logger.error("Poll Stop handling: Calling stop on vote service.")
         results = self.vote_service.stop(instance["id"])
-        self.logger.debug("Poll Stop handling: Vote service stop finished.")
+        self.logger.error("Poll Stop handling: Vote service stop finished.")
         action_data = []
         votesvalid = Decimal("0.000000")
         option_results: dict[int, dict[str, Decimal]] = defaultdict(
@@ -119,7 +119,7 @@ class StopControl(CountdownControl, Action):
         steps = ceil(amount_votes / 100)
         for ballot in results["votes"]:
             if not processed % steps:
-                self.logger.debug(
+                self.logger.error(
                     f"Poll Stop handling: Processed {processed}/{amount_votes} ballots."
                 )
             user_token = get_user_token()
@@ -167,9 +167,9 @@ class StopControl(CountdownControl, Action):
             else:
                 raise VoteServiceException("Invalid response from vote service")
             processed += 1
-        self.logger.debug("Poll Stop handling: Processed all ballots.")
+        self.logger.error("Poll Stop handling: Processed all ballots.")
         self.execute_other_action(VoteCreate, action_data)
-        self.logger.debug("Poll Stop handling: Created votes.")
+        self.logger.error("Poll Stop handling: Created votes.")
         # update results into option
         self.execute_other_action(
             OptionSetAutoFields,
@@ -183,7 +183,7 @@ class StopControl(CountdownControl, Action):
                 for _id, option in option_results.items()
             ],
         )
-        self.logger.debug("Poll Stop handling: Set option auot fields.")
+        self.logger.error("Poll Stop handling: Set option auot fields.")
         # set voted ids
         voted_ids = results["user_ids"]
         instance["voted_ids"] = voted_ids
@@ -192,18 +192,18 @@ class StopControl(CountdownControl, Action):
         instance["votesvalid"] = str(votesvalid)
         instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
         instance["votesinvalid"] = "0.000000"
-        self.logger.debug("Poll Stop handling: Determined other vote data.")
+        self.logger.error("Poll Stop handling: Determined other vote data.")
 
         # set entitled users at stop.
         instance["entitled_users_at_stop"] = Jsonb(
             self.get_entitled_users(poll | instance, meeting)
         )
-        self.logger.debug("Poll Stop handling: Calculated entitled users.")
+        self.logger.error("Poll Stop handling: Calculated entitled users.")
 
     def get_entitled_users(
         self, poll: dict[str, Any], meeting: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        self.logger.debug(
+        self.logger.error(
             "Poll Stop handling: Fetching data for entitled_users calculation."
         )
         entitled_users = []
@@ -254,7 +254,7 @@ class StopControl(CountdownControl, Action):
         amount_users = len(meeting_users)
         processed = 0
         steps = ceil(amount_users / 100)
-        self.logger.debug(
+        self.logger.error(
             f"Poll Stop handling: Calculating entitled user data for {amount_users} meeting users."
         )
 
@@ -275,7 +275,7 @@ class StopControl(CountdownControl, Action):
             )
             processed += 1
             if not processed % steps:
-                self.logger.debug(
+                self.logger.error(
                     f"Poll Stop handling: Processed {processed}/{amount_users} meeting_users."
                 )
 
