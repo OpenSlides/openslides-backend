@@ -130,10 +130,12 @@ class PollStopAction(
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
+            self.logger.debug("Poll Stop handling: On success subroutine called.")
             for instance in action_data:
                 try:
                     self.vote_service.clear(instance["id"])
                 except VoteServiceException as e:
                     self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
+            self.logger.debug("Poll Stop handling: On success subroutine done.")
 
         return on_success
