@@ -9,7 +9,7 @@ import simplejson as json
 
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
-from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
+from meta.dev.src.generate_sql_schema import SIMPLE_TYPES, GenerateCodeBlocks, Helper
 from meta.dev.src.helper_get_names import (
     FieldSqlErrorType,
     HelperGetNames,
@@ -33,6 +33,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     dumpjson,
     generate_diff,
     prev_models_context,
+    was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import Collection, CollectionField
@@ -61,14 +62,13 @@ def main() -> int:
         dumpjson(diff)
 
     # Has to happen before remove: field types have to change before dropping the enum
+    # Using a lot of isinstance calls here for pleasing mypy
     sql = "-- EDIT SECTION --\n"
     edit = diff["edit"]
     if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
         sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- REMOVE SECTION --\n"
-    # TODO create generate diff content functions in schema generator.
-    # Using a lot of isinstance calls here for pleasing mypy
     remove: RemoveDiffDict | None = diff["remove"]
     if remove:
         sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
@@ -155,7 +155,7 @@ class EqualFieldsHelper:
         own_table_field = TableFieldType(collection_name, field_name, own_field_def)
         type_ = own_field_def["type"]
 
-        if type_ in ["generic-relation", "generic-relation-list"]:
+        if type_.startswith("generic"):
             foreign_table_fields: list[TableFieldType] = (
                 InternalHelper.get_definitions_from_foreign_list(
                     own_field_def.get("to"), own_field_def.get("reference")
@@ -174,7 +174,7 @@ class EqualFieldsHelper:
             state, primary, *_ = InternalHelper.check_relation_definitions(
                 own_table_field, [foreign_table_field]
             )
-            condition = (
+            is_writing_side = (
                 state == FieldSqlErrorType.FIELD
                 if type_ == "relation"
                 else (
@@ -183,7 +183,7 @@ class EqualFieldsHelper:
                     and foreign_table_field.field_def.get("type") == "relation-list"
                 )
             )
-            if condition:
+            if is_writing_side:
                 cls.equal_fields_diff[collection_name].add(field_name)
             else:
                 cls.equal_fields_diff[foreign_table_field.table].add(
@@ -223,7 +223,7 @@ class EqualFieldsHelper:
                 type_ = prev_own_field_def["type"]
                 handle_func = (
                     cls.handle_generic_relations
-                    if "generic" in type_
+                    if type_.startswith("generic")
                     else cls.handle_plain_relations
                 )
                 handle_func(
@@ -389,7 +389,7 @@ class EqualFieldsHelper:
 
         get_drop_data_func = (
             cls._get_drop_triggers_data_for_relation_list
-            if "list" in type_
+            if type_.endswith("list")
             else cls._get_drop_triggers_data_for_relation
         )
         to_drop.extend(
@@ -397,7 +397,7 @@ class EqualFieldsHelper:
                 own_table_field,
                 foreign_table_field,
                 equal_fields,
-                is_generic_relation="generic" in type_,
+                is_generic_relation=type_.startswith("generic"),
             )
         )
 
@@ -510,7 +510,6 @@ class EqualFieldsHelper:
 
         return to_drop
 
-    # Helpers
     @staticmethod
     def equal_fields_changed(
         prev_field_def: dict[str, Any], curr_field_def: dict[str, Any]
@@ -661,7 +660,7 @@ class RemoveHelper:
                     collection_name, field_name
                 )
                 type_ = field_def["type"]
-                if "relation" in type_ and "generic" not in type_:
+                if "relation" in type_ and not type_.startswith("generic"):
                     with prev_models_context():
                         foreign_table_field: TableFieldType = (
                             TableFieldType.get_definitions_from_foreign(
@@ -717,6 +716,24 @@ class RemoveHelper:
                     case "sql":
                         alter_views.add(collection_name)
                     case "constant":
+                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
+                        if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
+                            continue
+                        if field_def["type"] == "relation":
+                            with prev_models_context():
+                                foreign_table_field: TableFieldType = (
+                                    TableFieldType.get_definitions_from_foreign(
+                                        field_def.get("to"),
+                                        field_def.get("reference"),
+                                    )
+                                )
+                                if foreign_table_field.field_def["type"] != "relation":
+                                    continue
+                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+                                if was_view_field(
+                                    collection_name, field_name, field_def
+                                ):
+                                    continue
                         result += AlterSchemaHelper.get_drop_trigger_statement(
                             collection_name,
                             HelperGetNames.get_constant_field_trigger_name(

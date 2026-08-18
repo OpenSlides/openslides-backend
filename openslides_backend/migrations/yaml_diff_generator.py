@@ -229,18 +229,12 @@ def create_remove_recursive(
                 if is_field_enum(prev_value):
                     enum_tree.setdefault(path[0], []).append(path[2])
             elif curr_models:
-                # TODO: currently `constant` on the reading side of the relation
-                # is being excluded from diff within this check. This has to be changed
-                # after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                if len(path) == 3:
-                    if not (
-                        isinstance(prev_value, dict)
-                        and "type" in prev_value
-                        and prev_value.get("to")
-                        and was_view_field(path[0], key, prev_value)
-                    ):
-                        missing_entries.append(key)
-                else:
+                if not len(path) == 3 or not (
+                    isinstance(prev_value, dict)
+                    and "type" in prev_value
+                    and prev_value.get("to")
+                    and was_view_field(path[0], key, prev_value)
+                ):
                     missing_entries.append(key)
         if key in curr_models and isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
@@ -259,7 +253,13 @@ def create_remove_recursive(
             return [missing_entries, tree]
         else:
             return None
+    else:
+        return generate_remove_diff_dict(missing_entries, tree, enum_tree)
 
+
+def generate_remove_diff_dict(
+    missing_entries: list[str], tree: dict[str, Any], enum_tree: EnumTypesRemoveDict
+) -> RemoveDiffDict | None:
     combined_result: RemoveDiffDict = {}
     if _meta := tree.pop("_meta", None):
         combined_result["_meta"] = _meta
