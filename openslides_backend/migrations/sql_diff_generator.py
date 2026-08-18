@@ -19,10 +19,10 @@ from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
     RENAMES,
-    CollectionsRemoveList,
+    CollectionsRemoveTuple,
     EnumTypesRemoveDict,
     FieldAttributes,
-    MetaAttributesRemoveList,
+    MetaAttributesRemoveTuple,
     RemoveDiffDict,
     Renames,
     dumpjson,
@@ -509,38 +509,24 @@ class RemoveHelper:
     ) -> str:
         result = ""
         if "collections" in remove:
-            collections_remove_list: CollectionsRemoveList = remove["collections"]
-            if isinstance(
-                collection_names := collections_remove_list[0], list
-            ) and isinstance(
-                dc_collection_names := dc_remove_dict["collections"][0], list
-            ):
-                for collection_name in collection_names:
-                    result += AlterSchemaHelper.get_drop_table_statement(
-                        collection_name
-                    )
-                    dc_collection_names.remove(collection_name)
-            if isinstance(
-                remove_tree_dict := collections_remove_list[1], dict
-            ) and isinstance(
-                dc_remove_tree_dict := dc_remove_dict["collections"][1], dict
-            ):
-                result += cls.handle_remove_tree(remove_tree_dict, dc_remove_tree_dict)
+            collections_remove_tuple: CollectionsRemoveTuple = remove["collections"]
+            for collection_name in collections_remove_tuple[0]:
+                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
+                dc_remove_dict["collections"][0].remove(collection_name)
+            result += cls.handle_remove_tree(
+                collections_remove_tuple[1], dc_remove_dict["collections"][1]
+            )
             remove_empty(dc_remove_dict, "collections")
 
-        if "enum_types" in remove and isinstance(
-            remove_enum_types_dict := remove["enum_types"], dict
-        ):
+        if "enum_types" in remove:
             result += cls.handle_remove_enum_types(
-                remove_enum_types_dict, dc_remove_dict["enum_types"]
+                remove["enum_types"], dc_remove_dict["enum_types"]
             )
             remove_empty(dc_remove_dict, "enum_types")
 
-        if "_meta" in remove and isinstance(
-            remove_meta_attributes_list := remove["_meta"], list
-        ):
+        if "_meta" in remove:
             result += cls.handle_remove_meta_attributes(
-                remove_meta_attributes_list, dc_remove_dict["_meta"]
+                remove["_meta"], dc_remove_dict["_meta"]
             )
             remove_empty(dc_remove_dict, "_meta")
         return result
@@ -582,28 +568,20 @@ class RemoveHelper:
     @classmethod
     def handle_remove_fields(
         cls,
-        remove_list: list[list[str] | dict[str, Any]],
-        dc_remove_list: list[list[str] | dict[str, Any]],
+        remove_list: tuple[list[str], dict[str, Any]],
+        dc_remove_list: tuple[list[str], dict[str, Any]],
         collection_name: str,
     ) -> str:
         result = ""
-        if (
-            len(fields_to_remove := remove_list[0])
-            and isinstance(fields_to_remove, list)
-            and isinstance(dc_fields_to_remove := dc_remove_list[0], list)
-        ):
+        if len(fields_to_remove := remove_list[0]):
             result += cls.handle_remove_table_fields(
                 fields_to_remove,
-                dc_fields_to_remove,
+                dc_remove_list[0],
                 collection_name,
             )
-        if (
-            len(field_attrs_to_remove := remove_list[1])
-            and isinstance(field_attrs_to_remove, dict)
-            and isinstance(dc_field_attrs_to_remove := dc_remove_list[1], dict)
-        ):
+        if len(field_attrs_to_remove := remove_list[1]):
             result += cls.handle_remove_field_attributes(
-                field_attrs_to_remove, dc_field_attrs_to_remove, collection_name
+                field_attrs_to_remove, dc_remove_list[1], collection_name
             )
         return result
 
@@ -807,24 +785,21 @@ class RemoveHelper:
 
     @staticmethod
     def handle_remove_meta_attributes(
-        remove_meta_attributes_list: MetaAttributesRemoveList,
-        dc_remove_meta_attributes_list: MetaAttributesRemoveList,
+        remove_meta_attributes_list: MetaAttributesRemoveTuple,
+        dc_remove_meta_attributes_list: MetaAttributesRemoveTuple,
     ) -> str:
         result = ""
-        if isinstance(remove_meta_attributes_list[1], dict) and isinstance(
-            dc_remove_meta_attributes_list[1], dict
-        ):
-            for attr, data in remove_meta_attributes_list[1].items():
-                match attr:
-                    case "enum_definitions":
-                        for enum in data[0]:
-                            result += AlterSchemaHelper.get_drop_type_statement(
-                                HelperGetNames.get_enum_name(enum)
-                            )
-                            dc_remove_meta_attributes_list[1][attr][0].remove(enum)
-                    case _:
-                        raise NotImplementedError(f"_meta attribute: {attr}")
-                remove_empty(dc_remove_meta_attributes_list[1], attr)
+        for attr, data in remove_meta_attributes_list[1].items():
+            match attr:
+                case "enum_definitions":
+                    for enum in data[0]:
+                        result += AlterSchemaHelper.get_drop_type_statement(
+                            HelperGetNames.get_enum_name(enum)
+                        )
+                        dc_remove_meta_attributes_list[1][attr][0].remove(enum)
+                case _:
+                    raise NotImplementedError(f"_meta attribute: {attr}")
+            remove_empty(dc_remove_meta_attributes_list[1], attr)
         return result
 
 

@@ -24,18 +24,18 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
 Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
-CollectionsRemoveList = list[list[str] | dict[str, Any]]
+CollectionsRemoveTuple = tuple[list[str], dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
-MetaAttributesRemoveList = list[list[str] | dict[str, Any]]
+MetaAttributesRemoveTuple = tuple[list[str], dict[str, Any]]
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
 
 
 class RemoveDiffDict(TypedDict):
-    collections: NotRequired[CollectionsRemoveList]
+    collections: NotRequired[CollectionsRemoveTuple]
     enum_types: NotRequired[EnumTypesRemoveDict]
-    _meta: NotRequired[MetaAttributesRemoveList]
+    _meta: NotRequired[MetaAttributesRemoveTuple]
 
 
 class FieldAttributes:
@@ -166,7 +166,7 @@ def generate_diff() -> dict[str, Any]:
 
     return {
         "rename": RENAMES,
-        "remove": create_remove_recursive(
+        "remove": generate_remove_diff_dict(
             PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
         ),
         "add": create_add_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
@@ -184,14 +184,38 @@ def update_edits_tree(
     ].setdefault(field, [{}, {}])[0][attr] = value
 
 
+def generate_remove_diff_dict(
+    prev_models: dict[str, Any],
+    curr_models: dict[str, Any],
+    renames: Renames,
+    secondary_edits: dict[str, Any],
+) -> RemoveDiffDict | None:
+    enum_tree: EnumTypesRemoveDict = {}
+    plain_remove_diff = create_remove_recursive(
+        prev_models, curr_models, renames, secondary_edits, enum_tree
+    )
+    if plain_remove_diff is None:
+        return None
+
+    missing_entries, tree = plain_remove_diff
+    combined_result: RemoveDiffDict = {}
+    if _meta := tree.pop("_meta", None):
+        combined_result["_meta"] = _meta
+    if missing_entries or tree:
+        combined_result["collections"] = (missing_entries, tree)
+    if enum_tree:
+        combined_result["enum_types"] = enum_tree
+    return combined_result
+
+
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict,
     secondary_edits: dict[str, Any],
-    enum_tree: EnumTypesRemoveDict = {},
+    enum_tree: EnumTypesRemoveDict,
     path: tuple[str, ...] = (),
-) -> CollectionsRemoveList | RemoveDiffDict | None:
+) -> CollectionsRemoveTuple | None:
     """
     Parameter `path` is used only internally and describes the path to the node
     within the tree created inside the outer create_remove_recursive call.
@@ -248,28 +272,8 @@ def create_remove_recursive(
             if result is not None:
                 tree[key] = result
 
-    if path:
-        if missing_entries or tree:
-            return [missing_entries, tree]
-        else:
-            return None
-    else:
-        return generate_remove_diff_dict(missing_entries, tree, enum_tree)
-
-
-def generate_remove_diff_dict(
-    missing_entries: list[str], tree: dict[str, Any], enum_tree: EnumTypesRemoveDict
-) -> RemoveDiffDict | None:
-    combined_result: RemoveDiffDict = {}
-    if _meta := tree.pop("_meta", None):
-        combined_result["_meta"] = _meta
     if missing_entries or tree:
-        combined_result["collections"] = [missing_entries, tree]
-    if enum_tree:
-        combined_result["enum_types"] = enum_tree
-
-    if combined_result:
-        return combined_result
+        return (missing_entries, tree)
     return None
 
 
