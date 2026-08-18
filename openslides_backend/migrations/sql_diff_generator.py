@@ -654,13 +654,11 @@ class RemoveHelper:
         for field_name, attrs in remove_tree_dict.items():
             for attr in attrs[0]:
                 match attr:
-                    case "default":
+                    case "default" | "required":
                         result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                            collection_name, field_name, "DEFAULT"
-                        )
-                    case "required":
-                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                            collection_name, field_name, "NOT NULL"
+                            collection_name,
+                            field_name,
+                            "DEFAULT" if attr == "default" else "NOT NULL",
                         )
                     case "minimum" | "maximum" | "minLength" | "unique":
                         constraint_name_func = getattr(
