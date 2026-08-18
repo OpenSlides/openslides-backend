@@ -4,6 +4,7 @@ from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Vote
+from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -38,6 +39,70 @@ class VoteCreate(CreateActionWithInferredMeeting):
                     "option",
                     list({instance["option_id"] for instance in action_data}),
                     ["meeting_id", "vote_ids"],
+                ),
+            ],
+            use_changed_models=False,
+        )
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    list(
+                        {
+                            cast(int, instance.get(fname))
+                            for instance in action_data
+                            for fname in (
+                                "meeting_user_id",
+                                "delegated_meeting_user_id",
+                            )
+                            if instance.get(fname)
+                        }
+                    ),
+                    ["id", "user_id", "vote_ids", "delegated_vote_ids"],
+                ),
+            ],
+            use_changed_models=False,
+            lock_result=False,
+        )["meeting_user"]
+
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "user",
+                    list({mu["user_id"] for mu in meeting_users.values()}),
+                    ["id", "poll_voted_ids"],
+                ),
+            ],
+            use_changed_models=False,
+            lock_result=False,
+        )
+
+
+@register_action("vote.create_explicit", action_type=ActionType.BACKEND_INTERNAL)
+class VoteCreateExplicit(CreateAction):
+    """
+    Internal action to create a vote without automatic meeting_id calculation.
+    """
+
+    model = Vote()
+    schema = DefaultSchema(Vote()).get_create_schema(
+        required_properties=[
+            "weight",
+            "value",
+            "option_id",
+            "user_token",
+            "meeting_id",
+        ],
+        optional_properties=["delegated_user_id", "user_id"],
+    )
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "option",
+                    list({instance["option_id"] for instance in action_data}),
+                    ["vote_ids"],
                 ),
             ],
             use_changed_models=False,

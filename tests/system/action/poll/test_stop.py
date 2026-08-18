@@ -2,6 +2,8 @@ from decimal import Decimal
 from typing import Any
 from unittest.mock import Mock, patch
 
+import pytest
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
@@ -356,9 +358,25 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_exists("poll/1", {"voted_ids": user_ids})
+        u_ids = []
         for i in range(len(user_ids)):
-            self.assert_model_exists(f"vote/{i+1}")
-        assert counter.calls == 60
+            u_ids.append(self.assert_model_exists(f"vote/{i+1}")["user_id"])
+        assert sorted(u_ids) == sorted(user_ids)
+        self.assert_model_not_exists(f"vote/{len(user_ids)+1}")
+        assert counter.calls == 54
+
+    @pytest.mark.skip("Takes too long for regular testing")
+    def test_stop_with_more_users_than_vote_amount_steps(self) -> None:
+        user_ids = self.prepare_users_and_poll(1003)
+        response = self.request("poll.stop", {"id": 1})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"voted_ids": user_ids})
+        u_ids = []
+        for i in range(len(user_ids)):
+            u_ids.append(self.assert_model_exists(f"vote/{i+1}")["user_id"])
+        assert sorted(u_ids) == sorted(user_ids)
+        self.assert_model_not_exists(f"vote/{len(user_ids)+1}")
 
     @performance
     def test_stop_performance(self) -> None:

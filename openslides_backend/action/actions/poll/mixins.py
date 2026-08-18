@@ -13,7 +13,7 @@ from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_i
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
-from ..vote.create import VoteCreate
+from ..vote.create import VoteCreateExplicit
 from ..vote.user_token_helper import get_user_token
 from .functions import check_poll_or_option_perms
 
@@ -149,6 +149,7 @@ class StopControl(CountdownControl, Action):
                             "value": vote_value,
                             "option_id": option_id,
                             "weight": str(vote_weighted),
+                            "meeting_id": poll["meeting_id"],
                             **vote_template,
                         }
                     )
@@ -161,6 +162,7 @@ class StopControl(CountdownControl, Action):
                         "value": vote_value,
                         "option_id": option_id,
                         "weight": str(vote_weight),
+                        "meeting_id": poll["meeting_id"],
                         **vote_template,
                     }
                 )
@@ -171,9 +173,13 @@ class StopControl(CountdownControl, Action):
         steps = 1000
         vote_amount = len(action_data)
         for start in range(0, vote_amount, steps):
-            self.logger.error(f"Poll Stop handling: Creating votes {start} to {start + steps} of {vote_amount}.")
-            self.execute_other_action(VoteCreate, action_data[start:min(start+steps, len(action_data))])
-        # self.execute_other_action(VoteCreate, action_data)
+            self.logger.error(
+                f"Poll Stop handling: Creating votes {start} to {start + steps} of {vote_amount}."
+            )
+            self.execute_other_action(
+                VoteCreateExplicit,
+                action_data[start : min(start + steps, len(action_data))],
+            )
         self.logger.error("Poll Stop handling: Created votes.")
         # update results into option
         self.execute_other_action(
