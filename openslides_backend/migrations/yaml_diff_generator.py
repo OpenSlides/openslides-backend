@@ -379,6 +379,17 @@ def was_view_field(
     return is_view_field or bool(write_fields)
 
 
+def was_primary_side(
+    collection_name: str, field_name: str, field_data: dict[str, Any]
+) -> bool:
+    with prev_models_context():
+        is_view_field, is_primary, _ = get_view_field_state_write_fields(
+            collection_name, field_name, field_data
+        )
+
+    return not is_view_field or is_primary
+
+
 @contextmanager
 def prev_models_context() -> Iterator[None]:
     curr_models = InternalHelper.MODELS

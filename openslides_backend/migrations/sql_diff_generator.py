@@ -10,12 +10,7 @@ import simplejson as json
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from meta.dev.src.generate_sql_schema import SIMPLE_TYPES, GenerateCodeBlocks, Helper
-from meta.dev.src.helper_get_names import (
-    FieldSqlErrorType,
-    HelperGetNames,
-    InternalHelper,
-    TableFieldType,
-)
+from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
@@ -33,6 +28,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     dumpjson,
     generate_diff,
     prev_models_context,
+    was_primary_side,
     was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
@@ -152,7 +148,6 @@ class EqualFieldsHelper:
             return
 
         own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
-        own_table_field = TableFieldType(collection_name, field_name, own_field_def)
         type_ = own_field_def["type"]
 
         if type_.startswith("generic"):
@@ -171,19 +166,7 @@ class EqualFieldsHelper:
                     own_field_def.get("reference"),
                 )
             )
-            state, primary, *_ = InternalHelper.check_relation_definitions(
-                own_table_field, [foreign_table_field]
-            )
-            is_writing_side = (
-                state == FieldSqlErrorType.FIELD
-                if type_ == "relation"
-                else (
-                    state != FieldSqlErrorType.ERROR
-                    and primary
-                    and foreign_table_field.field_def.get("type") == "relation-list"
-                )
-            )
-            if is_writing_side:
+            if was_primary_side(collection_name, field_name, own_field_def):
                 cls.equal_fields_diff[collection_name].add(field_name)
             else:
                 cls.equal_fields_diff[foreign_table_field.table].add(
