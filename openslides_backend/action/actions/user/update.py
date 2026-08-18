@@ -198,16 +198,19 @@ class UserUpdate(
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
-            # IDP Changes
-            if "username" in action_data[0]:
-                self.update_username(action_data[0], action_data[0].get("username"))
+            try:
+                # Update fields in IDP
+                if "username" in action_data[0]:
+                    self.update_username(action_data[0], action_data[0].get("username"))
 
-            if "is_active" in action_data[0]:
-                self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
-                self.revoke_all_sessions_of_user(action_data[0])
+                if "is_active" in action_data[0]:
+                    self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
+                    self.revoke_all_sessions_of_user(action_data[0])
 
-            if "email" in action_data[0]:
-                self.update_email(action_data[0], action_data[0].get("email"))
+                if "email" in action_data[0]:
+                    self.update_email(action_data[0], action_data[0].get("email"))
+            except Exception as e:
+                self.logger.error(f"Couldn't update IDP user fields after OS user was updated: {e}")
 
         return on_success
 

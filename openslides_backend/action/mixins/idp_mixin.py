@@ -166,7 +166,7 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error finding user: {e}")
 
-    def create_user(self, user, password = ""):
+    def create_user(self, user, password = "", user_is_instance = False):
         idp_admin_access_token = self._get_admin_key()
 
         os_id = user.get("id")
@@ -225,21 +225,28 @@ class IDPMixin(Action):
             raise ActionException(f"Error creating user {username} in IDP: They already have an IDP ID")
 
         ## Write IDP ID in datastore
-        self.datastore.write(
-            WriteRequest(
-                events=[
-                    Event(
-                        type=EventType.Update,
-                        fqid=f"user/{os_id}",
-                        fields={
-                            "idp_id": idp_id,
-                        },
+        if user_is_instance:
+            user["idp_id"] = idp_id
+        else:
+            try:
+                self.datastore.write(
+                    WriteRequest(
+                        events=[
+                            Event(
+                                type=EventType.Update,
+                                fqid=f"user/{os_id}",
+                                fields={
+                                    "idp_id": idp_id,
+                                },
+                            )
+                        ],
+                        user_id=os_id,
+                        locked_fields={},
                     )
-                ],
-                user_id=os_id,
-                locked_fields={},
-            )
-        )
+                )
+            except:
+                self.logger.warning("TODO: Causes initial import issues as user table does not exist yet")
+                return
 
     # Deletes the OIDC user belonging to the given os user.
     # Warning: This will not remove the idp_id from the os user in the database!
@@ -284,7 +291,7 @@ class IDPMixin(Action):
             return
 
         idp_admin_access_token = self._get_admin_key()
-
+        self.logger.warning(f"Revoke sessions for {idp_id}")
         try:
             response = requests.post(self.idp_admin_route + "sessions/search",
                 json={
@@ -312,11 +319,11 @@ class IDPMixin(Action):
             json_response = response.json()
 
             if not "sessions" in json_response:
-                # logger.warning(f"No session has been found")
+                logger.warning(f"No session has been found")
                 return
 
             for session in json_response["sessions"]:
-                logger.warning(f"Found session: {session['id']}")
+                logger.warning(f"Removing Session: {session['id']}")
                 response = requests.delete(self.idp_admin_route + "sessions/" + session["id"],
                     json={},
                     headers={

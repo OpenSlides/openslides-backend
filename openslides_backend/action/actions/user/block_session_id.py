@@ -4,6 +4,8 @@ from typing import Any
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ...util.default_schema import DefaultSchema
+from ...shared.interfaces.write_request import WriteRequest
+from ...shared.interfaces.event import Event, EventType
 from .password_mixins import SetPasswordMixin
 from .user_mixins import UserMixin
 
@@ -21,9 +23,16 @@ class UserBlockSessionID(
         optional_properties=[]
     )
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        request = None
+    def perform(self, action_data, user_id, **kwargs):
+        self.logger.warning("Performing blocklist action")
+        self.logger.warning(action_data)
+        self.logger.warning(user_id)
+        self.logger.warning(kwargs)
 
+        request = action_data[0]["request"]
+
+        self.logger.warning("Wow a user blocklist request came!")
+        self.logger.warning(instance)
         # Validate logout token and extract session id
         session_id = self.auth.backchannel_logout(request)
 
@@ -33,5 +42,19 @@ class UserBlockSessionID(
             return
 
         # TODO: Create DB Table entry
+        # Write session id to blocklist
+        self.datastore.write(
+            WriteRequest(
+                events=[
+                    Event(
+                        type=EventType.Create,
+                        fqid=f"blocked_sessions/{os_id}",
+                        fields={
+                            "session_id": session_id,
+                        },
+                    )
+                ]
+            )
+        )
 
         return instance

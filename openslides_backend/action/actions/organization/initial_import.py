@@ -88,7 +88,7 @@ class OrganizationInitialImport(SingularActionMixin, IDPMixin, Action):
 
             if collection == "user":
                 for user in models.items():
-                    self.create_user(user[1], user[1]["password"])
+                    self.create_user(user[1], user[1]["password"], True)
 
         return instance
 

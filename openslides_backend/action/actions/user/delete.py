@@ -2,6 +2,7 @@ from typing import Any
 from collections.abc import Callable
 
 from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
@@ -42,15 +43,18 @@ class UserDelete(
                 mapped_fields=["idp_id"]
                 )["idp_id"]
         except Exception as e:
-            self.logger.warning(f"Getting IDP ID from user {instance.get('id')} that is being deleted {e}")
-            return ""
+            self.logger.error(f"User {instance.get('id')} has no IDP ID: {e}")
 
         return super().update_instance(instance)
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
+            if not action_data[0].get('id') in self.user_id_to_idp_id:
+                self.logger.error(f"IDP ID for User {action_data[0].get('id')} not found, can't delete IDP user")
+                return
+
             # Delete IDP account
-            self.delete_user(self.user_id_to_idp_id[action_data[0]["id"]])
+            self.delete_user(self.user_id_to_idp_id[action_data[0].get('id')])
 
         return on_success
 
