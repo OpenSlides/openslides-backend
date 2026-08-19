@@ -764,7 +764,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (f.e. 1.234567)"
+            "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (e.g. 1.234567)"
             in response.json["message"]
         )
         assert response.json["message_args"] == {
