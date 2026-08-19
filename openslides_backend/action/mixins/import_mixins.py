@@ -522,7 +522,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             )
                         except Exception:
                             raise ActionException(
-                                "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (f.e. 1.234567)",
+                                "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (e.g. 1.234567)",
                                 message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "integer":
@@ -540,7 +540,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             entry[field] = False
                         else:
                             raise ActionException(
-                                "Invalid format for column {{field}}: Got {{content}}; expected boolean (f.E. '1' for yes, '0' for no)",
+                                "Invalid format for column {{field}}: Got {{content}}; expected boolean (e.g. '1' for yes, '0' for no)",
                                 message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "date":
