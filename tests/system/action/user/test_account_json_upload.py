@@ -82,7 +82,7 @@ class AccountJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Invalid format for column {{field}}: Got {{content}}; expected boolean (f.E. '1' for yes, '0' for no)"
+            "Invalid format for column {{field}}: Got {{content}}; expected boolean (e.g. '1' for yes, '0' for no)"
             in response.json["message"]
         )
         assert response.json["message_args"] == {
