@@ -73,6 +73,7 @@ class GetForwardingMeetings(BasePresenter):
                 "meeting",
                 And(
                     FilterOperator("is_active_in_organization_id", "!=", None),
+                    FilterOperator("end_time", "!=", None),
                     Or(
                         FilterOperator("id", "=", id_)
                         for id_ in forward_to_committee.get("meeting_ids", [])
@@ -84,12 +85,12 @@ class GetForwardingMeetings(BasePresenter):
 
             meetings_list = []
             for meeting_id, meeting_data in forward_to_committee_meetings.items():
-                end_time = meeting_data.get("end_time")
+                end_time = meeting_data["end_time"]
                 meeting_timezone = meeting_data.get("time_zone") or "UTC"
                 start_of_today = datetime.now(tz=ZoneInfo(meeting_timezone)).replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
-                if end_time is None or end_time >= start_of_today:
+                if end_time >= start_of_today:
                     meetings_list.append(
                         {
                             "id": meeting_id,

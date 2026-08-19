@@ -92,9 +92,31 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
 
     def test_complex(self) -> None:
         self.create_meeting(1)
-        self.create_meeting(4, {"name": "meeting4"})
-        self.create_meeting(7, {"name": "meeting7", "committee_id": 63})
-        self.create_meeting(10, {"name": "meeting10"})
+        self.create_meeting(
+            4,
+            {
+                "name": "meeting4",
+                "start_time": datetime.fromtimestamp(111111),
+                "end_time": datetime.fromtimestamp(222222),
+            },
+        )
+        self.create_meeting(
+            7,
+            {
+                "name": "meeting7",
+                "committee_id": 63,
+                "start_time": datetime.fromtimestamp(333333),
+                "end_time": datetime.fromtimestamp(444444),
+            },
+        )
+        self.create_meeting(
+            10,
+            {
+                "name": "meeting10",
+                "start_time": datetime.fromtimestamp(555555),
+                "end_time": datetime.fromtimestamp(666666),
+            },
+        )
         self.set_models(
             {
                 "committee/60": {"forward_to_committee_ids": [63, 69]},
@@ -119,14 +141,22 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                         {
                             "id": 4,
                             "name": "meeting4",
-                            "start_time": None,
-                            "end_time": None,
+                            "start_time": datetime.fromtimestamp(
+                                111111, ZoneInfo("UTC")
+                            ).isoformat(),
+                            "end_time": datetime.fromtimestamp(
+                                222222, ZoneInfo("UTC")
+                            ).isoformat(),
                         },
                         {
                             "id": 7,
                             "name": "meeting7",
-                            "start_time": None,
-                            "end_time": None,
+                            "start_time": datetime.fromtimestamp(
+                                333333, ZoneInfo("UTC")
+                            ).isoformat(),
+                            "end_time": datetime.fromtimestamp(
+                                444444, ZoneInfo("UTC")
+                            ).isoformat(),
                         },
                     ],
                     "default_meeting_id": 7,
@@ -138,8 +168,12 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                         {
                             "id": 10,
                             "name": "meeting10",
-                            "start_time": None,
-                            "end_time": None,
+                            "start_time": datetime.fromtimestamp(
+                                555555, ZoneInfo("UTC")
+                            ).isoformat(),
+                            "end_time": datetime.fromtimestamp(
+                                666666, ZoneInfo("UTC")
+                            ).isoformat(),
                         }
                     ],
                     "default_meeting_id": None,
@@ -149,7 +183,14 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
 
     def test_archived_forwarded_to_meeting(self) -> None:
         self.create_meeting(1, {"name": "meeting1"})
-        self.create_meeting(4, {"name": "meeting4"})
+        self.create_meeting(
+            4,
+            {
+                "name": "meeting4",
+                "start_time": datetime.fromtimestamp(111111),
+                "end_time": datetime.fromtimestamp(222222),
+            },
+        )
         self.create_meeting(
             7,
             {
@@ -157,6 +198,8 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "committee_id": 63,
                 "is_active_in_organization_id": None,
                 "is_archived_in_organization_id": 1,
+                "start_time": datetime.fromtimestamp(333333),
+                "end_time": datetime.fromtimestamp(444444),
             },
         )
         self.set_models({"committee/60": {"forward_to_committee_ids": [63]}})
@@ -172,8 +215,12 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                         {
                             "id": 4,
                             "name": "meeting4",
-                            "start_time": None,
-                            "end_time": None,
+                            "start_time": datetime.fromtimestamp(
+                                111111, ZoneInfo("UTC")
+                            ).isoformat(),
+                            "end_time": datetime.fromtimestamp(
+                                222222, ZoneInfo("UTC")
+                            ).isoformat(),
                         }
                     ],
                     "default_meeting_id": None,
