@@ -1,13 +1,17 @@
 import os
 import sys
 from argparse import ArgumentParser
-from typing import Any
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import Any, TypedDict
 
 import simplejson as json
 import yaml
+from typing_extensions import NotRequired
 
+from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
-from meta.dev.src.helper_get_names import build_models_yaml_content
+from meta.dev.src.helper_get_names import InternalHelper, build_models_yaml_content
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -20,9 +24,71 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
 Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
+CollectionsRemoveTuple = tuple[list[str], dict[str, Any]]
+EnumTypesRemoveDict = dict[str, list[str]]
+MetaAttributesRemoveTuple = tuple[list[str], dict[str, Any]]
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
+
+
+class RemoveDiffDict(TypedDict):
+    collections: NotRequired[CollectionsRemoveTuple]
+    enum_types: NotRequired[EnumTypesRemoveDict]
+    _meta: NotRequired[MetaAttributesRemoveTuple]
+
+
+class FieldAttributes:
+    skipped_in_schema = [
+        "calculated",
+        "constant_legacy",
+        "deferred",
+        "description",
+        "on_delete",
+        "read_only",
+        "restriction_mode",
+    ]
+    field_attributes = [
+        "default",
+        "maxLength",
+        "maximum",
+        "minLength",
+        "minimum",
+        "required",
+        "type",
+        "unique",
+    ]
+    relational_field_attributes = [
+        "reference",
+        "to",
+    ]
+    view_attributes = [
+        "sql",
+    ]
+    trigger_definitions = [
+        "constant",
+        "equal_fields",
+        "log_triggers",
+        "sequence_scope",
+    ]
+    enum_definitions = [
+        "enum",
+        "items",
+    ]
+    used_in_schema = [
+        *field_attributes,
+        *relational_field_attributes,
+        *view_attributes,
+        *trigger_definitions,
+        *enum_definitions,
+    ]
+
+
+class CollectionAttributes:
+    unique_together = [
+        "unique_together",
+        "unique_together_strict",
+    ]
 
 
 def load_models(mig_data_path: str) -> dict[str, Any]:
@@ -57,9 +123,7 @@ def check_renames_node(renames: dict[str, str], collection_name: str | None) -> 
             )
 
 
-def validate_renames(
-    renames: Renames,
-) -> None:
+def validate_renames(renames: Renames) -> None:
     collection_renames = renames[0]
     field_renames = renames[1]
     check_renames_node(collection_renames, None)
@@ -69,7 +133,9 @@ def validate_renames(
 
 def load_renames() -> Renames:
     directory = MigrationHelper.get_last_migration_directory()
-    renames = MigrationHelper.get_migration_class(directory).renames
+    renames: Renames = getattr(
+        MigrationHelper.get_migration_class(directory), "renames", ({}, {})
+    )
     validate_renames(renames)
     return renames
 
@@ -95,19 +161,66 @@ def dumpjson(diff: dict[str, Any]) -> None:
 
 
 def generate_diff() -> dict[str, Any]:
+    # Edits caused by adding or removing field attributes
+    secondary_edits: dict[str, Any] = {}
+
     return {
         "rename": RENAMES,
-        "remove": create_remove_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
+        "remove": generate_remove_diff_dict(
+            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
+        ),
         "add": create_add_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
-        "edit": create_edit_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
+        "edit": create_edit_recursive(
+            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
+        ),
     }
+
+
+def update_edits_tree(
+    edits_tree: dict[str, Any], collection: str, field: str, attr: str, value: Any
+) -> None:
+    edits_tree.setdefault(collection, [{}, {}])[1].setdefault("fields", [{}, {}])[
+        1
+    ].setdefault(field, [{}, {}])[0][attr] = value
+
+
+def generate_remove_diff_dict(
+    prev_models: dict[str, Any],
+    curr_models: dict[str, Any],
+    renames: Renames,
+    secondary_edits: dict[str, Any],
+) -> RemoveDiffDict | None:
+    enum_tree: EnumTypesRemoveDict = {}
+    plain_remove_diff = create_remove_recursive(
+        prev_models, curr_models, renames, secondary_edits, enum_tree
+    )
+    if plain_remove_diff is None:
+        return None
+
+    missing_entries, tree = plain_remove_diff
+    combined_result: RemoveDiffDict = {}
+    if _meta := tree.pop("_meta", None):
+        combined_result["_meta"] = _meta
+    if missing_entries or tree:
+        combined_result["collections"] = (missing_entries, tree)
+    if enum_tree:
+        combined_result["enum_types"] = enum_tree
+    return combined_result
 
 
 def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict,
-) -> list[list[str] | dict[str, Any]] | None:
+    secondary_edits: dict[str, Any],
+    enum_tree: EnumTypesRemoveDict,
+    path: tuple[str, ...] = (),
+) -> CollectionsRemoveTuple | None:
+    """
+    Parameter `path` is used only internally and describes the path to the node
+    within the tree created inside the outer create_remove_recursive call.
+    Example: (collection_name, "fields", field_name)
+    """
     missing_entries = []
     tree = {}
     if isinstance(renames, tuple):
@@ -122,18 +235,46 @@ def create_remove_recursive(
             print(key + " renamed -> skip for remove")
             continue
         if key not in curr_models:
-            missing_entries.append(key)
-        elif isinstance(prev_value, dict):
+            if key == "id" or len(path) >= 3 and path[2] == "id":
+                continue
+            if key in [*CollectionAttributes.unique_together, "log_triggers"]:
+                # Old definitions are needed to re-build the trigger definitions names
+                tree[key] = prev_value
+            elif key == "maxLength":
+                # Should be processed as type change
+                update_edits_tree(secondary_edits, path[0], path[2], "maxLength", None)
+            elif is_enum(key) and len(path) >= 3:
+                # Should be processed as type change
+                if "type" in curr_models:
+                    update_edits_tree(
+                        secondary_edits, path[0], path[2], "type", curr_models["type"]
+                    )
+                # Delete enum only when it is defined on the field
+                if is_field_enum(prev_value):
+                    enum_tree.setdefault(path[0], []).append(path[2])
+            elif curr_models:
+                if not len(path) == 3 or not (
+                    isinstance(prev_value, dict)
+                    and "type" in prev_value
+                    and prev_value.get("to")
+                    and was_view_field(path[0], key, prev_value)
+                ):
+                    missing_entries.append(key)
+        if key in curr_models and isinstance(prev_value, dict) and key != "items":
             result = create_remove_recursive(
-                prev_value, curr_models[key], recurse_renames.get(key, {})
+                prev_value,
+                curr_models.get(key, {}),
+                recurse_renames.get(key, {}),
+                secondary_edits,
+                enum_tree,
+                path + (key,),
             )
             if result is not None:
                 tree[key] = result
 
     if missing_entries or tree:
-        return [missing_entries, tree]
-    else:
-        return None
+        return (missing_entries, tree)
+    return None
 
 
 def create_add_recursive(
@@ -176,11 +317,13 @@ def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict[str, Any],
+    secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
     TODO This has a very similar structure to the add recursive function. Maybe combine with use of lambda or passing additional dict.
     TODO This should only generate diffs for the leafs. Thus the structure should be reconsidered. Maybe flatter or integrating rename info.
+    TODO: changes in lists for `unique_together`, `unique_together_strict` and `log_triggers` must be processed as add or remove operations.
     """
     edited_entries = {}
     tree = {}
@@ -207,10 +350,58 @@ def create_edit_recursive(
                 )
                 if result is not None:
                     tree[key] = result
+    if secondary_edits:
+        for collection, collection_data in secondary_edits.items():
+            for field_name, field_data in collection_data[1]["fields"][1].items():
+                for attr, value in field_data[0].items():
+                    update_edits_tree(tree, collection, field_name, attr, value)
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
         return None
+
+
+def is_enum(key: str) -> bool:
+    return key in FieldAttributes.enum_definitions
+
+
+def is_field_enum(value: Any) -> bool:
+    """Checks that enum options are defined directly on the field"""
+    return isinstance(value, list) or (
+        isinstance(value, dict) and isinstance(value["enum"], list)
+    )
+
+
+def was_view_field(
+    collection_name: str, field_name: str, field_data: dict[str, Any]
+) -> bool:
+    with prev_models_context():
+        is_view_field, _, write_fields = get_view_field_state_write_fields(
+            collection_name, field_name, field_data
+        )
+
+    return is_view_field or bool(write_fields)
+
+
+def was_primary_side(
+    collection_name: str, field_name: str, field_data: dict[str, Any]
+) -> bool:
+    with prev_models_context():
+        is_view_field, is_primary, _ = get_view_field_state_write_fields(
+            collection_name, field_name, field_data
+        )
+
+    return not is_view_field or is_primary
+
+
+@contextmanager
+def prev_models_context() -> Iterator[None]:
+    curr_models = InternalHelper.MODELS
+    InternalHelper.MODELS = PREV_MODELS
+    try:
+        yield
+    finally:
+        InternalHelper.MODELS = curr_models
 
 
 if __name__ == "__main__":

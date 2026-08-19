@@ -1,6 +1,7 @@
 import os
 import sys
 from argparse import ArgumentParser
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, cast
 
@@ -8,19 +9,30 @@ import simplejson as json
 
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
-from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper
-from meta.dev.src.helper_get_names import HelperGetNames
+from meta.dev.src.generate_sql_schema import SIMPLE_TYPES, GenerateCodeBlocks, Helper
+from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
+    PREV_MODELS,
     RENAMES,
+    CollectionsRemoveTuple,
+    EnumTypesRemoveDict,
+    FieldAttributes,
+    MetaAttributesRemoveTuple,
+    RemoveDiffDict,
     Renames,
     dumpjson,
     generate_diff,
+    prev_models_context,
+    was_primary_side,
+    was_view_field,
 )
+from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.patterns import Collection, CollectionField
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -28,6 +40,9 @@ To use this script create a folder 'previous_models' next to it and copy the unc
 It will generate the sql diff comparing it to the changes made to the model definitions present in the meta.
 The sql diff will be written to 'migrations/mig_[last migration number].*/schema_diff.sql'.
 """
+
+Table = str
+TriggerName = str
 
 alter_views: set[str] = set()
 
@@ -42,16 +57,17 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    sql = "-- REMOVE SECTION --\n"
-    # TODO create generate diff content functions in schema generator.
+    # Has to happen before remove: field types have to change before dropping the enum
     # Using a lot of isinstance calls here for pleasing mypy
-    remove = diff["remove"]
-    if isinstance(remove, list) and isinstance(remove[0], list):
-        for collection_name in remove[0]:
-            sql += f"DROP TABLE {HelperGetNames.get_table_name(collection_name)} CASCADE;\n"
-            diff_control["remove"][0].remove(collection_name)
-    if isinstance(remove, list) and isinstance(remove_tree_dict := remove[1], dict):
-        sql += handle_remove_tree(remove_tree_dict, diff_control["remove"][1])
+    sql = "-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+
+    sql += "\n-- REMOVE SECTION --\n"
+    remove: RemoveDiffDict | None = diff["remove"]
+    if remove:
+        sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     sql += handle_rename(diff["rename"], diff_control["rename"])
@@ -63,11 +79,6 @@ def main() -> int:
         sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
-
-    sql += "\n-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
@@ -95,8 +106,15 @@ def main() -> int:
 
 
 def remove_empty(dictionary: dict[str, Any], key: str) -> None:
-    if not any(dictionary[key]):
+    if dictionary[key] is None or not any(dictionary[key]):
         del dictionary[key]
+
+
+def alter_views_conditionally(
+    collection_name: str, has_write_fields: bool, is_view_field: bool
+) -> None:
+    if has_write_fields or is_view_field:
+        alter_views.add(collection_name)
 
 
 def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> str:
@@ -118,6 +136,669 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
         del dc_add[collection_name]
         alter_views.add(collection_name)
     return sql
+
+
+class EqualFieldsHelper:
+    checked_equal_fields: dict[str, set[str]] = defaultdict(set)
+    equal_fields_diff: dict[str, set[str]] = defaultdict(set)
+
+    @classmethod
+    def update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+        if field_name in cls.checked_equal_fields.get(collection_name, set()):
+            return
+
+        own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+        type_ = own_field_def["type"]
+
+        if type_.startswith("generic"):
+            foreign_table_fields: list[TableFieldType] = (
+                InternalHelper.get_definitions_from_foreign_list(
+                    own_field_def.get("to"), own_field_def.get("reference")
+                )
+            )
+            cls.equal_fields_diff[collection_name].add(field_name)
+            for foreign_field in foreign_table_fields:
+                cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
+        else:
+            foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    own_field_def.get("to"),
+                    own_field_def.get("reference"),
+                )
+            )
+            if was_primary_side(collection_name, field_name, own_field_def):
+                cls.equal_fields_diff[collection_name].add(field_name)
+            else:
+                cls.equal_fields_diff[foreign_table_field.table].add(
+                    foreign_table_field.column
+                )
+            cls.checked_equal_fields[foreign_table_field.table].add(
+                foreign_table_field.column
+            )
+        cls.checked_equal_fields[collection_name].add(field_name)
+
+    @classmethod
+    def handle_alter_equal_fields(cls) -> str:
+        # TODO: This method includes commented out lines for cases when triggers have to added.
+        # handle_add and handle edit sould probably already handle all such cases. If it's true,
+        # the commented out lines should be removed.
+
+        result = ""
+        to_drop: list[tuple[Table, TriggerName]] = []
+        # to_add = []
+
+        for collection_name, field_names in cls.equal_fields_diff.items():
+            for field_name in field_names:
+                prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+                prev_own_table_field = TableFieldType(
+                    collection_name, field_name, prev_own_field_def
+                )
+                curr_own_field_def = (
+                    CURR_MODELS.get(collection_name, {})
+                    .get("fields", {})
+                    .get(field_name, {})
+                )
+                curr_own_table_field = (
+                    TableFieldType(collection_name, field_name, curr_own_field_def)
+                    if curr_own_field_def
+                    else None
+                )
+                type_ = prev_own_field_def["type"]
+                handle_func = (
+                    cls.handle_generic_relations
+                    if type_.startswith("generic")
+                    else cls.handle_plain_relations
+                )
+                handle_func(
+                    curr_own_table_field,
+                    curr_own_field_def,
+                    prev_own_table_field,
+                    prev_own_field_def,
+                    type_,
+                    to_drop,
+                )
+        for table_name, trigger_name in to_drop:
+            result += AlterSchemaHelper.get_drop_trigger_statement(
+                table_name, trigger_name
+            )
+        # for table in to_add:
+        #     pass
+        return result
+
+    @classmethod
+    def handle_plain_relations(
+        cls,
+        curr_own_table_field: TableFieldType | None,
+        curr_own_field_def: dict[str, Any],
+        prev_own_table_field: TableFieldType,
+        prev_own_field_def: dict[str, Any],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        with prev_models_context():
+            prev_foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    prev_own_field_def.get("to"),
+                    prev_own_field_def.get("reference"),
+                )
+            )
+        prev_equal_fields = set(
+            GenerateCodeBlocks.get_equal_fields(
+                prev_own_table_field, prev_foreign_table_field
+            )
+        )
+
+        if curr_own_table_field:
+            curr_foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    curr_own_field_def.get("to"),
+                    curr_own_field_def.get("reference"),
+                )
+            )
+
+            curr_equal_fields = set(
+                GenerateCodeBlocks.get_equal_fields(
+                    curr_own_table_field, curr_foreign_table_field
+                )
+            )
+        else:
+            curr_equal_fields = set()
+
+        cls.update_to_drop(
+            prev_own_table_field,
+            prev_foreign_table_field,
+            prev_equal_fields - curr_equal_fields,
+            type_,
+            to_drop,
+        )
+        # if added_equal_fields := curr_equal_fields - prev_equal_fields:
+
+    @classmethod
+    def handle_generic_relations(
+        cls,
+        curr_own_table_field: TableFieldType | None,
+        curr_own_field_def: dict[str, Any],
+        prev_own_table_field: TableFieldType,
+        prev_own_field_def: dict[str, Any],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        with prev_models_context():
+            prev_foreign_table_fields: dict[CollectionField, TableFieldType] = {
+                field.collectionfield: field
+                for field in InternalHelper.get_definitions_from_foreign_list(
+                    prev_own_field_def.get("to"),
+                    prev_own_field_def.get("reference"),
+                )
+            }
+        curr_foreign_table_fields: dict[CollectionField, TableFieldType] = (
+            {
+                field.collectionfield: field
+                for field in InternalHelper.get_definitions_from_foreign_list(
+                    curr_own_field_def.get("to"),
+                    curr_own_field_def.get("reference"),
+                )
+            }
+            if curr_own_table_field
+            else {}
+        )
+
+        prev_collectionfields = set(prev_foreign_table_fields.keys())
+        curr_collectionfields = set(curr_foreign_table_fields.keys())
+
+        removed_collectionfields = prev_collectionfields - curr_collectionfields
+        remaining_collectionfields = prev_collectionfields - removed_collectionfields
+
+        # if added_collectionfields := (
+        #     curr_collectionfields - prev_collectionfields
+        # ):
+
+        if remaining_collectionfields:
+            own_equal_fields_changed = cls.equal_fields_changed(
+                prev_own_field_def, curr_own_field_def
+            )
+            for collectionfield in remaining_collectionfields:
+                prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
+                curr_foreign_table_field = curr_foreign_table_fields[collectionfield]
+                if own_equal_fields_changed or cls.equal_fields_changed(
+                    prev_foreign_table_field.field_def,
+                    curr_foreign_table_field.field_def,
+                ):
+                    cls.update_to_drop_for_generic(
+                        prev_own_table_field,
+                        prev_foreign_table_field,
+                        type_,
+                        to_drop,
+                        curr_own_table_field,
+                        curr_foreign_table_field,
+                    )
+
+                    # prev_equal_fields = set(
+                    #     GenerateCodeBlocks.get_equal_fields(
+                    #         prev_own_table_field, prev_foreign_table_field
+                    #     )
+                    # )
+                    # curr_equal_fields = set(
+                    #     GenerateCodeBlocks.get_equal_fields(
+                    #         curr_own_table_field, curr_foreign_table_field
+                    #     )
+                    # )
+                    # if added_equal_fields := (
+                    #     curr_equal_fields - prev_equal_fields
+                    # ):
+
+        if removed_collectionfields:
+            for collectionfield in removed_collectionfields:
+                prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
+                cls.update_to_drop_for_generic(
+                    prev_own_table_field,
+                    prev_foreign_table_field,
+                    type_,
+                    to_drop,
+                )
+
+    # Type-based generation of table-trigger pairs
+    @classmethod
+    def update_to_drop(
+        cls,
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+    ) -> None:
+        if not equal_fields:
+            return
+
+        get_drop_data_func = (
+            cls._get_drop_triggers_data_for_relation_list
+            if type_.endswith("list")
+            else cls._get_drop_triggers_data_for_relation
+        )
+        to_drop.extend(
+            get_drop_data_func(
+                own_table_field,
+                foreign_table_field,
+                equal_fields,
+                is_generic_relation=type_.startswith("generic"),
+            )
+        )
+
+    @classmethod
+    def update_to_drop_for_generic(
+        cls,
+        prev_own_table_field: TableFieldType,
+        prev_foreign_table_field: TableFieldType,
+        type_: str,
+        to_drop: list[tuple[Table, TriggerName]],
+        curr_own_table_field: TableFieldType | None = None,
+        curr_foreign_table_field: TableFieldType | None = None,
+    ) -> None:
+        prev_equal_fields = set(
+            GenerateCodeBlocks.get_equal_fields(
+                prev_own_table_field, prev_foreign_table_field
+            )
+        )
+        if curr_own_table_field and curr_foreign_table_field:
+            curr_equal_fields = set(
+                GenerateCodeBlocks.get_equal_fields(
+                    curr_own_table_field, curr_foreign_table_field
+                )
+            )
+            equal_fields = prev_equal_fields - curr_equal_fields
+        else:
+            equal_fields = prev_equal_fields
+
+        cls.update_to_drop(
+            prev_own_table_field,
+            prev_foreign_table_field,
+            equal_fields,
+            type_,
+            to_drop,
+        )
+
+    @staticmethod
+    def _get_drop_triggers_data_for_relation(
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        is_generic_relation: bool,
+    ) -> list[tuple[Collection, TriggerName]]:
+        to_drop = []
+        for equal_field in equal_fields:
+            if is_generic_relation:
+                generic_plain_field_name = HelperGetNames.get_generic_plain_field_name(
+                    own_table_field.column,
+                    foreign_table_field.table,
+                    foreign_table_field.ref_column,
+                )
+            else:
+                generic_plain_field_name = None
+
+            own_table = HelperGetNames.get_table_name(own_table_field.table)
+            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+            own_trigger_name, foreign_trigger_name = (
+                HelperGetNames.get_trigger_names_for_check_equals(
+                    equal_field,
+                    own_table,
+                    generic_plain_field_name or own_table_field.column,
+                    foreign_table,
+                    foreign_table_field.column,
+                    foreign_table_field.table,
+                )
+            )
+            to_drop.append((own_table, own_trigger_name))
+            if foreign_trigger_name:
+                to_drop.append((foreign_table, foreign_trigger_name))
+        return to_drop
+
+    @staticmethod
+    def _get_drop_triggers_data_for_relation_list(
+        own_table_field: TableFieldType,
+        foreign_table_field: TableFieldType,
+        equal_fields: set[str],
+        is_generic_relation: bool,
+    ) -> list[tuple[Collection, TriggerName]]:
+        to_drop = []
+        for equal_field in equal_fields:
+            own_table = HelperGetNames.get_table_name(own_table_field.table)
+            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+            if is_generic_relation:
+                intermediate_table = HelperGetNames.get_gm_table_name(own_table_field)
+            else:
+                intermediate_table, *_ = Helper.get_nm_table_for_n_m_relation_lists(
+                    own_table_field, foreign_table_field
+                )
+
+            (
+                own_trigger_name,
+                foreign_trigger_name,
+                intermediate_trigger_name,
+            ) = HelperGetNames.get_trigger_names_for_check_equals_multi(
+                equal_field,
+                own_table,
+                own_table_field.column,
+                foreign_table,
+                foreign_table_field.column,
+                is_generic_list=is_generic_relation,
+            )
+            to_drop.extend(
+                [
+                    (own_table, own_trigger_name),
+                    (foreign_table, foreign_trigger_name),
+                ]
+            )
+            if intermediate_table not in RemoveHelper.intermediate_tables_to_remove:
+                to_drop.append((intermediate_table, intermediate_trigger_name))
+
+        return to_drop
+
+    @staticmethod
+    def equal_fields_changed(
+        prev_field_def: dict[str, Any], curr_field_def: dict[str, Any]
+    ) -> bool:
+        return prev_field_def.get("equal_fields") != curr_field_def.get("equal_fields")
+
+
+class RemoveHelper:
+    intermediate_tables_to_remove: set[Table] = set()
+
+    @classmethod
+    def handle_remove(
+        cls, remove: RemoveDiffDict, dc_remove_dict: dict[str, Any]
+    ) -> str:
+        result = ""
+        if "collections" in remove:
+            collections_remove_tuple: CollectionsRemoveTuple = remove["collections"]
+            for collection_name in collections_remove_tuple[0]:
+                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
+                dc_remove_dict["collections"][0].remove(collection_name)
+            result += cls.handle_remove_tree(
+                collections_remove_tuple[1], dc_remove_dict["collections"][1]
+            )
+            remove_empty(dc_remove_dict, "collections")
+
+        if "enum_types" in remove:
+            result += cls.handle_remove_enum_types(
+                remove["enum_types"], dc_remove_dict["enum_types"]
+            )
+            remove_empty(dc_remove_dict, "enum_types")
+
+        if "_meta" in remove:
+            result += cls.handle_remove_meta_attributes(
+                remove["_meta"], dc_remove_dict["_meta"]
+            )
+            remove_empty(dc_remove_dict, "_meta")
+        return result
+
+    @classmethod
+    def handle_remove_tree(
+        cls,
+        remove_tree_dict: dict[str, Any],
+        dc_remove_tree_dict: dict[str, Any],
+    ) -> str:
+        result = ""
+        for collection_name, collection_data in remove_tree_dict.items():
+            for key, data in collection_data[1].items():
+                match key:
+                    case "fields":
+                        result += cls.handle_remove_fields(
+                            data,
+                            dc_remove_tree_dict[collection_name][1]["fields"],
+                            collection_name,
+                        )
+                        remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
+                        remove_empty(dc_remove_tree_dict, collection_name)
+                    case "unique_together":
+                        result += cls.handle_remove_unique_together(
+                            data,
+                            dc_remove_tree_dict[collection_name][1]["unique_together"],
+                            collection_name,
+                        )
+                        remove_empty(
+                            dc_remove_tree_dict[collection_name][1],
+                            "unique_together",
+                        )
+                        remove_empty(dc_remove_tree_dict, collection_name)
+        for table in sorted(cls.intermediate_tables_to_remove):
+            result += AlterSchemaHelper.get_drop_table_statement(table)
+        result += EqualFieldsHelper.handle_alter_equal_fields()
+        return result
+
+    @classmethod
+    def handle_remove_fields(
+        cls,
+        remove_tuple: tuple[list[str], dict[str, Any]],
+        dc_remove_tuple: tuple[list[str], dict[str, Any]],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        if len(fields_to_remove := remove_tuple[0]):
+            result += cls.handle_remove_table_fields(
+                fields_to_remove,
+                dc_remove_tuple[0],
+                collection_name,
+            )
+        if len(field_attrs_to_remove := remove_tuple[1]):
+            result += cls.handle_remove_field_attributes(
+                field_attrs_to_remove, dc_remove_tuple[1], collection_name
+            )
+        return result
+
+    @classmethod
+    def handle_remove_table_fields(
+        cls,
+        remove_list: list[str],
+        dc_remove_list: list[str],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for field_name in remove_list:
+            field_def = PREV_MODELS[collection_name]["fields"][field_name]
+            if field_def.get("calculated"):
+                continue
+
+            drop_column = True
+
+            if field_def.get("to"):
+                alter_views.add(collection_name)
+                with prev_models_context():
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
+                        collection_name, field_name, field_def
+                    )
+                    if write_fields:
+                        cls.intermediate_tables_to_remove.add(write_fields[0])
+                    if write_fields or is_view_field:
+                        drop_column = False
+
+                    if field_def.get("equal_fields"):
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name
+                        )
+
+            if drop_column:
+                result += AlterSchemaHelper.get_drop_column_statement(
+                    collection_name, field_name
+                )
+                type_ = field_def["type"]
+                if "relation" in type_ and not type_.startswith("generic"):
+                    with prev_models_context():
+                        foreign_table_field: TableFieldType = (
+                            TableFieldType.get_definitions_from_foreign(
+                                field_def.get("to"), field_def.get("reference")
+                            )
+                        )
+                    fk, idx = HelperGetNames.get_fk_and_index_name(
+                        HelperGetNames.get_table_name(collection_name),
+                        field_name,
+                        HelperGetNames.get_table_name(foreign_table_field.table),
+                        foreign_table_field.ref_column,
+                    )
+                    result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                        collection_name, fk
+                    )
+                    result += AlterSchemaHelper.get_drop_index_statement(
+                        collection_name, idx
+                    )
+
+            dc_remove_list.remove(field_name)
+        return result
+
+    @staticmethod
+    def handle_remove_field_attributes(
+        remove_tree_dict: dict[str, Any],
+        dc_remove_tree_dict: dict[str, Any],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for field_name, attrs in remove_tree_dict.items():
+            for attr in attrs[0]:
+                match attr:
+                    case "default" | "required":
+                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                            collection_name,
+                            field_name,
+                            "DEFAULT" if attr == "default" else "NOT NULL",
+                        )
+                    case "minimum" | "maximum" | "minLength" | "unique":
+                        constraint_name_func = getattr(
+                            HelperGetNames,
+                            f"get_{attr.lower()}_constraint_name",
+                        )
+                        constraint_name = constraint_name_func(
+                            collection_name,
+                            ([field_name] if attr == "unique" else field_name),
+                        )
+                        result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                            collection_name, constraint_name
+                        )
+                    case "sql":
+                        alter_views.add(collection_name)
+                    case "constant":
+                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
+                        if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
+                            continue
+                        if field_def["type"] == "relation":
+                            with prev_models_context():
+                                foreign_table_field: TableFieldType = (
+                                    TableFieldType.get_definitions_from_foreign(
+                                        field_def.get("to"),
+                                        field_def.get("reference"),
+                                    )
+                                )
+                                if foreign_table_field.field_def["type"] != "relation":
+                                    continue
+                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+                                if was_view_field(
+                                    collection_name, field_name, field_def
+                                ):
+                                    continue
+                        result += AlterSchemaHelper.get_drop_trigger_statement(
+                            collection_name,
+                            HelperGetNames.get_constant_field_trigger_name(
+                                collection_name, field_name
+                            ),
+                        )
+                    case "equal_fields":
+                        with prev_models_context():
+                            EqualFieldsHelper.update_equal_fields_diff(
+                                collection_name, field_name
+                            )
+                    case value if value in FieldAttributes.skipped_in_schema:
+                        pass
+                    case "type":
+                        raise BadCodingException(
+                            f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
+                        )
+                    case _:
+                        # Skipped as not likely to be removed in the foreseeable future:
+                        # "to" and "reference": can only be removed if type changes to not relational field
+                        # "sequence_scope": would turn a sequence field into a regular number field
+                        raise NotImplementedError(
+                            f"{collection_name}/{field_name}: {attr}"
+                        )
+                dc_remove_tree_dict[field_name][0].remove(attr)
+                remove_empty(dc_remove_tree_dict, field_name)
+            for attr, attr_data in attrs[1].items():
+                match attr:
+                    case "log_triggers":
+                        processed_tables: dict[str, int] = {}
+                        for log_trigger in attr_data:
+                            trigger_name_iu, trigger_name_ud, *_ = (
+                                Helper.get_log_calculated_id_array_trigger_data(
+                                    collection_name,
+                                    field_name,
+                                    log_trigger,
+                                    processed_tables,
+                                )
+                            )
+                            for trigger_name in [
+                                trigger_name_iu,
+                                trigger_name_ud,
+                            ]:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    log_trigger["on_table"],
+                                    trigger_name,
+                                )
+                    case _:
+                        raise NotImplementedError(
+                            f"{collection_name}/{field_name}: {attr}"
+                        )
+                dc_remove_tree_dict[field_name][1].pop(attr)
+                remove_empty(dc_remove_tree_dict, field_name)
+        return result
+
+    @staticmethod
+    def handle_remove_unique_together(
+        remove_list: list[str],
+        dc_remove_list: list[str],
+        collection_name: str,
+    ) -> str:
+        result = ""
+        for fields in remove_list:
+            result += AlterSchemaHelper.get_drop_table_constraint_statement(
+                collection_name,
+                HelperGetNames.get_unique_constraint_name(
+                    collection_name,
+                    Helper.split_unique_together_fields(fields),
+                ),
+            )
+            dc_remove_list.remove(fields)
+        return result
+
+    @staticmethod
+    def handle_remove_enum_types(
+        remove_tree_dict: EnumTypesRemoveDict,
+        dc_remove_tree_dict: EnumTypesRemoveDict,
+    ) -> str:
+        result = ""
+        for collection_name, field_names in remove_tree_dict.items():
+            for field_name in field_names:
+                result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
+                    collection_name, field_name
+                )
+                dc_remove_tree_dict[collection_name].remove(field_name)
+            remove_empty(dc_remove_tree_dict, collection_name)
+        return result
+
+    @staticmethod
+    def handle_remove_meta_attributes(
+        remove_meta_attributes_tuple: MetaAttributesRemoveTuple,
+        dc_remove_meta_attributes_tuple: MetaAttributesRemoveTuple,
+    ) -> str:
+        result = ""
+        for attr, data in remove_meta_attributes_tuple[1].items():
+            match attr:
+                case "enum_definitions":
+                    for enum in data[0]:
+                        result += AlterSchemaHelper.get_drop_type_statement(
+                            HelperGetNames.get_enum_name(enum)
+                        )
+                        dc_remove_meta_attributes_tuple[1][attr][0].remove(enum)
+                case _:
+                    raise NotImplementedError(f"_meta attribute: {attr}")
+            remove_empty(dc_remove_meta_attributes_tuple[1], attr)
+        return result
 
 
 def handle_add_field_attributes(
@@ -365,31 +1046,6 @@ def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
             del dc_collection[field_name_old]
         # TODO Renaming and redefining constraints
         remove_empty(dc_rename_dict[1], collection_name)
-    return result
-
-
-def alter_views_conditionally(
-    collection_name: str, has_write_fields: bool, is_view_field: bool
-) -> None:
-    if has_write_fields or is_view_field:
-        alter_views.add(collection_name)
-
-
-def handle_remove_tree(
-    remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_remove_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    result = ""
-    for collection_name, field_lists in remove_tree_dict.items():
-        fields = field_lists[1]["fields"]
-        for field_name in fields[0]:
-            result += f"ALTER TABLE {collection_name}_t DROP COLUMN {field_name};\n"
-
-            dc_remove_tree_dict[collection_name][1]["fields"][0].remove(field_name)
-            # TODO fields[1]
-            # constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} DROP DEFAULT ;\n"
-            remove_empty(dc_remove_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_remove_tree_dict, collection_name)
     return result
 
 
