@@ -45,7 +45,9 @@ All those meetings are collected in a list represented by:
 }
 ```
 
-String representations of `start_time` and `end_time` are created for the `meeting/time_zone`.
+String representations of `start_time` and `end_time` are created for the
+`meeting/time_zone` if it is defined. Otherwise `organization/time_zone`
+or UTC is used.
 
 For the committee, this object is created:
 

@@ -4,13 +4,13 @@ from zoneinfo import ZoneInfo
 
 import fastjsonschema
 
-from openslides_backend.shared.filters import And, FilterOperator, Or
-
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied, PresenterException
+from ..shared.filters import And, FilterOperator, Or
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
+from ..shared.util import ONE_ORGANIZATION_FQID
 from .base import BasePresenter
 from .presenter import register_presenter
 
@@ -62,6 +62,13 @@ class GetForwardingMeetings(BasePresenter):
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["forward_to_committee_ids"],
         )
+        organization_timezone = (
+            self.datastore.get(
+                ONE_ORGANIZATION_FQID,
+                ["time_zone"],
+            ).get("time_zone")
+            or "UTC"
+        )
 
         result = []
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
@@ -86,7 +93,9 @@ class GetForwardingMeetings(BasePresenter):
             meetings_list = []
             for meeting_id, meeting_data in forward_to_committee_meetings.items():
                 end_time = meeting_data["end_time"]
-                meeting_timezone = meeting_data.get("time_zone") or "UTC"
+                meeting_timezone = (
+                    meeting_data.get("time_zone") or organization_timezone
+                )
                 start_of_today = datetime.now(tz=ZoneInfo(meeting_timezone)).replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )

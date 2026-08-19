@@ -4,6 +4,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from .base import BasePresenterTestCase
 
@@ -69,6 +70,47 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                             ).isoformat(),
                             "end_time": datetime.fromtimestamp(
                                 222222, ZoneInfo("UTC")
+                            ).isoformat(),
+                        }
+                    ],
+                    "default_meeting_id": None,
+                }
+            ],
+        )
+
+    def test_format_with_orga_time_zone(self) -> None:
+        self.create_meeting()
+        self.create_meeting(
+            4,
+            {
+                "name": "meeting4",
+                "start_time": datetime(2013, 3, 7, 7, 15),
+                "end_time": datetime(2013, 3, 11, 19, 30),
+            },
+        )
+        self.set_models(
+            {
+                "committee/60": {"forward_to_committee_ids": [63]},
+                ONE_ORGANIZATION_FQID: {"time_zone": "Europe/Berlin"},
+            }
+        )
+        status_code, data = self.make_request()
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            [
+                {
+                    "id": 63,
+                    "name": "Committee63",
+                    "meetings": [
+                        {
+                            "id": 4,
+                            "name": "meeting4",
+                            "start_time": datetime(
+                                2013, 3, 7, 8, 15, tzinfo=ZoneInfo("Europe/Berlin")
+                            ).isoformat(),
+                            "end_time": datetime(
+                                2013, 3, 11, 20, 30, tzinfo=ZoneInfo("Europe/Berlin")
                             ).isoformat(),
                         }
                     ],
