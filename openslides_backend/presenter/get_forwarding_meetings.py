@@ -7,7 +7,7 @@ import fastjsonschema
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied, PresenterException
-from ..shared.filters import And, FilterOperator, Or
+from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
 from ..shared.util import ONE_ORGANIZATION_FQID
@@ -74,18 +74,15 @@ class GetForwardingMeetings(BasePresenter):
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", forward_to_committee_id),
-                ["meeting_ids", "name", "default_meeting_id"],
+                ["name", "default_meeting_id"],
             )
             forward_to_committee_meetings = self.datastore.filter(
                 "meeting",
                 And(
                     FilterOperator("is_active_in_organization_id", "!=", None),
                     FilterOperator("end_time", "!=", None),
-                    Or(
-                        FilterOperator("id", "=", id_)
-                        for id_ in forward_to_committee.get("meeting_ids", [])
-                        if id_ != request_meeting_id
-                    ),
+                    FilterOperator("committee_id", "=", forward_to_committee_id),
+                    FilterOperator("id", "!=", request_meeting_id),
                 ),
                 ["name", "start_time", "end_time", "time_zone"],
             )
