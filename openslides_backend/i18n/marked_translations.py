@@ -15,12 +15,12 @@ _(
 
 # Json uploads
 _(
-    "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (f.e. 1.234567)"
+    "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (e.g. 1.234567)"
 )
 _(
     "Invalid format for column {{field}}: Got {{content}}; expected integer (i.e. a natural number)"
 )
 _(
-    "Invalid format for column {{field}}: Got {{content}}; expected boolean (f.E. '1' for yes, '0' for no)"
+    "Invalid format for column {{field}}: Got {{content}}; expected boolean (e.g. '1' for yes, '0' for no)"
 )
 _("Invalid date for column {{field}}: Got {{content}}; expected format YYYY-MM-DD")
