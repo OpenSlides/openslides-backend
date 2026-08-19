@@ -1,13 +1,16 @@
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import fastjsonschema
 
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied, PresenterException
+from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
+from ..shared.util import ONE_ORGANIZATION_FQID
 from .base import BasePresenter
 from .presenter import register_presenter
 
@@ -35,18 +38,19 @@ class GetForwardingMeetings(BasePresenter):
 
     def get_result(self) -> Any:
         # check permission
+        request_meeting_id = self.data["meeting_id"]
         if not has_perm(
             self.datastore,
             self.user_id,
             Permissions.Motion.CAN_FORWARD,
-            self.data["meeting_id"],
+            request_meeting_id,
         ):
             msg = "You are not allowed to perform presenter get_forwarding_meetings"
             msg += f" Missing permission: {Permissions.Motion.CAN_FORWARD}"
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", self.data["meeting_id"]),
+            fqid_from_collection_and_id("meeting", request_meeting_id),
             ["committee_id", "is_active_in_organization_id", "name"],
         )
         if not meeting.get("is_active_in_organization_id"):
@@ -58,39 +62,59 @@ class GetForwardingMeetings(BasePresenter):
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["forward_to_committee_ids"],
         )
+        organization_timezone = (
+            self.datastore.get(
+                ONE_ORGANIZATION_FQID,
+                ["time_zone"],
+            ).get("time_zone")
+            or "UTC"
+        )
 
         result = []
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", forward_to_committee_id),
-                ["meeting_ids", "name", "default_meeting_id"],
+                ["name", "default_meeting_id"],
+            )
+            forward_to_committee_meetings = self.datastore.filter(
+                "meeting",
+                And(
+                    FilterOperator("is_active_in_organization_id", "!=", None),
+                    FilterOperator("end_time", "!=", None),
+                    FilterOperator("committee_id", "=", forward_to_committee_id),
+                    FilterOperator("id", "!=", request_meeting_id),
+                ),
+                ["name", "start_time", "end_time", "time_zone"],
             )
 
-            meeting_result = []
-            for meeting_id2 in forward_to_committee.get("meeting_ids", []):
-                meeting2 = self.datastore.get(
-                    fqid_from_collection_and_id("meeting", meeting_id2),
-                    ["name", "is_active_in_organization_id", "start_time", "end_time"],
+            meetings_list = []
+            for meeting_id, meeting_data in forward_to_committee_meetings.items():
+                end_time = meeting_data["end_time"]
+                meeting_timezone = (
+                    meeting_data.get("time_zone") or organization_timezone
                 )
-                if meeting2.get("is_active_in_organization_id"):
-                    meeting_result.append(
+                start_of_today = datetime.now(tz=ZoneInfo(meeting_timezone)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                if end_time >= start_of_today:
+                    meetings_list.append(
                         {
-                            "id": meeting_id2,
-                            "name": meeting2.get("name", ""),
+                            "id": meeting_id,
+                            "name": meeting_data.get("name", ""),
                             "start_time": self._get_formatted_datetime_value(
-                                meeting2.get("start_time")
+                                meeting_data.get("start_time"), meeting_timezone
                             ),
                             "end_time": self._get_formatted_datetime_value(
-                                meeting2.get("end_time")
+                                end_time, meeting_timezone
                             ),
                         }
                     )
-            if meeting_result:
+            if meetings_list:
                 result.append(
                     {
                         "id": forward_to_committee_id,
                         "name": forward_to_committee.get("name", ""),
-                        "meetings": meeting_result,
+                        "meetings": meetings_list,
                         "default_meeting_id": forward_to_committee.get(
                             "default_meeting_id"
                         ),
@@ -99,9 +123,13 @@ class GetForwardingMeetings(BasePresenter):
         return result
 
     @staticmethod
-    def _get_formatted_datetime_value(value: Any) -> str | None:
+    def _get_formatted_datetime_value(value: Any, timezone: str) -> str | None:
         if not value:
             return None
         if isinstance(value, datetime):
-            return value.isoformat()
+            if value.tzinfo is None:
+                value_with_timezone = value.replace(tzinfo=ZoneInfo(timezone))
+            else:
+                value_with_timezone = value.astimezone(ZoneInfo(timezone))
+            return value_with_timezone.isoformat()
         return str(value)
