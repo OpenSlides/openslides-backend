@@ -568,20 +568,20 @@ class RemoveHelper:
     @classmethod
     def handle_remove_fields(
         cls,
-        remove_list: tuple[list[str], dict[str, Any]],
-        dc_remove_list: tuple[list[str], dict[str, Any]],
+        remove_tuple: tuple[list[str], dict[str, Any]],
+        dc_remove_tuple: tuple[list[str], dict[str, Any]],
         collection_name: str,
     ) -> str:
         result = ""
-        if len(fields_to_remove := remove_list[0]):
+        if len(fields_to_remove := remove_tuple[0]):
             result += cls.handle_remove_table_fields(
                 fields_to_remove,
-                dc_remove_list[0],
+                dc_remove_tuple[0],
                 collection_name,
             )
-        if len(field_attrs_to_remove := remove_list[1]):
+        if len(field_attrs_to_remove := remove_tuple[1]):
             result += cls.handle_remove_field_attributes(
-                field_attrs_to_remove, dc_remove_list[1], collection_name
+                field_attrs_to_remove, dc_remove_tuple[1], collection_name
             )
         return result
 
@@ -783,21 +783,21 @@ class RemoveHelper:
 
     @staticmethod
     def handle_remove_meta_attributes(
-        remove_meta_attributes_list: MetaAttributesRemoveTuple,
-        dc_remove_meta_attributes_list: MetaAttributesRemoveTuple,
+        remove_meta_attributes_tuple: MetaAttributesRemoveTuple,
+        dc_remove_meta_attributes_tuple: MetaAttributesRemoveTuple,
     ) -> str:
         result = ""
-        for attr, data in remove_meta_attributes_list[1].items():
+        for attr, data in remove_meta_attributes_tuple[1].items():
             match attr:
                 case "enum_definitions":
                     for enum in data[0]:
                         result += AlterSchemaHelper.get_drop_type_statement(
                             HelperGetNames.get_enum_name(enum)
                         )
-                        dc_remove_meta_attributes_list[1][attr][0].remove(enum)
+                        dc_remove_meta_attributes_tuple[1][attr][0].remove(enum)
                 case _:
                     raise NotImplementedError(f"_meta attribute: {attr}")
-            remove_empty(dc_remove_meta_attributes_list[1], attr)
+            remove_empty(dc_remove_meta_attributes_tuple[1], attr)
         return result
 
 
