@@ -4,9 +4,9 @@ from typing import Any
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ...util.default_schema import DefaultSchema
-from ...shared.interfaces.write_request import WriteRequest
-from ...shared.interfaces.event import Event, EventType
-from .password_mixins import SetPasswordMixin
+from ...util.register import register_action
+from ....shared.interfaces.write_request import WriteRequest
+from ....shared.interfaces.event import Event, EventType
 from .user_mixins import UserMixin
 
 

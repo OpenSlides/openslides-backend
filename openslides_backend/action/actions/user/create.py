@@ -20,7 +20,6 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
@@ -30,7 +29,6 @@ class UserCreate(
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
-    SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,

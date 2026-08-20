@@ -482,7 +482,7 @@ class IDPMixin(Action):
     def hash_padding(self, to_pad):
         return to_pad + '=' * (-len(to_pad) % 4)
 
-    def update_password(self, instance, password):
+    def update_password(self, instance, password, is_encrypted):
         if isinstance(instance, str):
             idp_id = instance
         else:
@@ -491,25 +491,36 @@ class IDPMixin(Action):
         if not idp_id or idp_id == "":
             raise ActionException(f"Updating password couldn't be done: no IDP ID")
 
-        # An argon2 encrypted password is expected
-        if not password.startswith("$argon2"):
-            raise ActionException(f"Password of IDP user {idp_id} is not argon2-encrypted: {password}")
+        # If password is encrypted, then it must be argon2 encrypted
+        if is_encrypted and not password.startswith("$argon2"):
+            raise ActionException(f"Password is not argon2-encrypted: {password}")
 
         idp_admin_access_token = self._get_admin_key()
 
         try:
-
             ## Change password of IDP user
-            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
-                json={
-                     'human': {
+            jsonPayload={
+                    'human': {
                         'password': {
                             'hashedPassword': {
                                 'hash': f'{password}'
                             }
                         }
                     }
-                },
+                }
+            if not is_encrypted:
+                jsonPayload={
+                    'human': {
+                        'password': {
+                            'password': {
+                                'password': f'{password}'
+                            }
+                        }
+                    }
+                }
+
+            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
+                json=jsonPayload,
                 headers={
                     'Authorization': f'Bearer {idp_admin_access_token}',
                     'Host': f'{self.external_host}'
@@ -548,7 +559,50 @@ class IDPMixin(Action):
             if response.status_code != 200:
                 self.idp_error(response)
         except Exception as e:
-            raise ActionException(f"Error updating password for IDP user directly {idp_id}: {e}")
+            raise ActionException(f"Error updating password: {e}")
+
+    def user_changes_password(self, instance, newPassword, oldPassword):
+        if isinstance(instance, str):
+            idp_id = instance
+        else:
+            idp_id = self.get_idp_id_from_datastore(instance)
+
+        if not idp_id or idp_id == "":
+            raise ActionException(f"Changing password couldn't be done: no IDP ID")
+
+        idp_admin_access_token = self._get_admin_key()
+
+        try:
+            ## Change password of IDP user
+            response = requests.patch(self.idp_admin_route + "users/" + idp_id,
+                json={
+                     'human': {
+                        'password': {
+                            'password': {
+                                'password': f'{newPassword}'
+                            },
+                            'currentPassword': f'{oldPassword}'
+                        }
+                    }
+                },
+                headers={
+                    'Authorization': f'Bearer {idp_admin_access_token}',
+                    'Host': f'{self.external_host}'
+                }
+            )
+
+            # Logout user
+            self.revoke_all_sessions_of_user(idp_id)
+
+            if response.status_code != 200:
+                error_response = response.json()["message"]
+                self.logger.warning(error_response)
+                if "COMMAND-3M0fs" in error_response:
+                    raise ActionException(f"Old password is not correct")
+
+                self.idp_error(response)
+        except Exception as e:
+            raise ActionException(f"Error changing password: {e}")
 
     # Throws a generic error to the client while logging the real issue
     def idp_error(self, fromResponse):

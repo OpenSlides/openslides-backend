@@ -8,15 +8,14 @@ from ....permissions.permissions import Permissions
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .password_mixins import ClearSessionsMixin, SetPasswordMixin
+from ...mixins.idp_mixin import IDPMixin
 
 
 @register_action("user.set_password")
 class UserSetPasswordAction(
-    SetPasswordMixin,
+    IDPMixin,
     UserScopeMixin,
     CheckForArchivedMeetingMixin,
-    ClearSessionsMixin,
     UpdateAction,
 ):
     """
@@ -37,5 +36,7 @@ class UserSetPasswordAction(
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        self.set_password(instance)
+        # TODO: Encrypt password
+
+        self.update_password(instance, instance["password"], False)
         return instance
