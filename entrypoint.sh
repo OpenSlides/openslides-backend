@@ -8,8 +8,10 @@ printf "Export env variables for database.\n"
 source scripts/export_database_variables.sh
 
 if [ ! $ANONYMOUS_ONLY ]; then
+  # Wait for Database
   meta/dev/scripts/wait-for-database.sh
   printf "DBMS is started.\n"
+
 fi
 
 printf "Creating schema ...\n"

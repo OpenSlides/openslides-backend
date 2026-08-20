@@ -1,7 +1,5 @@
 from typing import Any, Protocol
 
-from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
-
 from ..shared.authenticated_service import AuthenticatedServiceInterface
 
 
@@ -24,6 +22,16 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Authentication data must be set beforehand via set_authentication.
         """
 
+    def backchannel_logout(self, request: dict[str, Any])  -> None:
+        """
+        A request to logout and block an active session id. Request has to be in the form of a valid
+        OIDC logout token request.
+
+        Used to signal a backchannel logout originating from an IDP to all OS services.
+
+        Throws an exception, if the request is invalid
+        """
+
     def hash(self, toHash: str) -> str:
         """
         Hashes a given value. A random salt (64bit) is generated and added to the hashed value.
@@ -43,14 +51,14 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Checks if the given user is anonymous or not.
         """
 
-    def create_authorization_token(self, user_id: int, email: str) -> str:
+    def block_session_id(self, session_id: int) -> None:
         """
-        Creates a jsonwebtoken with user_id and email and returns it.
+        Blocks session_id, invalidating their authentication requests
         """
 
-    def verify_authorization_token(self, user_id: int, token: str) -> bool:
+    def is_session_id_blocked(self, session_id: int) -> bool:
         """
-        Checks the user_id with the token, returns true if okay else false.
+        Checks if session_id is blocked and thereby invalid
         """
 
     def clear_all_sessions(self) -> None:

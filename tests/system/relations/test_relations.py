@@ -24,7 +24,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.set_models(
             {
                 "fake_model_a/1": {},
-                "fake_model_a/2": {"fake_model_b_oo": 3},
+                "fake_model_a/2": {},
                 "fake_model_b/3": {"fake_model_a_oo": 2},
             }
         )
@@ -52,7 +52,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
     def test_O2O_delete(self) -> None:
         self.set_models(
             {
-                "fake_model_a/1": {"fake_model_b_oo": 2},
+                "fake_model_a/1": {},
                 "fake_model_b/2": {"fake_model_a_oo": 1},
             }
         )

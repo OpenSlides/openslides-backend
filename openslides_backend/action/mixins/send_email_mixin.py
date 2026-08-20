@@ -7,12 +7,15 @@ from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
+from .idp_mixin import IDPMixin
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.shared.interfaces.logging import Logger
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
+from ..util.typing import ActionData
 from ...shared.html import get_text_from_html
 from ..action import Action
 
@@ -183,7 +186,7 @@ class EmailUtils:
         return False, {}
 
 
-class EmailCheckMixin(Action):
+class EmailCheckMixin(IDPMixin):
     check_email_field: str
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -191,8 +194,16 @@ class EmailCheckMixin(Action):
             instance[self.check_email_field] = instance[self.check_email_field].strip()
             if not EmailUtils.check_email(instance[self.check_email_field]):
                 raise ActionException(f"{self.check_email_field} must be valid email.")
+
         return super().update_instance(instance)
 
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            # Update email
+            if "check_email_field" in action_data[0]:
+                self.update_email(action_data[0], action_data[0].get("check_email_field"))
+
+        return on_success
 
 class EmailSenderCheckMixin(Action):
     check_email_sender_field = "users_email_sender"

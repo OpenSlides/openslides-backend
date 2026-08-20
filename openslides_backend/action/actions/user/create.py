@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -13,12 +14,12 @@ from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionResultElement
+from ...util.typing import ActionData, ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
@@ -28,10 +29,10 @@ class UserCreate(
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
-    SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
+    IDPMixin,
 ):
     """
     Action to create a user.
@@ -42,6 +43,7 @@ class UserCreate(
         optional_properties=[
             "title",
             "username",
+            "idp_id",
             "pronoun",
             "first_name",
             "last_name",
@@ -77,6 +79,7 @@ class UserCreate(
         if instance.get("is_active"):
             self.check_limit_of_user(1)
         saml_id = instance.get("saml_id")
+
         if not instance.get("username"):
             if saml_id:
                 instance["username"] = saml_id
@@ -95,10 +98,7 @@ class UserCreate(
                 raise ActionException(
                     f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
                 )
-        else:
-            if not instance.get("default_password"):
-                instance["default_password"] = get_random_password()
-            self.reset_password(instance)
+
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
         if instance.get("external") and instance.get("home_committee_id"):
@@ -106,6 +106,16 @@ class UserCreate(
                 "Cannot set external to true and set a home committee at the same time."
             )
         return instance
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            try:
+                # Create IDP account
+                self.create_user(action_data[0], self.auth.hash(get_random_password()), False)
+            except Exception as e:
+                self.logger.error(f"Couldn't create IDP user after OS user was created: {e}")
+
+        return on_success
 
     def create_action_result_element(
         self, instance: dict[str, Any]

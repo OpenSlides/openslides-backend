@@ -1,2 +1,1 @@
--r partial/requirements_packaged_services.txt
 -r partial/requirements_production.txt

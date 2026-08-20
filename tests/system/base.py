@@ -194,7 +194,7 @@ class BaseSystemTestCase(TestCase):
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
-            auth_data["access_token"], auth_data["refresh_id"]
+            auth_data["access_token"]
         )
 
     def get_application(self) -> OpenSlidesBackendWSGIApplication:

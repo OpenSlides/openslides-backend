@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from openslides_backend.action.generics.update import UpdateAction
@@ -48,7 +48,7 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
             )
 
         if (t := instance.get("current_start_time")) and isinstance(t, int):
-            instance["current_start_time"] = datetime.fromtimestamp(t)
+            instance["current_start_time"] = datetime.fromtimestamp(t, tz=timezone.utc)
 
         if spoken_time := instance.pop("spoken_time", None):
             db_instance = self.datastore.get(

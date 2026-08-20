@@ -107,9 +107,12 @@ def export_meeting(
                 )
                 next_file_ids = list(
                     {
-                        parent_id
+                        id_
                         for m in unknown_mediafiles.values()
-                        if (parent_id := m.get("parent_id"))
+                        for id_ in [
+                            *([m["parent_id"]] if m.get("parent_id") else []),
+                            *m.get("child_ids", []),
+                        ]
                     }
                     - set(unknown_mediafiles)
                 )
@@ -129,6 +132,13 @@ def export_meeting(
                     ) and parent_id not in results["mediafile"]:
                         mediafile = unknown_mediafiles[parent_id]
                         results["mediafile"][parent_id] = mediafile
+                        descendant_ids: list[int] = [*mediafile.get("child_ids", [])]
+                        while len(descendant_ids):
+                            descendant_id = descendant_ids.pop()
+                            if descendant_id not in results["mediafile"]:
+                                descendant = unknown_mediafiles[descendant_id]
+                                results["mediafile"][descendant_id] = descendant
+                                descendant_ids.extend(descendant.get("child_ids", []))
 
     else:
         results = {}

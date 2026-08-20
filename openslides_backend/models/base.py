@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
+import logging
 
 from psycopg.types.json import Jsonb
 
@@ -10,6 +11,8 @@ from ..shared.patterns import Collection
 from . import fields
 
 model_registry: dict[Collection, type["Model"]] = {}
+
+logging.basicConfig(level=logging.INFO)
 
 
 def json_dict_to_non_json_data_types(json: dict[str, Any]) -> None:

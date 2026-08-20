@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -17,6 +18,7 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.base_delete import MeetingUserBaseDelete
@@ -50,6 +52,7 @@ class UserUpdate(
     ConditionalSpeakerCascadeMixin,
     AdminIntegrityCheckMixin,
     CheckLockOutPermissionMixin,
+    IDPMixin,
 ):
     """
     Action to update a user.
@@ -70,6 +73,7 @@ class UserUpdate(
     schema = DefaultSchema(User()).get_update_schema(
         optional_properties=[
             "username",
+            "idp_id",
             "pronoun",
             "title",
             "first_name",
@@ -142,6 +146,7 @@ class UserUpdate(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
                 "is_active",
+                "idp_id",
                 "organization_management_level",
                 "saml_id",
                 "password",
@@ -187,14 +192,27 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-        if is_active := instance.get("is_active"):
-            if not user.get("is_active"):
-                self.check_limit_of_user(1)
-        elif is_active is False and user.get("is_active"):
-            self.auth.clear_sessions_by_user_id(instance["id"])
 
         check_gender_exists(self.datastore, instance)
         return instance
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            try:
+                # Update fields in IDP
+                if "username" in action_data[0]:
+                    self.update_username(action_data[0], action_data[0].get("username"))
+
+                if "is_active" in action_data[0]:
+                    self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
+                    self.revoke_all_sessions_of_user(action_data[0])
+
+                if "email" in action_data[0]:
+                    self.update_email(action_data[0], action_data[0].get("email"))
+            except Exception as e:
+                self.logger.error(f"Couldn't update IDP user fields after OS user was updated: {e}")
+
+        return on_success
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

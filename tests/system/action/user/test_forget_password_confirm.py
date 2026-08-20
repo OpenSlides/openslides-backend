@@ -12,7 +12,7 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         self.set_models({"user/1": {"password": "old", "email": self.EMAIL}})
 
     def get_token(self, user_id: int = 1) -> str:
-        return quote(self.auth.create_authorization_token(user_id, self.EMAIL))
+        return
 
     def test_forget_password_confirm_correct(self) -> None:
         response = self.request(

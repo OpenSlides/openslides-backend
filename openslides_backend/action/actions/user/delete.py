@@ -1,6 +1,8 @@
 from typing import Any
+from collections.abc import Callable
 
 from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
@@ -8,6 +10,7 @@ from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator, Or
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -15,7 +18,12 @@ from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
+class UserDelete(
+    UserScopeMixin,
+    DeleteAction,
+    AdminIntegrityCheckMixin,
+    IDPMixin,
+):
     """
     Action to delete a user.
     """
@@ -28,7 +36,27 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance["id"] == self.user_id:
             raise ActionException("You cannot delete yourself.")
+
+        try:
+            self.user_id_to_idp_id[instance["id"]] = self.datastore.get(
+                fqid=f"user/{instance.get('id')}",
+                mapped_fields=["idp_id"]
+                )["idp_id"]
+        except Exception as e:
+            self.logger.error(f"User {instance.get('id')} has no IDP ID: {e}")
+
         return super().update_instance(instance)
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+        def on_success() -> None:
+            if not action_data[0].get('id') in self.user_id_to_idp_id:
+                self.logger.error(f"IDP ID for User {action_data[0].get('id')} not found, can't delete IDP user")
+                return
+
+            # Delete IDP account
+            self.delete_user(self.user_id_to_idp_id[action_data[0].get('id')])
+
+        return on_success
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
@@ -41,6 +69,7 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
         self.check_meeting_admin_integrity(
             [user_id for date in action_data if (user_id := date.get("id"))]
         )
+        self.user_id_to_idp_id: dict[int, str] = {}
         return super().get_updated_instances(action_data)
 
     def check_meeting_admin_integrity(self, delete_data: list[int] = []) -> None:

@@ -4,7 +4,6 @@ from collections.abc import Callable
 from re import Pattern
 from typing import Any, Optional
 
-from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
@@ -82,7 +81,7 @@ class BaseView(View):
         Returns user id from authentication service using HTTP headers.
         """
         self.services.authentication().set_authentication(
-            headers.get(AUTHENTICATION_HEADER, ""), cookies.get(COOKIE_NAME, "")
+            headers.get("Authorization", "")
         )
         user_id, access_token = self.services.authentication().authenticate()
         self.logger.debug(f"User id is {user_id}.")
