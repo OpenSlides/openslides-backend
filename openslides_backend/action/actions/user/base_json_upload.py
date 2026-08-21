@@ -400,8 +400,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     "id": gender_model["id"],
                 }
             else:
-                entry["gender"] = {"info": ImportState.WARNING, "value": gender}
-                messages.append(f"Gender '{gender}' is not in the allowed gender list.")
+                entry["gender"] = {"info": ImportState.ERROR, "value": gender}
+                messages.append(
+                    f"Error: Gender '{gender}' is not in the allowed gender list. Please choose a valid gender option."
+                )
+                self.row_state = ImportState.ERROR
 
         if email := entry.get("email"):
             if EmailUtils.check_email(email):
