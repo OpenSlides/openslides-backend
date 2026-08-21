@@ -57,7 +57,7 @@ test-file-pyspy:
 # k= to pass a test name
 # v=1 to run verbose test output
 # cap=1 to capture print to system out
-	py-spy record --subprocesses --format speedscope -- python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no)
+	py-spy record --subprocesses --format speedscope -- python -m debugpy --listen 0.0.0.0:5678 /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
