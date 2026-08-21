@@ -161,7 +161,7 @@ class StopControl(CountdownControl, Action):
         for start in range(0, vote_amount, steps):
             self.execute_other_action(
                 VoteCreateExplicit,
-                action_data[start : min(start + steps, len(action_data))],
+                action_data[start : min(start + steps, vote_amount)],
                 skip_archived_meeting_check=True,
             )
         # update results into option
