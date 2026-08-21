@@ -365,7 +365,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             )
         assert sorted(u_ids) == sorted(user_ids)
         self.assert_model_not_exists(f"vote/{len(user_ids)+1}")
-        assert counter.calls == 27
+        assert counter.calls == 24
 
     @pytest.mark.skip("Takes too long for regular testing")
     def test_stop_with_more_users_than_vote_amount_steps(self) -> None:
