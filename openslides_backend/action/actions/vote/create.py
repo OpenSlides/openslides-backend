@@ -84,6 +84,11 @@ class VoteCreate(CreateActionWithInferredMeeting):
 class VoteCreateExplicit(CreateAction):
     """
     Internal action to create a vote without automatic meeting_id calculation.
+
+    This class is exclusively for the poll stop.
+
+    It has multiple safety mechanisms and automaticisms removed to insure better performance.
+    This will be counteracted by the calling action.
     """
 
     model = Vote()
@@ -148,10 +153,6 @@ class VoteCreateExplicit(CreateAction):
         instance: dict[str, Any],
     ) -> Iterable[Event]:
         """
-        Creates write request elements (with update events) for all relations.
+        Disabled because back relations are not write-fields anyway.
         """
         return []
-        relation_updates = self.relation_manager.get_relation_updates(
-            self.model, instance, self.name
-        )
-        return self.handle_relation_updates_helper(relation_updates)

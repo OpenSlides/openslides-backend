@@ -1,6 +1,5 @@
 from collections import defaultdict
 from decimal import Decimal
-from math import ceil
 from typing import Any, cast
 
 from psycopg.types.json import Jsonb
@@ -78,7 +77,6 @@ class PollPermissionMixin(Action):
 
 class StopControl(CountdownControl, Action):
     def on_stop(self, instance: dict[str, Any]) -> None:
-        self.logger.error("Poll Stop handling: Loading poll and meeting data.")
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
@@ -101,27 +99,17 @@ class StopControl(CountdownControl, Action):
             ],
             lock_result=False,
         )
-        self.logger.error("Poll Stop handling: Resetting poll countdown.")
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], CountdownCommand.RESET)
 
         # stop poll in vote service and create vote objects
-        self.logger.error("Poll Stop handling: Calling stop on vote service.")
         results = self.vote_service.stop(instance["id"])
-        self.logger.error("Poll Stop handling: Vote service stop finished.")
         action_data = []
         votesvalid = Decimal("0.000000")
         option_results: dict[int, dict[str, Decimal]] = defaultdict(
             lambda: defaultdict(lambda: Decimal("0.000000"))
         )  # maps options to their respective YNA sums
-        amount_votes = len(results["votes"])
-        processed = 0
-        steps = ceil(amount_votes / 100)
         for ballot in results["votes"]:
-            if not processed % steps:
-                self.logger.error(
-                    f"Poll Stop handling: Processed {processed}/{amount_votes} ballots."
-                )
             user_token = get_user_token()
             vote_weight = Decimal(ballot["weight"])
             votesvalid += vote_weight
@@ -168,20 +156,14 @@ class StopControl(CountdownControl, Action):
                 )
             else:
                 raise VoteServiceException("Invalid response from vote service")
-            processed += 1
-        self.logger.error("Poll Stop handling: Processed all ballots.")
         steps = 1000
         vote_amount = len(action_data)
         for start in range(0, vote_amount, steps):
-            self.logger.error(
-                f"Poll Stop handling: Creating votes {start} to {start + steps} of {vote_amount}."
-            )
             self.execute_other_action(
                 VoteCreateExplicit,
                 action_data[start : min(start + steps, len(action_data))],
                 skip_archived_meeting_check=True,
             )
-        self.logger.error("Poll Stop handling: Created votes.")
         # update results into option
         self.execute_other_action(
             OptionSetAutoFields,
@@ -195,7 +177,6 @@ class StopControl(CountdownControl, Action):
                 for _id, option in option_results.items()
             ],
         )
-        self.logger.error("Poll Stop handling: Set option auto fields.")
         # set voted ids
         voted_ids = results["user_ids"]
         instance["voted_ids"] = voted_ids
@@ -204,20 +185,15 @@ class StopControl(CountdownControl, Action):
         instance["votesvalid"] = str(votesvalid)
         instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
         instance["votesinvalid"] = "0.000000"
-        self.logger.error("Poll Stop handling: Determined other vote data.")
 
         # set entitled users at stop.
         instance["entitled_users_at_stop"] = Jsonb(
             self.get_entitled_users(poll | instance, meeting)
         )
-        self.logger.error("Poll Stop handling: Calculated entitled users.")
 
     def get_entitled_users(
         self, poll: dict[str, Any], meeting: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        self.logger.error(
-            "Poll Stop handling: Fetching data for entitled_users calculation."
-        )
         entitled_users = []
         all_voted_users = set(poll.get("voted_ids", []))
 
@@ -263,12 +239,6 @@ class StopControl(CountdownControl, Action):
             ["is_present_in_meeting_ids"],
         )
         users = self.datastore.get_many([gmr], lock_result=False).get("user", {})
-        amount_users = len(meeting_users)
-        processed = 0
-        steps = ceil(amount_users / 100)
-        self.logger.error(
-            f"Poll Stop handling: Calculating entitled user data for {amount_users} meeting users."
-        )
 
         for mu in meeting_users:
             entitled_users.append(
@@ -285,11 +255,6 @@ class StopControl(CountdownControl, Action):
                     ),
                 }
             )
-            processed += 1
-            if not processed % steps:
-                self.logger.error(
-                    f"Poll Stop handling: Processed {processed}/{amount_users} meeting_users."
-                )
 
         return entitled_users
 

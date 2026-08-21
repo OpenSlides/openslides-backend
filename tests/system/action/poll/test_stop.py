@@ -360,10 +360,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists("poll/1", {"voted_ids": user_ids})
         u_ids = []
         for i in range(len(user_ids)):
-            u_ids.append(self.assert_model_exists(f"vote/{i+1}")["user_id"])
+            u_ids.append(
+                self.assert_model_exists(f"vote/{i+1}", {"meeting_id": 1})["user_id"]
+            )
         assert sorted(u_ids) == sorted(user_ids)
         self.assert_model_not_exists(f"vote/{len(user_ids)+1}")
-        assert counter.calls == 51
+        assert counter.calls == 27
 
     @pytest.mark.skip("Takes too long for regular testing")
     def test_stop_with_more_users_than_vote_amount_steps(self) -> None:
@@ -374,7 +376,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists("poll/1", {"voted_ids": user_ids})
         u_ids = []
         for i in range(len(user_ids)):
-            u_ids.append(self.assert_model_exists(f"vote/{i+1}")["user_id"])
+            u_ids.append(
+                self.assert_model_exists(f"vote/{i+1}", {"meeting_id": 1})["user_id"]
+            )
         assert sorted(u_ids) == sorted(user_ids)
         self.assert_model_not_exists(f"vote/{len(user_ids)+1}")
 
