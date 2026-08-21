@@ -14,6 +14,23 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion_workflow/1", {"name": "name_Xcdfgee"})
 
+    def test_update_first_state_id(self) -> None:
+        self.set_models(
+            {
+                "motion_state/2": {
+                    "name": "state yo business",
+                    "weight": 37,
+                    "meeting_id": 1,
+                    "workflow_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion_workflow.update", {"id": 1, "first_state_id": 2}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_workflow/1", {"first_state_id": 2})
+
     def test_update_wrong_id(self) -> None:
         response = self.request(
             "motion_workflow.update", {"id": 2, "name": "name_Xcdfgee"}
