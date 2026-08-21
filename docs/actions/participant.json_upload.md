@@ -55,6 +55,8 @@ The field `is_present` is a boolean in the payload. When importing this data, th
 Structure levels will be created during the later import phase if they aren't found.
 For this purpose the statistics row includes an extra point 'structure levels created'
 
+This action supports change detection (See [here](preface_special_imports.md#change-detection))
+
 ### User matching
 Same as in [account.json_upload#user-matching](account.json_upload.md#user-matching)
 
