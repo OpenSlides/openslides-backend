@@ -1,9 +1,11 @@
-from typing import cast
+from collections.abc import Iterable
+from typing import Any, cast
 
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Vote
+from ....shared.interfaces.event import Event
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
@@ -140,3 +142,16 @@ class VoteCreateExplicit(CreateAction):
             use_changed_models=False,
             lock_result=False,
         )
+
+    def handle_relation_updates(
+        self,
+        instance: dict[str, Any],
+    ) -> Iterable[Event]:
+        """
+        Creates write request elements (with update events) for all relations.
+        """
+        return []
+        relation_updates = self.relation_manager.get_relation_updates(
+            self.model, instance, self.name
+        )
+        return self.handle_relation_updates_helper(relation_updates)

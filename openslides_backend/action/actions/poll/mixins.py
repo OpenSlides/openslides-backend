@@ -179,6 +179,7 @@ class StopControl(CountdownControl, Action):
             self.execute_other_action(
                 VoteCreateExplicit,
                 action_data[start : min(start + steps, len(action_data))],
+                skip_archived_meeting_check=True,
             )
         self.logger.error("Poll Stop handling: Created votes.")
         # update results into option
