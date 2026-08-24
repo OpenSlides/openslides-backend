@@ -1,44 +1,77 @@
-# DaMMi Questions
+# Short overview
+
+Current split between automatic and manual actions:
+
+* Simple changes like adding, editing and removing collection, field or most of
+  the field attributes are being handled by the diff generator (usually) almost
+  fully automatically. Developer needs to run the script, check the output and
+  adjust the diff only in rare cases.
+
+* Renames are being handled semi-automatically: developer needs to define the
+  renames dictionary in the Migration class.
+
+* Special almost automatic handling of (currently) 3 specific cases: creating
+  required field in the existing collection, adding `required: true` to existing
+  field and rename that results in writing side switch (table field becomes view
+  field and other way around): diff generator collects such cases and writes them
+  to the `DiffMixin` class defined in the new file next to the `migration.py`.
+  Developer has to import and extend it. `BaseMigration` class will handle the
+  data collected by diff generator.
+
+  **Note:** side switch is not relevant for the vote
+  service, therefore will be implemented later.
+
+* Complex logic like moving data between columns and tables, creating or
+  updating entries, modifying data in renamed columns etc. should be defined
+  by the developer, mainly in `data_manipulation` method of the migration class.
+  Some actions are getting partially automated:
+    * Saving the data for `data_manipulation` into the temporary tables. Developer has
+      to define the collections and fields to save in `migration_tables`.
+    * Helper methods will patially automate some common actions.
+
+# Dammi changes needed for this migration
 
 * Diff generator:
-  * renamed fields should not be completely skipped in diff generator. We may need to update to/reference. Example in new vote service:
+  * renamed fields should not be completely skipped in diff generator as we
+    may need to update to/reference. Example in new vote service:
     * projector/used_as_default_projector_for_poll_in_meeting_id -> projector/used_as_default_projector_for_topic_poll_in_meeting_id
     * meeting/default_projector_poll_ids -> meeting/default_projector_topic_poll_ids
-  * Creating new field with NOT NULL (`required: true`) or adding NOT NULL: `NOT NULL` should be added after inserting values into the table (if any row contains NULL value in this column, error will be raised):
+
+# Will be needed soon
+
+For Zitadel (and maybe motion/diff_version):
+* When field with `required: true` gets created or this attribute gets added
+  to the field:
+  * If `default` is set for the field, also update all the existing entries
+    with `UPDATE table_name SET column_name = value WHERE TRUE;`. This can
+    happen in diff generator.
+  * Allow developer to define default for this migration instead of using
+    default from the collection file.
+
+# Not relevant for vote service migration but let's keep it somewhere for now
+
+* Relation side switch:
+  * Technically can happen on rename of 1-1 relational fields.
+  * At some point we may also want to manually switch the writing side of some
+    relations to make it more logical.
+  * For now Hannes will implement a simple assertion that will raise error in such cases.
+  * The intended way to handle side switch detected by diff generator:
+    * Diff generator collects these cases and adds `switched_writing_side` to
+      the `DiffMixin`.
+    * In the migration class the previous writing side must be automativally
+      saved in migration table in `data_preparation`
+    * In `data_manipulation` data from the migration table gets automatically
+      transfered into the new table field
 
 # Base class
-
-* Add more class-level maps:
-  * for required fields in existing collections (to set not null)
-  * for data_preparation copying tables or fetching into dict. Collections + fields (in data_preparation calculate also the intermediate tables)
-
-## data_preparation
-
-General pattern:
-
-* Tables to keep should be defined in the class. Should contain collections with the moved fields (with or without transformation). Here we copy them to use later. Use get_table_name with migration=True.
-
-Default behaviour:
-* If map exists, process it (copy the tables and data from the defined fields)
 
 ## data_manipulation
 
 General pattern:
 
 * Handle data from the copied tables
-* needs kind of reserve_ids
+* For reserve_ids use MigrationHandler.update_sequences()
 * needs helper to retrieve data from the migration table. Catch errors for non existent tables/columns and raise error with add to map suggestion.
-
-To discuss:
-
-* Creating new field with NOT NULL (`required: true`) or adding NOT NULL:
-  * `NOT NULL` should be added after inserting values into the table (if any row contains NULL value in this column, error will be raised). So it has to be 3-steps process:
-    1. (optional, handled by diff generator): create new field without NOT NULL
-    2. Update existing entries:
-      * Allow defining default for the migration that is different from the database default.
-      * If `default` is defined in the collection file or in the class - can be handled by diff generator: for all entries use `UPDATE table_name SET table_column = value WHERE TRUE;`
-      * Else should be processed in `data_manipulation`
-    3. (in cleanup) Set `NOT NULL` for the column
 
 ### Common actions
 
@@ -48,12 +81,6 @@ To discuss:
 * Could be needed in the future:
   * move(old_collection, old_field, new_collection, new_field)
   * transform_and_move(old_collection, old_field, new_collection, new_field, transform_func, *args, **kwargs)
-
-### Transform functions
-
-* replace_value_from_map(collection, field, transform_map)
-* set_default(collection, field, value)
-* (maybe) only for 101: move_to_meeting_user(collection, old_field, new_field, {maybe: create_mu: bool})
 
 # data_preparation
 
@@ -85,7 +112,7 @@ To discuss:
 
 ### mu
 
-* (move and transform) meeting_user/vote_delegated_to_id -> meeting_user/vote_delegated_to_ids:
+* meeting_user/vote_delegated_to_id -> meeting_user/vote_delegated_to_ids:
   * Type changes from relation to relation-list. In backend vote_delegated_to_ids remains the writing side.
   * Value should be transformed as: value -> list with this value as a single item
 

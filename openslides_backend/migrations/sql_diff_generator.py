@@ -22,6 +22,7 @@ from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
+from openslides_backend.migrations.patterns import Renames
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
@@ -31,7 +32,6 @@ from openslides_backend.migrations.yaml_diff_generator import (
     FieldAttributes,
     MetaAttributesRemoveTuple,
     RemoveDiffDict,
-    Renames,
     dumpjson,
     generate_diff,
     prev_models_context,
@@ -938,6 +938,7 @@ def handle_add_field_attributes(
                 # TODO
                 pass
             case "required":
+                # TODO: constraints_sql += add_not_null_conditionally(field_def)
                 constraints_sql += Helper.get_inline_required_constraint(
                     table_name, field_name
                 )
@@ -1381,6 +1382,9 @@ def handle_add_tree(
             for field_name, field_def in fields.items():
                 if fields_idx == 0:
                     # field added
+                    # TODO: if required:
+                    #     * remove NOT NULL
+                    #     * sql += add_not_null_conditionally(field_def)
                     constraints_sql = handle_add_field_attributes(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )
@@ -1415,6 +1419,15 @@ def handle_edit_tree(
         remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
         remove_empty(dc_edit_tree_dict, collection_name)
     return sql
+
+
+# def add_not_null_conditionally(field_def) -> str | None:
+# * if has default:
+#   * set it for all entries
+#   * set NOT NULL
+#   * return the string
+# * else:
+#   * update diff_mixin_data
 
 
 if __name__ == "__main__":

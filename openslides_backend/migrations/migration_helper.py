@@ -10,6 +10,7 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.exceptions import MigrationException
 
 from ..shared.exceptions import ActionException
@@ -431,24 +432,37 @@ class MigrationHelper:
     def copy_table(
         curs: Cursor[DictRow], table_name: str, target_table_name: str
     ) -> None:
+        # 1. Pass collection_or_table_name instead of 2 table names and build the names here
+        # 2. Pass field names:
+        #   * If these are relational fields, drop them if they exist and recreate as simple types (string, number or array)
+        #   * If enum/enum[] -> text/text[]
+        #   * Copy values from the view instead of table for easier handling.
         """
         Copies the table with its definition and rows. Does not copy triggers and foreign key constraints.
         For use in data_preparation step of migration.
         """
+        # Use HelperGetNames
+        # Collect target_table names and return
         target_table = sql.Identifier(target_table_name)
         table_t = sql.Identifier(table_name)
+        # Extract the part above into copy_tables and just perform the copying here
         curs.execute(
-            sql.SQL(
-                "CREATE TABLE {target_table} (LIKE {table_t} INCLUDING ALL);"
-            ).format(target_table=target_table, table_t=table_t)
+            sql.SQL("CREATE TABLE {target_table} LIKE {table_t};").format(
+                target_table=target_table, table_t=table_t
+            )
         )
 
-        fields = curs.execute(sql.SQL("""
+        # Copy only the passed fields
+        fields = curs.execute(
+            sql.SQL(
+                """
                 SELECT *
                 FROM information_schema.columns
                 WHERE table_schema = 'public'
                 AND table_name = {table};
-                """).format(table=table_name)).fetchall()
+                """
+            ).format(table=table_name)
+        ).fetchall()
         curs.execute(
             sql.SQL(
                 "INSERT INTO {target_table} ({fields}) SELECT {fields} FROM {table_t};"

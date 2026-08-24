@@ -104,9 +104,9 @@ class MigrationHandler(BaseHandler):
                 mig_class = MigrationHelper.get_migration_class(package_name)
                 self.logger.info("Executing migration: " + package_name)
 
-                self.apply_schema_diff(index)
                 # Execute user defined functions or super classes noop.
                 stash = mig_class.data_preparation(self.migration_cursor)
+                self.apply_schema_diff(index)
                 mig_class.data_definition(self.migration_cursor)
                 mig_class.data_manipulation(self.migration_cursor, stash)
                 mig_class.cleanup(self.migration_cursor)

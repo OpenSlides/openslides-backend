@@ -3,9 +3,47 @@ from typing import Any
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from openslides_backend.migrations.patterns import Renames, Table
+
+from ..shared.filters import Filter
+from ..shared.patterns import Collection, Field
+
 
 class BaseMigration:
     """Interface class for all migrations"""
+
+    # -- Defined by developer --
+    renames: Renames
+
+    # Contains tables and fields that should be saved for retrieving data
+    # in `data_manipulation`:
+    #   * Collection or field gets removed but data for it is used
+    #     to create/update other entries
+    #   * Data from the field should be moved (with or without transformation)
+    #     to the other table
+    #   * Field type changes (usually it should lead to dropping
+    #     old field and creating new)
+    migration_tables: dict[Collection, list[Field]]
+
+    # -- Internal --
+    # Stores names of tables created from `migration_tables` and `switched_writing_side` for cleanup
+    copied_tables: list[Table]
+
+    # -- Defined in DiffMixin --
+    # Contains:
+    #   * New required fields that were added to existing collections
+    #   * Fields that received `required: true`
+    # Used in:
+    #   * cleanup: to set NOT NULL
+    added_required_fields: dict[Collection, set[Field]]
+
+    # TODO: Implement here and in diff generator
+    # Describes relations in which write field becomes a view field
+    # due to rename (data should be moved).
+    # Used in:
+    #   * data_preparation: to save old writing side
+    #   * data_manipulation: to perform move
+    switched_writing_side: Any
 
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
@@ -29,6 +67,12 @@ class BaseMigration:
         Input:
             cursor
         """
+        # If migration_tables and/or switched_writing_side are not None:
+        #   * Merge `migration_tables` and `switched_writing_side`,
+        #   * Save migration table names in `copied_tables`
+        #   * Then for each:
+        #       * copy_table
+        #       * append `copied_tables` with returned field name
 
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
@@ -53,6 +97,53 @@ class BaseMigration:
         """
 
     @staticmethod
+    def replace_from_filters_map(
+        curs: Cursor[DictRow],
+        collection: Collection,
+        update_field: Field,
+        lookup_map: list[tuple[Filter, Any]],
+    ) -> str:
+        """
+        Helper method for using in data_manipulation.
+        Purpose:
+            Creates mass update statements for each item in lookup_map.
+        Input:
+            cursor
+            collection: name of collection to update.
+            update_field: name of the field to update.
+            lookup_map: list of combinations filter + replace value.
+        """
+        # Check that update_field is a table field
+        # for filter, replace_value in lookup_map:
+        #       UPDATE table_name SET update_field = replace_value WHERE SqlQueryHelper.build_filter_str(filter);
+        return ""
+
+    @staticmethod
+    def replace_from_plain_values_map(
+        curs: Cursor[DictRow],
+        collection: Collection,
+        update_field: Field,
+        lookup_map: list[tuple[Field, Any, Any]],
+    ) -> str:
+        """
+        Helper method for using in data_manipulation.
+        Purpose:
+            Creates mass update statements for each item in lookup_map.
+        Input:
+            cursor
+            collection: name of collection to update.
+            update_field: name of the field to update.
+            lookup_map: list of combinations: lookup field + lookup value + replace value.
+        """
+        # Check that update_field is a table field
+        # for lookup_field, lookup_value, replace_value in lookup_map:
+        #       filter = lookup_field '=' lookup_value
+        #       UPDATE table_name SET update_field = value WHERE SqlQueryHelper.build_filter_str(condition);
+        # Too similar with previous, make a base method for them.
+        # TODO: already define option WHERE TRUE if condition not given.
+        return ""
+
+    @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
@@ -61,3 +152,6 @@ class BaseMigration:
         Input:
             cursor
         """
+        # If the corresponding maps are defined:
+        #   Set NOT NULL for added_required_fields
+        #   Drop tables from copied_tables
