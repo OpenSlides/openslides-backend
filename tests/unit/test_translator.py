@@ -55,16 +55,16 @@ class TranslatorTest(TestCase):
 
     def test_translate_weight_sorted_header_asc(self) -> None:
         self.translator.set_translation_language("en;q=0.5,de;q=0.8")
-        assert self.translator.translate("c") == "c"
+        assert self.translator.translate("c") == "d"
 
     def test_translate_weight_sorted_header_desc(self) -> None:
         self.translator.set_translation_language("en;q=0.8,de;q=0.5")
-        assert self.translator.translate("c") == "d"
+        assert self.translator.translate("c") == "c"
 
     def test_translate_half_weight_sorted_header_asc(self) -> None:
         self.translator.set_translation_language("en;q=0.5,de")
-        assert self.translator.translate("c") == "c"
+        assert self.translator.translate("c") == "d"
 
     def test_translate_half_weight_sorted_header_desc(self) -> None:
         self.translator.set_translation_language("en,de;q=0.5")
-        assert self.translator.translate("c") == "d"
+        assert self.translator.translate("c") == "c"

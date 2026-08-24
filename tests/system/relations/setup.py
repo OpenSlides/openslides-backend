@@ -21,6 +21,8 @@ fake_meeting = "fake_meeting"
 collection_a = "fake_model_a"
 collection_b = "fake_model_b"
 collection_c = "fake_model_c"
+collection_d = "fake_model_d"
+collection_e = "fake_model_e"
 
 
 class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
@@ -42,7 +44,6 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
             {collection_b}_oo:
                 type: relation
                 to: {collection_b}/{collection_a}_oo
-                reference: {collection_b}
             {collection_b}_om:
                 type: relation
                 to: {collection_b}/{collection_a}_mo
@@ -51,21 +52,12 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
                 type: relation-list
                 to: {collection_b}/{collection_a}_mm
                 equal_fields: meeting_id
-            {collection_b}_generic_oo:
+            {collection_e}_generic_oo:
                 type: relation
-                to: {collection_b}/{collection_a}_generic_oo
-                reference: {collection_b}
+                to: {collection_e}/{collection_a}_generic_oo
             {collection_b}_generic_mm:
                 type: relation-list
                 to: {collection_b}/{collection_a}_generic_mm
-            fake_model_generic_multitype:
-                type: generic-relation
-                reference:
-                - {collection_c}
-                - {collection_b}
-                to:
-                - {collection_c}/{collection_a}_generic_multitype_o
-                - {collection_b}/{collection_a}_generic_multitype_m
     {collection_b}:
         fields:
             id: *id_field
@@ -87,26 +79,18 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
                 type: relation-list
                 to: {collection_a}/{collection_b}_mm
                 equal_fields: meeting_id
-            {collection_a}_generic_oo:
-                type: generic-relation
-                reference:
-                - {collection_a}
-                to:
-                - {collection_a}/{collection_b}_generic_oo
             {collection_a}_generic_mm:
                 type: generic-relation-list
                 to:
                     collections:
                         - {collection_a}
                     field: {collection_b}_generic_mm
-            {collection_a}_generic_multitype_m:
+            {collection_d}_generic_multitype_m:
                 type: relation-list
-                to: {collection_a}/fake_model_generic_multitype
-                reference: {collection_a}
+                to: {collection_d}/fake_model_generic_multitype
             {collection_c}_ids:
                 type: relation-list
                 to: {collection_c}/foreign_key_field
-                reference: {collection_c}
     {collection_c}:
         fields:
             id: *id_field
@@ -116,14 +100,48 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
                 reference: {fake_meeting}
                 required: true
                 default: 1
-            {collection_a}_generic_multitype_o:
+            {collection_d}_generic_multitype_o:
                 type: relation
-                to: {collection_a}/fake_model_generic_multitype
-                reference: {collection_a}
+                to: {collection_d}/fake_model_generic_multitype
             foreign_key_field:
                 type: relation
                 to: {collection_b}/{collection_c}_ids
                 reference: {collection_b}
+    {collection_d}:
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {fake_meeting}/{collection_d}_ids
+                reference: {fake_meeting}
+                required: true
+                default: 1
+            fake_model_generic_multitype:
+                type: generic-relation
+                required: true
+                reference:
+                - {collection_c}
+                - {collection_b}
+                to:
+                - {collection_c}/{collection_d}_generic_multitype_o
+                - {collection_b}/{collection_d}_generic_multitype_m
+    {collection_e}:
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {fake_meeting}/{collection_e}_ids
+                reference: {fake_meeting}
+                required: true
+                default: 1
+            {collection_a}_generic_oo:
+                type: generic-relation
+                required: true
+                reference:
+                - {collection_a}
+                to:
+                - {collection_a}/{collection_e}_generic_oo
+
     {fake_meeting}:
         fields:
             id: *id_field
@@ -133,15 +151,18 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
             {collection_a}_ids:
                 type: relation-list
                 to: {collection_a}/meeting_id
-                reference: {collection_a}
             {collection_b}_ids:
                 type: relation-list
                 to: {collection_b}/meeting_id
-                reference: {collection_b}
             {collection_c}_ids:
                 type: relation-list
                 to: {collection_c}/meeting_id
-                reference: {collection_c}
+            {collection_d}_ids:
+                type: relation-list
+                to: {collection_d}/meeting_id
+            {collection_e}_ids:
+                type: relation-list
+                to: {collection_e}/meeting_id
     """
 
     def setUp(self) -> None:
@@ -160,7 +181,10 @@ class FakeModelA(FakeModel):
     )
 
     # normal relations
-    fake_model_b_oo = fields.RelationField(to={"fake_model_b": "fake_model_a_oo"})
+    fake_model_b_oo = fields.RelationField(
+        to={"fake_model_b": "fake_model_a_oo"},
+        is_view_field=True,
+    )
     fake_model_b_om = fields.RelationField(to={"fake_model_b": "fake_model_a_mo"})
     fake_model_b_mm = fields.RelationListField(
         to={"fake_model_b": "fake_model_a_mm"},
@@ -173,8 +197,9 @@ class FakeModelA(FakeModel):
             [],
         ),
     )
-    fake_model_b_generic_oo = fields.RelationField(
-        to={"fake_model_b": "fake_model_a_generic_oo"}
+    fake_model_e_generic_oo = fields.RelationField(
+        to={"fake_model_e": "fake_model_a_generic_oo"},
+        is_view_field=True,
     )
     # This is a currently unused relation type
     # fake_model_b_generic_om = fields.RelationField(
@@ -189,14 +214,6 @@ class FakeModelA(FakeModel):
             "fake_model_b_generic_m",
             ["fake_model_b_generic_m_fake_model_b_id"],
         ),
-    )
-    # generic field which is m2m in one target collection and m2o in another
-    # Important: First comes the m2o relation
-    fake_model_generic_multitype = fields.GenericRelationField(
-        to={
-            "fake_model_b": "fake_model_a_generic_multitype_m",
-            "fake_model_c": "fake_model_a_generic_multitype_o",
-        }
     )
 
 
@@ -226,9 +243,6 @@ class FakeModelB(FakeModel):
             [],
         ),
     )
-    fake_model_a_generic_oo = fields.GenericRelationField(
-        to={"fake_model_a": "fake_model_b_generic_oo"}
-    )
     # This is a currently unused relation type
     # fake_model_a_generic_mo = fields.GenericRelationListField(
     #     to={"fake_model_a": "fake_model_b_generic_om"},
@@ -244,13 +258,13 @@ class FakeModelB(FakeModel):
             ["fake_model_a_generic_m_fake_model_a_id"],
         ),
     )
-    fake_model_a_generic_multitype_m = fields.RelationListField(
-        to={"fake_model_a": "fake_model_generic_multitype"},
+    fake_model_d_generic_multitype_m = fields.RelationListField(
+        to={"fake_model_d": "fake_model_generic_multitype"},
         is_view_field=True,
-        is_primary=True,
     )
     fake_model_c_ids = fields.RelationListField(
-        to={"fake_model_c": "foreign_key_field"}, is_view_field=True, is_primary=True
+        to={"fake_model_c": "foreign_key_field"},
+        is_view_field=True,
     )
 
 
@@ -266,11 +280,52 @@ class FakeModelC(FakeModel):
         required=True,
     )
 
-    fake_model_a_generic_multitype_o = fields.RelationField(
-        to={"fake_model_a": "fake_model_generic_multitype"}
+    fake_model_d_generic_multitype_o = fields.RelationField(
+        to={"fake_model_d": "fake_model_generic_multitype"},
+        is_view_field=True,
     )
 
     foreign_key_field = fields.RelationField(to={"fake_model_b": "fake_model_c_ids"})
+
+
+class FakeModelD(FakeModel):
+    collection = "fake_model_d"
+    verbose_name = "fake model d"
+
+    id = fields.IntegerField(required=True, constant=True)
+
+    meeting_id = fields.RelationField(
+        default=1,
+        to={"fake_meeting": "fake_model_d_ids"},
+        required=True,
+    )
+
+    # generic field which is m2m in one target collection and m2o in another
+    # Important: First comes the m2o relation
+    fake_model_generic_multitype = fields.GenericRelationField(
+        required=True,
+        to={
+            "fake_model_b": "fake_model_d_generic_multitype_m",
+            "fake_model_c": "fake_model_d_generic_multitype_o",
+        },
+    )
+
+
+class FakeModelE(FakeModel):
+    collection = "fake_model_e"
+    verbose_name = "fake model e"
+
+    id = fields.IntegerField(required=True, constant=True)
+
+    meeting_id = fields.RelationField(
+        default=1,
+        to={"fake_meeting": "fake_model_e_ids"},
+        required=True,
+    )
+
+    fake_model_a_generic_oo = fields.GenericRelationField(
+        required=True, to={"fake_model_a": "fake_model_e_generic_oo"}
+    )
 
 
 class FakeMeeting(FakeModel):
@@ -280,13 +335,24 @@ class FakeMeeting(FakeModel):
     id = fields.IntegerField(required=True, constant=True)
     real_value = fields.CharField(default="⚞(⚬___⚬)⚟")
     fake_model_a_ids = fields.RelationListField(
-        to={"fake_model_a": "meeting_id"}, is_view_field=True, is_primary=True
+        to={"fake_model_a": "meeting_id"},
+        is_view_field=True,
     )
     fake_model_b_ids = fields.RelationListField(
-        to={"fake_model_b": "meeting_id"}, is_view_field=True, is_primary=True
+        to={"fake_model_b": "meeting_id"},
+        is_view_field=True,
     )
     fake_model_c_ids = fields.RelationListField(
-        to={"fake_model_c": "meeting_id"}, is_view_field=True, is_primary=True
+        to={"fake_model_c": "meeting_id"},
+        is_view_field=True,
+    )
+    fake_model_d_ids = fields.RelationListField(
+        to={"fake_model_d": "meeting_id"},
+        is_view_field=True,
+    )
+    fake_model_e_ids = fields.RelationListField(
+        to={"fake_model_e": "meeting_id"},
+        is_view_field=True,
     )
 
 

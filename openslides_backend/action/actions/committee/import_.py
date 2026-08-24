@@ -152,7 +152,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
         update_committee_data: list[dict[str, Any]] = []
         for row in rows:
             entry = row["data"]
-            action_data = {
+            action_data: dict[str, Any] = {
                 field: entry[field]
                 for field in (
                     "id",
