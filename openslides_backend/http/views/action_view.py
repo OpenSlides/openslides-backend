@@ -73,6 +73,34 @@ class ActionView(BaseView):
         self.logger.debug("Internal action request finished successfully.")
         return response, None
 
+    @route("backchannel_logout")
+    def backchannel_logout_route(self, request: Request) -> RouteResponse:
+        """
+        Receives a logout token from a backchannel logout request originating
+        from the IDP Service.
+        """
+        self.logger.debug("Received IDP backchannel logout request")
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
+
+        # Execute user.block_session action
+        # Request validation and blocklisting will be performed in the action
+        handler = ActionHandler(self.env, self.services, self.logging)
+        payload = [
+            {
+                "action": "user.block_session_id",
+                "data": [{"request": request}],
+            }
+        ]
+
+        response = handle_action_in_worker_thread(
+            request.json, 0, True, handler, internal=True
+        )
+
+        return response, None
+
     @route("migrations", internal=True)
     def migrations_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start executing migrations request.")
