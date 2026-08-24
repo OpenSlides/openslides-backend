@@ -1125,6 +1125,7 @@ class RenameHelper:
         field_name_old: str,
         field_name_new: str,
     ) -> str:
+        "Also renames enums."
         result = ""
         diff_control = list(CURR_MODELS[collection_name_new]["fields"][field_name_new])
         enum_names_new: list[str] = []
@@ -1149,88 +1150,15 @@ class RenameHelper:
         ):
             field_def = models_lookup[collection_name]["fields"][field_name]
             for attr in sorted(field_def):
-                name = None
-                match attr:
-                    # TODO handle log_triggers field attribute
-                    case "default" | "required":
-                        # Don't have names.
-                        pass
-                    case "sql" | "equal_fields" | "constant" | "reference":
-                        # Skipped out of separate reasons.
-                        # "sql" View columns will always already be renamed.
-                        # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
-                        # "reference" Covered by 'to'.
-                        pass
-                    case "to":
-                        # TODO intermediate table names and constraints
-                        type_ = field_def["type"]
-                        if type_ == "generic-relation-list":
-                            foreign_table_fields: list[TableFieldType] = (
-                                InternalHelper.get_definitions_from_foreign_list(
-                                    field_def.get("to"), field_def.get("reference")
-                                )
-                            )
-                            for foreign_field in foreign_table_fields:
-                                # TODO for 1g:1 and gm (unique, valid, fk, idx yes; generated always no) and more
-                                pass
-                        elif type_ == "relation":
-                            foreign_table_field: TableFieldType = (
-                                TableFieldType.get_definitions_from_foreign(
-                                    field_def.get("to"), field_def.get("reference")
-                                )
-                            )
-                            state, *_ = InternalHelper.check_relation_definitions(
-                                TableFieldType(
-                                    collection_name, field_name_new, field_def
-                                ),
-                                [foreign_table_field],
-                            )
-                            # if is actual field
-                            if state == FieldSqlErrorType.FIELD:
-                                foreign_card, error = InternalHelper.get_cardinality(
-                                    foreign_table_field
-                                )
-                                if foreign_card.startswith("1"):
-                                    name = HelperGetNames.get_unique_constraint_name(
-                                        collection_name, [field_name]
-                                    )
-                    case "minimum" | "maximum" | "minLength" | "unique":
-                        constraint_name_func = getattr(
-                            HelperGetNames,
-                            f"get_{attr.lower()}_constraint_name",
-                        )
-                        name = constraint_name_func(
-                            collection_name,
-                            ([field_name] if attr == "unique" else field_name),
-                        )
-                    case "type":
-                        match field_def["type"]:
-                            case "timezone":
-                                name = HelperGetNames.get_timezone_constraint_name(
-                                    collection_name, field_name
-                                )
-                            case "color":
-                                name = HelperGetNames.get_color_constraint_name(
-                                    collection_name, field_name
-                                )
-                    case "enum":
-                        enum_names.append(
-                            HelperGetNames.get_enum_name_for_column(
-                                collection_name, field_name
-                            )
-                        )
-                    case value if value in FieldAttributes.skipped_in_schema:
-                        pass
-                    case _:
-                        # Skipped as not likely to be renamed in the foreseeable future:
-                        # "sequence_scope": would require some dynamic name parsing
-                        raise NotImplementedError(
-                            f"{collection_name}/{field_name}: {attr}"
-                        )
-                if name:
-                    names_list.append(name)
-                if attr in diff_control:
-                    diff_control.remove(attr)
+                RenameHelper.handle_attribute(
+                    collection_name,
+                    field_name,
+                    field_def,
+                    attr,
+                    diff_control,
+                    names_list,
+                    enum_names,
+                )
         assert not diff_control, f"{diff_control} left after attribute check of rename."
         for name_old, name_new in zip(enum_names_new, enum_names_old):
             result += AlterSchemaHelper.get_rename_enum(name_old, name_new)
@@ -1247,6 +1175,103 @@ class RenameHelper:
                     f"{collection_name_old}/{field_name_old}: Only fields or collections with changed names should be handled for inline constraint renames."
                 )
         return result
+
+    @classmethod
+    def handle_attribute(
+        cls,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        attr: str,
+        diff_control: list[str],
+        names_list: list[str],
+        enum_names: list[str],
+    ) -> None:
+        name = None
+        match attr:
+            # TODO handle log_triggers field attribute
+            case "default" | "required":
+                # Don't have names.
+                pass
+            case "sql" | "equal_fields" | "constant" | "reference":
+                # Skipped out of separate reasons.
+                # "sql" View columns will always already be renamed.
+                # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
+                # "reference" Covered by 'to'.
+                pass
+            case "to":
+                name = RenameHelper.handle_attribute_to(
+                    collection_name, field_name, field_def
+                )
+            case "minimum" | "maximum" | "minLength" | "unique":
+                constraint_name_func = getattr(
+                    HelperGetNames,
+                    f"get_{attr.lower()}_constraint_name",
+                )
+                name = constraint_name_func(
+                    collection_name,
+                    ([field_name] if attr == "unique" else field_name),
+                )
+            case "type":
+                match field_def["type"]:
+                    case "timezone":
+                        name = HelperGetNames.get_timezone_constraint_name(
+                            collection_name, field_name
+                        )
+                    case "color":
+                        name = HelperGetNames.get_color_constraint_name(
+                            collection_name, field_name
+                        )
+            case "enum":
+                enum_names.append(
+                    HelperGetNames.get_enum_name_for_column(collection_name, field_name)
+                )
+            case value if value in FieldAttributes.skipped_in_schema:
+                pass
+            case _:
+                # Skipped as not likely to be renamed in the foreseeable future:
+                # "sequence_scope": would require some dynamic name parsing
+                raise NotImplementedError(f"{collection_name}/{field_name}: {attr}")
+        if name:
+            names_list.append(name)
+        if attr in diff_control:
+            diff_control.remove(attr)
+
+    @classmethod
+    def handle_attribute_to(
+        cls, collection_name: str, field_name: str, field_def: dict[str, Any]
+    ) -> str | None:
+        # TODO intermediate table names and constraints
+        type_ = field_def["type"]
+        if type_ == "generic-relation-list":
+            foreign_table_fields: list[TableFieldType] = (
+                InternalHelper.get_definitions_from_foreign_list(
+                    field_def.get("to"), field_def.get("reference")
+                )
+            )
+            for foreign_field in foreign_table_fields:
+                # TODO for 1g:1 and gm (unique, valid, fk, idx yes; generated always no) and more
+                pass
+        elif type_ == "relation":
+            foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    field_def.get("to"), field_def.get("reference")
+                )
+            )
+            state, *_ = InternalHelper.check_relation_definitions(
+                TableFieldType(collection_name, field_name, field_def),
+                [foreign_table_field],
+            )
+            # if is actual field
+            if state == FieldSqlErrorType.FIELD:
+                foreign_card, error = InternalHelper.get_cardinality(
+                    foreign_table_field
+                )
+                if foreign_card.startswith("1"):
+                    return HelperGetNames.get_unique_constraint_name(
+                        collection_name, [field_name]
+                    )
+        return None
 
     @classmethod
     def get_field_dependent_renames(
