@@ -998,9 +998,9 @@ class EditHelper:
                         field_def_diff["default"],
                         field_def["type"],
                     )
-                    constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
-                case "description":
-                    pass
+                    constraints_sql += AlterSchemaHelper.get_set_default_statement(
+                        table_name, field_name, default
+                    )
                 case "sql":
                     alter_views.add(collection_name)
                 case "reference" | "to":
@@ -1027,6 +1027,8 @@ class EditHelper:
                         collection_name, bool(write_fields), is_view_field
                     )
                     # TODO recreate affected triggers
+                case value if value in FieldAttributes.skipped_in_schema:
+                    pass
                 case _:
                     raise NotImplementedError(f"{constraint}: {value}")
             del dc_field_def[0][constraint]
