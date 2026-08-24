@@ -62,7 +62,7 @@ def main() -> int:
     sql = "-- EDIT SECTION --\n"
     edit = diff["edit"]
     if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+        sql += EditHelper.handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- REMOVE SECTION --\n"
     remove: RemoveDiffDict | None = diff["remove"]
@@ -955,54 +955,82 @@ def handle_add_field_attributes(
     return constraints_sql
 
 
-def handle_edit_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: tuple[dict[str, Any], dict[str, Any]],
-) -> str:
-    constraints_sql = ""
-    collection_name = table_name[:-2]
-    for constraint, value in field_def_diff.items():
-        field_def = CURR_MODELS[collection_name]["fields"][field_name]
-        match constraint:
-            case "default":
-                default = Helper.get_formatted_default_value(
-                    table_name, field_name, field_def_diff["default"], field_def["type"]
-                )
-                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
-            case "description":
-                pass
-            case "sql":
-                alter_views.add(collection_name)
-            case "reference" | "to":
-                if table_name in RENAMES[0] or field_name in RENAMES[1].get(
-                    table_name, {}
-                ):
-                    # Shouldn't be a case since this is already skipped in yaml diff generator.
-                    # TODO decide whether to fail or delete this check
-                    print(
-                        f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
-                    )
-                    continue
-                else:
-                    NotImplementedError(
-                        f"{constraint}: {value} is probably a view field or unmentioned in renames."
-                    )
+class EditHelper:
 
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name,
-                    field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
+    @staticmethod
+    def handle_edit_tree(
+        edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> str:
+        # TODO meta: languages, ballot_paper_selection, poll_backends, onehundred_percent_bases, (id_field)
+        sql = ""
+        for collection_name, collection_def in edit_tree_dict.items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            # TODO unique_together, unique_together_strict
+            dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
+            for field_name, field_def in collection_def[1]["fields"][1].items():
+                sql += EditHelper.handle_edit_field_attributes(
+                    table_name, field_name, field_def[0], dc_fields[field_name]
                 )
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
+                remove_empty(
+                    dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
                 )
-                # TODO recreate affected triggers
-            case _:
-                raise NotImplementedError(f"{constraint}: {value}")
-        del dc_field_def[0][constraint]
-    return constraints_sql
+            remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
+            remove_empty(dc_edit_tree_dict, collection_name)
+        return sql
+
+    @staticmethod
+    def handle_edit_field_attributes(
+        table_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: tuple[dict[str, Any], dict[str, Any]],
+    ) -> str:
+        constraints_sql = ""
+        collection_name = table_name[:-2]
+        for constraint, value in field_def_diff.items():
+            field_def = CURR_MODELS[collection_name]["fields"][field_name]
+            match constraint:
+                case "default":
+                    default = Helper.get_formatted_default_value(
+                        table_name,
+                        field_name,
+                        field_def_diff["default"],
+                        field_def["type"],
+                    )
+                    constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
+                case "description":
+                    pass
+                case "sql":
+                    alter_views.add(collection_name)
+                case "reference" | "to":
+                    if table_name in RENAMES[0] or field_name in RENAMES[1].get(
+                        table_name, {}
+                    ):
+                        # Shouldn't be a case since this is already skipped in yaml diff generator.
+                        # TODO decide whether to fail or delete this check
+                        print(
+                            f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
+                        )
+                        continue
+                    else:
+                        NotImplementedError(
+                            f"{constraint}: {value} is probably a view field or unmentioned in renames."
+                        )
+
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
+                        collection_name,
+                        field_name,
+                        CURR_MODELS[collection_name]["fields"][field_name],
+                    )
+                    alter_views_conditionally(
+                        collection_name, bool(write_fields), is_view_field
+                    )
+                    # TODO recreate affected triggers
+                case _:
+                    raise NotImplementedError(f"{constraint}: {value}")
+            del dc_field_def[0][constraint]
+        return constraints_sql
 
 
 def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
@@ -1071,7 +1099,7 @@ def handle_add_tree(
                     sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
                 else:
                     # field altered
-                    sql += handle_edit_field_attributes(
+                    sql += EditHelper.handle_edit_field_attributes(
                         table_name, field_name, field_def[0], dc_fields[field_name]
                     )
                 remove_empty(
@@ -1080,24 +1108,6 @@ def handle_add_tree(
                 )
         remove_empty(dc_add_tree_dict[collection_name][1], "fields")
         remove_empty(dc_add_tree_dict, collection_name)
-    return sql
-
-
-def handle_edit_tree(
-    edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    sql = ""
-    for collection_name, collection_def in edit_tree_dict.items():
-        table_name = HelperGetNames.get_table_name(collection_name)
-        dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
-        for field_name, field_def in collection_def[1]["fields"][1].items():
-            sql += handle_edit_field_attributes(
-                table_name, field_name, field_def[0], dc_fields[field_name]
-            )
-            remove_empty(dc_edit_tree_dict[collection_name][1]["fields"][1], field_name)
-        remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_edit_tree_dict, collection_name)
     return sql
 
 
