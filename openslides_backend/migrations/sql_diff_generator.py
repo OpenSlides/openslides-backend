@@ -675,6 +675,7 @@ class RemoveHelper:
                     case "sql":
                         alter_views.add(collection_name)
                     case "constant":
+                        # Only for 1:1 relations and simple types
                         field_def = PREV_MODELS[collection_name]["fields"][field_name]
                         if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
                             continue
@@ -1001,6 +1002,41 @@ class EditHelper:
                     constraints_sql += AlterSchemaHelper.get_set_default_statement(
                         table_name, field_name, default
                     )
+                case "constant":
+                    # This case will most likely never appear since we just delete and add booleans.
+                    if value:
+                        constraints_sql += (
+                            GenerateCodeBlocks.get_trigger_prevent_updates(
+                                collection_name, field_name
+                            )
+                        )
+                    else:
+                        # Only for 1:1 relations and simple types
+                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
+                        if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
+                            continue
+                        if field_def["type"] == "relation":
+                            with prev_models_context():
+                                foreign_table_field: TableFieldType = (
+                                    TableFieldType.get_definitions_from_foreign(
+                                        field_def.get("to"),
+                                        field_def.get("reference"),
+                                    )
+                                )
+                                if foreign_table_field.field_def["type"] != "relation":
+                                    continue
+                                # TODO: below TODO is a copy paste from handle_remove_field_attributes. Check if this needs the reverse case or can be deleted.
+                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+                                if was_view_field(
+                                    collection_name, field_name, field_def
+                                ):
+                                    continue
+                        constraints_sql += AlterSchemaHelper.get_drop_trigger_statement(
+                            collection_name,
+                            HelperGetNames.get_constant_field_trigger_name(
+                                table_name, field_name
+                            ),
+                        )
                 case "sql":
                     alter_views.add(collection_name)
                 case "reference" | "to":
