@@ -1,5 +1,5 @@
 aiosmtpd==1.4.6
-autoflake==2.3.3
+autoflake==2.4.0
 black==26.5.1
 debugpy==1.8.21
 flake8==7.3.0
