@@ -3,6 +3,7 @@ import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
+from textwrap import dedent
 from typing import Any, cast
 
 import simplejson as json
@@ -981,6 +982,24 @@ class EditHelper:
         return sql
 
     @staticmethod
+    def get_recreate_enum(
+        enum_name: str, collection_name: str, field_name: str, values: list[str]
+    ) -> str:
+        result = ""
+        result += (
+            AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
+                collection_name, field_name
+            )
+        )
+        result += Helper.ENUM_DEFINITION_TEMPLATE.substitute(
+            {
+                "name": enum_name,
+                "values": ", ".join([f"'{item}'" for item in values]),
+            }
+        )
+        return result
+
+    @staticmethod
     def handle_edit_field_attributes(
         table_name: str,
         field_name: str,
@@ -1037,6 +1056,13 @@ class EditHelper:
                                 table_name, field_name
                             ),
                         )
+                case "enum":
+                    values_old = PREV_MODELS[collection_name]["fields"][field_name][
+                        constraint
+                    ]
+                    constraints_sql += EditHelper.edit_enum(
+                        value, values_old, collection_name, field_name
+                    )
                 case "sql":
                     alter_views.add(collection_name)
                 case "reference" | "to":
@@ -1066,9 +1092,106 @@ class EditHelper:
                 case value if value in FieldAttributes.skipped_in_schema:
                     pass
                 case _:
+                    # Currently unhandled:
+                    # "required" "unique" as they are only present with true and will be deleted if false.
+                    # type changes are not yet supported
                     raise NotImplementedError(f"{constraint}: {value}")
             del dc_field_def[0][constraint]
         return constraints_sql
+
+    @classmethod
+    def edit_enum(
+        cls,
+        values_new: list[str],
+        values_old: list[str],
+        collection_name: str,
+        field_name: str,
+    ) -> str:
+        # not_found_streak = None
+        recreate_enum = False
+        add_attributes: list[str] = []
+        rename_attributes = {}  # old: new
+        concurrent_mismatches = {}  # old: new
+        expected_idx = 0
+        alter_enum_sql = ""
+        # Finding the stretches that differ by identifying the position in the old array
+        for nmbr, v_new in enumerate(values_new):
+            if recreate_enum:
+                break
+            expected_idx = nmbr - len(add_attributes)
+            try:
+                if field_name == "state":
+                    pass
+                idx_old = values_old.index(v_new)
+            except ValueError:
+                # value not in list
+                # edge up NOT_FOUND_STREAK
+                # collect for change detection
+                if expected_idx < len(values_old):
+                    concurrent_mismatches[values_old[expected_idx]] = v_new
+                elif not concurrent_mismatches:
+                    add_attributes.append(v_new)
+                else:
+                    raise Exception(
+                        "It seems you are trying to rename and add at the end of the list at the same time."
+                    )
+                # not_found_streak = True
+            else:
+                # edge down for NOT_FOUND_STREAK
+                if idx_old == expected_idx:
+                    # if gap matches rename attribute and give warning to check those lines in output
+                    # else recreated enum
+                    # if not_found_streak:
+                    #     not_found_streak = False
+                    rename_attributes.update(concurrent_mismatches)
+                elif idx_old < expected_idx:
+                    # Add inbetween of new entries.
+                    add_attributes.extend(v for v in concurrent_mismatches.values())
+                elif idx_old > expected_idx:
+                    # Add inbetween of old entries means remove in new.
+                    # We can't delete but can tolerate it being unused. So nothing to do here.
+                    # TODO decide whether to do nothing,
+                    recreate_enum = True
+                    # or change type to string?
+                if concurrent_mismatches:
+                    concurrent_mismatches.clear()
+        # Clean up remaining
+        if len(values_new) > len(values_old) + len(add_attributes):
+            add_attributes.extend(v for v in concurrent_mismatches.values())
+        else:
+            rename_attributes.update(concurrent_mismatches)
+        if len(values_old) > len(values_new) - len(add_attributes):
+            recreate_enum = True
+
+        # Do the stuff
+        enum_name = HelperGetNames.get_enum_name_for_column(collection_name, field_name)
+        if recreate_enum:
+            # recreate enum
+            alter_enum_sql += EditHelper.get_recreate_enum(
+                enum_name, collection_name, field_name, values_new
+            )
+        else:
+            for attr in add_attributes:
+                alter_enum_sql += AlterSchemaHelper.get_add_value_to_enum(
+                    enum_name, attr
+                )
+            if rename_attributes:
+                print(
+                    dedent(f"""
+                        Renaming entries for '{enum_name}'.
+                        {rename_attributes}
+                        Make sure that this is intended.
+                        Alternatively recreate it by replacing with:
+                        """)
+                    + EditHelper.get_recreate_enum(
+                        enum_name, collection_name, field_name, values_new
+                    )
+                )
+            for attr_old, attr_new in rename_attributes.items():
+                alter_enum_sql += AlterSchemaHelper.get_rename_value_in_enum(
+                    enum_name, attr_old, attr_new
+                )
+        return alter_enum_sql
 
 
 def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
