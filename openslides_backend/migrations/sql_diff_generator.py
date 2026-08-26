@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from argparse import ArgumentParser
 from collections import defaultdict
@@ -9,8 +10,14 @@ import simplejson as json
 
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
-from meta.dev.src.generate_sql_schema import SIMPLE_TYPES, GenerateCodeBlocks, Helper
+from meta.dev.src.generate_sql_schema import (
+    SIMPLE_TYPES,
+    FieldSqlErrorType,
+    GenerateCodeBlocks,
+    Helper,
+)
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
+from meta.dev.src.typing import SchemaZoneKey
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
@@ -33,6 +40,34 @@ from openslides_backend.migrations.yaml_diff_generator import (
 )
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import Collection, CollectionField
+
+TRIGGER_KEYS: list[SchemaZoneKey] = [
+    "create_trigger_partitioned_sequences",
+    "create_trigger_1_1_relation_not_null",
+    "create_trigger_1_n_relation_not_null",
+    "create_trigger_n_m_relation_not_null",
+    "create_trigger_prevent_updates_code",
+    "create_trigger_unique_ids_pair_code",
+    "create_trigger_equal_fields_code",
+    "create_trigger_notify",
+]
+
+
+def get_schema_sql_dict() -> dict[str, dict[str, str]]:
+    return {
+        "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
+        "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
+        "view_sql": deepcopy(GenerateCodeBlocks.view_sql),
+        "trigger_sql": deepcopy(GenerateCodeBlocks.trigger_sql),
+        "intermediate_sql": deepcopy(GenerateCodeBlocks.intermediate_sql),
+    }
+
+
+with prev_models_context():
+    GenerateCodeBlocks.generate_the_code()
+    PREV_CODE_BLOCKS = get_schema_sql_dict()
+GenerateCodeBlocks.generate_the_code()
+CURR_CODE_BLOCKS = get_schema_sql_dict()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -70,11 +105,10 @@ def main() -> int:
         sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
-    sql += handle_rename(diff["rename"], diff_control["rename"])
+    sql += RenameHelper.handle_rename(diff["rename"], diff_control["rename"])
 
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
-    GenerateCodeBlocks.generate_the_code()
     if isinstance(add, tuple) and isinstance(add[0], dict):
         sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
@@ -122,13 +156,13 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
     found = set()
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.table_sql.get(collection_name, "")
+        sql += GenerateCodeBlocks.table_sql[collection_name]
     for collection_name in add:
         found.add(collection_name)
         sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.trigger_sql.get(collection_name, "")
+        sql += GenerateCodeBlocks.trigger_sql[collection_name]
     for collection_name in add:
         found.add(collection_name)
         sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
@@ -1005,48 +1039,315 @@ def handle_edit_field_attributes(
     return constraints_sql
 
 
-def handle_rename(renames: Renames, dc_rename_dict: Renames) -> str:
-    result = ""
-    collection_renames = renames[0]
-    field_renames = renames[1]
+class RenameHelper:
+    @classmethod
+    def handle_rename(cls, renames: Renames, dc_rename_dict: Renames) -> str:
+        result = ""
+        collection_renames = renames[0]
+        field_renames = renames[1]
 
-    for collection_name_old, collection_name_new in collection_renames.items():
-        result += AlterSchemaHelper.get_rename_table(
-            HelperGetNames.get_table_name(collection_name_old),
-            HelperGetNames.get_table_name(collection_name_new),
-        )
-        result += AlterSchemaHelper.get_rename_view(
-            collection_name_old, collection_name_new
-        )
-        # TODO recreate dependend triggers
-        del dc_rename_dict[0][collection_name_old]
-
-    for collection_name, collection_diff in field_renames.items():
-        dc_collection = cast(dict, dc_rename_dict[1][collection_name])
-        for field_name_old, field_name_new in collection_diff.items():
-            assert isinstance(field_name_new, str)
-            field_def = CURR_MODELS[collection_name]["fields"][field_name_new]
-            is_view_field = False
-            if field_def.get("to"):
-                # This also includes all sql fields
-                is_view_field, *_ = get_view_field_state_write_fields(
-                    collection_name, field_name_new, field_def
-                )
-            result += AlterSchemaHelper.get_rename_view_column(
-                collection_name, field_name_old, field_name_new
+        for collection_name_old, collection_name_new in collection_renames.items():
+            table_name_new = HelperGetNames.get_table_name(collection_name_new)
+            result += AlterSchemaHelper.get_rename_table(
+                HelperGetNames.get_table_name(collection_name_old), table_name_new
             )
-            if not is_view_field:
-                result += AlterSchemaHelper.get_rename_table_column(
-                    HelperGetNames.get_table_name(collection_name),
-                    field_name_old,
-                    field_name_new,
+            result += AlterSchemaHelper.get_rename_view(
+                collection_name_old, collection_name_new
+            )
+            collection_def_new = CURR_MODELS[collection_name_new]["fields"]
+            collection_def_old = PREV_MODELS[collection_name_old]["fields"]
+            fk_idx_names_new = RenameHelper.get_alter_table_final_names(
+                collection_name_new, collection_def_new
+            )
+            fk_idx_names_old = RenameHelper.get_alter_table_final_names(
+                collection_name_old, collection_def_old
+            )
+            for field_name, field_old in fk_idx_names_old.items():
+                result += RenameHelper.get_field_dependent_renames(
+                    table_name_new, field_old, fk_idx_names_new[field_name]
                 )
+            for field_name in collection_def_old:
+                result += RenameHelper.rename_inline_constraint_sql(
+                    collection_name_old, collection_name_new, field_name, field_name
+                )
+            del dc_rename_dict[0][collection_name_old]
 
-            # TODO recreate dependend triggers and intermediate tables
-            del dc_collection[field_name_old]
-        # TODO Renaming and redefining constraints
-        remove_empty(dc_rename_dict[1], collection_name)
-    return result
+        for collection_name, collection_diff in field_renames.items():
+            dc_collection = cast(dict, dc_rename_dict[1][collection_name])
+            collection_def_new = CURR_MODELS[collection_name]["fields"]
+            fk_idx_names_new = RenameHelper.get_alter_table_final_names(
+                collection_name, collection_def_new
+            )
+            collection_def_old = PREV_MODELS[collection_name]["fields"]
+            GenerateCodeBlocks.intermediate_tables = dict()
+            with prev_models_context():
+                fk_idx_names_old = RenameHelper.get_alter_table_final_names(
+                    collection_name, collection_def_old
+                )
+            for field_name_old, field_name_new in collection_diff.items():
+                assert isinstance(field_name_new, str)
+                result += RenameHelper.rename_inline_constraint_sql(
+                    collection_name, collection_name, field_name_old, field_name_new
+                )
+                field_def = collection_def_new[field_name_new]
+                is_view_field = False
+                if field_def.get("to"):
+                    # This also includes all sql fields
+                    is_view_field, *_ = get_view_field_state_write_fields(
+                        collection_name, field_name_new, field_def
+                    )
+                result += AlterSchemaHelper.get_rename_view_column(
+                    collection_name, field_name_old, field_name_new
+                )
+                # TODO rename intermediate table column
+                if not is_view_field:
+                    result += AlterSchemaHelper.get_rename_table_column(
+                        HelperGetNames.get_table_name(collection_name),
+                        field_name_old,
+                        field_name_new,
+                    )
+                result += RenameHelper.get_field_dependent_renames(
+                    HelperGetNames.get_table_name(collection_name),
+                    fk_idx_names_old[field_name_old],
+                    fk_idx_names_new[field_name_new],
+                )
+                del dc_collection[field_name_old]
+            # TODO Renaming and redefining constraints
+            # TODO unique together constraints
+            remove_empty(dc_rename_dict[1], collection_name)
+        return result
+
+    @classmethod
+    def rename_inline_constraint_sql(
+        cls,
+        collection_name_old: str,
+        collection_name_new: str,
+        field_name_old: str,
+        field_name_new: str,
+    ) -> str:
+        "Also renames enums."
+        result = ""
+        diff_control = list(CURR_MODELS[collection_name_new]["fields"][field_name_new])
+        enum_names_new: list[str] = []
+        enum_names_old: list[str] = []
+        constraint_names_new: list[str] = []
+        constraint_names_old: list[str] = []
+        for models_lookup, collection_name, field_name, names_list, enum_names in (
+            (
+                PREV_MODELS,
+                collection_name_old,
+                field_name_old,
+                constraint_names_old,
+                enum_names_old,
+            ),
+            (
+                CURR_MODELS,
+                collection_name_new,
+                field_name_new,
+                constraint_names_new,
+                enum_names_new,
+            ),
+        ):
+            field_def = models_lookup[collection_name]["fields"][field_name]
+            for attr in sorted(field_def):
+                RenameHelper.handle_attribute(
+                    collection_name,
+                    field_name,
+                    field_def,
+                    attr,
+                    diff_control,
+                    names_list,
+                    enum_names,
+                )
+        assert not diff_control, f"{diff_control} left after attribute check of rename."
+        for name_old, name_new in zip(enum_names_new, enum_names_old):
+            result += AlterSchemaHelper.get_rename_enum(name_old, name_new)
+        for name_old, name_new in zip(constraint_names_old, constraint_names_new):
+            if name_old != name_new:
+                # Using collection_name_new since tables will be renamed before.
+                result += AlterSchemaHelper.get_rename_constraint(
+                    HelperGetNames.get_table_name(collection_name_new),
+                    name_old,
+                    name_new,
+                )
+            else:
+                BadCodingException(
+                    f"{collection_name_old}/{field_name_old}: Only fields or collections with changed names should be handled for inline constraint renames."
+                )
+        return result
+
+    @classmethod
+    def handle_attribute(
+        cls,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        attr: str,
+        diff_control: list[str],
+        names_list: list[str],
+        enum_names: list[str],
+    ) -> None:
+        name = None
+        match attr:
+            # TODO handle log_triggers field attribute
+            case "default" | "required":
+                # Don't have names.
+                pass
+            case "sql" | "equal_fields" | "constant" | "reference":
+                # Skipped out of separate reasons.
+                # "sql" View columns will always already be renamed.
+                # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
+                # "reference" Covered by 'to'.
+                pass
+            case "to":
+                name = RenameHelper.handle_attribute_to(
+                    collection_name, field_name, field_def
+                )
+            case "minimum" | "maximum" | "minLength" | "unique":
+                constraint_name_func = getattr(
+                    HelperGetNames,
+                    f"get_{attr.lower()}_constraint_name",
+                )
+                name = constraint_name_func(
+                    collection_name,
+                    ([field_name] if attr == "unique" else field_name),
+                )
+            case "type":
+                match field_def["type"]:
+                    case "timezone":
+                        name = HelperGetNames.get_timezone_constraint_name(
+                            collection_name, field_name
+                        )
+                    case "color":
+                        name = HelperGetNames.get_color_constraint_name(
+                            collection_name, field_name
+                        )
+            case "enum":
+                enum_names.append(
+                    HelperGetNames.get_enum_name_for_column(collection_name, field_name)
+                )
+            case value if value in FieldAttributes.skipped_in_schema:
+                pass
+            case _:
+                # Skipped as not likely to be renamed in the foreseeable future:
+                # "sequence_scope": would require some dynamic name parsing
+                raise NotImplementedError(f"{collection_name}/{field_name}: {attr}")
+        if name:
+            names_list.append(name)
+        if attr in diff_control:
+            diff_control.remove(attr)
+
+    @classmethod
+    def handle_attribute_to(
+        cls, collection_name: str, field_name: str, field_def: dict[str, Any]
+    ) -> str | None:
+        # TODO intermediate table names and constraints
+        type_ = field_def["type"]
+        if type_ == "generic-relation-list":
+            foreign_table_fields: list[TableFieldType] = (
+                InternalHelper.get_definitions_from_foreign_list(
+                    field_def.get("to"), field_def.get("reference")
+                )
+            )
+            for foreign_field in foreign_table_fields:
+                # TODO for 1g:1 and gm (unique, valid, fk, idx yes; generated always no) and more
+                pass
+        elif type_ == "relation":
+            foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    field_def.get("to"), field_def.get("reference")
+                )
+            )
+            state, *_ = InternalHelper.check_relation_definitions(
+                TableFieldType(collection_name, field_name, field_def),
+                [foreign_table_field],
+            )
+            # if is actual field
+            if state == FieldSqlErrorType.FIELD:
+                foreign_card, error = InternalHelper.get_cardinality(
+                    foreign_table_field
+                )
+                if foreign_card.startswith("1"):
+                    return HelperGetNames.get_unique_constraint_name(
+                        collection_name, [field_name]
+                    )
+        return None
+
+    @classmethod
+    def get_field_dependent_renames(
+        cls,
+        table_name_new: str,
+        field_old: dict[str, Any],
+        field_new: dict[str, Any],
+    ) -> str:
+        result = ""
+        if atf_old := field_old.get("alter_table_final"):
+            atf_new = field_new["alter_table_final"]
+            constraint_name_new = atf_new[0]
+            constraint_name_old = atf_old[0]
+            idx_name_new = atf_new[1]
+            idx_name_old = atf_old[1]
+            result += AlterSchemaHelper.get_rename_index(idx_name_old, idx_name_new)
+            result += AlterSchemaHelper.get_rename_constraint(
+                table_name_new, constraint_name_old, constraint_name_new
+            )
+        for trigger_key in TRIGGER_KEYS:
+            if tk_old := field_old.get(trigger_key):
+                tk_new = field_new[trigger_key]
+                for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
+                    result += AlterSchemaHelper.get_rename_trigger(
+                        table_name_new, trigger_name_old, trigger_name_new
+                    )
+        return result
+
+    @classmethod
+    def get_alter_table_final_names(
+        cls, collection_name: str, fields: dict[str, Any]
+    ) -> dict[str, dict[str, list[str]]]:
+        """Returns the triggers and fkey constraints of the 'alter table final' block for all given fields."""
+        name_per_field_and_schemazonekey: dict[str, dict[str, list[str]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        errors: list[str] = []
+
+        for fname, fdata in fields.items():
+            method_or_str, type_ = GenerateCodeBlocks.get_method(fname, fdata)
+            if isinstance(method_or_str, str):
+                error = Helper.prefix_error(method_or_str, collection_name, fname)
+                name_per_field_and_schemazonekey[fname]["undecided"].append(error)
+                errors.append(error)
+            else:
+                result, error = method_or_str(collection_name, fname, fdata, type_)
+                for k, v in result.items():
+                    assert isinstance(v, str)
+                    if k == "alter_table_final" and (
+                        matched := re.search(
+                            r"CONSTRAINT\s+(\w+)\s+FOREIGN.*?INDEX\s+(\w+)",
+                            v,
+                            re.DOTALL,
+                        )
+                    ):
+                        name_per_field_and_schemazonekey[fname][k].append(
+                            matched.group(1)
+                        )
+                        name_per_field_and_schemazonekey[fname][k].append(
+                            matched.group(2)
+                        )
+                    elif k in TRIGGER_KEYS and (
+                        matched := re.search(r"TRIGGER\s+(\w+)\s+AFTER", v, re.DOTALL)
+                    ):
+                        name_per_field_and_schemazonekey[fname][k].append(
+                            matched.group(1)
+                        )
+                    else:
+                        errors.append(
+                            Helper.prefix_error(
+                                "Could not extract " + k, collection_name, fname
+                            )
+                        )
+                if error:
+                    errors.append(Helper.prefix_error(error, collection_name, fname))
+        return name_per_field_and_schemazonekey
 
 
 def handle_add_tree(
