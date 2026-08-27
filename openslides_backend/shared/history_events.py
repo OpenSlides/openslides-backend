@@ -13,13 +13,13 @@ EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
 
 def build_history_information_data(
     entries: list[str] | None = None,
-    structured_information: dict[str, Any] | None = None,
+    changed_fields: dict[str, Any] | None = None,
 ) -> HistoryInformationData:
     data: HistoryInformationData = {}
     if entries is not None:
         data["entries"] = entries
-    if structured_information is not None:
-        data["structured_information"] = structured_information
+    if changed_fields is not None:
+        data["changed_fields"] = changed_fields
     return data
 
 
@@ -27,19 +27,17 @@ def update_history_information(
     information: HistoryInformation,
     fqid: FullQualifiedId,
     entries: list[str] | None = None,
-    structured_information: dict[str, Any] | None = None,
+    changed_fields: dict[str, Any] | None = None,
 ) -> None:
     """Updates history information for fqid"""
     if fqid not in information:
-        information[fqid] = build_history_information_data(
-            entries, structured_information
-        )
+        information[fqid] = build_history_information_data(entries, changed_fields)
     else:
         if entries:
             information[fqid].setdefault("entries", list()).extend(entries)
-        if structured_information:
-            information[fqid].setdefault("structured_information", dict()).update(
-                structured_information
+        if changed_fields:
+            information[fqid].setdefault("changed_fields", dict()).update(
+                changed_fields
             )
 
 
@@ -47,13 +45,13 @@ def update_history_information_multi(
     information: HistoryInformation,
     fqids: list[FullQualifiedId],
     entries: list[str] | None = None,
-    structured_information: dict[str, Any] | None = None,
+    changed_fields: dict[str, Any] | None = None,
 ) -> None:
     """
     Adds given HistoryInformation to the given information for every fqid in fqids.
     """
     for fqid in fqids:
-        update_history_information(information, fqid, entries, structured_information)
+        update_history_information(information, fqid, entries, changed_fields)
 
 
 def calculate_history_event_payloads(
@@ -70,7 +68,7 @@ def calculate_history_event_payloads(
             model_fqid_to_entry_id[fqid],
             fqid,
             data.get("entries") or None,
-            data.get("structured_information"),
+            data.get("changed_fields"),
         )
         for fqid, data in information.items()
     ]
@@ -80,16 +78,14 @@ def calculate_history_event_payloads(
             {
                 "id": id_,
                 "entries": entries,
-                "structured_information": (
-                    Jsonb(structured_information) if structured_information else None
-                ),
+                "changed_fields": Jsonb(changed_fields) if changed_fields else None,
                 "position_id": position_id,
                 "original_model_id": fqid,
                 "model_id": (fqid if fqid in existing_fqids else None),
                 "meeting_id": model_fqid_to_meeting_id.get(fqid, None),
             },
         )
-        for id_, fqid, entries, structured_information in transformed_information
+        for id_, fqid, entries, changed_fields in transformed_information
     ]
     create_events.append(
         (

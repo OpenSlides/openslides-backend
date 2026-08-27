@@ -15,7 +15,7 @@ from ...action import Action
 
 class ActionHistoryInformationData(TypedDict):
     entries: NotRequired[list[tuple[str, ...]]]
-    structured_information: NotRequired[dict[Field, Any]]
+    changed_fields: NotRequired[dict[Field, Any]]
 
 
 ActionHistoryInformation = dict[FullQualifiedId, ActionHistoryInformationData]
@@ -106,7 +106,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         return {
             fqid: build_history_information_data(
                 [string for entry in history.get("entries", []) for string in entry],
-                history.get("structured_information", {}),
+                history.get("changed_fields", {}),
             )
             for fqid, history in information.items()
         }
@@ -118,7 +118,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         information: ActionHistoryInformation,
     ) -> None:
         user_entries: list[tuple[str, ...]] = []
-        meeting_user_structured_information: dict[str, dict[str, list[int]]] = {}
+        meeting_user_changed_fields: dict[str, dict[str, list[int]]] = {}
         user_id = db_instance["user_id"]
         meeting_id = db_instance["meeting_id"]
 
@@ -140,7 +140,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
         self.handle_group_updates(
             user_entries,
-            meeting_user_structured_information,
+            meeting_user_changed_fields,
             instance,
             db_instance,
         )
@@ -152,10 +152,10 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 user_entries,
                 for_user_id=user_id,
             )
-        if meeting_user_structured_information:
+        if meeting_user_changed_fields:
             information[
                 fqid_from_collection_and_id("meeting_user", db_instance["id"])
-            ] = {"structured_information": meeting_user_structured_information}
+            ] = {"changed_fields": meeting_user_changed_fields}
 
     def add_created_meeting_user_history_information(
         self,
@@ -202,7 +202,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 for_user_id=db_instance["user_id"],
             )
         if "group_ids" in instance:
-            structured_information: dict[str, dict[str, list[int]] | bool] = {
+            changed_fields: dict[str, dict[str, list[int]] | bool] = {
                 "group_ids": {"added": instance["group_ids"]}
             }
             is_present_in_meeting_ids = self.datastore.get(
@@ -211,9 +211,9 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 lock_result=False,
             ).get("is_present_in_meeting_ids", [])
             if db_instance["meeting_id"] in is_present_in_meeting_ids:
-                structured_information["is_present"] = True
+                changed_fields["is_present"] = True
             information[fqid_from_collection_and_id("meeting_user", instance["id"])] = {
-                "structured_information": structured_information
+                "changed_fields": changed_fields
             }
 
     def add_entries_to_history_information(
@@ -222,7 +222,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         entries: list[tuple[str, ...]] = [],
         for_user_id: int | None = None,
         for_meeting_user_id: int | None = None,
-        structured_information: dict[Field, Any] | None = None,
+        changed_fields: dict[Field, Any] | None = None,
     ) -> None:
         if not for_user_id:
             if not for_meeting_user_id:
@@ -238,15 +238,15 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         if fqid not in information:
             if entries:
                 information[fqid] = {"entries": entries}
-            if structured_information:
-                information[fqid]["structured_information"] = structured_information
+            if changed_fields:
+                information[fqid]["changed_fields"] = changed_fields
         else:
             for entry in entries:
                 if entry not in information[fqid]["entries"]:
                     information[fqid]["entries"].append(entry)
-            if structured_information:
-                information[fqid].setdefault("structured_information", dict()).update(
-                    structured_information
+            if changed_fields:
+                information[fqid].setdefault("changed_fields", dict()).update(
+                    changed_fields
                 )
 
     def compose_history_string(
@@ -278,7 +278,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
     def handle_group_updates(
         self,
         entries: list[tuple[str, ...]],
-        meeting_user_structured_information: dict[str, dict[str, list[int]]],
+        meeting_user_changed_fields: dict[str, dict[str, list[int]]],
         instance: dict[str, Any],
         db_instance: dict[str, Any],
     ) -> None:
@@ -291,13 +291,11 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
             # Calculate history information for meeting_user
             if added:
-                meeting_user_structured_information["group_ids"] = {
-                    "added": list(added)
-                }
+                meeting_user_changed_fields["group_ids"] = {"added": list(added)}
             if removed:
-                meeting_user_structured_information.setdefault(
-                    "group_ids", dict()
-                ).update({"removed": list(removed)})
+                meeting_user_changed_fields.setdefault("group_ids", dict()).update(
+                    {"removed": list(removed)}
+                )
 
             # remove default groups
             meeting = self.datastore.get(

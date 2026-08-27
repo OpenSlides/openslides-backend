@@ -176,7 +176,7 @@ def test_types_str_list(db_connection: Connection) -> None:
         1: {
             "id": 1,
             "entries": ["User added to meetings"],
-            "structured_information": None,
+            "changed_fields": None,
             "meeting_id": 1,
             "model_id": "user/1",
             "model_id_assignment_id": None,
