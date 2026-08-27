@@ -785,8 +785,7 @@ def merge_history_informations(
             b = {}
         for fqid, information in b.items():
             if fqid in a:
-                if entries := information.get("entries"):
-                    a[fqid].setdefault("entries", list()).extend(entries)
+                a[fqid]["entries"].extend(information["entries"])
                 if changed_fields := information.get("changed_fields"):
                     a[fqid].setdefault("changed_fields", dict()).update(changed_fields)
             else:
