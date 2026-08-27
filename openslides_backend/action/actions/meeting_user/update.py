@@ -36,6 +36,7 @@ class MeetingUserUpdate(
         "acting_ballot_ids",
         "represented_ballot_ids",
         "poll_option_ids",
+        "poll_entitled_user_ids",
     ]
 
     model = MeetingUser()

@@ -1074,6 +1074,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 14,
                 },
+                "poll_entitled_user/21": {
+                    "poll_id": 1,
+                    "meeting_user_id": 14,
+                },
                 "poll_ballot/12": {
                     "value": "no",
                     "poll_id": 1,
@@ -1083,6 +1087,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,
+                },
+                "poll_entitled_user/22": {
+                    "poll_id": 1,
+                    "meeting_user_id": 15,
                 },
                 "poll_ballot/13": {
                     "value": "4",
@@ -1094,6 +1102,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 12,
                     "represented_meeting_user_id": 12,
                 },
+                "poll_entitled_user/23": {
+                    "poll_id": 2,
+                    "meeting_user_id": 12,
+                },
                 "poll_ballot/14": {
                     "value": "abstain",
                     "poll_id": 5,
@@ -1103,6 +1115,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "poll_id": 5,
                     "acting_meeting_user_id": 43,
                     "represented_meeting_user_id": 43,
+                },
+                "poll_entitled_user/24": {
+                    "poll_id": 5,
+                    "meeting_user_id": 43,
                 },
                 "group/7": {
                     "meeting_user_ids": [75],
@@ -1118,11 +1134,19 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 75,
                     "represented_meeting_user_id": 75,
                 },
+                "poll_entitled_user/25": {
+                    "poll_id": 6,
+                    "meeting_user_id": 75,
+                },
                 "poll_ballot/16": {"value": "10", "poll_id": 6},
                 "poll_ballot_user/6": {
                     "poll_id": 6,
                     "acting_meeting_user_id": 73,
                     "represented_meeting_user_id": 73,
+                },
+                "poll_entitled_user/26": {
+                    "poll_id": 6,
+                    "meeting_user_id": 73,
                 },
             }
         )
@@ -1158,6 +1182,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_option_ids": [1, 4],
                 "acting_ballot_ids": [1, 2, 3],
                 "represented_ballot_ids": [1, 3],
+                "poll_entitled_user_ids": [21, 23],
             },
         )
         self.assert_model_exists(
@@ -1168,11 +1193,12 @@ class UserMergeTogether(BaseActionTestCase):
                 "motion_submitter_ids": [1],
                 "acting_ballot_ids": [4],
                 "represented_ballot_ids": [4],
+                "poll_entitled_user_ids": [24],
             },
         )
         self.assert_model_exists(
             f"meeting_user/{106 + add_to_creatable_ids}",
-            {"user_id": 2, "meeting_id": 7},
+            {"user_id": 2, "meeting_id": 7, "poll_entitled_user_ids": [26]},
         )
         self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
@@ -1230,13 +1256,32 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
 
+        for id_ in [21, 23]:
+            self.assert_model_exists(
+                f"poll_entitled_user/{id_}", {"meeting_user_id": 12}
+            )
+        self.assert_model_exists("poll_entitled_user/22", {"meeting_user_id": 15})
+        self.assert_model_exists("poll_entitled_user/24", {"meeting_user_id": 42})
+        self.assert_model_exists("poll_entitled_user/25", {"meeting_user_id": 75})
+        self.assert_model_exists(
+            "poll_entitled_user/26", {"meeting_user_id": 106 + add_to_creatable_ids}
+        )
+
         self.assert_model_exists(
             "poll/1",
-            {"ballot_ids": [11, 12], "ballot_user_ids": [1, 2]},
+            {
+                "ballot_ids": [11, 12],
+                "ballot_user_ids": [1, 2],
+                "entitled_user_ids": [21, 22],
+            },
         )
         self.assert_model_exists(
             "poll/2",
-            {"ballot_ids": [13], "ballot_user_ids": [3]},
+            {
+                "ballot_ids": [13],
+                "ballot_user_ids": [3],
+                "entitled_user_ids": [23],
+            },
         )
         for id_ in [3, 4]:
             self.assert_model_exists(
@@ -1245,11 +1290,19 @@ class UserMergeTogether(BaseActionTestCase):
             )
         self.assert_model_exists(
             "poll/5",
-            {"ballot_ids": [14], "ballot_user_ids": [4]},
+            {
+                "ballot_ids": [14],
+                "ballot_user_ids": [4],
+                "entitled_user_ids": [24],
+            },
         )
         self.assert_model_exists(
             "poll/6",
-            {"ballot_ids": [15, 16], "ballot_user_ids": [5, 6]},
+            {
+                "ballot_ids": [15, 16],
+                "ballot_user_ids": [5, 6],
+                "entitled_user_ids": [25, 26],
+            },
         )
 
     def test_merge_with_polls_correct(self) -> None:

@@ -1554,6 +1554,9 @@ class MeetingUser(Model):
         on_delete=fields.OnDelete.SET_NULL,
         is_view_field=True,
     )
+    poll_entitled_user_ids = fields.RelationListField(
+        to={"poll_entitled_user": "meeting_user_id"}, is_view_field=True
+    )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_user_id"}, is_view_field=True
     )
@@ -2370,6 +2373,11 @@ class Poll(Model, PollModelMixin):
         is_view_field=True,
         write_fields=("nm_group_poll_ids_poll_t", "poll_id", "group_id", []),
     )
+    entitled_user_ids = fields.RelationListField(
+        to={"poll_entitled_user": "poll_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2555,6 +2563,17 @@ class PollConfigStvScottish(Model):
         to={"poll": "config_id"}, is_view_field=True, required=True
     )
     posts = fields.IntegerField(default=1, constraints={"minimum": 1})
+
+
+class PollEntitledUser(Model):
+    collection = "poll_entitled_user"
+    verbose_name = "poll entitled user"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "entitled_user_ids"}, required=True)
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "poll_entitled_user_ids"}
+    )
 
 
 class PollOption(Model):

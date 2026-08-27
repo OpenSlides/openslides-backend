@@ -204,3 +204,30 @@ class MeetingUserDelete(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting_user/5")
         self.assert_model_exists("poll_option/1", {"content_object_id": "user/1"})
+
+    def test_delete_with_poll_entitled_user(self) -> None:
+        self.create_motion(10, 15)
+        self.set_models(
+            {
+                "poll/20": {
+                    "title": "Poll 20",
+                    "meeting_id": 10,
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
+                },
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_entitled_user/1": {
+                    "meeting_user_id": 5,
+                    "poll_id": 20,
+                },
+            }
+        )
+        response = self.request("meeting_user.delete", {"id": 5})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_exists("poll_entitled_user/1", {"meeting_user_id": None})

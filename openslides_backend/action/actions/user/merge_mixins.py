@@ -229,6 +229,7 @@ class MeetingUserMergeMixin(
                     "chat_message_ids",
                     "group_ids",
                     "structure_level_ids",
+                    "poll_entitled_user_ids",
                     "poll_option_ids",
                     "acting_ballot_ids",  # throw error if conflict on same poll
                     "represented_ballot_ids",  # throw error if conflict on same poll
