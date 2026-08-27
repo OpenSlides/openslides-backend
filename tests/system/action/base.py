@@ -310,23 +310,20 @@ class BaseActionTestCase(BaseSystemTestCase):
         if entry_id:
             return self.datastore.get(
                 fqid_from_collection_and_id("history_entry", entry_id),
-                ["entries", "changed_fields"],
+                ["entries"],
                 lock_result=False,
             )
         else:
             return None
 
     def assert_history_information(
-        self,
-        fqid: FullQualifiedId,
-        entries: list[str] | None,
-        changed_fields: dict[str, Any] | None = None,
+        self, fqid: FullQualifiedId, entries: list[str] | None = None
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
         last_information = self.get_last_history_information(fqid)
-        if entries is None and changed_fields is None:
+        if entries is None:
             assert (
                 not last_information
             ), f"Expected no history information to be generated for {fqid}. Got:\n{last_information}"
@@ -335,7 +332,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 last_information
             ), f"No history information was be generated for {fqid}."
             self.assertEqual(last_information.get("entries"), entries)
-            self.assertEqual(last_information.get("changed_fields"), changed_fields)
 
     def assert_history_information_contains(
         self, fqid: FullQualifiedId, entry: str

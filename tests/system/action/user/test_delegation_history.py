@@ -44,8 +44,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         to_id: int,
         prepend_to: list[str] = [],
         prepend_from: list[str] = [],
-        changed_fields_to: dict[str, list[int]] | None = None,
-        changed_fields_from: dict[str, list[int]] | None = None,
     ) -> None:
         self.assert_history_information(
             f"user/{to_id}",
@@ -55,7 +53,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{from_id}",
                 "meeting/1",
             ],
-            changed_fields_to,
         )
         self.assert_history_information(
             f"user/{from_id}",
@@ -65,15 +62,9 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{to_id}",
                 "meeting/1",
             ],
-            changed_fields_from,
         )
 
-    def assert_alice_redelegated_to(
-        self,
-        who_id: int,
-        prepend: list[str] = [],
-        changed_fields: dict[str, list[int]] | None = None,
-    ) -> None:
+    def assert_alice_redelegated_to(self, who_id: int, prepend: list[str] = []) -> None:
         self.assert_history_information(
             f"user/{who_id}",
             [
@@ -82,7 +73,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            changed_fields,
         )
         self.assert_history_information(
             f"user/{self.alice_id}",
@@ -192,7 +182,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "group/3",
                 "meeting/1",
             ],
-            changed_fields_from={"group_ids": [3]},
         )
 
     def test_create_receive_delegated_vote(self) -> None:
@@ -213,7 +202,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "group/3",
                 "meeting/1",
             ],
-            changed_fields_to={"group_ids": [3]},
         )
 
     def test_update_re_delegate_vote(self) -> None:
@@ -433,7 +421,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 ],
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )
         for id_ in [self.alice_id, self.bob_id, self.colin_id, eric_id, fredric_id]:
             self.assert_history_information(
@@ -470,7 +457,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )
 
     def test_update_create_meeting_user_with_delegation(self) -> None:
@@ -499,5 +485,4 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 f"user/{self.alice_id}",
                 "meeting/1",
             ],
-            {"group_ids": [3]},
         )

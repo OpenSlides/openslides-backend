@@ -289,7 +289,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/1",
                 "Committee management changed",
             ],
-            {"group_ids": [1]},
         )
         self.assert_history_information(
             "user/23", ["Vote delegated to {} in meeting {}", "user/22", "meeting/1"]
@@ -491,7 +490,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "Personal data changed",
                 "Committee management changed",
             ],
-            {"group_ids": []},
         )
 
     def test_committee_manager_remove_committee_ids(self) -> None:
@@ -2684,7 +2682,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/3", "meeting/1"],
-            {"group_ids": [2, 3, 10, 11, 12]},
         )
 
     def test_update_history_add_group_to_default_group(self) -> None:
@@ -2705,7 +2702,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
-            {"group_ids": [2, 10, 11, 12]},
         )
 
     def test_update_history_add_multiple_groups(self) -> None:
@@ -2726,7 +2722,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to multiple groups in meeting {}", "meeting/1"],
-            {"group_ids": [2, 3, 10, 11, 12]},
         )
 
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
@@ -2746,7 +2741,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
-            {"group_ids": [1, 2]},
         )
 
     def test_update_history_remove_group(self) -> None:
@@ -2771,7 +2765,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant removed from meeting {}", "meeting/1"],
-            {"group_ids": []},
         )
 
     def test_update_fields_with_equal_value_no_history(self) -> None:
@@ -2868,7 +2861,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/4",
                 "meeting/4",
             ],
-            {"group_ids": [1, 4]},
         )
 
     def test_update_participant_data_in_multiple_meetings_with_existing_meetings(
@@ -2918,7 +2910,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/7",
                 "meeting/7",
             ],
-            {"group_ids": [1, 4, 7]},
         )
 
     def test_update_saml_id__can_change_own_password_error(self) -> None:

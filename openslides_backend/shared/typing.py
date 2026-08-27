@@ -1,6 +1,6 @@
-from typing import Any, NotRequired, TypedDict, Union
+from typing import Any, TypedDict, Union
 
-from .patterns import Collection, Field, FullQualifiedId, Id
+from .patterns import Collection, FullQualifiedId, Id
 
 PartialModel = dict[str, Any]
 Model = dict[str, Any]
@@ -10,8 +10,7 @@ Schema = dict[str, Any]
 
 
 class HistoryInformationData(TypedDict):
-    entries: NotRequired[list[str]]
-    changed_fields: NotRequired[dict[Field, Any]]
+    entries: list[str]
 
 
 HistoryInformation = dict[FullQualifiedId, HistoryInformationData]
