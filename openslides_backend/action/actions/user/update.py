@@ -59,6 +59,7 @@ class UserUpdate(
         "is_present_in_meeting_ids",
         "history_entry_ids",
         "history_position_ids",
+        "poll_option_ids",
     ]
 
     model = User()

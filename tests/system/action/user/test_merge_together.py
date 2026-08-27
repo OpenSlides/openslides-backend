@@ -957,8 +957,14 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_config_approval/1": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "poll_option/1": {"poll_id": 1, "meeting_user_id": 12},
-                "poll_option/2": {"poll_id": 1, "meeting_user_id": 15},
+                "poll_option/1": {
+                    "poll_id": 1,
+                    "content_object_id": "meeting_user/12",
+                },
+                "poll_option/2": {
+                    "poll_id": 1,
+                    "content_object_id": "meeting_user/15",
+                },
                 "poll/2": {
                     "title": "Assignment poll 2",
                     "content_object_id": "assignment/1",
@@ -972,8 +978,14 @@ class UserMergeTogether(BaseActionTestCase):
                     "max_options_amount": 1,
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "poll_option/3": {"poll_id": 2, "meeting_user_id": 15},
-                "poll_option/4": {"poll_id": 2, "meeting_user_id": 14},
+                "poll_option/3": {
+                    "poll_id": 2,
+                    "content_object_id": "meeting_user/15",
+                },
+                "poll_option/4": {
+                    "poll_id": 2,
+                    "content_object_id": "meeting_user/14",
+                },
                 "poll/3": {
                     "title": "Assignment poll 3",
                     "content_object_id": "assignment/1",
@@ -986,8 +998,14 @@ class UserMergeTogether(BaseActionTestCase):
                     "allow_abstain": False,
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "poll_option/5": {"poll_id": 3, "meeting_user_id": 12},
-                "poll_option/6": {"poll_id": 3, "meeting_user_id": 15},
+                "poll_option/5": {
+                    "poll_id": 3,
+                    "content_object_id": "user/2",
+                },
+                "poll_option/6": {
+                    "poll_id": 3,
+                    "content_object_id": "user/5",
+                },
                 "poll/4": {
                     "title": "Assignment poll 4",
                     "content_object_id": "assignment/1",
@@ -999,8 +1017,14 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_config_approval/3": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "poll_option/7": {"poll_id": 4, "meeting_user_id": 14},
-                "poll_option/8": {"poll_id": 4, "meeting_user_id": 15},
+                "poll_option/7": {
+                    "poll_id": 4,
+                    "content_object_id": "user/4",
+                },
+                "poll_option/8": {
+                    "poll_id": 4,
+                    "content_object_id": "user/5",
+                },
                 "poll/5": {
                     "title": "Motion poll",
                     "content_object_id": "motion/4",
@@ -1116,6 +1140,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "organization_id": 1,
                 "default_password": "user2",
                 "meeting_user_ids": [12, 42, 106 + add_to_creatable_ids],
+                "poll_option_ids": [5, 7],
                 "password": password,
             },
         )
@@ -1130,7 +1155,7 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 "user_id": 2,
                 "meeting_id": 1,
-                "poll_option_ids": [1, 4, 5, 7],
+                "poll_option_ids": [1, 4],
                 "acting_ballot_ids": [1, 2, 3],
                 "represented_ballot_ids": [1, 3],
             },
@@ -1154,9 +1179,14 @@ class UserMergeTogether(BaseActionTestCase):
             "motion_submitter/1",
             {"motion_id": 4, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
         )
-        for poll_option_id in [1, 4, 5, 7]:
+        for poll_option_id in [1, 4]:
             self.assert_model_exists(
-                f"poll_option/{poll_option_id}", {"meeting_user_id": 12}
+                f"poll_option/{poll_option_id}",
+                {"content_object_id": "meeting_user/12"},
+            )
+        for poll_option_id in [5, 7]:
+            self.assert_model_exists(
+                f"poll_option/{poll_option_id}", {"content_object_id": "user/2"}
             )
 
         self.assert_model_exists(

@@ -1540,7 +1540,9 @@ class MeetingUser(Model):
         ),
     )
     poll_option_ids = fields.RelationListField(
-        to={"poll_option": "meeting_user_id"}, is_view_field=True, is_primary=True
+        to={"poll_option": "content_object_id"},
+        on_delete=fields.OnDelete.PROTECT,
+        is_view_field=True,
     )
     acting_ballot_ids = fields.RelationListField(
         to={"poll_ballot_user": "acting_meeting_user_id"},
@@ -2563,7 +2565,9 @@ class PollOption(Model):
     poll_id = fields.RelationField(to={"poll": "option_ids"}, required=True)
     weight = fields.IntegerField()
     text = fields.CharField()
-    meeting_user_id = fields.RelationField(to={"meeting_user": "poll_option_ids"})
+    content_object_id = fields.GenericRelationField(
+        to={"meeting_user": "poll_option_ids", "user": "poll_option_ids"}
+    )
 
 
 class Projection(Model):
@@ -3071,6 +3075,9 @@ class User(Model):
         is_view_field=True,
     )
     home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
+    poll_option_ids = fields.RelationListField(
+        to={"poll_option": "content_object_id"}, is_view_field=True
+    )
     history_position_ids = fields.RelationListField(
         to={"history_position": "user_id"}, is_view_field=True
     )

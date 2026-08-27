@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -3076,33 +3077,54 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_with_internal_fields(self) -> None:
         self.create_meeting()
+        self.create_user("changing")
         self.create_user_for_meeting(1)
+        self.create_motion(1, 15)
+        self.set_models(
+            {
+                "poll/20": {
+                    "title": "Poll 20",
+                    "meeting_id": 1,
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
+                },
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_option/1": {
+                    "content_object_id": "meeting_user/1",
+                    "poll_id": 20,
+                },
+            }
+        )
+
         response = self.request(
             "user.update",
-            {
-                "id": 2,
-                "is_present_in_meeting_ids": [1],
-            },
+            {"id": 2, "is_present_in_meeting_ids": [1], "poll_option_ids": [1]},
             internal=True,
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"is_present_in_meeting_ids": [1]})
+        self.assert_model_exists(
+            "user/2", {"is_present_in_meeting_ids": [1], "poll_option_ids": [1]}
+        )
         self.assert_model_exists("meeting/1", {"present_user_ids": [2]})
+        self.assert_model_exists("poll_option/1", {"content_object_id": "user/2"})
+        self.assert_model_exists("meeting_user/1", {"poll_option_ids": None})
 
     def test_update_with_internal_fields_error(self) -> None:
         self.create_meeting()
         self.create_user_for_meeting(1)
         response = self.request(
             "user.update",
-            {
-                "id": 2,
-                "is_present_in_meeting_ids": [1],
-            },
+            {"id": 2, "is_present_in_meeting_ids": [1], "poll_option_ids": [1]},
             internal=False,
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "data must not contain {'is_present_in_meeting_ids'} properties",
+            "data must not contain {'is_present_in_meeting_ids', 'poll_option_ids'} properties",
             response.json["message"],
         )
 

@@ -35,6 +35,7 @@ class MeetingUserUpdate(
         "chat_message_ids",
         "acting_ballot_ids",
         "represented_ballot_ids",
+        "poll_option_ids",
     ]
 
     model = MeetingUser()
@@ -42,7 +43,6 @@ class MeetingUserUpdate(
         optional_properties=[
             "about_me",
             "group_ids",
-            "poll_option_ids",
             *meeting_user_standard_fields,
             *merge_fields,
         ],

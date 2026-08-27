@@ -189,6 +189,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [poll_config_selection.delete](actions/poll_config_selection.delete.md)
 - [poll_config_stv_scottish.delete](actions/poll_config_stv_scottish.delete.md)
 - [poll_option.delete](actions/poll_option.delete.md)
+- [poll_option.update](actions/poll_option.update.md)
 
 ## Speaker
 

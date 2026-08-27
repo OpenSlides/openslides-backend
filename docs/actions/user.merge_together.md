@@ -42,9 +42,9 @@ An error is thrown if:
 - Any of the secondary users have a `saml_id`
 - There are multiple different `member_number`s between the selected users (empty does not count)
 - There are conflicts regarding polls, i.e. two or more of the selected users...
+    - are candidates on the same poll (users or related meeting_users have poll_option_ids with the same poll_option/poll_id)
     - Any affected meeting_users have groups that are currently entitled to work on any poll
 - Any affected meeting_users _who share a meeting_:
-    - are meeting_users of the poll_option on the same poll
     - have voted on the same poll (delegated or not)
     - have running speakers
     - are in a meeting without `list_of_speakers_allow_multiple_speakers` and have waiting speakers on the same list who cannot be merged together into at most one point_of_order and one normal speech. Speeches may not be merged if there are multiple different values (empty does count) within any of the fields:

@@ -258,7 +258,10 @@ class TestExportMeeting(BasePresenterTestCase):
                 "poll_config_approval/90": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "poll_option/100": {"poll_id": 80, "meeting_user_id": 113},
+                "poll_option/100": {
+                    "poll_id": 80,
+                    "content_object_id": "meeting_user/113",
+                },
                 "poll_ballot/120": {
                     "poll_id": 80,
                     "value": "yes",
@@ -282,7 +285,7 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["meeting"]["1"]["present_user_ids"] == [11]
         assert data["user"]["11"]["is_present_in_meeting_ids"] == [1]
 
-        assert data["poll_option"]["100"]["meeting_user_id"] == 113
+        assert data["poll_option"]["100"]["content_object_id"] == "meeting_user/113"
         assert data["meeting_user"]["113"]["poll_option_ids"] == [100]
 
         assert data["poll"]["80"]["ballot_ids"] == [120]
@@ -441,10 +444,22 @@ class TestExportMeeting(BasePresenterTestCase):
                     "visibility": Poll.VISIBILITY_NAMED,
                     "state": Poll.STATE_STARTED,
                 },
-                "poll_option/121": {"poll_id": 12, "meeting_user_id": 1},
-                "poll_option/122": {"poll_id": 12, "meeting_user_id": 2},
-                "poll_option/131": {"poll_id": 13, "meeting_user_id": 1},
-                "poll_option/132": {"poll_id": 13, "meeting_user_id": 2},
+                "poll_option/121": {
+                    "poll_id": 12,
+                    "content_object_id": "meeting_user/1",
+                },
+                "poll_option/122": {
+                    "poll_id": 12,
+                    "content_object_id": "meeting_user/2",
+                },
+                "poll_option/131": {
+                    "poll_id": 13,
+                    "content_object_id": "meeting_user/1",
+                },
+                "poll_option/132": {
+                    "poll_id": 13,
+                    "content_object_id": "meeting_user/2",
+                },
                 "poll_option/141": {"poll_id": 14, "text": "Blue"},
                 "poll_option/142": {"poll_id": 14, "text": "Green"},
                 "poll_option/143": {"poll_id": 14, "text": "Red"},
