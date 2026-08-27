@@ -529,14 +529,12 @@ class HistoryEntry(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     entries = fields.TextArrayField()
-    structured_information = fields.JSONField()
     original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={
             "assignment": "history_entry_ids",
-            "meeting_user": "history_entry_ids",
             "motion": "history_entry_ids",
-            "poll": "history_entry_ids",
+            "topic": "history_entry_ids",
             "user": "history_entry_ids",
         }
     )
@@ -1575,9 +1573,6 @@ class MeetingUser(Model):
             [],
         ),
     )
-    history_entry_ids = fields.RelationListField(
-        to={"history_entry": "model_id"}, is_view_field=True
-    )
 
 
 class Motion(Model):
@@ -2377,9 +2372,6 @@ class Poll(Model, PollModelMixin):
     meeting_id = fields.RelationField(
         to={"meeting": "poll_ids"}, required=True, constant=True
     )
-    history_entry_ids = fields.RelationListField(
-        to={"history_entry": "model_id"}, is_view_field=True
-    )
 
 
 class PollBallot(Model):
@@ -3002,6 +2994,9 @@ class Topic(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "topic_ids"}, required=True, constant=True
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
     )
 
 
