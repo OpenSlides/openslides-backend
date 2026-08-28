@@ -122,11 +122,14 @@ def is_collectionfield(value: str) -> bool:
 
 
 def collection_from_fqid(fqid: str) -> str:
-    return fqid.split(KEYSEPARATOR)[0]
+    return collection_or_id_from_fqid(want_id=False, fqid=fqid)
 
 
 def id_from_fqid(fqid: str) -> int:
-    return int(fqid.split(KEYSEPARATOR)[1])
+    return int(collection_or_id_from_fqid(want_id=True, fqid=fqid))
+
+def collection_or_id_from_fqid(want_id: bool, fqid: str) -> str:
+    return fqid.split(KEYSEPARATOR)[want_id]
 
 
 def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
