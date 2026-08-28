@@ -121,18 +121,18 @@ def is_collectionfield(value: str) -> bool:
 # Parse FQIDs
 
 
-def collection_from_fqid(fqid: str) -> str:
-    return collection_or_id_from_fqid(want_id=False, fqid=fqid)
-
-
-def id_from_fqid(fqid: str) -> int:
-    return int(collection_or_id_from_fqid(want_id=True, fqid=fqid))
-
-
-def collection_or_id_from_fqid(want_id: bool, fqid: str) -> str:
+def collection_or_id_from_fqid(fqid: str, want_id: bool = True) -> str:
     if not is_fqid(fqid):
         raise ValueError("Invalid FQID")
     return fqid.split(KEYSEPARATOR)[want_id]
+
+
+def collection_from_fqid(fqid: str) -> str:
+    return collection_or_id_from_fqid(fqid=fqid, want_id=False)
+
+
+def id_from_fqid(fqid: str) -> int:
+    return int(collection_or_id_from_fqid(fqid=fqid))
 
 
 def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
@@ -151,11 +151,11 @@ def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
 
 
 def collection_from_fqfield(fqfield: str) -> str:
-    return str(fqfield).split(KEYSEPARATOR)[0]
+    return collection_or_id_from_fqid(fqid=fqfield, want_id=False)
 
 
 def id_from_fqfield(fqfield: FullQualifiedField) -> int:
-    return int(str(fqfield).split(KEYSEPARATOR)[1])
+    return int(collection_or_id_from_fqid(fqid=fqfield))
 
 
 def field_from_fqfield(fqfield: str) -> str:
