@@ -121,18 +121,28 @@ def is_collectionfield(value: str) -> bool:
 # Parse FQIDs
 
 
-def collection_or_id_from_fqid(fqid: str, want_id: bool = True) -> str:
-    if not is_fqid(fqid):
-        raise ValueError("Invalid FQID")
-    return fqid.split(KEYSEPARATOR)[want_id]
+def collection_or_id_or_field_from_fqid_or_fqfield(
+    fqid_or_fqfield: str, want_not_collection: bool = True, want_field: bool = False
+) -> tuple[str, str]:
+    """
+    If you want no tuple then just use collection_or_id_or_field_from_fqid_or_fqfield()[False]
+    """
+    s = fqid_or_fqfield.split(KEYSEPARATOR)
+    if not want_not_collection and want_field:
+        return s[want_not_collection], s[(not want_not_collection) + want_field]
+    return s[want_not_collection + want_field], ""
 
 
 def collection_from_fqid(fqid: str) -> str:
-    return collection_or_id_from_fqid(fqid=fqid, want_id=False)
+    return collection_or_id_or_field_from_fqid_or_fqfield(
+        fqid_or_fqfield=fqid, want_not_collection=False
+    )[False]
 
 
 def id_from_fqid(fqid: str) -> int:
-    return int(collection_or_id_from_fqid(fqid=fqid))
+    return int(
+        collection_or_id_or_field_from_fqid_or_fqfield(fqid_or_fqfield=fqid)[False]
+    )
 
 
 def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
@@ -151,20 +161,27 @@ def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
 
 
 def collection_from_fqfield(fqfield: str) -> str:
-    return collection_or_id_from_fqid(fqid=fqfield, want_id=False)
+    return collection_or_id_or_field_from_fqid_or_fqfield(
+        fqid_or_fqfield=fqfield, want_not_collection=False
+    )[False]
 
 
 def id_from_fqfield(fqfield: FullQualifiedField) -> int:
-    return int(collection_or_id_from_fqid(fqid=fqfield))
+    return int(
+        collection_or_id_or_field_from_fqid_or_fqfield(fqid_or_fqfield=fqfield)[False]
+    )
 
 
 def field_from_fqfield(fqfield: str) -> str:
-    return fqfield.split(KEYSEPARATOR)[2]
+    return collection_or_id_or_field_from_fqid_or_fqfield(
+        fqid_or_fqfield=fqfield, want_not_collection=True, want_field=True
+    )[False]
 
 
 def collection_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
-    parts = fqfield.split(KEYSEPARATOR)
-    return parts[0], parts[2]
+    return collection_or_id_or_field_from_fqid_or_fqfield(
+        fqid_or_fqfield=fqfield, want_not_collection=False, want_field=True
+    )
 
 
 def fqid_from_fqfield(fqfield: str) -> str:
