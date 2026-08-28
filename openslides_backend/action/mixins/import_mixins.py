@@ -522,14 +522,16 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             )
                         except Exception:
                             raise ActionException(
-                                f"Could not parse {entry[field]} expect decimal"
+                                "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (e.g. 1.234567)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
                         except ValueError:
                             raise ActionException(
-                                f"Could not parse {entry[field]} expect integer"
+                                "Invalid format for column {{field}}: Got {{content}}; expected integer (i.e. a natural number)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "boolean":
                         if entry[field].lower() in TRUE_VALUES:
@@ -538,7 +540,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             entry[field] = False
                         else:
                             raise ActionException(
-                                f"Could not parse {entry[field]} expect boolean"
+                                "Invalid format for column {{field}}: Got {{content}}; expected boolean (e.g. '1' for yes, '0' for no)",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     elif type_ == "date":
                         zone = self.get_time_zone_info(entry)
@@ -551,11 +554,12 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                             )
                         except Exception:
                             raise ActionException(
-                                f"Invalid date format: {entry[field]} (expected YYYY-MM-DD)"
+                                "Invalid date for column {{field}}: Got {{content}}; expected format YYYY-MM-DD",
+                                message_args={"field": field, "content": entry[field]},
                             )
                     else:
                         raise ActionException(
-                            f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
+                            f"For column {field}: Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
                         )
         super().validate_instance(instance)
         if "meeting_id" in instance:
