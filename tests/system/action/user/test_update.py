@@ -3119,14 +3119,26 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_user_for_meeting(1)
         response = self.request(
             "user.update",
-            {"id": 2, "is_present_in_meeting_ids": [1], "poll_option_ids": [1]},
+            {
+                "id": 2,
+                "is_present_in_meeting_ids": [1],
+                "poll_option_ids": [1],
+                "history_entry_ids": [1],
+                "history_position_ids": [1],
+            },
             internal=False,
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
-            "data must not contain {'is_present_in_meeting_ids', 'poll_option_ids'} properties",
-            response.json["message"],
-        )
+        message: str = response.json["message"]
+        assert message.startswith("data must not contain {")
+        assert message.endswith("} properties")
+        for field in [
+            "'is_present_in_meeting_ids'",
+            "'poll_option_ids'",
+            "'history_entry_ids'",
+            "'history_position_ids'",
+        ]:
+            self.assertIn(field, message)
 
     def test_update_groups_on_last_meeting_admin(self) -> None:
         self.create_meeting()
