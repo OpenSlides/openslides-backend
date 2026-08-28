@@ -130,6 +130,8 @@ def id_from_fqid(fqid: str) -> int:
 
 
 def collection_or_id_from_fqid(want_id: bool, fqid: str) -> str:
+    if not is_fqid(fqid):
+        raise ValueError("Invalid FQID")
     return fqid.split(KEYSEPARATOR)[want_id]
 
 
