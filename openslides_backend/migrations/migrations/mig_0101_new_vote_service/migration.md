@@ -107,12 +107,18 @@ General pattern:
 
 ## transform_and_rename
 
+* meeting/poll_default_method -> meeting/topic_poll_default_method: always selection (introduce and use here the default functionality?)
 * poll/type -> poll/visibility and the values have changed:
   * analog -> manually
   * named -> open
   * pseudoanonymous -> secret
   * cryptographic There should be no case. If so, "secret" can be used.
-* meeting/poll_default_method -> meeting/topic_poll_default_method: always selection (introduce and use here the default functionality?)
+
+Note: because create_{action}_recursive currently skip renamed fields,
+poll/visibility is not straightforward and requires 2 extra manual steps:
+
+* Let diff generator handle rename and save that line somewhere
+* Rename field in the previous_models to get statements and DiffMixin map for handling enum change
 
 ### replace_value_from_map
 
