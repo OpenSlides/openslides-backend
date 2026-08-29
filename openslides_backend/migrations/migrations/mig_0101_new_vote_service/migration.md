@@ -10,13 +10,22 @@ Current split between automatic and manual actions:
 * Renames are being handled semi-automatically: developer needs to define the
   renames dictionary in the Migration class.
 
-* Special almost automatic handling of (currently) 3 specific cases: creating
-  required field in the existing collection, adding `required: true` to existing
-  field and rename that results in writing side switch (table field becomes view
-  field and other way around): diff generator collects such cases and writes them
-  to the `DiffMixin` class defined in the new file next to the `migration.py`.
-  Developer has to import and extend it. `BaseMigration` class will handle the
-  data collected by diff generator.
+* Special almost automatic handling of (currently) 3 specific cases:
+  * A new required field in existing collection:
+    * creating a required field
+    * adding `required: true` to an existing field
+  * Field rename that results in writing side switch (table field becomes view
+    field or other way around)
+  * Field getting a new/more strict enum type:
+    * change from string/string[] to enum/enum[]
+    * Removing option from an existing enum
+
+  Diff generator collects such cases, generates the maps that should be used
+  to finish handling such cases in the cleanup method of te migration class and
+  writes them to the `DiffMixin` class defined in the new file next to the
+  `migration.py`.
+  Developer has to import and extend it `DiffMixin` in the migration class.
+  `BaseMigration` class will handle the fields from `DiffMixin`.
 
   **Note:** side switch is not relevant for the vote
   service, therefore will be implemented later.
@@ -36,6 +45,7 @@ Current split between automatic and manual actions:
     may need to update to/reference. Example in new vote service:
     * projector/used_as_default_projector_for_poll_in_meeting_id -> projector/used_as_default_projector_for_topic_poll_in_meeting_id
     * meeting/default_projector_poll_ids -> meeting/default_projector_topic_poll_ids
+  * Data has to be generated and written to the `DiffMixin` for 3 cases described above.
 
 # Will be needed soon
 

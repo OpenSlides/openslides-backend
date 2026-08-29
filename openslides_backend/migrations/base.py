@@ -30,6 +30,7 @@ class BaseMigration:
     copied_tables: list[Table]
 
     # -- Defined in DiffMixin --
+    # TODO: Implement here and in diff generator
     # Contains:
     #   * New required fields that were added to existing collections
     #   * Fields that received `required: true`
@@ -44,6 +45,23 @@ class BaseMigration:
     #   * data_preparation: to save old writing side
     #   * data_manipulation: to perform move
     switched_writing_side: Any
+
+    # TODO: Implement here and in diff generator
+    # Contains:
+    #   * Map of field names to the corresponding enum types names per collection
+    # Used in:
+    #   * cleanup: to apply the types to the fields after handling the
+    #     unfitting values in the data_manipulation mathod
+    enum_types_to_apply: dict[Collection, dict[Field, str]]
+
+    # TODO: Implement here and in diff generator
+    # Contains:
+    #   * String with statements that should be executed in the cleanup method.
+    #     Currently needed for creating new views for the types changed for
+    #     columns from enum_types_to_apply.
+    # Used in:
+    #   * cleanup: as the final step
+    cleanup_statements: str
 
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
@@ -155,3 +173,4 @@ class BaseMigration:
         # If the corresponding maps are defined:
         #   Set NOT NULL for added_required_fields
         #   Drop tables from copied_tables
+        #   Apply enum types for fields from enum_types_to_apply
