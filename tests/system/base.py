@@ -2,6 +2,7 @@ import threading
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
+from json import loads as json_loads
 from typing import Any, cast
 from unittest import TestCase, TestResult
 from unittest.mock import MagicMock
@@ -17,6 +18,7 @@ from openslides_backend.models.base import (
     json_dict_to_non_json_data_types,
     model_registry,
 )
+from openslides_backend.models.fields import JSONField
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
@@ -207,6 +209,7 @@ class BaseSystemTestCase(TestCase):
             and response.json.get("message")
         ):
             print(response.json)
+            self.assertEqual(response.status_code, code, response.json["message"])
         self.assertEqual(response.status_code, code)
 
     def create_model(self, fqid: str, data: dict[str, Any] = {}) -> None:
@@ -318,9 +321,10 @@ class BaseSystemTestCase(TestCase):
         model = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
             try:
-                model.get_field(field_name).validate_with_schema(
-                    fqid, field_name, value
-                )
+                field = model.get_field(field_name)
+                if isinstance(field, JSONField) and isinstance(value, str):
+                    value = json_loads(value)
+                field.validate_with_schema(fqid, field_name, value)
             except ActionException as e:
                 raise JsonSchemaException(e.message)
 

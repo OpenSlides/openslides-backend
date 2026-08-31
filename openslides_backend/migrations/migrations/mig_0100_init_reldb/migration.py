@@ -10,13 +10,8 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
-from openslides_backend.migrations.migration_helper import (
-    OLD_TABLES,
-    MigrationHelper,
-    MigrationState,
-)
-from openslides_backend.migrations.migrations.base import BaseMigration
-from openslides_backend.models.base import Model, model_registry
+from openslides_backend.migrations.base import BaseMigration
+from openslides_backend.migrations.migration_helper import OLD_TABLES, MigrationHelper
 from openslides_backend.models.fields import (
     DecimalField,
     Field,
@@ -26,62 +21,11 @@ from openslides_backend.models.fields import (
     RelationListField,
     TimestampField,
 )
-from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.shared.env import is_truthy
 
+from .deprecated_models import MigrationModel, migration_model_registry
+
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
-# TODO update before merging into main.
-ORIGIN_COLLECTIONS = [
-    "organization",
-    "user",
-    "meeting_user",
-    "gender",
-    "organization_tag",
-    "theme",
-    "committee",
-    "meeting",
-    "structure_level",
-    "group",
-    "personal_note",
-    "tag",
-    "agenda_item",
-    "list_of_speakers",
-    "structure_level_list_of_speakers",
-    "point_of_order_category",
-    "speaker",
-    "topic",
-    "motion",
-    "motion_submitter",
-    "motion_supporter",
-    "motion_editor",
-    "motion_working_group_speaker",
-    "motion_comment",
-    "motion_comment_section",
-    "motion_category",
-    "motion_block",
-    "motion_change_recommendation",
-    "motion_state",
-    "motion_workflow",
-    "poll",
-    "option",
-    "vote",
-    "assignment",
-    "assignment_candidate",
-    "poll_candidate_list",
-    "poll_candidate",
-    "mediafile",
-    "meeting_mediafile",
-    "projector",
-    "projection",
-    "projector_message",
-    "projector_countdown",
-    "chat_group",
-    "chat_message",
-    "action_worker",
-    "import_preview",
-    "history_position",
-    "history_entry",
-]
 
 
 class Sql_helper:
@@ -214,8 +158,6 @@ class Sql_helper:
         field1 = field.write_fields[1]
         field2 = field.write_fields[2]
 
-        intermediate_table = HelperGetNames.get_table_name(intermediate_table, True)
-
         # 1) Add sql command
         for data_item in values:
             insert_intermediate_t_commands.append(
@@ -234,6 +176,58 @@ class Sql_helper:
 
 
 class Migration(BaseMigration):
+    ORIGIN_COLLECTIONS = [
+        "organization",
+        "user",
+        "meeting_user",
+        "gender",
+        "organization_tag",
+        "theme",
+        "committee",
+        "meeting",
+        "structure_level",
+        "group",
+        "personal_note",
+        "tag",
+        "agenda_item",
+        "list_of_speakers",
+        "structure_level_list_of_speakers",
+        "point_of_order_category",
+        "speaker",
+        "topic",
+        "motion",
+        "motion_submitter",
+        "motion_supporter",
+        "motion_editor",
+        "motion_working_group_speaker",
+        "motion_comment",
+        "motion_comment_section",
+        "motion_category",
+        "motion_block",
+        "motion_change_recommendation",
+        "motion_state",
+        "motion_workflow",
+        "poll",
+        "option",
+        "vote",
+        "assignment",
+        "assignment_candidate",
+        "poll_candidate_list",
+        "poll_candidate",
+        "mediafile",
+        "meeting_mediafile",
+        "projector",
+        "projection",
+        "projector_message",
+        "projector_countdown",
+        "chat_group",
+        "chat_message",
+        "action_worker",
+        "import_preview",
+        "history_position",
+        "history_entry",
+    ]
+
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
         errors = ""
@@ -283,7 +277,7 @@ class Migration(BaseMigration):
         return ""
 
     @staticmethod
-    def data_manipulation(curs: Cursor[DictRow]) -> None:
+    def data_manipulation(curs: Cursor[DictRow], stash: dict[str, Any] | None) -> None:
         """
         Purpose:
             Iterates over chunks of the DB table models and writes the data into the respective DB tables
@@ -294,25 +288,23 @@ class Migration(BaseMigration):
         collection: str
         table_name: str
         data: dict[str, Any]
-        model: Model
+        model: MigrationModel
         insert_intermediate_t_commands: list
         sql_fields: str
         sql_values: list
 
         insert_intermediate_t_commands = []
 
-        result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
-        assert result
-        models_count = result["count"]
+        models_count = Sql_helper.get_row_count()
         found_collections = set()
         # 1) Chunkwise loop trough all data_rows for the models table
-        for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
+        for _ in range(0, ceil(models_count / Sql_helper.LIMIT)):
             data_chunk = Sql_helper.get_next_data_row_chunk()
 
             for data_row in data_chunk:
                 collection = data_row["fqid"].split("/")[0]
                 found_collections.add(collection)
-                table_name = HelperGetNames.get_table_name(collection, True)
+                table_name = HelperGetNames.get_table_name(collection)
                 data = data_row["data"]
 
                 match collection:
@@ -324,7 +316,7 @@ class Migration(BaseMigration):
                     case "organization" | "meeting":
                         data["time_zone"] = os.environ["MIG0100_TIMEZONE"]
 
-                model = model_registry[collection]()
+                model = migration_model_registry[collection]()
                 sql_fields = ""
                 sql_placeholder = ""
                 sql_values = []
@@ -375,13 +367,6 @@ class Migration(BaseMigration):
         for command, values in insert_intermediate_t_commands:
             curs.execute(command, values)
 
-        # clear replace tables as this migration writes the tables directly
-        MigrationHelper.set_database_migration_info(
-            curs,
-            100,
-            MigrationState.FINALIZATION_REQUIRED,
-        )
-
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:
         """
@@ -397,7 +382,6 @@ class Migration(BaseMigration):
             i_read_code = None
         if i_read_code is not None:
             if is_truthy(i_read_code):
-                print("(┛◉Д◉)┛彡┻━┻")
                 MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
 
         for table_name in OLD_TABLES:

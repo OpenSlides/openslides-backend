@@ -1,20 +1,26 @@
-# TODO revise this file
 # Migrations for the Database
 
-The migrations will create temporary migration copies with `{name}_m` of all origin tables to be migrated defined by ORIGIN_COLLECTIONS.
-Collections in ORIGIN_COLLECTIONS will also prevent writing on corresponding origin tables for all parallel processes.
-Migration will be done on the migration tables, which currently are defined the same as their origin tables. Also, the triggers are recreated in the same manner as the new SQL schema.
+Firstly all prerequisites for all upcoming migrations are checked.
+For each migration individually first the sql schema diff is applied and then the data manipulated.
+The migrations will operate directly on top of the tables but will roll back to the previous state if an error occurs during the migrations.
+The backend actions will be blocked/interrupted if the state of the version table isn't overall finalized.
 
-In the finalization step, the origin tables are deleted and the migration copies put into place. (The future plan is to not have any trigger constraints on the migration table but on an additional layer of `{name}_f`‑tables, the finalization tables.)
+The migration connection is committed once before the migration process starts and after all migrations were successful. It shouldn't be committed by the user‑defined functions, as this will write the current state to the tables resulting in a rollback if constraints aren't met or worse be irreversable.
+The migration state for each individual migration is stored along with its number on a different connection/transaction. Thus not experiencing any rollbacks. This enables us to look at the table `version` and see which migrations ran succesfully until a migration failed.
 
-The connection is committed once when preparing and just before the migration process starts and when the migration and also finalization process were successful. It shouldn't be committed by the user‑defined functions, as this may lead to a rollback due to unfulfilled constraints.
+The migrations themselves are stored in a subfolder to the `migrations` folder. Each must start with `mig_` and a four‑digit number. The migration itself should be called `migration.py` and define a class like this.
+```
+class Migration(BaseMigration):  # use MigrationHelper.write_line at any point to write helpful information about the migration process to the stats commands output.
+    ORIGIN_COLLECTIONS = []  # collections to be migrated. Used to generate the `replace_tables` in the `version` table.
+```
+This can include certain functions that can be found by the loader. A psycopg cursor object will be passed as a function parameter. The schema alterations should be stored next to it as `schema_diff.sql` which can automatically be generated with the make target `generate-migration-diff`. See the documentation within the executed python script. Other artefacts solely for the use of this migration should also be stored in this folder.
 
-The migrations themselves are in the `migrations` folder. Each file must start with a four‑digit number and can include certain functions that can be found by the loader. A psycopg cursor object will be passed as a function parameter.
-
+Possible functions in the migration class are optional and defined as follows:
  * check_prerequisites: should check all necessities that need to be set before a migration can complete successfully
- * data_definition: should do necessary schema changes on migration tables
- * data_manipulation: should alter the data within the migration tables
- * cleanup: should do all clean‑up tasks that aren’t performed automatically, such as deleting additional temporary tables. This step happens during finalization, before any automatic changes.
+ * data_preparation: should do necessary stashing of information that would get lost due to schema changes
+ * data_definition: should stay unused but may be useful in very rare cases where the manual diff changes should stay separate from generated ones or where logic needs to be applied to recover something
+ * data_manipulation: should alter the data within the tables
+ * cleanup: should do all clean‑up tasks that aren’t performed automatically, such as deleting additional temporary tables. This step happens  before any automatic changes.
 
 #### Scripts for setting initial data
 

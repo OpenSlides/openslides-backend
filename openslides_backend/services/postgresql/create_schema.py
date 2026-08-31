@@ -1,6 +1,6 @@
 import os
 
-from psycopg import Connection, rows, sql
+from psycopg import Connection, Cursor, rows, sql
 
 from openslides_backend.migrations.exceptions import (
     MismatchingMigrationIndicesException,
@@ -37,6 +37,23 @@ def drop_db() -> None:
             )
 
 
+def fill_empty_version(curs: Cursor[rows.DictRow], mig_nmbr: int) -> None:
+    """
+    If the version table is empty:
+    Fills the version table with state 'finalized' from migration number 100 until backend_migration_index.
+    Missing migration states for rel-db indices (>= 100) will be set by the migration manager.
+    """
+    print("Migration info written:")
+    if not MigrationHelper.get_database_migration_index(curs):
+        for nmbr in range(100, MigrationHelper.get_backend_migration_index() + 1):
+            MigrationHelper.set_database_migration_info(
+                curs,
+                nmbr,
+                MigrationState.FINALIZED,
+            )
+            print(f"{nmbr} - {MigrationState.FINALIZED}")
+
+
 def create_schema() -> None:
     """
     Helper function to write the relational database schema into the database.
@@ -55,10 +72,9 @@ def create_schema() -> None:
                 print(
                     "Assuming relational schema is applied, because table version exists.\n"
                 )
-                if not MigrationHelper.get_database_migration_index(cursor):
-                    MigrationHelper.set_database_migration_info(
-                        cursor, 100, MigrationState.FINALIZED
-                    )
+                fill_empty_version(
+                    cursor, MigrationHelper.get_backend_migration_index()
+                )
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not
@@ -72,28 +88,37 @@ def create_schema() -> None:
                     raise MismatchingMigrationIndicesException(
                         f"Migration index ({db_migration_index}) cannot be lower than {MIN_NON_REL_MIGRATION}. Please have a look at the migration documentation checkout the migration backend to a version that runs that migration. Then upgrade again."
                     )
-                path = os.path.realpath(
-                    os.path.join("meta", "dev", "sql", "schema_relational.sql")
-                )
-                cursor.execute(open(path).read())
-                print("Relational schema applied.\n", flush=True)
-                if MIN_NON_REL_MIGRATION < db_migration_index < 100:
-                    # migration states for non-rel-db indices (migration 99 impossible) are aggregated into one (index: max - 1) of version table.
-                    # migration states for rel-db indices (>= 100) will be set by the migration manager.
-                    type_ = "legacy"
-                    db_migration_index -= 1
-                else:
+                if db_migration_index == 0:
                     type_ = "fresh"
                     db_migration_index = MigrationHelper.get_backend_migration_index()
+                    path = os.path.realpath(
+                        os.path.join("meta", "dev", "sql", "schema_relational.sql")
+                    )
+                elif db_migration_index < 100:
+                    # migration states for non-rel-db indices (migration 99 impossible) are aggregated into one (index: max - 1) of version table.
+                    type_ = "legacy"
+                    db_migration_index -= 1
+                    path = os.path.realpath(
+                        os.path.join(
+                            "openslides_backend",
+                            "services",
+                            "postgresql",
+                            "initial_schema_relational.sql",
+                        )
+                    )
+                else:
+                    raise MismatchingMigrationIndicesException(
+                        f"Migration index ({db_migration_index}) cannot be higher than 100. You are trying to reapply the schema on top of itself."
+                    )
                 print(f"Assuming {type_} database.")
-                MigrationHelper.set_database_migration_info(
-                    cursor,
-                    db_migration_index,
-                    MigrationState.FINALIZED,
-                )
-                print(
-                    f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
-                )
+                cursor.execute(open(path).read())
+                print("Relational schema applied.\n")
+                if db_migration_index < 100:
+                    MigrationHelper.set_database_migration_info(
+                        cursor, db_migration_index, MigrationState.FINALIZED
+                    )
+                else:
+                    fill_empty_version(cursor, db_migration_index)
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return

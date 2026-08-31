@@ -5,13 +5,17 @@ from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
-from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
+from cli.util.util import (
+    ROOT,
+    assert_equal,
+    get_view_field_state_write_fields,
+    open_output,
+    parse_arguments,
+)
 from meta.dev.src.helper_get_names import (
     DEFAULT_COLLECTION_META,
-    FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
-    TableFieldType,
 )
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
@@ -207,7 +211,7 @@ class Attribute(Node):
             self.type = value.get("type", "")
             if self.type in RELATION_FIELD_CLASSES.keys():
                 self.is_view_field, self.is_primary, self.write_fields = (
-                    self.get_view_field_state_write_fields(
+                    get_view_field_state_write_fields(
                         collection_name, field_name, value
                     )
                 )
@@ -232,7 +236,6 @@ class Attribute(Node):
                     # database metadata
                     "reference",
                     "sql",
-                    "deferred",
                     "unique",
                     "equal_fields",
                     "log_triggers",
@@ -297,91 +300,6 @@ class Attribute(Node):
                 field_class=field_class,
                 properties=properties.rstrip(", "),
             )
-        )
-
-    def get_view_field_state_write_fields(
-        self, collection_name: str, field_name: str, value: dict[str, Any]
-    ) -> tuple[bool, bool, tuple[str, str, str, list[str]] | None]:
-        """
-        Purpose:
-            Checks whether a field is a view field and if other fields need to be written in an intermediate
-            table.
-        Input:
-        - collection_name
-        - field_name
-        - value : represents the definition of the field ( field_name in collection_name )
-        Returns:
-        - is_view_field : whether the field is a view field or not
-        - is_primary: wether the field is primary or not
-        - write_fields:
-            - None if no fields need to be written
-            - Tuple
-                table_name : name of the intermediate table
-                field1
-                field2
-                foreign_fields
-        """
-        # variable declaration
-        own: TableFieldType
-        field_type: str
-        state: FieldSqlErrorType
-        primary: bool
-        error: str
-        is_view_field: bool
-        foreign: TableFieldType
-        foreign_type: str
-        table_name: str = ""
-        field1: str = ""
-        field2: str = ""
-        write_fields: tuple[str, str, str, list[str]] | None = None
-
-        # create TableFieldType own out of collection_name, field_name, value as field_def
-        own = TableFieldType(collection_name, field_name, value)
-        field_type = own.field_def.get("type", "")
-
-        # get the foreign field list and check the relations
-        foreign_fields = InternalHelper.get_definitions_from_foreign_list(
-            value.get("to", None), value.get("reference", None)
-        )
-        state, primary, _, error = InternalHelper.check_relation_definitions(
-            own, foreign_fields
-        )
-        is_view_field = state == FieldSqlErrorType.SQL
-
-        if not value.get("sql"):
-            foreign = foreign_fields[0]
-            foreign_type = foreign.field_def.get("type", "")
-            if "relation-list" == field_type == foreign_type:
-                table_name = HelperGetNames.get_nm_table_name(own, foreign)
-                field1 = HelperGetNames.get_field_in_n_m_relation_list(own, foreign)
-                field2 = HelperGetNames.get_field_in_n_m_relation_list(foreign, own)
-                if field1 == field2:
-                    field1 += "_1"
-                    field2 += "_2"
-                write_fields = (table_name, field1, field2, [])
-            elif "generic-relation-list" in (field_type, foreign_type):
-                write_fields = self.get_write_fields_for_generic(
-                    own, foreign_fields, primary
-                )
-
-        assert error == "", error
-
-        return is_view_field, primary, write_fields
-
-    def get_write_fields_for_generic(
-        self, own: TableFieldType, foreign_fields: list[TableFieldType], primary: bool
-    ) -> tuple[str, str, str, list[str]] | None:
-        if primary:
-            table_name = HelperGetNames.get_gm_table_name(own)
-        else:
-            table_name = HelperGetNames.get_gm_table_name(foreign_fields[0])
-        field1 = f"{own.table}_{own.ref_column}"
-        field2 = own.intermediate_column
-        return (
-            table_name,
-            field1,
-            field2,
-            [f"{field2}_{field.table}_{field.ref_column}" for field in foreign_fields],
         )
 
 
