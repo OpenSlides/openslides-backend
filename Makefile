@@ -14,10 +14,20 @@ build-tests:
 
 # Development redirects
 
+.SERVICE_TARGETS := auth backend vote
+
+$(.SERVICE_TARGETS):
+	@echo ""
+
+.FLAGS := no-cache compose-local-branch no-log-prefix debug-dry-run
+
+$(.FLAGS):
+	@echo ""
+
 .PHONY: dev
 
-dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log:
-	@@$(MAKE) -C .. $@ backend
+dev dev-help dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log dev-log-attach dev-restart dev-full-restart dev-docker-reset:
+	@@$(MAKE) -C .. $@ $(filter-out $@, $(MAKECMDGOALS)) SERVICE_COMPOSE_SETUP=backend
 
 # Tests
 
@@ -26,6 +36,7 @@ run-tests:
 
 lint:
 	bash dev/run-lint.sh -l
+	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
 	pytest
@@ -42,6 +53,13 @@ test-file:
 # cap=1 to capture print to system out
 # cov=1 to run coverage report
 	python -m debugpy --listen 0.0.0.0:5678 $(if $(now),,--wait-for-client) $(if $(da),,/usr/local/bin/pytest) $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
+
+test-file-pyspy:
+# f= to pass the file name
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+	py-spy record --subprocesses --format speedscope -- python -m debugpy --listen 0.0.0.0:5678 /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
@@ -75,6 +93,9 @@ mypy:
 	mypy $(paths)
 
 # Models
+
+cleanup-collection-yaml:
+	make -C meta/dev cleanup-yaml
 
 join-models-yml:
 	make -C meta/dev join-models-yml
