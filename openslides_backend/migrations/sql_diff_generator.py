@@ -706,6 +706,21 @@ class RemoveHelper:
                         result += AlterSchemaHelper.get_drop_table_constraint_statement(
                             collection_name, constraint_name
                         )
+                    case "maxLength" | "enum":
+                        field_def = CURR_MODELS[collection_name]["fields"][field_name]
+                        result += (
+                            AlterSchemaHelper.generate_change_column_type_statements(
+                                collection_name,
+                                field_name,
+                                Helper.get_type_definition(
+                                    collection_name,
+                                    field_name,
+                                    field_def["type"],
+                                    field_def,
+                                ),
+                            )
+                        )
+                        alter_views.add(collection_name)
                     case "sql":
                         alter_views.add(collection_name)
                     case "constant":
