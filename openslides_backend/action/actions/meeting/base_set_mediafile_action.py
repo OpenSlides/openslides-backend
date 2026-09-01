@@ -80,4 +80,4 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
         owner_id = mediafile["owner_id"]
         collection, id_ = owner_id.split(KEYSEPARATOR)
         if collection == "meeting" and int(id_) != instance["id"]:
-            raise ActionException("Mediafile has to belong to this meeting..")
+            raise ActionException("Mediafile has to belong to this meeting..")  #

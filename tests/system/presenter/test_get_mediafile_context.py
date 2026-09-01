@@ -294,3 +294,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "meetings_of_interest": {},
             },
         }
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_mediafile_context")
+        assert status_code == 400
+        assert "No data given." == data["message"]

@@ -774,6 +774,11 @@ class TestCheckDatabase(BasePresenterTestCase):
         assert status_code == 403
         assert "Missing permission: superadmin" in data["message"]
 
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("check_database")
+        assert status_code == 400
+        assert "No data given." == data["message"]
+
     def test_with_structured_published_orga_files(self) -> None:
         self.set_models(
             {

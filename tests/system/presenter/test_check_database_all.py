@@ -891,3 +891,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         status_code, data = self.request("check_database_all", {})
         assert status_code == 403
         assert "Missing permission: superadmin" in data["message"]
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("check_database_all")
+        assert status_code == 400
+        assert "No data given." == data["message"]

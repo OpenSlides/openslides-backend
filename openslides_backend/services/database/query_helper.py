@@ -193,8 +193,9 @@ class SqlQueryHelper:
     def get_array_type(self, field: Field, list_type: type) -> sql.Composable:
         if list_type == int:
             return sql.SQL("::integer[]")
-        elif enum_name := getattr(field, "enum_name", None):
-            return sql.SQL(f"::{enum_name}")
         elif list_type == str:
-            return sql.SQL("::text[]")
+            if enum_name := getattr(field, "enum_name", None):
+                return sql.SQL(f"::{enum_name}")
+            else:
+                return sql.SQL("::text[]")
         raise ValueError("Only integer, string or enum lists are supported.")

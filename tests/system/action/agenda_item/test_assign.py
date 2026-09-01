@@ -164,6 +164,73 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         assert agenda_item_9.get("level") == 1
         assert agenda_item_9.get("weight") == 102
 
+    def test_assign_parent_circle(self) -> None:
+        self.create_meeting(222)
+        self.set_models(
+            {
+                "agenda_item/7": {
+                    "comment": "comment_7",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [8, 9],
+                    "level": 0,
+                    "weight": 100,
+                    "content_object_id": "topic/1",
+                },
+                "agenda_item/8": {
+                    "comment": "comment_8",
+                    "meeting_id": 222,
+                    "parent_id": 7,
+                    "child_ids": [],
+                    "content_object_id": "topic/2",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "topic/1": {"meeting_id": 222, "title": "tropic"},
+                "topic/2": {"meeting_id": 222, "title": "tropic"},
+            }
+        )
+        response = self.request(
+            "agenda_item.assign", {"meeting_id": 222, "ids": [7], "parent_id": 8}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "Assigning item 7 to one of its children is not possible.",
+            response.json["message"],
+        )
+
+    def test_assign_parent_not_exists(self) -> None:
+        self.create_meeting(222)
+        self.set_models(
+            {
+                "agenda_item/7": {
+                    "comment": "comment_7",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [8, 9],
+                    "level": 0,
+                    "weight": 100,
+                    "content_object_id": "topic/1",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "topic/1": {"meeting_id": 222, "title": "tropic"},
+            }
+        )
+        response = self.request(
+            "agenda_item.assign", {"meeting_id": 222, "ids": [8], "parent_id": 7}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual("Id 8 not in db_instances.", response.json["message"])
+
     def test_assign_multiple_action_data_items(self) -> None:
         self.create_meeting(222)
         self.set_models(

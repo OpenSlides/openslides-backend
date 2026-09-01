@@ -254,7 +254,7 @@ class UserMergeTogether(
         self, update_operations: dict[Collection, MergeUpdateOperations]
     ) -> None:
         if len(update_operations["user"]["update"]) != 1:
-            raise BadCodingException("Calculated wrong amount of user payloads")
+            raise BadCodingException("Calculated wrong amount of user payloads")  #
         main_user_payload = update_operations["user"]["update"][0]
         main_user_id = main_user_payload["id"]
         meeting_user_create_payloads = update_operations["meeting_user"]["create"]
@@ -603,7 +603,7 @@ class UserMergeTogether(
                         ]
                     ):
                         return any(comp_data)
-                    return None
+                    return None  #
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
         )
@@ -659,5 +659,5 @@ class UserMergeTogether(
                 for deleted_fqid in deleted_fqids:
                     information[deleted_fqid] = ["Merged into {}", main_fqid]
             else:
-                raise BadCodingException("No id found for user history generation")
+                raise BadCodingException("No id found for user history generation")  #
         return information

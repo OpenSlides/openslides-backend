@@ -51,3 +51,8 @@ class TestNumberOfUsers(BasePresenterTestCase):
         self.set_models({ONE_ORGANIZATION_FQID: {"limit_of_users": 4}})
         status_code, data = self.request("number_of_users", {})
         self.assertEqual(status_code, 400)
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("number_of_users")
+        assert status_code == 400
+        assert "No data given." == data["message"]

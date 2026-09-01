@@ -36,3 +36,8 @@ class TestGetActiveUsersAmount(BasePresenterTestCase):
         )
         status_code, data = self.request("get_active_users_amount", {})
         self.assertEqual(status_code, 403)
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_active_users_amount")
+        assert status_code == 400
+        assert "No data given." == data["message"]

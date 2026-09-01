@@ -105,6 +105,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response_message,
         )
 
+    def test_update_export_pdf_fontsize_exceeds_max(self) -> None:
+        response_message = self.basic_test({"export_pdf_fontsize": 13}, False)
+        self.assertEqual(
+            "Action meeting.update: data.export_pdf_fontsize must be smaller than or equal to 12",
+            response_message,
+        )
+
     def setup_projector_related_fields(
         self,
     ) -> tuple[Response, dict[str, Any]]:

@@ -103,5 +103,5 @@ class ProjectorNext(WeightMixin, UpdateAction):
         pivot = preview_projections[0]
         for projection in preview_projections:
             if pivot.get("weight", 10000) > projection.get("weight", 10000):
-                pivot = projection
+                pivot = projection  #
         return pivot["id"]

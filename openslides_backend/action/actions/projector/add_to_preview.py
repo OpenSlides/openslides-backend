@@ -70,6 +70,6 @@ class ProjectorAddToPreview(WeightMixin, UpdateAction):
                 }
                 for field in ("options", "stable", "type"):
                     if instance.get(field):
-                        data[field] = instance[field]
+                        data[field] = instance[field]  #
                 self.execute_other_action(ProjectionCreate, [data])
         return []

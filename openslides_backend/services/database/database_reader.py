@@ -81,11 +81,9 @@ class DatabaseReader(SqlQueryHelper):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: MappedFields | None = None,
+        mapped_fields: MappedFields,
         lock_result: bool = True,
     ) -> dict[Id, PartialModel]:
-        if mapped_fields is None:
-            mapped_fields = MappedFields()
         mapped_fields.collection = collection
         mapped_fields_sql = self.build_select_from_mapped_fields(mapped_fields)
         query = sql.SQL("""SELECT {columns} FROM {collection}""").format(

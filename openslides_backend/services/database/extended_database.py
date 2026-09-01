@@ -141,7 +141,7 @@ class ExtendedDatabase(Database):
     ) -> PartialModel:
         if not id_:
             collection_or_fqid, id_ = collection_and_id_from_fqid(collection_or_fqid)
-        return self._changed_models[collection_or_fqid][id_]
+        return self.get_changed_models(collection_or_fqid).get(id_, dict())
 
     def get_changed_models(self, collection: str) -> dict[Id, PartialModel]:
         return self._changed_models.get(collection, dict())
@@ -181,7 +181,7 @@ class ExtendedDatabase(Database):
         except IndexError as e:
             raise InvalidFormat(f"Invalid fqid format. {e}")
         if use_changed_models and (
-            changed_model := self._changed_models[collection][id_]
+            changed_model := self.get_changed_model(collection, id_)
         ):
             if self.is_deleted(fqid):
                 raise ModelDoesNotExist(fqid)
@@ -210,8 +210,8 @@ class ExtendedDatabase(Database):
                 # overwrite params and fetch missing fields from db
                 mapped_fields = missing_fields
                 # we only raise an exception now if the model is not present in the changed_models at all
-                raise_exception = (
-                    raise_exception and id_ not in self._changed_models[collection]
+                raise_exception = raise_exception and not self.get_changed_model(
+                    collection, id_
                 )
         else:
             changed_model_copy = dict()
@@ -327,7 +327,7 @@ class ExtendedDatabase(Database):
                     raise ModelDoesNotExist(
                         fqid_from_collection_and_id(collection, id_)
                     )
-                if changed_model := self._changed_models[collection].get(id_, dict()):
+                if changed_model := self.get_changed_model(collection, id_):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
                         for field in mapped_fields:
@@ -373,7 +373,7 @@ class ExtendedDatabase(Database):
             )
         else:
             if use_changed_models and (
-                changed_models_collection := self._changed_models[collection]
+                changed_models_collection := self.get_changed_models(collection)
             ):
                 fully_matched_ids = []
                 partially_matched_ids = []
@@ -536,11 +536,11 @@ class ExtendedDatabase(Database):
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         collection, id_ = collection_and_id_from_fqid(fqid)
-        return isinstance(self._changed_models[collection].get(id_), DeletedModel)
+        return isinstance(self.get_changed_model(collection, id_), DeletedModel)
 
     def is_new(self, fqid: FullQualifiedId) -> bool:
         collection, id_ = collection_and_id_from_fqid(fqid)
-        return self._changed_models[collection].get(id_, {}).get("meta_new") is True
+        return self.get_changed_model(collection, id_).get("meta_new") is True
 
     def reset(self, hard: bool = True) -> None:
         if hard:

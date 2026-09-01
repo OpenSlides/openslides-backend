@@ -70,3 +70,8 @@ class TestGetValidTimezones(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         assert isinstance(data, dict)
         assert data.get("Asia/Seoul") == "KST"
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_valid_timezones")
+        assert status_code == 400
+        assert "No data given." == data["message"]

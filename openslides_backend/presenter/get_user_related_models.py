@@ -90,22 +90,15 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "assignment_candidate_ids",
             "locked_out",
         )
-        meeting_users = [
-            meeting_user
-            for meeting_user in self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting_user",
-                        meeting_user_ids,
-                        [*result_fields, "group_ids", "meeting_id"],
-                    )
-                ]
-            )["meeting_user"].values()
-            if meeting_user.pop("group_ids", None)
-        ]
-
-        if len(meeting_users) == 0:
-            return []
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    meeting_user_ids,
+                    [*result_fields, "group_ids", "meeting_id"],
+                )
+            ]
+        )["meeting_user"].values()
 
         gmr = GetManyRequest(
             "meeting",

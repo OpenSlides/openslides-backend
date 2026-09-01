@@ -4,6 +4,8 @@ from openslides_backend.shared.patterns import (
     collection_from_collectionfield,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
+    collection_from_fqfield,
+    id_from_fqfield,
 )
 
 
@@ -20,3 +22,9 @@ class PatternsTest(TestCase):
 
     def test_collectionfield_from_fqid_and_field_ok(self) -> None:
         assert collectionfield_from_fqid_and_field("model/1", "field") == "model/field"
+
+    def test_collection_from_fqfield_ok(self) -> None:
+        assert collection_from_fqfield("model/1/field") == "model"
+
+    def test_id_from_fqfield_ok(self) -> None:
+        assert id_from_fqfield("model/1/field") == 1

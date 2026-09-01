@@ -229,14 +229,14 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     for i in range(len(val)):
                         if isinstance(val[i], str):
                             if val[i] not in name_map:
-                                val[i] = None
+                                val[i] = None  #
                             else:
                                 val[i] = name_map[val[i]]
                     entry[self.field_map.get(field, field)] = list(filter(None, val))
                 else:
                     if isinstance(val, str):
                         if val not in name_map:
-                            val = None
+                            val = None  #
                         else:
                             val = name_map[val]
                     entry[self.field_map.get(field, field)] = val

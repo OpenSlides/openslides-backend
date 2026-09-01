@@ -512,3 +512,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 ],
             },
         }
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_user_related_models")
+        assert status_code == 400
+        assert "No data given." == data["message"]

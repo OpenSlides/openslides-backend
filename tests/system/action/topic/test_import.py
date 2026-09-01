@@ -55,6 +55,9 @@ class TopicJsonImport(BaseActionTestCase):
         self.set_models({"import_preview/2": {"name": "account"}})
         response = self.request("topic.import", {"id": 2, "import": False})
         self.assert_status_code(response, 400)
+        self.assertEqual(
+            "Wrong id doesn't point on topic import data.", response.json["message"]
+        )
         self.assert_model_not_exists("topic/1")
         self.assert_model_exists("import_preview/2")  # may not delete "account" preview
 

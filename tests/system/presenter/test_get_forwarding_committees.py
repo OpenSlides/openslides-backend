@@ -52,6 +52,11 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
         assert status_code == 403
         assert "Missing permission" in data["message"]
 
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_forwarding_committees")
+        assert status_code == 400
+        assert "No data given." == data["message"]
+
     def test_with_locked_meeting(self) -> None:
         self.set_models({"meeting/5": {"locked_from_inside": True}})
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})

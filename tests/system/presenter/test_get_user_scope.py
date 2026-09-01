@@ -130,3 +130,8 @@ class TestGetUSerScope(BasePresenterTestCase):
         status_code, data = self.request("get_user_scope", {"user_ids": []})
         self.assertEqual(status_code, 200)
         assert data == {}
+
+    def test_no_payload(self) -> None:
+        status_code, data = self.request("get_user_scope")
+        assert status_code == 400
+        assert "No data given." == data["message"]

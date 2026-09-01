@@ -1,7 +1,6 @@
 from typing import Any
 
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import BaseImportAction, ImportState
 from ...util.register import register_action
@@ -40,4 +39,3 @@ class TopicImport(BaseImportAction):
         )
         if worker.get("name") == TopicImport.import_name:
             return next(iter(worker.get("result", {})["rows"]))["data"]["meeting_id"]
-        raise ActionException("Import data cannot be found.")

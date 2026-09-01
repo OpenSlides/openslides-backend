@@ -72,10 +72,10 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
             )
             if len(results) == 0:
                 continue
-            elif len(results) == 1:
+            elif len(results) == 1:  #
                 id = next(iter(results))
                 self.execute_other_action(MediafileDelete, [{"id": id}])
-            else:
+            else:  #
                 text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance.get("token")}".'
                 self.logger.error(text)
                 raise ActionException(text)
@@ -173,7 +173,7 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
         try:
             pdf = PdfReader(bytes_io)
             return {"pages": len(pdf.pages)}
-        except PdfReadError:
+        except PdfReadError:  #
             # File could be encrypted but not be detected by pypdf.
             return {
                 "pages": 0,

@@ -99,11 +99,8 @@ class SpeakerCreateAction(
         list_of_speakers_id = instance["list_of_speakers_id"]
         max_weight = self._get_max_weight(list_of_speakers_id, instance["meeting_id"])
         if max_weight is None:
-            if not answer_to:
-                instance["weight"] = 1
-                return instance
-            else:
-                max_weight = 0
+            instance["weight"] = 1
+            return instance
 
         if not instance.get("point_of_order") and not (
             is_interposed_question or is_intervention

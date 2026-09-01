@@ -478,15 +478,9 @@ class UserSaveSamlAccount(
                     elif saml_meeting_user_field == "vote_weight":
                         # Result must be string and have 6 digits after dot.
                         if isinstance(value, int):
-                            value = f"{value:f}"
-                        elif isinstance(value, str) and re.compile(
-                            r"^(\d\.|[1-9]\d*\.?)\d{0,6}$"
-                        ).match(value):
-                            if re.compile(r"^\d*$").match(value):
-                                value += ".000000"
-                            else:
-                                while not DECIMAL_PATTERN.match(value):
-                                    value += "0"
+                            result = str(value)
+                        elif isinstance(value, str) and DECIMAL_PATTERN.match(value):
+                            result = value
                         else:
                             mapper_name = meeting_mapper.get("name", "unnamed")
                             saml_id = instance.get(self.saml_attr_mapping["saml_id"])
@@ -494,7 +488,6 @@ class UserSaveSamlAccount(
                                 f"Meeting mapper: {mapper_name} The data '{value}' send for vote_weight of user '{saml_id}' must be invalid, eg. float or badly formatted string."
                             )
                             continue
-                        result = value
                     else:
                         result = value
             if result:
