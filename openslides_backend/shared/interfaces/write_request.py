@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import TypedDict
+from typing import Any, TypedDict
 
-from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.patterns import Field, FullQualifiedId
 from openslides_backend.shared.typing import JSON, HistoryInformation
 
 from .collection_field_lock import CollectionFieldLock
@@ -18,6 +18,8 @@ class WriteRequest:
     information: HistoryInformation | None = None
     user_id: int | None = None
     locked_fields: dict[str, CollectionFieldLock] = field(default_factory=dict)
+    written: bool = False
+    results: dict[FullQualifiedId, dict[str, Any]] | None = None
 
 
 @dataclass

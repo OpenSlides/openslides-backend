@@ -15,7 +15,7 @@ class BaseServiceProvider:
     """
 
     services: Services
-    datastore: Database
+    database: Database
     auth: AuthenticationService
     media: MediaService
     vote: VoteService
@@ -28,14 +28,14 @@ class BaseServiceProvider:
     def __init__(
         self,
         services: Services,
-        datastore: Database,
+        database: Database,
         logging: LoggingModule,
     ) -> None:
         self.services = services
         self.auth = services.authentication()
         self.media = services.media()
         self.vote_service = services.vote()
-        self.datastore = datastore
+        self.database = database
         self.logging = logging
         os_conn_pool = get_current_os_conn_pool()
         self.db_connection = os_conn_pool.connection()

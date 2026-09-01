@@ -1,10 +1,7 @@
-from typing import Any
-
-from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
+from ....action.util.typing import ActionData, ActionResults
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.util import ONE_ORGANIZATION_ID
-from ...generics.create import CreateAction
+from ...ddaction import DDAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
@@ -57,9 +54,9 @@ THEME_OPT_FIELDS = [
 
 
 @register_action("theme.create")
-class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
+class ThemeCreate(DDAction):
     """
-    Action to create an theme.
+    Action to create a theme.
     """
 
     model = Theme()
@@ -68,7 +65,13 @@ class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
         optional_properties=THEME_OPT_FIELDS,
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        instance["organization_id"] = ONE_ORGANIZATION_ID
-        return instance
+    def write_instances(self, action_data: ActionData) -> ActionResults | None:
+        return list(
+            self.database.insert_models(
+                self.model.collection,
+                list(action_data),
+                [*THEME_REQ_FIELDS, *THEME_OPT_FIELDS],
+            )
+        )
