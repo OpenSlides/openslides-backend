@@ -4,13 +4,9 @@ from zoneinfo import ZoneInfo
 
 from .interfaces.event import ListFields
 from .patterns import FullQualifiedId, fqid_from_collection_and_id
-from .typing import HistoryInformation, HistoryInformationData
+from .typing import HistoryInformation
 
 EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
-
-
-def build_history_information_data(entries: list[str]) -> HistoryInformationData:
-    return {"entries": entries}
 
 
 def update_history_information(
@@ -20,9 +16,9 @@ def update_history_information(
 ) -> None:
     """Updates history information for fqid"""
     if fqid not in information:
-        information[fqid] = build_history_information_data(entries)
+        information[fqid] = entries
     else:
-        information[fqid].setdefault("entries", list()).extend(entries)
+        information[fqid].extend(entries)
 
 
 def update_history_information_multi(
@@ -47,8 +43,8 @@ def calculate_history_event_payloads(
     timestamp: int | None = None,
 ) -> list[EventPayload]:
     transformed_information = [
-        (model_fqid_to_entry_id[fqid], fqid, data["entries"])
-        for fqid, data in information.items()
+        (model_fqid_to_entry_id[fqid], fqid, entries)
+        for fqid, entries in information.items()
     ]
     create_events: list[EventPayload] = [
         (

@@ -1,4 +1,4 @@
-from typing import Any, TypedDict, Union
+from typing import Any, Union
 
 from .patterns import Collection, FullQualifiedId, Id
 
@@ -9,11 +9,7 @@ ModelMap = dict[Collection, dict[Id, PartialModel]]
 Schema = dict[str, Any]
 
 
-class HistoryInformationData(TypedDict):
-    entries: list[str]
-
-
-HistoryInformation = dict[FullQualifiedId, HistoryInformationData]
+HistoryInformation = dict[FullQualifiedId, list[str]]
 
 JSON = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 

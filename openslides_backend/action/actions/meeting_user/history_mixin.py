@@ -1,9 +1,8 @@
 from collections.abc import Iterable
 from copy import deepcopy
-from typing import Any, TypedDict
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.shared.history_events import build_history_information_data
 from openslides_backend.shared.interfaces.event import Event, EventType
 
 from ....services.database.interface import GetManyRequest
@@ -11,12 +10,7 @@ from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.typing import HistoryInformation
 from ...action import Action
 
-
-class ActionHistoryInformationData(TypedDict):
-    entries: list[tuple[str, ...]]
-
-
-ActionHistoryInformation = dict[FullQualifiedId, ActionHistoryInformationData]
+ActionHistoryInformation = dict[FullQualifiedId, list[tuple[str, ...]]]
 
 
 class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
@@ -102,10 +96,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
 
         return {
-            fqid: build_history_information_data(
-                [string for entry in history.get("entries", []) for string in entry],
-            )
-            for fqid, history in information.items()
+            fqid: [string for entry in entries for string in entry]
+            for fqid, entries in information.items()
         }
 
     def add_updated_meeting_user_history_information(
@@ -202,11 +194,11 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_id = for_user_id
         fqid = fqid_from_collection_and_id("user", user_id)
         if fqid not in information:
-            information[fqid] = {"entries": entries}
+            information[fqid] = entries
         else:
             for entry in entries:
-                if entry not in information[fqid]["entries"]:
-                    information[fqid]["entries"].append(entry)
+                if entry not in information[fqid]:
+                    information[fqid].append(entry)
 
     def compose_history_string(
         self, fqids_per_collection: list[tuple[str, list[str]]]

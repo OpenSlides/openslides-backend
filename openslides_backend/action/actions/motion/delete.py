@@ -2,10 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.action import merge_history_informations
-from openslides_backend.shared.history_events import (
-    build_history_information_data,
-    update_history_information_multi,
-)
+from openslides_backend.shared.history_events import update_history_information_multi
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -103,21 +100,13 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         return merge_history_informations(
             information or {},
             {
-                fqid_from_collection_and_id(
-                    "motion", id
-                ): build_history_information_data(
-                    ["Forwarded motion deleted"],
-                )
+                fqid_from_collection_and_id("motion", id_): ["Forwarded motion deleted"]
                 for instance in instances
-                for id in instance.get("all_origin_ids", [])
+                for id_ in instance.get("all_origin_ids", [])
             },
             {
-                fqid_from_collection_and_id(
-                    "motion", id
-                ): build_history_information_data(
-                    ["Origin motion deleted"],
-                )
+                fqid_from_collection_and_id("motion", id_): ["Origin motion deleted"]
                 for instance in instances
-                for id in instance.get("all_derived_motion_ids", [])
+                for id_ in instance.get("all_derived_motion_ids", [])
             },
         )

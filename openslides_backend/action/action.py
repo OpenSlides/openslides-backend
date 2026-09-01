@@ -783,9 +783,9 @@ def merge_history_informations(
     for b in other:
         if b is None:
             b = {}
-        for fqid, information in b.items():
+        for fqid, entries in b.items():
             if fqid in a:
-                a[fqid]["entries"].extend(information["entries"])
+                a[fqid].extend(entries)
             else:
-                a[fqid] = information
+                a[fqid] = entries
     return a
