@@ -434,8 +434,8 @@ class UserMergeTogether(
             )
 
     def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> set[int]:
-        seen_ids = set()
-        duplicates = set()
+        seen_ids: set[int] = set()
+        duplicates: set[int] = set()
         for ids in ids_map.values():
             duplicates.update(seen_ids.intersection(ids))
             seen_ids.update(ids)
