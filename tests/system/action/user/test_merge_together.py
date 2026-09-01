@@ -1004,7 +1004,7 @@ class UserMergeTogether(BaseActionTestCase):
                 },
                 "poll_option/6": {
                     "poll_id": 3,
-                    "content_object_id": "user/5",
+                    "content_object_id": "meeting_user/15",
                 },
                 "poll/4": {
                     "title": "Assignment poll 4",
