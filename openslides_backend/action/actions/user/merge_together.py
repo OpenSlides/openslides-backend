@@ -14,7 +14,12 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
+from ....shared.patterns import (
+    Collection,
+    CollectionField,
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ....shared.schema import id_list_schema
 from ....shared.typing import HistoryInformation
 from ...generics.update import UpdateAction
@@ -391,36 +396,38 @@ class UserMergeTogether(
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         messages: list[str] = self.check_polls_helper(into, other_models)
 
-        all_models = [into, *other_models]
+        all_users = {model["id"]: model for model in [into, *other_models]}
         option_poll_ids_per_user_id: dict[int, set[int]] = defaultdict(set)
 
-        for model in all_models:
-            meeting_users = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting_user",
-                        model.get("meeting_user_ids", []),
-                        ["poll_option_ids"],
-                    ),
-                ]
-            )["meeting_user"]
-            o_ids = model.get("poll_option_ids", []) + [
-                id_
-                for data in meeting_users.values()
-                for id_ in data.get("poll_option_ids", [])
-            ]
-            if o_ids:
-                many_models = self.datastore.get_many(
-                    [
-                        GetManyRequest("poll_option", o_ids, ["poll_id"]),
-                    ]
-                )
-                option_poll_ids_per_user_id[model["id"]].update(
-                    {
-                        option["poll_id"]
-                        for option in many_models["poll_option"].values()
-                    }
-                )
+        meeting_users = self.datastore.filter(
+            "meeting_user",
+            And(
+                Or(FilterOperator("user_id", "=", user_id) for user_id in all_users),
+                FilterOperator("poll_option_ids", "!=", None),
+                FilterOperator("poll_option_ids", "!=", []),
+            ),
+            ["user_id"],
+        )
+        content_object_ids = [
+            *[fqid_from_collection_and_id("user", user_id) for user_id in all_users],
+            *[
+                fqid_from_collection_and_id("meeting_user", meeting_user_id)
+                for meeting_user_id in meeting_users
+            ],
+        ]
+        poll_options = self.datastore.filter(
+            "poll_option",
+            Or(
+                FilterOperator("content_object_id", "=", fqid)
+                for fqid in content_object_ids
+            ),
+            ["poll_id", "content_object_id"],
+        )
+        for option in poll_options.values():
+            collection, id_ = collection_and_id_from_fqid(option["content_object_id"])
+            user_id = id_ if collection == "user" else meeting_users[id_]["user_id"]
+            option_poll_ids_per_user_id[user_id].add(option["poll_id"])
+
         option_conflicts = self._get_conflicts_between_users(
             option_poll_ids_per_user_id
         )
