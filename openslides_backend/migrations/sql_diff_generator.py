@@ -992,7 +992,6 @@ def handle_add_field_attributes(
 
 
 class EditHelper:
-
     @staticmethod
     def handle_edit_tree(
         edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
@@ -1054,14 +1053,9 @@ class EditHelper:
                         table_name, field_name, default
                     )
                 case "required":
-                    if value:
-                        constraints_sql += EditHelper.handle_set_required(
-                            table_name, collection_name, field_name, field_def, type_
-                        )
-                    else:
-                        constraints_sql += EditHelper.handle_drop_required(
-                            collection_name, field_name, field_def, type_
-                        )
+                    constraints_sql += EditHelper.handle_required(
+                        value, table_name, collection_name, field_name, field_def, type_
+                    )
                 case "constant":
                     # This case will most likely never appear since we just delete and add booleans.
                     if value:
@@ -1141,74 +1135,13 @@ class EditHelper:
         return constraints_sql
 
     @staticmethod
-    def handle_set_required(
+    def handle_required(
+        should_set: bool,
         table_name: str,
         collection_name: str,
         field_name: str,
         field_def: dict[str, Any],
         type_: str,
-    ) -> str:
-        result = ""
-        if "relation" in type_:
-            own_table_field = TableFieldType(collection_name, field_name, field_def)
-            if "generic" in type_:
-                foreign_table_fields = InternalHelper.get_definitions_from_foreign_list(
-                    field_def.get("to"), field_def.get("reference")
-                )
-            else:
-                foreign_table_fields = [
-                    TableFieldType.get_definitions_from_foreign(
-                        field_def.get("to"), field_def.get("reference")
-                    )
-                ]
-            state, *_ = InternalHelper.check_relation_definitions(
-                own_table_field, foreign_table_fields
-            )
-            for foreign_table_field in foreign_table_fields:
-                # detect 1:1 relation with view side
-                if type_.endswith("relation") and state == FieldSqlErrorType.SQL:
-                    if foreign_table_field.field_def["type"] == "generic-relation":
-                        foreign_column = f"{foreign_table_field.column}_{own_table_field.table}_{own_table_field.ref_column}"
-                    else:
-                        foreign_column = foreign_table_field.column
-                    result += (
-                        GenerateCodeBlocks.get_trigger_check_not_null_for_1_1_relation(
-                            own_table_field.table,
-                            own_table_field.column,
-                            foreign_table_field.table,
-                            foreign_column,
-                        )
-                    )
-                # detect relation list
-                elif type_.endswith("relation-list"):
-                    if (
-                        foreign_type_ := foreign_table_field.field_def["type"]
-                    ) == "relation":
-                        result += GenerateCodeBlocks.get_trigger_check_not_null_for_1_n(
-                            own_table_field.table,
-                            own_table_field.column,
-                            foreign_table_field.table,
-                            foreign_table_field.column,
-                        )
-                    elif foreign_type_ == "relation-list":
-                        result += GenerateCodeBlocks.get_trigger_check_not_null_for_n_m(
-                            own_table_field, foreign_table_field
-                        )
-                else:
-                    result += AlterSchemaHelper.get_set_not_null_statement(
-                        table_name, field_name
-                    )
-                    # No need to set multiple times on content_object_id field itself
-                    break
-        else:
-            result += AlterSchemaHelper.get_set_not_null_statement(
-                table_name, field_name
-            )
-        return result
-
-    @staticmethod
-    def handle_drop_required(
-        collection_name: str, field_name: str, field_def: dict[str, Any], type_: str
     ) -> str:
         trigger_names_per_table = {}
         result = ""
@@ -1242,8 +1175,11 @@ class EditHelper:
                             foreign_column,
                         )
                     )
-                    for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
-                        trigger_names_per_table[match[1]] = match[2]
+                    if should_set:
+                        result += block
+                    else:
+                        for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
+                            trigger_names_per_table[match[1]] = match[2]
                 # detect relation list
                 elif type_.endswith("relation-list"):
                     if (
@@ -1259,22 +1195,36 @@ class EditHelper:
                         block = GenerateCodeBlocks.get_trigger_check_not_null_for_n_m(
                             own_table_field, foreign_table_field
                         )
-                    for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
-                        trigger_names_per_table[match[0]] = match[1]
+                    if should_set:
+                        result += block
+                    else:
+                        for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
+                            trigger_names_per_table[match[0]] = match[1]
                 else:
-                    result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                        collection_name, field_name, "NOT NULL"
-                    )
+                    if should_set:
+                        result += AlterSchemaHelper.get_set_not_null_statement(
+                            table_name, field_name
+                        )
+                    else:
+                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                            collection_name, field_name, "NOT NULL"
+                        )
                     # No need to set multiple times on content_object_id field itself
                     break
+            # Only filled when not should_set
             for trigger_name, table_name in trigger_names_per_table.items():
                 result += AlterSchemaHelper.get_drop_trigger_statement(
                     table_name, trigger_name
                 )
         else:
-            result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                collection_name, field_name, "NOT NULL"
-            )
+            if should_set:
+                result += AlterSchemaHelper.get_set_not_null_statement(
+                    table_name, field_name
+                )
+            else:
+                result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                    collection_name, field_name, "NOT NULL"
+                )
         return result
 
     @staticmethod
