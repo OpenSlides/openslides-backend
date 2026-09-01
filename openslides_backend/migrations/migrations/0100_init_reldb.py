@@ -26,8 +26,10 @@ from openslides_backend.models.fields import (
     RelationListField,
     TimestampField,
 )
-from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
+from openslides_backend.models.models import *  # type: ignore # noqa
 from openslides_backend.shared.env import is_truthy
+
+# importing models is necessary to fill model_registry
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
