@@ -2437,6 +2437,7 @@ class PollConfigApproval(Model):
         constraints={
             "enum": [
                 "yes_no",
+                "yes_no_abstain",
                 "valid",
                 "cast",
                 "entitled",
@@ -2470,6 +2471,7 @@ class PollConfigRatingApproval(Model):
         constraints={
             "enum": [
                 "yes_no",
+                "yes_no_abstain",
                 "valid",
                 "cast",
                 "entitled",
