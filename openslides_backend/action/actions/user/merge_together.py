@@ -437,11 +437,8 @@ class UserMergeTogether(
         seen_ids = set()
         duplicates = set()
         for ids in ids_map.values():
-            for id_ in ids:
-                if id_ in seen_ids:
-                    duplicates.add(id_)
-                else:
-                    seen_ids.add(id_)
+            duplicates.update(seen_ids.intersection(ids))
+            seen_ids.update(ids)
         return duplicates
 
     def get_merge_comparison_hash(
