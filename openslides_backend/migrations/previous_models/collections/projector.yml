@@ -1,0 +1,197 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  is_internal:
+    type: boolean
+    default: false
+    restriction_mode: A
+  scale:
+    type: number
+    default: 0
+    restriction_mode: A
+  scroll:
+    type: number
+    default: 0
+    minimum: 0
+    restriction_mode: A
+  width:
+    type: number
+    minimum: 1
+    default: 1200
+    restriction_mode: A
+  aspect_ratio_numerator:
+    type: number
+    minimum: 1
+    default: 16
+    restriction_mode: A
+  aspect_ratio_denominator:
+    type: number
+    minimum: 1
+    default: 9
+    restriction_mode: A
+  color:
+    type: color
+    default: "#000000"
+    restriction_mode: A
+  background_color:
+    type: color
+    default: "#ffffff"
+    restriction_mode: A
+  header_background_color:
+    type: color
+    default: "#317796"
+    restriction_mode: A
+  header_font_color:
+    type: color
+    default: "#f5f5f5"
+    restriction_mode: A
+  header_h1_color:
+    type: color
+    default: "#317796"
+    restriction_mode: A
+  chyron_background_color:
+    type: color
+    default: "#317796"
+    restriction_mode: A
+  chyron_background_color_2:
+    type: color
+    default: "#134768"
+    restriction_mode: A
+  chyron_font_color:
+    type: color
+    default: "#ffffff"
+    restriction_mode: A
+  chyron_font_color_2:
+    type: color
+    default: "#ffffff"
+    restriction_mode: A
+  show_header_footer:
+    type: boolean
+    default: true
+    restriction_mode: A
+  show_title:
+    type: boolean
+    default: true
+    restriction_mode: A
+  show_logo:
+    type: boolean
+    default: true
+    restriction_mode: A
+  show_clock:
+    type: boolean
+    default: true
+    restriction_mode: A
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: A
+    constant: true
+  current_projection_ids:
+    type: relation-list
+    to: projection/current_projector_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  preview_projection_ids:
+    type: relation-list
+    to: projection/preview_projector_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  history_projection_ids:
+    type: relation-list
+    to: projection/history_projector_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  used_as_reference_projector_meeting_id:
+    type: relation
+    to: meeting/reference_projector_id
+    restriction_mode: A
+  used_as_default_projector_for_agenda_item_list_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_agenda_item_list_ids
+    restriction_mode: A
+  used_as_default_projector_for_topic_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_topic_ids
+    restriction_mode: A
+  used_as_default_projector_for_list_of_speakers_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_list_of_speakers_ids
+    restriction_mode: A
+  used_as_default_projector_for_current_los_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_current_los_ids
+    restriction_mode: A
+  used_as_default_projector_for_motion_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_motion_ids
+    restriction_mode: A
+  used_as_default_projector_for_amendment_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_amendment_ids
+    restriction_mode: A
+  used_as_default_projector_for_motion_block_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_motion_block_ids
+    restriction_mode: A
+  used_as_default_projector_for_assignment_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_assignment_ids
+    restriction_mode: A
+  used_as_default_projector_for_mediafile_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_mediafile_ids
+    restriction_mode: A
+  used_as_default_projector_for_message_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_message_ids
+    restriction_mode: A
+  used_as_default_projector_for_countdown_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_countdown_ids
+    restriction_mode: A
+  used_as_default_projector_for_assignment_poll_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_assignment_poll_ids
+    restriction_mode: A
+  used_as_default_projector_for_motion_poll_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_motion_poll_ids
+    restriction_mode: A
+  used_as_default_projector_for_poll_in_meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/default_projector_poll_ids
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/projector_ids
+    restriction_mode: A
+    required: true
+    constant: true

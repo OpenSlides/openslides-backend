@@ -25,8 +25,8 @@ htmlcov/
 # coverage
 openslides_backend/htmlcov
 
-openslides_backend/migrations/previous_models/
-migrations/*.json
+# openslides_backend/migrations/previous_models/
+# migrations/*.json
 migrations/*.sql
 
 # secrets

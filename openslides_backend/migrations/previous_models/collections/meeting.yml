@@ -1,0 +1,1175 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  external_id:
+    type: string
+    unique: true
+    restriction_mode: F
+  welcome_title:
+    type: string
+    default: Welcome to OpenSlides
+    restriction_mode: C
+  welcome_text:
+    type: HTMLPermissive
+    default: Space for your welcome text.
+    restriction_mode: C
+  # General
+  name:
+    type: string
+    maxLength: 200
+    default: OpenSlides
+    restriction_mode: A
+    required: true
+  is_active_in_organization_id:
+    type: relation
+    reference: organization
+    to: organization/active_meeting_ids
+    restriction_mode: F
+    description: Backrelation and boolean flag at once
+  is_archived_in_organization_id:
+    type: relation
+    reference: organization
+    to: organization/archived_meeting_ids
+    restriction_mode: F
+    description: Backrelation and boolean flag at once
+  description:
+    type: string
+    maxLength: 100
+    restriction_mode: B
+  location:
+    type: string
+    restriction_mode: F
+  time_zone:
+    type: timezone
+    restriction_mode: F
+  start_time:
+    type: timestamp
+    restriction_mode: F
+  end_time:
+    type: timestamp
+    restriction_mode: F
+  locked_from_inside:
+    type: boolean
+    restriction_mode: F
+  imported_at:
+    type: timestamp
+    restriction_mode: B
+  language:
+    type: string
+    restriction_mode: F
+    enum: languages
+    default: "en"
+    constant: true
+  # Configuration (only for the server owner)
+  jitsi_domain:
+    type: string
+    restriction_mode: E
+  jitsi_room_name:
+    type: string
+    restriction_mode: E
+  jitsi_room_password:
+    type: string
+    restriction_mode: E
+  # System
+  template_for_organization_id:
+    type: relation
+    reference: organization
+    to: organization/template_meeting_ids
+    restriction_mode: B
+  enable_anonymous:
+    type: boolean
+    default: false
+    restriction_mode: F
+  custom_translations:
+    type: JSON
+    restriction_mode: B
+  # Jitsi/Livestream settings
+  conference_show:
+    type: boolean
+    default: false
+    restriction_mode: C
+  conference_auto_connect:
+    type: boolean
+    default: false
+    restriction_mode: C
+  conference_los_restriction:
+    type: boolean
+    default: true
+    restriction_mode: C
+  conference_stream_url:
+    type: string
+    restriction_mode: C
+  conference_stream_poster_url:
+    type: string
+    restriction_mode: C
+  conference_open_microphone:
+    type: boolean
+    default: false
+    restriction_mode: C
+  conference_open_video:
+    type: boolean
+    default: false
+    restriction_mode: C
+  conference_auto_connect_next_speakers:
+    type: number
+    default: 0
+    restriction_mode: C
+  conference_enable_helpdesk:
+    type: boolean
+    default: false
+    restriction_mode: C
+  applause_enable:
+    type: boolean
+    default: false
+    restriction_mode: C
+  applause_type:
+    type: string
+    enum:
+      - applause-type-bar
+      - applause-type-particles
+    default: applause-type-bar
+    restriction_mode: C
+  applause_show_level:
+    type: boolean
+    default: false
+    restriction_mode: C
+  applause_min_amount:
+    type: number
+    default: 1
+    minimum: 0
+    restriction_mode: C
+  applause_max_amount:
+    type: number
+    default: 0
+    minimum: 0
+    restriction_mode: C
+  applause_timeout:
+    type: number
+    default: 5
+    minimum: 0
+    restriction_mode: C
+  applause_particle_image_url:
+    type: string
+    restriction_mode: C
+  # Projector countdown
+  projector_countdown_default_time:
+    type: number
+    default: 60
+    required: true
+    restriction_mode: B
+  projector_countdown_warning_time:
+    type: number
+    minimum: 0
+    default: 0
+    required: true
+    restriction_mode: B
+  # Exports
+  export_csv_encoding:
+    type: string
+    enum:
+      - utf-8
+      - iso-8859-15
+    default: utf-8
+    restriction_mode: B
+  export_csv_separator:
+    type: string
+    default: ";"
+    restriction_mode: B
+  export_pdf_pagenumber_alignment:
+    type: string
+    enum:
+      - left
+      - right
+      - center
+    default: center
+    restriction_mode: B
+  export_pdf_fontsize:
+    type: number
+    minimum: 10
+    maximum: 12
+    default: 10
+    restriction_mode: B
+  export_pdf_line_height:
+    type: float
+    default: 1.25
+    minimum: 1.0
+    restriction_mode: B
+  export_pdf_page_margin_left:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_top:
+    type: number
+    default: 25
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_right:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_bottom:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
+  export_pdf_pagesize:
+    type: string
+    enum:
+      - A4
+      - A5
+    default: A4
+    restriction_mode: B
+  # Agenda
+  agenda_show_subtitles:
+    type: boolean
+    default: false
+    restriction_mode: B
+  agenda_enable_numbering:
+    type: boolean
+    default: true
+    restriction_mode: B
+  agenda_number_prefix:
+    type: string
+    maxLength: 20
+    restriction_mode: B
+  agenda_numeral_system:
+    type: string
+    enum:
+      - arabic
+      - roman
+    default: arabic
+    restriction_mode: B
+  agenda_item_creation:
+    type: string
+    enum:
+      - always
+      - never
+      - default_yes
+      - default_no
+    default: default_no
+    restriction_mode: B
+  agenda_new_items_default_visibility:
+    type: string
+    enum:
+      - common
+      - internal
+      - hidden
+    default: internal
+    restriction_mode: B
+  agenda_show_internal_items_on_projector:
+    type: boolean
+    default: false
+    restriction_mode: B
+  agenda_show_topic_navigation_on_detail_view:
+    type: boolean
+    default: false
+    restriction_mode: B
+  # List of speakers
+  list_of_speakers_amount_last_on_projector:
+    type: number
+    minimum: -1
+    default: 0
+    restriction_mode: B
+  list_of_speakers_amount_next_on_projector:
+    type: number
+    minimum: -1
+    default: -1
+    restriction_mode: B
+  list_of_speakers_couple_countdown:
+    type: boolean
+    default: true
+    restriction_mode: B
+  list_of_speakers_show_amount_of_speakers_on_slide:
+    type: boolean
+    default: true
+    restriction_mode: B
+  list_of_speakers_present_users_only:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_show_first_contribution:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_hide_contribution_count:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_allow_multiple_speakers:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_enable_point_of_order_speakers:
+    type: boolean
+    default: true
+    restriction_mode: B
+  list_of_speakers_can_create_point_of_order_for_others:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_enable_point_of_order_categories:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_closing_disables_point_of_order:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_enable_pro_contra_speech:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_can_set_contribution_self:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_speaker_note_for_everyone:
+    type: boolean
+    default: true
+    restriction_mode: B
+  list_of_speakers_initially_closed:
+    type: boolean
+    default: false
+    restriction_mode: B
+  list_of_speakers_default_structure_level_time:
+    type: number
+    minimum: 0
+    restriction_mode: B
+    description: 0 disables structure level countdowns.
+  list_of_speakers_enable_interposed_question:
+    type: boolean
+    restriction_mode: B
+  list_of_speakers_intervention_time:
+    type: number
+    restriction_mode: B
+    description: 0 disables intervention speakers.
+  # Motions
+  motions_default_workflow_id:
+    type: relation
+    reference: motion_workflow
+    to: motion_workflow/default_workflow_meeting_id
+    required: true
+    restriction_mode: B
+  motions_default_amendment_workflow_id:
+    type: relation
+    reference: motion_workflow
+    to: motion_workflow/default_amendment_workflow_meeting_id
+    required: true
+    restriction_mode: B
+  motions_preamble:
+    type: text
+    default: "The assembly may decide:"
+    restriction_mode: B
+  motions_default_line_numbering:
+    type: string
+    enum:
+      - outside
+      - inline
+      - none
+    default: outside
+    restriction_mode: A
+  motions_line_length:
+    type: number
+    minimum: 40
+    default: 85
+    restriction_mode: A
+  motions_reason_required:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_origin_motion_toggle_default:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_enable_origin_motion_display:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_enable_text_on_projector:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_enable_reason_on_projector:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_enable_sidebox_on_projector:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_enable_recommendation_on_projector:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_hide_metadata_background:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_show_referring_motions:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_show_sequential_number:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_create_enable_additional_submitter_text:
+    type: boolean
+    restriction_mode: B
+  motions_recommendations_by:
+    type: string
+    restriction_mode: B
+  motions_block_slide_columns:
+    type: number
+    minimum: 1
+    restriction_mode: B
+  motions_recommendation_text_mode:
+    type: string
+    enum:
+      - original
+      - changed
+      - diff
+      - agreed
+    default: diff
+    restriction_mode: B
+  motions_default_sorting:
+    type: string
+    enum:
+      - number
+      - weight
+    default: number
+    restriction_mode: B
+  motions_number_type:
+    type: string
+    enum:
+      - per_category
+      - serially_numbered
+      - manually
+    default: per_category
+    restriction_mode: B
+  motions_number_min_digits:
+    type: number
+    default: 2
+    restriction_mode: B
+  motions_number_with_blank:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_amendments_enabled:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_amendments_in_main_list:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_amendments_of_amendments:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_amendments_prefix:
+    type: string
+    default: "-Ä"
+    restriction_mode: B
+  motions_amendments_text_mode:
+    type: string
+    enum:
+      - freestyle
+      - fulltext
+      - paragraph
+    default: paragraph
+    restriction_mode: B
+  motions_amendments_multiple_paragraphs:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_supporters_min_amount:
+    type: number
+    minimum: 0
+    default: 0
+    restriction_mode: B
+  motions_enable_editor:
+    type: boolean
+    restriction_mode: B
+  motions_enable_working_group_speaker:
+    type: boolean
+    restriction_mode: B
+  motions_export_title:
+    type: string
+    default: Motions
+    restriction_mode: B
+  motions_export_preamble:
+    type: text
+    restriction_mode: B
+  motions_export_submitter_recommendation:
+    type: boolean
+    default: true
+    restriction_mode: B
+  motions_export_follow_recommendation:
+    type: boolean
+    default: false
+    restriction_mode: B
+  motions_enable_restricted_editor_for_manager:
+    type: boolean
+    restriction_mode: B
+  motions_enable_restricted_editor_for_non_manager:
+    type: boolean
+    default: true
+    restriction_mode: B
+  # Motion poll
+  motion_poll_ballot_paper_selection:
+    type: string
+    enum: ballot_paper_selection
+    default: CUSTOM_NUMBER
+    restriction_mode: B
+  motion_poll_ballot_paper_number:
+    type: number
+    default: 8
+    restriction_mode: B
+  motion_poll_default_type:
+    type: string
+    default: pseudoanonymous
+    restriction_mode: B
+  motion_poll_default_method:
+    type: string
+    default: YNA
+    restriction_mode: B
+  motion_poll_default_onehundred_percent_base:
+    type: string
+    enum: onehundred_percent_bases
+    default: YNA
+    restriction_mode: B
+  motion_poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_motion_poll_default_id
+    restriction_mode: B
+  motion_poll_default_backend:
+    type: string
+    enum: poll_backends
+    default: fast
+    restriction_mode: B
+  motion_poll_projection_name_order_first:
+    type: string
+    enum:
+      - first_name
+      - last_name
+    default: last_name
+    required: true
+    restriction_mode: B
+  motion_poll_projection_max_columns:
+    type: number
+    default: 6
+    required: true
+    restriction_mode: B
+  # poll list election
+  poll_candidate_list_ids:
+    type: relation-list
+    to: poll_candidate_list/meeting_id
+    reference: poll_candidate_list
+    restriction_mode: B
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/meeting_id
+    reference: poll_candidate
+    restriction_mode: B
+  # Users
+  meeting_user_ids:
+    type: relation-list
+    to: meeting_user/meeting_id
+    restriction_mode: F
+    on_delete: CASCADE
+  users_enable_presence_view:
+    type: boolean
+    default: false
+    restriction_mode: B
+  users_enable_vote_weight:
+    type: boolean
+    default: false
+    restriction_mode: B
+  users_allow_self_set_present:
+    type: boolean
+    default: true
+    restriction_mode: B
+  users_pdf_welcometitle:
+    type: string
+    default: Welcome to OpenSlides
+    restriction_mode: B
+  users_pdf_welcometext:
+    type: text
+    default: "[Place for your welcome and help text.]"
+    restriction_mode: B
+  users_pdf_wlan_ssid:
+    type: string
+    restriction_mode: B
+  users_pdf_wlan_password:
+    type: string
+    restriction_mode: B
+  users_pdf_wlan_encryption:
+    type: string
+    default: WPA
+    enum:
+      - ""
+      - WEP
+      - WPA
+      - nopass
+    restriction_mode: B
+  users_email_sender:
+    type: string
+    default: OpenSlides
+    restriction_mode: B
+  users_email_replyto:
+    type: string
+    restriction_mode: B
+  users_email_subject:
+    type: string
+    default: OpenSlides access data
+    restriction_mode: B
+  users_email_body:
+    type: text
+    default: >-
+      Dear {name},
+
+
+      this is your personal OpenSlides login:
+
+
+      {url}
+
+      Username: {username}
+
+      Password: {password}
+
+
+
+      This email was generated automatically.
+    restriction_mode: B
+  users_enable_vote_delegations:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_in_list_of_speakers:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_as_submitter:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_as_supporter:
+    type: boolean
+    restriction_mode: B
+  users_forbid_delegator_to_vote:
+    type: boolean
+    restriction_mode: B
+  # Assignments
+  assignments_export_title:
+    type: string
+    default: Elections
+    restriction_mode: B
+  assignments_export_preamble:
+    type: text
+    restriction_mode: B
+  # Assignment polls
+  assignment_poll_ballot_paper_selection:
+    type: string
+    enum: ballot_paper_selection
+    default: CUSTOM_NUMBER
+    restriction_mode: B
+  assignment_poll_ballot_paper_number:
+    type: number
+    default: 8
+    restriction_mode: B
+  assignment_poll_add_candidates_to_list_of_speakers:
+    type: boolean
+    default: false
+    restriction_mode: B
+  assignment_poll_enable_max_votes_per_option:
+    type: boolean
+    default: false
+    restriction_mode: B
+  assignment_poll_sort_poll_result_by_votes:
+    type: boolean
+    default: true
+    restriction_mode: B
+  assignment_poll_default_type:
+    type: string
+    default: pseudoanonymous
+    restriction_mode: B
+  assignment_poll_default_method:
+    type: string
+    default: Y
+    restriction_mode: B
+  assignment_poll_default_onehundred_percent_base:
+    type: string
+    enum: onehundred_percent_bases
+    default: valid
+    restriction_mode: B
+  assignment_poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_assignment_poll_default_id
+    restriction_mode: B
+  assignment_poll_default_backend:
+    type: string
+    enum: poll_backends
+    default: fast
+    restriction_mode: B
+  # Polls
+  poll_ballot_paper_selection:
+    type: string
+    enum: ballot_paper_selection
+    restriction_mode: B
+  poll_ballot_paper_number:
+    type: number
+    restriction_mode: B
+  poll_sort_poll_result_by_votes:
+    type: boolean
+    restriction_mode: B
+  poll_default_type:
+    type: string
+    default: analog
+    restriction_mode: B
+  poll_default_method:
+    type: string
+    restriction_mode: B
+  poll_default_onehundred_percent_base:
+    type: string
+    enum: onehundred_percent_bases
+    default: YNA
+    restriction_mode: B
+  poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_poll_default_id
+    restriction_mode: B
+  poll_default_backend:
+    type: string
+    enum: poll_backends
+    default: fast
+    restriction_mode: B
+  poll_default_live_voting_enabled:
+    type: boolean
+    default: false
+    description: Defines default 'poll.live_voting_enabled' option suggested to user. Is not used in the validations.
+    restriction_mode: B
+  poll_couple_countdown:
+    type: boolean
+    default: true
+    restriction_mode: B
+  # Topic poll
+  topic_poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_topic_poll_default_id
+    restriction_mode: B
+  # Relations
+  projector_ids:
+    type: relation-list
+    to: projector/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  all_projection_ids:
+    type: relation-list
+    to: projection/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  projector_message_ids:
+    type: relation-list
+    to: projector_message/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  projector_countdown_ids:
+    type: relation-list
+    to: projector_countdown/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  tag_ids:
+    type: relation-list
+    to: tag/meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  agenda_item_ids:
+    type: relation-list
+    to: agenda_item/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  list_of_speakers_ids:
+    type: relation-list
+    to: list_of_speakers/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  structure_level_list_of_speakers_ids:
+    type: relation-list
+    to: structure_level_list_of_speakers/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  point_of_order_category_ids:
+    type: relation-list
+    to: point_of_order_category/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  speaker_ids:
+    type: relation-list
+    to: speaker/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  topic_ids:
+    type: relation-list
+    to: topic/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  group_ids:
+    type: relation-list
+    to: group/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  meeting_mediafile_ids:
+    type: relation-list
+    to: meeting_mediafile/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  mediafile_ids:
+    type: relation-list
+    to: mediafile/owner_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_ids:
+    type: relation-list
+    to: motion/meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  forwarded_motion_ids:
+    type: relation-list
+    to: motion/origin_meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  motion_comment_section_ids:
+    type: relation-list
+    to: motion_comment_section/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_category_ids:
+    type: relation-list
+    to: motion_category/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_block_ids:
+    type: relation-list
+    to: motion_block/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_workflow_ids:
+    type: relation-list
+    to: motion_workflow/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_comment_ids:
+    type: relation-list
+    to: motion_comment/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_submitter_ids:
+    type: relation-list
+    to: motion_submitter/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_supporter_ids:
+    type: relation-list
+    to: motion_supporter/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_editor_ids:
+    type: relation-list
+    to: motion_editor/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_working_group_speaker_ids:
+    type: relation-list
+    to: motion_working_group_speaker/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_change_recommendation_ids:
+    type: relation-list
+    to: motion_change_recommendation/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  motion_state_ids:
+    type: relation-list
+    to: motion_state/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  poll_ids:
+    type: relation-list
+    to: poll/meeting_id
+    reference: poll
+    on_delete: CASCADE
+    restriction_mode: B
+  option_ids:
+    type: relation-list
+    to: option/meeting_id
+    reference: option
+    on_delete: CASCADE
+    restriction_mode: B
+  vote_ids:
+    type: relation-list
+    to: vote/meeting_id
+    reference: vote
+    on_delete: CASCADE
+    restriction_mode: B
+  assignment_ids:
+    type: relation-list
+    to: assignment/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  assignment_candidate_ids:
+    type: relation-list
+    to: assignment_candidate/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  personal_note_ids:
+    type: relation-list
+    to: personal_note/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  chat_group_ids:
+    type: relation-list
+    to: chat_group/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  structure_level_ids:
+    type: relation-list
+    to: structure_level/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  # Logos and Fonts
+  logo_projector_main_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_projector_main_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_projector_header_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_projector_header_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_web_header_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_web_header_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_pdf_header_l_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_pdf_header_r_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_pdf_header_r_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_pdf_footer_l_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_pdf_footer_l_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_pdf_footer_r_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_pdf_footer_r_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  logo_pdf_ballot_paper_id:
+    type: relation
+    to: meeting_mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_regular_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_regular_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_italic_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_italic_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_bold_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_bold_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_bold_italic_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_bold_italic_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_monospace_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_monospace_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_chyron_speaker_name_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_chyron_speaker_name_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_projector_h1_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_projector_h1_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  font_projector_h2_id:
+    type: relation
+    to: meeting_mediafile/used_as_font_projector_h2_in_meeting_id
+    reference: meeting_mediafile
+    restriction_mode: B
+  # Other relations
+  committee_id:
+    type: relation
+    reference: committee
+    to: committee/meeting_ids
+    required: true
+    restriction_mode: A
+    constant: true
+  default_meeting_for_committee_id:
+    type: relation
+    to: committee/default_meeting_id
+    restriction_mode: B
+  organization_tag_ids:
+    type: relation-list
+    to: organization_tag/tagged_ids
+    restriction_mode: B
+  present_user_ids:
+    type: relation-list
+    to: user/is_present_in_meeting_ids
+    restriction_mode: B
+  user_ids:
+    type: relation-list
+    description: Calculated. All user ids from all users assigned to groups of this meeting.
+    read_only: true
+    sql: |
+      (
+        SELECT array_agg(DISTINCT mu.user_id ORDER BY mu.user_id)
+        FROM meeting_user_t mu
+        WHERE mu.meeting_id = m.id
+      ) AS user_ids
+    to: user/meeting_ids
+    restriction_mode: A
+    log_triggers:
+      - on_table: meeting_user_t
+        log_collection_id_column: meeting_id
+        log_value_column: user_id
+  reference_projector_id:
+    type: relation
+    reference: projector
+    to: projector/used_as_reference_projector_meeting_id
+    required: true
+    restriction_mode: B
+  list_of_speakers_countdown_id:
+    type: relation
+    to: projector_countdown/used_as_list_of_speakers_countdown_meeting_id
+    reference: projector_countdown
+    restriction_mode: B
+  poll_countdown_id:
+    type: relation
+    to: projector_countdown/used_as_poll_countdown_meeting_id
+    reference: projector_countdown
+    restriction_mode: B
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    on_delete: CASCADE
+    restriction_mode: B
+  default_projector_agenda_item_list_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_topic_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_topic_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_list_of_speakers_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_current_los_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_current_los_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_motion_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_amendment_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_amendment_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_block_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_motion_block_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_assignment_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_assignment_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_mediafile_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_mediafile_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_message_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_message_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_countdown_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_countdown_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_assignment_poll_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_assignment_poll_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_poll_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_motion_poll_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_poll_ids:
+    type: relation-list
+    to: projector/used_as_default_projector_for_poll_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_group_id:
+    type: relation
+    reference: group
+    to: group/default_group_for_meeting_id
+    required: true
+    restriction_mode: B
+  admin_group_id:
+    type: relation
+    to: group/admin_group_for_meeting_id
+    reference: group
+    restriction_mode: A
+  anonymous_group_id:
+    type: relation
+    to: group/anonymous_group_for_meeting_id
+    reference: group
+    restriction_mode: B
+  relevant_history_entry_ids:
+    type: relation-list
+    to: history_entry/meeting_id
+    restriction_mode: A

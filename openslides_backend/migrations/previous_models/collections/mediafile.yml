@@ -1,0 +1,72 @@
+unique_together_strict:
+  - title, parent_id, owner_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  title:
+    type: string
+    description: Title and parent_id must be unique.
+    restriction_mode: A
+    required: true
+  is_directory:
+    type: boolean
+    restriction_mode: A
+  filesize:
+    type: number
+    description: In bytes, not the human readable format anymore.
+    read_only: true
+    restriction_mode: A
+  filename:
+    type: string
+    description: The uploaded filename. Will be used for downloading. Only writeable on create.
+    restriction_mode: A
+  mimetype:
+    type: string
+    restriction_mode: A
+  pdf_information:
+    type: JSON
+    restriction_mode: A
+  create_timestamp:
+    type: timestamp
+    restriction_mode: A
+  token:
+    type: string
+    unique: true
+    restriction_mode: A
+  published_to_meetings_in_organization_id:
+    type: relation
+    to: organization/published_mediafile_ids
+    reference: organization
+    restriction_mode: A
+  parent_id:
+    type: relation
+    reference: mediafile
+    to: mediafile/child_ids
+    equal_fields: owner_id
+    restriction_mode: A
+  child_ids:
+    type: relation-list
+    to: mediafile/parent_id
+    equal_fields: owner_id
+    restriction_mode: A
+  owner_id:
+    type: generic-relation
+    to:
+      - meeting/mediafile_ids
+      - organization/mediafile_ids
+    reference:
+      - meeting
+      - organization
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_mediafile_ids:
+    type: relation-list
+    to: meeting_mediafile/mediafile_id
+    on_delete: CASCADE
+    restriction_mode: A
+# Mediafiles are delivered by the mediafile server with the URL
+# `<media-prefix>/media/<meeting_id>/path`
