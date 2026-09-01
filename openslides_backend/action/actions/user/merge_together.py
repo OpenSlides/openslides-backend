@@ -399,30 +399,32 @@ class UserMergeTogether(
         all_users = {model["id"]: model for model in [into, *other_models]}
         option_poll_ids_per_user_id: dict[int, set[int]] = defaultdict(set)
 
-        meeting_users = self.datastore.filter(
-            "meeting_user",
-            And(
-                Or(FilterOperator("user_id", "=", user_id) for user_id in all_users),
-                FilterOperator("poll_option_ids", "!=", None),
-                FilterOperator("poll_option_ids", "!=", []),
-            ),
-            ["user_id"],
-        )
-        content_object_ids = [
-            *[fqid_from_collection_and_id("user", user_id) for user_id in all_users],
-            *[
-                fqid_from_collection_and_id("meeting_user", meeting_user_id)
-                for meeting_user_id in meeting_users
-            ],
-        ]
-        poll_options = self.datastore.filter(
-            "poll_option",
-            Or(
-                FilterOperator("content_object_id", "=", fqid)
-                for fqid in content_object_ids
-            ),
-            ["poll_id", "content_object_id"],
-        )
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    [
+                        mu_id
+                        for user in all_users.values()
+                        for mu_id in user.get("meeting_user_ids", [])
+                    ],
+                    ["user_id", "poll_option_ids"],
+                )
+            ]
+        )["meeting_user"]
+        poll_options = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "poll_option",
+                    [
+                        id_
+                        for model in [*all_users.values(), *meeting_users.values()]
+                        for id_ in model.get("poll_option_ids", [])
+                    ],
+                    ["poll_id", "content_object_id"],
+                ),
+            ]
+        )["poll_option"]
         for option in poll_options.values():
             collection, id_ = collection_and_id_from_fqid(option["content_object_id"])
             user_id = id_ if collection == "user" else meeting_users[id_]["user_id"]
