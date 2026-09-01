@@ -144,7 +144,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 },
                 "poll_option/1": {
                     "poll_id": 1,
-                    "meeting_user_id": 2,
+                    "content_object_id": "meeting_user/2",
                 },
                 "poll_config_approval/1": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
@@ -187,7 +187,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "represented_ballot_ids": [2],
             },
             "poll/1": {"ballot_user_ids": [1, 2]},
-            "poll_option/1": {"meeting_user_id": 3},
+            "poll_option/1": {"content_object_id": "meeting_user/3"},
             "poll_ballot_user/1": {
                 "poll_id": 1,
                 "acting_meeting_user_id": 3,

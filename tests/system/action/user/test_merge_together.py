@@ -5,8 +5,6 @@ from decimal import Decimal
 from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
-from psycopg.types.json import Jsonb
-
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
@@ -489,110 +487,44 @@ class UserMergeTogether(BaseActionTestCase):
                     "original_model_id": "user/2",
                     "model_id": "user/2",
                     "position_id": 1,
-                    "entries": [
-                        "User created",
-                        "User added to meetings",
-                        "User added to groups 1, 2",
-                    ],
+                    "entries": ["User created", "User added to meetings"],
                 },
                 "history_entry/2": {
-                    "original_model_id": "meeting_user/12",
-                    "model_id": "meeting_user/12",
-                    "position_id": 1,
-                    "structured_information": Jsonb({"group_ids": {"added": [1, 2]}}),
-                },
-                "history_entry/3": {
                     "original_model_id": "user/3",
                     "model_id": "user/3",
                     "position_id": 1,
                     "entries": ["User created"],
                 },
-                "history_entry/4": {
+                "history_entry/3": {
                     "original_model_id": "user/4",
                     "model_id": "user/4",
                     "position_id": 1,
-                    "entries": [
-                        "User created",
-                        "User added to meetings",
-                        "User added to groups 2, 4, 9",
-                    ],
-                },
-                "history_entry/5": {
-                    "original_model_id": "meeting_user/14",
-                    "model_id": "meeting_user/14",
-                    "position_id": 1,
-                    "structured_information": Jsonb({"group_ids": {"added": [2]}}),
-                },
-                "history_entry/6": {
-                    "original_model_id": "meeting_user/44",
-                    "model_id": "meeting_user/44",
-                    "position_id": 1,
-                    "structured_information": Jsonb({"group_ids": {"added": [4]}}),
-                },
-                "history_entry/7": {
-                    "original_model_id": "meeting_user/74",
-                    "model_id": "meeting_user/74",
-                    "position_id": 1,
-                    "structured_information": Jsonb({"group_ids": {"added": [9]}}),
+                    "entries": ["User created", "User added to meetings"],
                 },
                 "history_position/2": {
                     "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
                     "original_user_id": 4,
                     "user_id": 4,
                 },
-                "history_entry/8": {
+                "history_entry/4": {
                     "original_model_id": "user/2",
                     "model_id": "user/2",
                     "position_id": 2,
-                    "entries": [
-                        "User added to meetings",
-                        "User added to group 5",
-                    ],
+                    "entries": ["User added to meetings"],
                 },
-                "history_entry/9": {
-                    "original_model_id": "meeting_user/42",
-                    "model_id": "meeting_user/42",
-                    "position_id": 2,
-                    "structured_information": Jsonb({"group_ids": {"added": [5]}}),
-                },
-                "history_entry/10": {
+                "history_entry/5": {
                     "original_model_id": "user/3",
                     "model_id": "user/3",
                     "position_id": 2,
-                    "entries": [
-                        "User added to meetings",
-                        "User added to groups 4, 5, 8",
-                    ],
+                    "entries": ["User added to meetings"],
                 },
-                "history_entry/11": {
-                    "original_model_id": "meeting_user/43",
-                    "model_id": "meeting_user/43",
-                    "position_id": 2,
-                    "structured_information": Jsonb({"group_ids": {"added": [4, 5]}}),
-                },
-                "history_entry/12": {
-                    "original_model_id": "meeting_user/73",
-                    "model_id": "meeting_user/73",
-                    "position_id": 2,
-                    "structured_information": Jsonb({"group_ids": {"added": [8]}}),
-                },
-                "history_entry/13": {
+                "history_entry/6": {
                     "original_model_id": "user/5",
                     "model_id": "user/5",
                     "position_id": 2,
-                    "entries": [
-                        "User created",
-                        "User added to meetings",
-                        "User added to group 10",
-                    ],
+                    "entries": ["User created", "User added to meetings"],
                 },
-                "history_entry/14": {
-                    "original_model_id": "meeting_user/105",
-                    "model_id": "meeting_user/105",
-                    "position_id": 2,
-                    "structured_information": Jsonb({"group_ids": {"added": [10]}}),
-                },
-                "history_entry/15": {
+                "history_entry/7": {
                     "original_model_id": "user/6",
                     "model_id": "user/6",
                     "position_id": 2,
@@ -619,7 +551,8 @@ class UserMergeTogether(BaseActionTestCase):
                 "organization_id": 1,
                 "default_password": "user2",
                 "meeting_user_ids": [12, 42, 106, 107],
-                "history_entry_ids": [1, 3, 4, 8, 10, 13, 15, 16],
+                "history_entry_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+                "history_position_ids": [2],
                 "password": password,
                 "pronoun": "he",
                 "first_name": "Nick",
@@ -652,7 +585,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "about_me": "I am an enthusiastic explorer",
                 "comment": "Nicks everything",
                 "number": "NOMNOM",
-                "history_entry_ids": [2, 5],
             },
         )
         self.assert_model_exists(
@@ -663,7 +595,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "number": "num?",
                 "vote_weight": Decimal("2"),
                 "comment": "Comment 1",
-                "history_entry_ids": [6, 9, 11],
             },
         )
         self.assert_model_exists(
@@ -673,7 +604,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 7,
                 "about_me": "I have a long beard",
                 "vote_weight": Decimal("1.234567"),
-                "history_entry_ids": [7, 12],
             },
         )
         self.assert_model_exists(
@@ -682,7 +612,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "user_id": 2,
                 "meeting_id": 10,
                 "comment": "This is a comment",
-                "history_entry_ids": [14],
             },
         )
 
@@ -719,117 +648,51 @@ class UserMergeTogether(BaseActionTestCase):
                 "timestamp": datetime.fromtimestamp(100000, ZoneInfo("UTC")),
                 "original_user_id": 1,
                 "user_id": 1,
-                "entry_ids": [1, 2, 3, 4, 5, 6, 7],
+                "entry_ids": [1, 2, 3],
             },
             "history_entry/1": {
                 "original_model_id": "user/2",
                 "model_id": "user/2",
                 "position_id": 1,
-                "entries": [
-                    "User created",
-                    "User added to meetings",
-                    "User added to groups 1, 2",
-                ],
+                "entries": ["User created", "User added to meetings"],
             },
             "history_entry/2": {
-                "original_model_id": "meeting_user/12",
-                "model_id": "meeting_user/12",
-                "position_id": 1,
-                "structured_information": {"group_ids": {"added": [1, 2]}},
-            },
-            "history_entry/3": {
                 "original_model_id": "user/3",
                 "model_id": "user/2",
                 "position_id": 1,
                 "entries": ["User created"],
             },
-            "history_entry/4": {
+            "history_entry/3": {
                 "original_model_id": "user/4",
                 "model_id": "user/2",
                 "position_id": 1,
-                "entries": [
-                    "User created",
-                    "User added to meetings",
-                    "User added to groups 2, 4, 9",
-                ],
-            },
-            "history_entry/5": {
-                "original_model_id": "meeting_user/14",
-                "model_id": "meeting_user/12",
-                "position_id": 1,
-                "structured_information": {"group_ids": {"added": [2]}},
-            },
-            "history_entry/6": {
-                "original_model_id": "meeting_user/44",
-                "model_id": "meeting_user/42",
-                "position_id": 1,
-                "structured_information": {"group_ids": {"added": [4]}},
-            },
-            "history_entry/7": {
-                "original_model_id": "meeting_user/74",
-                "model_id": "meeting_user/106",
-                "position_id": 1,
-                "structured_information": {"group_ids": {"added": [9]}},
+                "entries": ["User created", "User added to meetings"],
             },
             "history_position/2": {
                 "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
                 "original_user_id": 4,
                 "user_id": 2,
-                "entry_ids": [8, 9, 10, 11, 12, 13, 14, 15],
+                "entry_ids": [4, 5, 6, 7],
             },
-            "history_entry/8": {
+            "history_entry/4": {
                 "original_model_id": "user/2",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": [
-                    "User added to meetings",
-                    "User added to group 5",
-                ],
+                "entries": ["User added to meetings"],
             },
-            "history_entry/9": {
-                "original_model_id": "meeting_user/42",
-                "model_id": "meeting_user/42",
-                "position_id": 2,
-                "structured_information": {"group_ids": {"added": [5]}},
-            },
-            "history_entry/10": {
+            "history_entry/5": {
                 "original_model_id": "user/3",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": [
-                    "User added to meetings",
-                    "User added to groups 4, 5, 8",
-                ],
+                "entries": ["User added to meetings"],
             },
-            "history_entry/11": {
-                "original_model_id": "meeting_user/43",
-                "model_id": "meeting_user/42",
-                "position_id": 2,
-                "structured_information": {"group_ids": {"added": [4, 5]}},
-            },
-            "history_entry/12": {
-                "original_model_id": "meeting_user/73",
-                "model_id": "meeting_user/106",
-                "position_id": 2,
-                "structured_information": {"group_ids": {"added": [8]}},
-            },
-            "history_entry/13": {
+            "history_entry/6": {
                 "original_model_id": "user/5",
                 "model_id": "user/2",
                 "position_id": 2,
-                "entries": [
-                    "User created",
-                    "User added to meetings",
-                    "User added to group 10",
-                ],
+                "entries": ["User created", "User added to meetings"],
             },
-            "history_entry/14": {
-                "original_model_id": "meeting_user/105",
-                "model_id": "meeting_user/107",
-                "position_id": 2,
-                "structured_information": {"group_ids": {"added": [10]}},
-            },
-            "history_entry/15": {
+            "history_entry/7": {
                 "original_model_id": "user/6",
                 "model_id": "user/2",
                 "position_id": 2,
@@ -1094,8 +957,14 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_config_approval/1": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "poll_option/1": {"poll_id": 1, "meeting_user_id": 12},
-                "poll_option/2": {"poll_id": 1, "meeting_user_id": 15},
+                "poll_option/1": {
+                    "poll_id": 1,
+                    "content_object_id": "meeting_user/12",
+                },
+                "poll_option/2": {
+                    "poll_id": 1,
+                    "content_object_id": "meeting_user/15",
+                },
                 "poll/2": {
                     "title": "Assignment poll 2",
                     "content_object_id": "assignment/1",
@@ -1109,8 +978,14 @@ class UserMergeTogether(BaseActionTestCase):
                     "max_options_amount": 1,
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "poll_option/3": {"poll_id": 2, "meeting_user_id": 15},
-                "poll_option/4": {"poll_id": 2, "meeting_user_id": 14},
+                "poll_option/3": {
+                    "poll_id": 2,
+                    "content_object_id": "meeting_user/15",
+                },
+                "poll_option/4": {
+                    "poll_id": 2,
+                    "content_object_id": "meeting_user/14",
+                },
                 "poll/3": {
                     "title": "Assignment poll 3",
                     "content_object_id": "assignment/1",
@@ -1123,8 +998,14 @@ class UserMergeTogether(BaseActionTestCase):
                     "allow_abstain": False,
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "poll_option/5": {"poll_id": 3, "meeting_user_id": 12},
-                "poll_option/6": {"poll_id": 3, "meeting_user_id": 15},
+                "poll_option/5": {
+                    "poll_id": 3,
+                    "content_object_id": "user/2",
+                },
+                "poll_option/6": {
+                    "poll_id": 3,
+                    "content_object_id": "meeting_user/15",
+                },
                 "poll/4": {
                     "title": "Assignment poll 4",
                     "content_object_id": "assignment/1",
@@ -1136,8 +1017,14 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_config_approval/3": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
                 },
-                "poll_option/7": {"poll_id": 4, "meeting_user_id": 14},
-                "poll_option/8": {"poll_id": 4, "meeting_user_id": 15},
+                "poll_option/7": {
+                    "poll_id": 4,
+                    "content_object_id": "user/4",
+                },
+                "poll_option/8": {
+                    "poll_id": 4,
+                    "content_object_id": "user/5",
+                },
                 "poll/5": {
                     "title": "Motion poll",
                     "content_object_id": "motion/4",
@@ -1187,6 +1074,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 14,
                 },
+                "poll_entitled_user/21": {
+                    "poll_id": 1,
+                    "meeting_user_id": 14,
+                },
                 "poll_ballot/12": {
                     "value": "no",
                     "poll_id": 1,
@@ -1196,6 +1087,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "poll_id": 1,
                     "acting_meeting_user_id": 14,
                     "represented_meeting_user_id": 15,
+                },
+                "poll_entitled_user/22": {
+                    "poll_id": 1,
+                    "meeting_user_id": 15,
                 },
                 "poll_ballot/13": {
                     "value": "4",
@@ -1207,6 +1102,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 12,
                     "represented_meeting_user_id": 12,
                 },
+                "poll_entitled_user/23": {
+                    "poll_id": 2,
+                    "meeting_user_id": 12,
+                },
                 "poll_ballot/14": {
                     "value": "abstain",
                     "poll_id": 5,
@@ -1216,6 +1115,10 @@ class UserMergeTogether(BaseActionTestCase):
                     "poll_id": 5,
                     "acting_meeting_user_id": 43,
                     "represented_meeting_user_id": 43,
+                },
+                "poll_entitled_user/24": {
+                    "poll_id": 5,
+                    "meeting_user_id": 43,
                 },
                 "group/7": {
                     "meeting_user_ids": [75],
@@ -1231,11 +1134,19 @@ class UserMergeTogether(BaseActionTestCase):
                     "acting_meeting_user_id": 75,
                     "represented_meeting_user_id": 75,
                 },
+                "poll_entitled_user/25": {
+                    "poll_id": 6,
+                    "meeting_user_id": 75,
+                },
                 "poll_ballot/16": {"value": "10", "poll_id": 6},
                 "poll_ballot_user/6": {
                     "poll_id": 6,
                     "acting_meeting_user_id": 73,
                     "represented_meeting_user_id": 73,
+                },
+                "poll_entitled_user/26": {
+                    "poll_id": 6,
+                    "meeting_user_id": 73,
                 },
             }
         )
@@ -1253,6 +1164,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "organization_id": 1,
                 "default_password": "user2",
                 "meeting_user_ids": [12, 42, 106 + add_to_creatable_ids],
+                "poll_option_ids": [5, 7],
                 "password": password,
             },
         )
@@ -1267,9 +1179,10 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 "user_id": 2,
                 "meeting_id": 1,
-                "poll_option_ids": [1, 4, 5, 7],
+                "poll_option_ids": [1, 4],
                 "acting_ballot_ids": [1, 2, 3],
                 "represented_ballot_ids": [1, 3],
+                "poll_entitled_user_ids": [21, 23],
             },
         )
         self.assert_model_exists(
@@ -1280,20 +1193,26 @@ class UserMergeTogether(BaseActionTestCase):
                 "motion_submitter_ids": [1],
                 "acting_ballot_ids": [4],
                 "represented_ballot_ids": [4],
+                "poll_entitled_user_ids": [24],
             },
         )
         self.assert_model_exists(
             f"meeting_user/{106 + add_to_creatable_ids}",
-            {"user_id": 2, "meeting_id": 7},
+            {"user_id": 2, "meeting_id": 7, "poll_entitled_user_ids": [26]},
         )
         self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
             "motion_submitter/1",
             {"motion_id": 4, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
         )
-        for poll_option_id in [1, 4, 5, 7]:
+        for poll_option_id in [1, 4]:
             self.assert_model_exists(
-                f"poll_option/{poll_option_id}", {"meeting_user_id": 12}
+                f"poll_option/{poll_option_id}",
+                {"content_object_id": "meeting_user/12"},
+            )
+        for poll_option_id in [5, 7]:
+            self.assert_model_exists(
+                f"poll_option/{poll_option_id}", {"content_object_id": "user/2"}
             )
 
         self.assert_model_exists(
@@ -1337,13 +1256,32 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
 
+        for id_ in [21, 23]:
+            self.assert_model_exists(
+                f"poll_entitled_user/{id_}", {"meeting_user_id": 12}
+            )
+        self.assert_model_exists("poll_entitled_user/22", {"meeting_user_id": 15})
+        self.assert_model_exists("poll_entitled_user/24", {"meeting_user_id": 42})
+        self.assert_model_exists("poll_entitled_user/25", {"meeting_user_id": 75})
+        self.assert_model_exists(
+            "poll_entitled_user/26", {"meeting_user_id": 106 + add_to_creatable_ids}
+        )
+
         self.assert_model_exists(
             "poll/1",
-            {"ballot_ids": [11, 12], "ballot_user_ids": [1, 2]},
+            {
+                "ballot_ids": [11, 12],
+                "ballot_user_ids": [1, 2],
+                "entitled_user_ids": [21, 22],
+            },
         )
         self.assert_model_exists(
             "poll/2",
-            {"ballot_ids": [13], "ballot_user_ids": [3]},
+            {
+                "ballot_ids": [13],
+                "ballot_user_ids": [3],
+                "entitled_user_ids": [23],
+            },
         )
         for id_ in [3, 4]:
             self.assert_model_exists(
@@ -1352,11 +1290,19 @@ class UserMergeTogether(BaseActionTestCase):
             )
         self.assert_model_exists(
             "poll/5",
-            {"ballot_ids": [14], "ballot_user_ids": [4]},
+            {
+                "ballot_ids": [14],
+                "ballot_user_ids": [4],
+                "entitled_user_ids": [24],
+            },
         )
         self.assert_model_exists(
             "poll/6",
-            {"ballot_ids": [15, 16], "ballot_user_ids": [5, 6]},
+            {
+                "ballot_ids": [15, 16],
+                "ballot_user_ids": [5, 6],
+                "entitled_user_ids": [25, 26],
+            },
         )
 
     def test_merge_with_polls_correct(self) -> None:

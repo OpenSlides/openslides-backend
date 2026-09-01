@@ -46,6 +46,7 @@ def prepare_actions_map() -> None:
         poll_config_rating_score,
         poll_config_selection,
         poll_config_stv_scottish,
+        poll_entitled_user,
         poll_option,
         projection,
         projector,

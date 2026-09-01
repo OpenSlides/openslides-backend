@@ -783,14 +783,9 @@ def merge_history_informations(
     for b in other:
         if b is None:
             b = {}
-        for fqid, information in b.items():
+        for fqid, entries in b.items():
             if fqid in a:
-                if entries := information.get("entries"):
-                    a[fqid].setdefault("entries", list()).extend(entries)
-                if structured_information := information.get("structured_information"):
-                    a[fqid].setdefault("structured_information", dict()).update(
-                        structured_information
-                    )
+                a[fqid].extend(entries)
             else:
-                a[fqid] = information
+                a[fqid] = entries
     return a

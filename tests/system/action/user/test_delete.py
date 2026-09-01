@@ -213,7 +213,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "title": "Duckburg town council",
                     "meeting_id": 1,
                 },
-                "poll_option/1": {"poll_id": 1, "meeting_user_id": 1},
+                "poll_option/1": {
+                    "poll_id": 1,
+                    "content_object_id": "meeting_user/1",
+                },
                 "poll_config_approval/1": {
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
@@ -223,7 +226,43 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists(f"user/{user_id}")
         self.assert_model_not_exists("meeting_user/1")
-        self.assert_model_exists("poll_option/1", {"meeting_user_id": None})
+        self.assert_model_exists("poll_option/1", {"content_object_id": None})
+
+    def test_delete_poll_option_user(self) -> None:
+        self.create_meeting()
+        user_id = self.create_user("Swen")
+        self.set_models(
+            {
+                "poll/1": {
+                    "title": "Poll 1",
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/1",
+                    "state": Poll.STATE_FINISHED,
+                },
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                },
+                "assignment/1": {
+                    "id": 1,
+                    "title": "Duckburg town council",
+                    "meeting_id": 1,
+                },
+                "poll_option/1": {
+                    "poll_id": 1,
+                    "content_object_id": "user/2",
+                },
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+            }
+        )
+        response = self.request("user.delete", {"id": user_id})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists(f"user/{user_id}")
+        self.assert_model_exists("poll_option/1", {"content_object_id": None})
 
     def test_delete_with_group_ids_set_null(self) -> None:
         self.create_meeting()

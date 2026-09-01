@@ -81,6 +81,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "committee_ids": None,
             "committee_management_ids": None,
             "organization_id": 1,
+            "poll_option_ids": None,
         },
         2: {
             "id": 2,
@@ -113,6 +114,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "committee_ids": None,
             "committee_management_ids": None,
             "organization_id": 1,
+            "poll_option_ids": None,
         },
         3: {
             "id": 3,
@@ -145,6 +147,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "committee_ids": None,
             "committee_management_ids": None,
             "organization_id": 1,
+            "poll_option_ids": None,
         },
     },
     "committee": {

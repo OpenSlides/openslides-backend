@@ -2246,7 +2246,7 @@ class MeetingClone(BaseActionTestCase):
                     f"poll_option/{id_}": {
                         "id": id_,
                         "weight": id_,
-                        "meeting_user_id": id_ + 1,
+                        "content_object_id": f"meeting_user/{id_ + 1}",
                         "poll_id": 1,
                     }
                     for id_ in range(1, 4)
@@ -2290,7 +2290,7 @@ class MeetingClone(BaseActionTestCase):
                 {
                     "weight": id_ - 3,
                     "poll_id": 2,
-                    "meeting_user_id": id_ + 2,
+                    "content_object_id": f"meeting_user/{id_ + 2}",
                 },
             )
 

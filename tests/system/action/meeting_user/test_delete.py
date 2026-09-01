@@ -1,6 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -129,3 +130,104 @@ class MeetingUserDelete(BaseActionTestCase):
         self.assert_model_not_exists("meeting_user/5")
         self.assert_model_exists("chat_message/1", {"meeting_user_id": None})
         self.assert_model_exists("chat_message/2", {"meeting_user_id": None})
+
+    def test_delete_with_ballots(self) -> None:
+        self.create_user_for_meeting(10)
+        self.create_motion(10, 15)
+        self.set_models(
+            {
+                "poll/20": {
+                    "title": "Poll 20",
+                    "meeting_id": 10,
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
+                },
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_ballot_user/1": {
+                    "acting_meeting_user_id": 5,
+                    "represented_meeting_user_id": 5,
+                    "poll_id": 20,
+                },
+                "poll_ballot_user/2": {
+                    "acting_meeting_user_id": 5,
+                    "represented_meeting_user_id": 6,
+                    "poll_id": 20,
+                },
+            }
+        )
+        response = self.request("meeting_user.delete", {"id": 5})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_exists(
+            "poll_ballot_user/1",
+            {
+                "acting_meeting_user_id": None,
+                "represented_meeting_user_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "poll_ballot_user/2",
+            {
+                "acting_meeting_user_id": None,
+                "represented_meeting_user_id": 6,
+            },
+        )
+
+    def test_delete_with_poll_option(self) -> None:
+        self.create_motion(10, 15)
+        self.set_models(
+            {
+                "poll/20": {
+                    "title": "Poll 20",
+                    "meeting_id": 10,
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
+                },
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_option/1": {
+                    "content_object_id": "meeting_user/5",
+                    "poll_id": 20,
+                },
+            }
+        )
+        response = self.request("meeting_user.delete", {"id": 5})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_exists("poll_option/1", {"content_object_id": "user/1"})
+
+    def test_delete_with_poll_entitled_user(self) -> None:
+        self.create_motion(10, 15)
+        self.set_models(
+            {
+                "poll/20": {
+                    "title": "Poll 20",
+                    "meeting_id": 10,
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
+                },
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                },
+                "poll_entitled_user/1": {
+                    "meeting_user_id": 5,
+                    "poll_id": 20,
+                },
+            }
+        )
+        response = self.request("meeting_user.delete", {"id": 5})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_exists("poll_entitled_user/1", {"meeting_user_id": None})

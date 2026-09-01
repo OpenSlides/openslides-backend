@@ -134,10 +134,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting/114",
             ],
         )
-        self.assert_history_information(
-            "meeting_user/1",
-            structured_information={"group_ids": {"added": [114]}},
-        )
 
     def test_create_comment(self) -> None:
         self.create_meeting()

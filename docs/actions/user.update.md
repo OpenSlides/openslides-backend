@@ -58,6 +58,7 @@
 
 // only internal
     is_present_in_meeting_ids: Id[];
+    poll_option_ids: Id[];
 }
 ```
 

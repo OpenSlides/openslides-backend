@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any
 
 from openslides_backend.services.database.interface import PartialModel
@@ -13,7 +14,12 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
+from ....shared.patterns import (
+    Collection,
+    CollectionField,
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ....shared.schema import id_list_schema
 from ....shared.typing import HistoryInformation
 from ...generics.update import UpdateAction
@@ -109,6 +115,7 @@ class UserMergeTogether(
                     "committee_management_ids",
                     "history_entry_ids",
                     "history_position_ids",
+                    "poll_option_ids",  # throw error if conflict on same poll, also check related meeting_users
                 ],
                 "deep_create_merge": {
                     "meeting_user_ids": "meeting_user",
@@ -385,6 +392,63 @@ class UserMergeTogether(
                 UserDelete,
                 [{"id": id_} for id_ in to_delete],
             )
+
+    def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
+        messages: list[str] = self.check_polls_helper(into, other_models)
+
+        all_users = {model["id"]: model for model in [into, *other_models]}
+        option_poll_ids_per_user_id: dict[int, set[int]] = defaultdict(set)
+
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    [
+                        mu_id
+                        for user in all_users.values()
+                        for mu_id in user.get("meeting_user_ids", [])
+                    ],
+                    ["user_id", "poll_option_ids"],
+                )
+            ]
+        )["meeting_user"]
+        poll_options = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "poll_option",
+                    [
+                        id_
+                        for model in [*all_users.values(), *meeting_users.values()]
+                        for id_ in model.get("poll_option_ids", [])
+                    ],
+                    ["poll_id", "content_object_id"],
+                ),
+            ]
+        )["poll_option"]
+        for option in poll_options.values():
+            collection, id_ = collection_and_id_from_fqid(option["content_object_id"])
+            user_id = id_ if collection == "user" else meeting_users[id_]["user_id"]
+            option_poll_ids_per_user_id[user_id].add(option["poll_id"])
+
+        option_conflicts = self._get_conflicts_between_users(
+            option_poll_ids_per_user_id
+        )
+        if len(option_conflicts):
+            messages.append(
+                f"multiple of the selected users are among the options in poll(s) {', '.join([str(id_) for id_ in option_conflicts])}"
+            )
+        if len(messages):
+            raise ActionException(
+                f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
+            )
+
+    def _get_conflicts_between_users(self, ids_map: dict[int, set[int]]) -> set[int]:
+        seen_ids: set[int] = set()
+        duplicates: set[int] = set()
+        for ids in ids_map.values():
+            duplicates.update(seen_ids.intersection(ids))
+            seen_ids.update(ids)
+        return duplicates
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel

@@ -257,11 +257,11 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 },
                 "poll_option/180": {
                     "poll_id": 150,
-                    "meeting_user_id": 1,
+                    "content_object_id": "meeting_user/1",
                 },
                 "poll_option/181": {
                     "poll_id": 150,
-                    "meeting_user_id": 2,
+                    "content_object_id": "meeting_user/2",
                 },
                 "list_of_speakers/190": {
                     "meeting_id": 1,
@@ -452,6 +452,8 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
         self.assert_model_not_exists("poll_config_rating_score/1")
         self.assert_model_not_exists("poll_config_rating_approval/1")
         self.assert_model_not_exists("poll_config_stv_scottish/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"poll_entitled_user/{i+1}")
         for i in range(2):
             self.assert_model_not_exists(f"assignment/{i+1}")
         for i in range(5):
