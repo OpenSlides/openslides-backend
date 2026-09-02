@@ -14,16 +14,14 @@ fields:
   type:
     type: string
     required: true
-    enum:
-      - analog
-      - named
-      - pseudoanonymous
-      - cryptographic
     restriction_mode: A
   backend:
     type: string
     required: true
-    enum: poll_backends
+    enum:
+      - long
+      - fast
+      - instant
     default: fast
     restriction_mode: A
   is_pseudoanonymized:

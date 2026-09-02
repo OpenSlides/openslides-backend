@@ -33,12 +33,6 @@ fields:
     restriction_mode: A
   restrictions:
     type: string[]
-    items:
-      enum:
-        - motion.can_see_internal
-        - motion.can_manage_metadata
-        - motion.can_manage
-        - is_submitter
     default: []
     restriction_mode: A
   allow_support:

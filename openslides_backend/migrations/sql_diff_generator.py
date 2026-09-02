@@ -949,6 +949,7 @@ def handle_add_field_attributes(
                 )
             case "enum":
                 # TODO
+                # handle_enum_change()
                 pass
             case "equal_fields":
                 # TODO
@@ -1062,6 +1063,9 @@ def handle_edit_field_attributes(
                         CURR_MODELS[collection_name]["fields"][field_name],
                         False,
                     )
+            case "enum" | "items":
+                pass
+                # if not all the items from old enum are in new enum: handle_enum_change
             case _:
                 raise NotImplementedError(f"{constraint}: {value}")
         del dc_field_def[0][constraint]
@@ -1450,6 +1454,18 @@ def add_not_null_conditionally(
 
     CleanupStatementsHelper.update_cleanup_statements(set_not_null)
     return ""
+
+
+# def handle_enum_change():
+#    1. Create new enum
+#    2. Drop view + add to alter_views
+#    3. Change type:
+#        * enum -> varchar
+#        * items -> varchar[]
+#    4. Add to cleanup statements:
+#        * Drop view
+#        * Change type to the new enum/enum[]
+#        * Create view
 
 
 class CleanupStatementsHelper:

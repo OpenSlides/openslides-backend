@@ -61,8 +61,72 @@
                         {}
                     ]
                 }
+            ],
+            "motion_state": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "restrictions": [
+                                {
+                                    "items": {
+                                        "enum": [
+                                            "motion.can_see_internal",
+                                            "motion.can_manage_metadata",
+                                            "motion.can_manage",
+                                            "is_submitter"
+                                        ]
+                                    }
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "poll": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "type": [
+                                {
+                                    "enum": [
+                                        "analog",
+                                        "named",
+                                        "pseudoanonymous",
+                                        "cryptographic"
+                                    ]
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
             ]
         }
     ],
-    "edit": null
+    "edit": [
+        {},
+        {
+            "poll": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "backend": [
+                                {
+                                    "enum": "poll_backends"
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }
