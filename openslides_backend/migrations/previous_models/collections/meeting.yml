@@ -17,12 +17,6 @@ fields:
     default: Space for your welcome text.
     restriction_mode: C
   # General
-  name:
-    type: string
-    maxLength: 200
-    default: OpenSlides
-    restriction_mode: A
-    required: true
   is_active_in_organization_id:
     type: relation
     reference: organization
@@ -61,7 +55,7 @@ fields:
     type: string
     restriction_mode: F
     enum: languages
-    default: "en"
+    default: 'en'
     constant: true
   # Configuration (only for the server owner)
   jitsi_domain:
@@ -176,7 +170,7 @@ fields:
     restriction_mode: B
   export_csv_separator:
     type: string
-    default: ";"
+    default: ';'
     restriction_mode: B
   export_pdf_pagenumber_alignment:
     type: string
@@ -363,7 +357,7 @@ fields:
     restriction_mode: B
   motions_preamble:
     type: text
-    default: "The assembly may decide:"
+    default: 'The assembly may decide:'
     restriction_mode: B
   motions_default_line_numbering:
     type: string
@@ -474,7 +468,7 @@ fields:
     restriction_mode: B
   motions_amendments_prefix:
     type: string
-    default: "-Ä"
+    default: '-Ä'
     restriction_mode: B
   motions_amendments_text_mode:
     type: string
@@ -601,7 +595,7 @@ fields:
     restriction_mode: B
   users_pdf_welcometext:
     type: text
-    default: "[Place for your welcome and help text.]"
+    default: '[Place for your welcome and help text.]'
     restriction_mode: B
   users_pdf_wlan_ssid:
     type: string
@@ -613,7 +607,7 @@ fields:
     type: string
     default: WPA
     enum:
-      - ""
+      - ''
       - WEP
       - WPA
       - nopass

@@ -1,0 +1,68 @@
+{
+    "rename": [
+        {},
+        {}
+    ],
+    "remove": null,
+    "add": [
+        {},
+        {
+            "action_worker": [
+                {},
+                {
+                    "fields": [
+                        {
+                            "created": {
+                                "type": "timestamp",
+                                "required": true,
+                                "restriction_mode": "A"
+                            }
+                        },
+                        {
+                            "name": [
+                                {
+                                    "required": true
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "committee": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "organization_id": [
+                                {
+                                    "required": true
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meeting": [
+                {},
+                {
+                    "fields": [
+                        {
+                            "name": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "default": "OpenSlides",
+                                "restriction_mode": "A",
+                                "required": true
+                            }
+                        },
+                        {}
+                    ]
+                }
+            ]
+        }
+    ],
+    "edit": null
+}

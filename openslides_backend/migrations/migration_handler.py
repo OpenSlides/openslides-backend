@@ -92,7 +92,29 @@ class MigrationHandler(BaseHandler):
                 f"Couldn't find an SQL diff for {migration_number}. This can be intentional."
             )
         except Exception as e:
-            raise MigrationException(f"Error applying schema diff: {e}")
+            raise MigrationException(
+                f"Error applying schema diff for {migration_number}: {e}"
+            )
+
+    def apply_cleanup_statements(self, migration_number: int) -> None:
+        """Applies the sql cleanup statements for the given migration if they exist."""
+        try:
+            with open(
+                os.path.join(
+                    MIGRATIONS_PATH,
+                    self.pending_migrations[migration_number],
+                    "cleanup_statements.sql",
+                )
+            ) as f:
+                self.migration_cursor.execute(f.read())
+        except FileNotFoundError:
+            self.logger.warning(
+                f"Couldn't find an cleanup statements SQL for {migration_number}. This can be intentional."
+            )
+        except Exception as e:
+            raise MigrationException(
+                f"Error applying cleanup statements for {migration_number}: {e}"
+            )
 
     def execute_migrations(self) -> None:
         """
@@ -110,6 +132,7 @@ class MigrationHandler(BaseHandler):
                 mig_class.data_definition(self.migration_cursor)
                 mig_class.data_manipulation(self.migration_cursor, stash)
                 mig_class.cleanup(self.migration_cursor)
+                self.apply_cleanup_statements(index)
 
                 with self.ver_conn.cursor() as ver_curs:
                     MigrationHelper.set_database_migration_info(

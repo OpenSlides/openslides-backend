@@ -22,8 +22,8 @@ Current split between automatic and manual actions:
 
   Diff generator collects such cases, generates the maps that should be used
   to finish handling such cases in the cleanup method of te migration class and
-  writes them to the `DiffMixin` class defined in the new file next to the
-  `migration.py`.
+  writes them to the `DiffMixin` class and/or `cleanup_statements.sql` defined
+  in the new files next to the `migration.py`.
   Developer has to import and extend it `DiffMixin` in the migration class.
   `BaseMigration` class will handle the fields from `DiffMixin`.
 
@@ -45,7 +45,8 @@ Current split between automatic and manual actions:
     may need to update to/reference. Example in new vote service:
     * projector/used_as_default_projector_for_poll_in_meeting_id -> projector/used_as_default_projector_for_topic_poll_in_meeting_id
     * meeting/default_projector_poll_ids -> meeting/default_projector_topic_poll_ids
-  * Data has to be generated and written to the `DiffMixin` for 3 cases described above.
+  * Data has to be generated and written to the `DiffMixin` and/or
+    `cleanup_statements.sql` for 3 cases described above.
 
 # Will be needed soon
 

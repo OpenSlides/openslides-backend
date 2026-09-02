@@ -30,7 +30,7 @@ fields:
     to: user/committee_ids
     restriction_mode: A
     read_only: true
-    description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
+    description: 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee'
     sql: |
       (
         SELECT array_agg(DISTINCT user_id ORDER BY user_id)
@@ -108,7 +108,6 @@ fields:
     type: relation
     reference: organization
     to: organization/committee_ids
-    required: true
     restriction_mode: A
     constant: true
     default: 1

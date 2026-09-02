@@ -130,6 +130,8 @@ def main() -> int:
     ) as f:
         f.write(sql)
 
+    CleanupStatementsHelper.generate_cleanup_statements_sql()
+
     for dict_name in diff:
         remove_empty(diff_control, dict_name)
     # assert not diff, f"Diff control still contains:\n{diff}"
@@ -855,8 +857,9 @@ def handle_add_field_attributes(
     field_name: str,
     field_def_diff: dict[str, Any],
     dc_field_def: dict[str, Any],
-) -> str:
+) -> tuple[str, str]:
     constraints_sql = ""
+    extra_sql_lines = ""
     collection_name = table_name[:-2]
     for constraint, value in field_def_diff.items():
         """
@@ -938,9 +941,11 @@ def handle_add_field_attributes(
                 # TODO
                 pass
             case "required":
-                # TODO: constraints_sql += add_not_null_conditionally(field_def)
-                constraints_sql += Helper.get_inline_required_constraint(
-                    table_name, field_name
+                extra_sql_lines += add_not_null_conditionally(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                    True,
                 )
             case "enum":
                 # TODO
@@ -1002,7 +1007,7 @@ def handle_add_field_attributes(
                     f"{table_name}/{field_name}: {constraint}, {value}"
                 )
         del dc_field_def[constraint]
-    return constraints_sql
+    return constraints_sql, extra_sql_lines
 
 
 def handle_edit_field_attributes(
@@ -1049,6 +1054,14 @@ def handle_edit_field_attributes(
                     collection_name, bool(write_fields), is_view_field
                 )
                 # TODO recreate affected triggers
+            case "required":
+                if value is True:
+                    constraints_sql += add_not_null_conditionally(
+                        collection_name,
+                        field_name,
+                        CURR_MODELS[collection_name]["fields"][field_name],
+                        False,
+                    )
             case _:
                 raise NotImplementedError(f"{constraint}: {value}")
         del dc_field_def[0][constraint]
@@ -1381,14 +1394,11 @@ def handle_add_tree(
             dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
             for field_name, field_def in fields.items():
                 if fields_idx == 0:
-                    # field added
-                    # TODO: if required:
-                    #     * remove NOT NULL
-                    #     * sql += add_not_null_conditionally(field_def)
-                    constraints_sql = handle_add_field_attributes(
+                    constraints_sql, extra_sql = handle_add_field_attributes(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )
                     sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+                    sql += extra_sql
                 else:
                     # field altered
                     sql += handle_edit_field_attributes(
@@ -1421,13 +1431,48 @@ def handle_edit_tree(
     return sql
 
 
-# def add_not_null_conditionally(field_def) -> str | None:
-# * if has default:
-#   * set it for all entries
-#   * set NOT NULL
-#   * return the string
-# * else:
-#   * update diff_mixin_data
+def add_not_null_conditionally(
+    collection_name: str, field_name: str, field_def: dict[str, Any], is_new_field: bool
+) -> str:
+    set_not_null = AlterSchemaHelper.get_set_column_attribute_statement(
+        collection_name, field_name, "NOT NULL"
+    )
+    if default := field_def.get("default"):
+        get_statement_func = (
+            AlterSchemaHelper.get_update_all_entries_statement
+            if is_new_field
+            else AlterSchemaHelper.get_update_empty_entries_statement
+        )
+        return (
+            get_statement_func(collection_name, field_name, default, field_def["type"])
+            + set_not_null
+        )
+
+    CleanupStatementsHelper.update_cleanup_statements(set_not_null)
+    return ""
+
+
+class CleanupStatementsHelper:
+    cleanup_statements = ""
+
+    @classmethod
+    def update_cleanup_statements(cls, new_string: str) -> None:
+        cls.cleanup_statements += new_string
+
+    @classmethod
+    def generate_cleanup_statements_sql(cls) -> None:
+        if not cls.cleanup_statements:
+            print(
+                "No cleanup statements were generated -> Skipping cleanup_statements.sql generation"
+            )
+        cleanup_statements_path = os.path.join(
+            MIGRATIONS_PATH,
+            MigrationHelper.get_last_migration_directory(),
+            "cleanup_statements.sql",
+        )
+        with open(os.path.join(cleanup_statements_path), "w") as f:
+            f.write(cls.cleanup_statements)
+            print(f"{cleanup_statements_path} successfully created.")
 
 
 if __name__ == "__main__":
