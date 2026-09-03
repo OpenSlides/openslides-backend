@@ -72,22 +72,19 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         return (int(payload.os_id), header_value)
 
-    def backchannel_logout(self, request: dict[str, Any]) -> str:
+    def backchannel_logout(self, encoded_logout_token: str) -> str:
         # Extract Logout Token
         self.logger.debug(
-            f"Logout token with the following data: {self.request}"
+            f"Logout token with the following data: {encoded_logout_token}"
         )
 
-        # Fetch JWT
-        header_value = request.headers.get("Authorization")
-        if not header_value or not header_value.startswith("Bearer: "):
-            raise AuthenticationException(f"Logout Token does not contain 'Bearer:', instead {header_value}")
+        # Decode Token
+        decoded_logout_token = jwt.decode(encoded_logout_token, options={"verify_signature": False})
 
-        logout_token = header_value[len("Bearer: "):]
-
+        self.logger.warning(decoded_logout_token)
         # Extract session ID
         try:
-            session_id = self._fetch_session_id(logout_token)
+            session_id = self._fetch_session_id(decoded_logout_token)
 
             # Block session ID
             self.block_session_id(session_id)

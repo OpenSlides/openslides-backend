@@ -24,24 +24,20 @@ class UserBlockSessionID(
     )
 
     def perform(self, action_data, user_id, **kwargs):
-        self.logger.warning("Performing blocklist action")
-        self.logger.warning(action_data)
-        self.logger.warning(user_id)
-        self.logger.warning(kwargs)
+        try:
+            encoded_logout_token = action_data[0]["logout_token"].split("logout_token=")[1]
+        except e:
+            self.logger.error(f"Block Session ID: Malformed logout token request: {action_data}")
+            return
 
-        request = action_data[0]["request"]
-
-        self.logger.warning("Wow a user blocklist request came!")
-        self.logger.warning(instance)
         # Validate logout token and extract session id
-        session_id = self.auth.backchannel_logout(request)
+        session_id = self.auth.backchannel_logout(encoded_logout_token)
 
         # Emit session id block via database signal
         if session_id == None or session_id == "":
-            self.logger.warning("Block Session ID: No Session ID")
+            self.logger.error("Block Session ID: Session ID not present in logout token")
             return
 
-        # TODO: Create DB Table entry
         # Write session id to blocklist
         self.datastore.write(
             WriteRequest(

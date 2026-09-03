@@ -22,10 +22,10 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Authentication data must be set beforehand via set_authentication.
         """
 
-    def backchannel_logout(self, request: dict[str, Any])  -> None:
+    def backchannel_logout(self, encoded_logout_token: str)  -> None:
         """
-        A request to logout and block an active session id. Request has to be in the form of a valid
-        OIDC logout token request.
+        A request to logout and block an active session id. Takes an encoded JWT token containing a
+        logout token as a parameter
 
         Used to signal a backchannel logout originating from an IDP to all OS services.
 

@@ -73,7 +73,7 @@ class ActionView(BaseView):
         self.logger.debug("Internal action request finished successfully.")
         return response, None
 
-    @route("backchannel_logout")
+    @route("backchannel_logout", json=False)
     def backchannel_logout_route(self, request: Request) -> RouteResponse:
         """
         Receives a logout token from a backchannel logout request originating
@@ -91,12 +91,12 @@ class ActionView(BaseView):
         payload = [
             {
                 "action": "user.block_session_id",
-                "data": [{"request": request}],
+                "data": [{"logout_token": request.get_data(as_text=True)}],
             }
         ]
 
         response = handle_action_in_worker_thread(
-            request.json, 0, True, handler, internal=True
+            payload, 0, True, handler, internal=True
         )
 
         return response, None
