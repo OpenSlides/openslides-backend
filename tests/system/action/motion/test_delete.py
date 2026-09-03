@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
@@ -180,6 +181,32 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         self.assert_model_not_exists("motion_editor/1")
         self.assert_model_not_exists("motion_working_group_speaker/1")
         self.assert_history_information("motion/111", ["Motion deleted"])
+
+    def test_delete_with_poll(self) -> None:
+        self.set_models(
+            {
+                "poll/65": {
+                    "meeting_id": 1,
+                    "content_object_id": "motion/111",
+                    "title": "Analog poll 65",
+                    "state": Poll.STATE_CREATED,
+                    "config_id": "poll_config_approval/14",
+                    "visibility": Poll.VISIBILITY_MANUALLY,
+                },
+                "poll_config_approval/14": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+            }
+        )
+        response = self.request("motion.delete", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion/111")
+        self.assert_model_not_exists("poll/65")
+        self.assert_model_not_exists("poll_config_approval/14")
+        self.assert_model_not_exists("list_of_speakers/111")
+        self.assert_model_exists(
+            "meeting/1", {"poll_ids": None, "motion_ids": None, "assignment_ids": None}
+        )
 
 
 class MotionDeletePermissionTest(BaseMotionDeleteActionTest):
