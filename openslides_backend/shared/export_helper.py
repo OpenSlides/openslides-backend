@@ -25,7 +25,10 @@ FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 HISTORY_FIELDS_PER_COLLECTION = {
     "meeting": ["relevant_history_entry_ids"],
     "user": ["history_entry_ids", "history_position_ids"],
-    **{collection: ["history_entry_ids"] for collection in ["motion", "assignment"]},
+    **{
+        collection: ["history_entry_ids"]
+        for collection in ["assignment", "motion", "topic"]
+    },
 }
 
 
