@@ -44,7 +44,7 @@ class UserBlockSessionID(
                 events=[
                     Event(
                         type=EventType.Create,
-                        fqid=f"blocked_sessions/{os_id}",
+                        fqid=f"blocked_sessions/0",
                         fields={
                             "session_id": session_id,
                         },
@@ -52,5 +52,4 @@ class UserBlockSessionID(
                 ]
             )
         )
-
         return instance

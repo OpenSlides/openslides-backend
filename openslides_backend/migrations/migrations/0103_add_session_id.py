@@ -38,5 +38,5 @@ class Migration(BaseMigration):
     def data_definition(curs: Cursor[DictRow]) -> None:
         curs.Execute("""
         CREATE TABLE blocked_sessions (
-            session_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+            session_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY
         );""")

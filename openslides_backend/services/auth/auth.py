@@ -78,19 +78,14 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             f"Logout token with the following data: {encoded_logout_token}"
         )
 
-        # Decode Token
-        decoded_logout_token = jwt.decode(encoded_logout_token, options={"verify_signature": False})
-
-        self.logger.warning(decoded_logout_token)
         # Extract session ID
         try:
-            session_id = self._fetch_session_id(decoded_logout_token)
+            session_id = self._fetch_session_id(encoded_logout_token)
 
             # Block session ID
             self.block_session_id(session_id)
         except Exception as e:
             raise AuthenticationException(f"Fetching session ID from logout token: {e}")
-
 
         return session_id
 
