@@ -1,9 +1,12 @@
-from typing import cast
+from collections.abc import Iterable
+from typing import Any, cast
 
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Vote
+from ....shared.interfaces.event import Event
+from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -75,3 +78,36 @@ class VoteCreate(CreateActionWithInferredMeeting):
             use_changed_models=False,
             lock_result=False,
         )
+
+
+@register_action("vote.create_explicit", action_type=ActionType.BACKEND_INTERNAL)
+class VoteCreateExplicit(CreateAction):
+    """
+    Internal action to create a vote without automatic meeting_id calculation.
+
+    This class is exclusively for the poll stop.
+
+    It has multiple safety mechanisms and automaticisms removed to insure better performance.
+    This will be counteracted by the calling action.
+    """
+
+    model = Vote()
+    schema = DefaultSchema(Vote()).get_create_schema(
+        required_properties=[
+            "weight",
+            "value",
+            "option_id",
+            "user_token",
+            "meeting_id",
+        ],
+        optional_properties=["delegated_user_id", "user_id"],
+    )
+
+    def handle_relation_updates(
+        self,
+        instance: dict[str, Any],
+    ) -> Iterable[Event]:
+        """
+        Disabled because back relations are not write-fields anyway.
+        """
+        return []
