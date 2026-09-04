@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -138,6 +139,48 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("speaker/2")
         self.assert_model_exists("meeting_user/1", {"speaker_ids": None})
         self.assert_model_exists("meeting_user/2", {"speaker_ids": None})
+
+    def test_delete_with_poll(self) -> None:
+        self.set_models(
+            {
+                "topic/111": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/111",
+                    "meeting_id": 1,
+                },
+                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/111"},
+                "poll/65": {
+                    "meeting_id": 1,
+                    "content_object_id": "topic/111",
+                    "title": "Analog poll 65",
+                    "state": Poll.STATE_CREATED,
+                    "config_id": "poll_config_approval/14",
+                    "visibility": Poll.VISIBILITY_MANUALLY,
+                },
+                "poll_config_approval/14": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+            }
+        )
+        response = self.request("topic.delete", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("topic/111")
+        self.assert_model_not_exists("poll/65")
+        self.assert_model_not_exists("poll_config_approval/14")
+        self.assert_model_not_exists("list_of_speakers/23")
+        self.assert_model_not_exists("agenda_item/8")
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "poll_ids": None,
+                "topic_ids": None,
+                "list_of_speakers_ids": None,
+                "agenda_item_ids": None,
+            },
+        )
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
