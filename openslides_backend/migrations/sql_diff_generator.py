@@ -23,6 +23,7 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
 )
 from openslides_backend.migrations.patterns import Renames
+from openslides_backend.migrations.py_diff_generator import DiffMixinHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
@@ -131,6 +132,7 @@ def main() -> int:
         f.write(sql)
 
     CleanupStatementsHelper.generate_cleanup_statements_sql()
+    DiffMixinHelper.generate_diff_mixin()
 
     for dict_name in diff:
         remove_empty(diff_control, dict_name)

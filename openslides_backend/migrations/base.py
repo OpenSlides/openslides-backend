@@ -3,6 +3,8 @@ from typing import Any
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from meta.dev.src.alter_schema_helper import AlterSchemaHelper
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.patterns import Renames, Table
 
 from ..shared.filters import Filter
@@ -38,6 +40,9 @@ class BaseMigration:
     #   * data_manipulation: to perform move
     switched_writing_side: Any
 
+    # Also include the new type of the field if it has to be transformed
+    typed_migration_tables: dict[Collection, tuple[list[Field], dict[Field, str]]]
+
     # Contains:
     #   * String with statements that should be executed in the cleanup method.
     #     Currently needed for creating new views for the types changed for
@@ -59,8 +64,7 @@ class BaseMigration:
         """
         return ""
 
-    @staticmethod
-    def data_preparation(curs: Cursor[DictRow]) -> dict[str, Any] | None:
+    def data_preparation(self, curs: Cursor[DictRow]) -> dict[str, Any] | None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
@@ -68,12 +72,13 @@ class BaseMigration:
         Input:
             cursor
         """
-        # If migration_tables and/or switched_writing_side are not None:
-        #   * Merge `migration_tables` and `switched_writing_side`,
-        #   * Save migration table names in `copied_tables`
-        #   * Then for each:
-        #       * copy_table
-        #       * append `copied_tables` with returned field name
+        # TODO: after implementing switched_writing_side extend `migration_tables`
+        # with collections and old writing side fields from `switched_writing_side``
+        if getattr(self, "typed_migration_tables", None):
+            self.copied_tables = MigrationHelper.copy_tables(
+                curs, self.typed_migration_tables
+            )
+        return None
 
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
@@ -105,7 +110,9 @@ class BaseMigration:
         Input:
             cursor
         """
-        if self.cleanup_statements:
+        for table in getattr(self, "copied_tables", []):
+            curs.execute(AlterSchemaHelper.get_drop_table_statement(table, True))
+        if getattr(self, "cleanup_statements", None):
             curs.execute(self.cleanup_statements)
 
     @staticmethod
