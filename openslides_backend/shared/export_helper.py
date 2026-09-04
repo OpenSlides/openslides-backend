@@ -1,7 +1,7 @@
 import datetime
 from collections.abc import Iterable
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.shared.patterns import is_reserved_field
@@ -27,9 +27,10 @@ HISTORY_FIELDS_PER_COLLECTION = {
     "user": ["history_entry_ids", "history_position_ids"],
     **{
         collection: ["history_entry_ids"]
-        for collection in getattr(
-            model_registry["history_entry"]().get_field("model_id"), "to", {}
-        )
+        for collection in cast(
+            GenericRelationField,
+            model_registry["history_entry"]().get_field("model_id"),
+        ).to
         if collection != "user"
     },
 }
