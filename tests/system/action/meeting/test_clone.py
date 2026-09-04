@@ -1988,6 +1988,18 @@ class MeetingClone(BaseActionTestCase):
                         "represented_meeting_user_id": 1 if poll_id == 1 else 2,
                         "poll_id": poll_id,
                     },
+                    f"history_position/{poll_id}": {
+                        "user_id": 1,
+                        "timestamp": datetime.fromtimestamp(1761760881),
+                        "original_user_id": 1,
+                    },
+                    f"history_entry/{poll_id}": {
+                        "entries": ["Poll created"],
+                        "meeting_id": poll_id,
+                        "position_id": poll_id,
+                        "original_model_id": f"motion/{poll_id}",
+                        "model_id": f"motion/{poll_id}",
+                    },
                 },
             )
         response = self.request("meeting.clone", {"meeting_id": 1})
@@ -2018,6 +2030,77 @@ class MeetingClone(BaseActionTestCase):
                 "represented_ballot_ids": [5],
             },
         )
+        self.assert_model_exists("meeting/5", {"relevant_history_entry_ids": None})
+        self.assert_model_exists("motion/5", {"history_entry_ids": None})
+        self.assert_model_not_exists("history_position/5")
+        self.assert_model_not_exists("history_entry/5")
+
+    def test_clone_with_topic_poll(self) -> None:
+        self.set_test_data_with_admin()
+        self.set_models(
+            {
+                "topic/1": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 1,
+                },
+                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/1"},
+                "poll/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                    "title": "Poll 1",
+                    "state": Poll.STATE_CREATED,
+                    "config_id": "poll_config_approval/1",
+                    "visibility": Poll.VISIBILITY_MANUALLY,
+                },
+                "poll_config_approval/1": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "history_position/1": {
+                    "user_id": 1,
+                    "timestamp": datetime.fromtimestamp(1761760881),
+                    "original_user_id": 1,
+                },
+                "history_entry/1": {
+                    "entries": ["Poll created"],
+                    "meeting_id": 1,
+                    "position_id": 1,
+                    "original_model_id": "topic/1",
+                    "model_id": "topic/1",
+                },
+            },
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/2",
+            {
+                "meeting_id": 2,
+                "content_object_id": "topic/2",
+                "title": "Poll 1",
+                "state": Poll.STATE_CREATED,
+                "config_id": "poll_config_approval/2",
+                "visibility": Poll.VISIBILITY_MANUALLY,
+            },
+        )
+        self.assert_model_exists(
+            "poll_config_approval/2",
+            {
+                "poll_id": 2,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/2", {"relevant_history_entry_ids": None, "poll_ids": [2]}
+        )
+        self.assert_model_exists(
+            "topic/2", {"history_entry_ids": None, "poll_ids": [2]}
+        )
+        self.assert_model_not_exists("history_position/2")
+        self.assert_model_not_exists("history_entry/2")
 
     def test_with_action_worker(self) -> None:
         """action_worker shouldn't be cloned"""
@@ -2251,6 +2334,18 @@ class MeetingClone(BaseActionTestCase):
                     }
                     for id_ in range(1, 4)
                 },
+                "history_position/1": {
+                    "user_id": 1,
+                    "timestamp": datetime.fromtimestamp(1761760881),
+                    "original_user_id": 1,
+                },
+                "history_entry/1": {
+                    "entries": ["Poll created"],
+                    "meeting_id": 1,
+                    "position_id": 1,
+                    "original_model_id": "assignment/1",
+                    "model_id": "assignment/1",
+                },
             }
         )
 
@@ -2264,6 +2359,7 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_ids": [2],
                 "poll_ids": [2],
                 "projector_ids": [2],
+                "relevant_history_entry_ids": None,
                 "reference_projector_id": 2,
                 **{key: [2] for key in MeetingModelMixin.all_default_projectors()},
                 "motions_default_amendment_workflow_id": 2,
@@ -2293,6 +2389,9 @@ class MeetingClone(BaseActionTestCase):
                     "content_object_id": f"meeting_user/{id_ + 2}",
                 },
             )
+        self.assert_model_exists("assignment/2", {"history_entry_ids": None})
+        self.assert_model_not_exists("history_position/2")
+        self.assert_model_not_exists("history_entry/2")
 
     def test_clone_with_structured_published_orga_files(self) -> None:
         self.set_test_data_with_admin()
