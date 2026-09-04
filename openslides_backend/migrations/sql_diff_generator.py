@@ -1550,6 +1550,31 @@ class DiffMixinHelper:
             print(f"{diff_mixin_path} successfully created.")
         subprocess.call(f"black {diff_mixin_path}", shell=True)
 
+        lines = ""
+        for collection, fields_data in cls.get_typed_migration_tables(
+            migration_tables
+        ).items():
+            query_fields = [
+                *[field_name for field_name in fields_data[0]],
+                *[
+                    f"{field_name}::{simple_type} AS {field_name}"
+                    for field_name, simple_type in fields_data[1].items()
+                ],
+            ]
+
+            target_table = HelperGetNames.get_table_name(collection, migration=True)
+            lines += f"CREATE TABLE {target_table} AS SELECT {', '.join(query_fields)} FROM \"{collection}\";\n"
+
+        with open(
+            os.path.join(
+                MIGRATIONS_PATH,
+                mig_directory,
+                "diff_mixin_debug.sql",
+            ),
+            "w",
+        ) as f:
+            f.write(lines)
+
 
 if __name__ == "__main__":
     sys.exit(main())
