@@ -93,17 +93,6 @@ General pattern:
   * move(old_collection, old_field, new_collection, new_field)
   * transform_and_move(old_collection, old_field, new_collection, new_field, transform_func, *args, **kwargs)
 
-# data_preparation
-
-* poll_candidate
-* poll_candidate_list
-* option
-* user
-* meeting
-* meeting_user
-* nm_group_meeting_user_ids_meeting_user_t
-* ...
-
 # data_manipulation
 
 ## transform_and_rename

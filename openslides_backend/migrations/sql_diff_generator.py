@@ -1,9 +1,11 @@
 import os
 import re
+import subprocess
 import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
+from string import Template
 from typing import Any, cast
 
 import simplejson as json
@@ -17,7 +19,7 @@ from meta.dev.src.generate_sql_schema import (
     Helper,
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
-from meta.dev.src.typing import SchemaZoneKey
+from meta.dev.src.typing import PG_TYPES, SchemaZoneKey
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
@@ -39,7 +41,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.patterns import Collection, CollectionField
+from openslides_backend.shared.patterns import Collection, CollectionField, Field
 
 TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_partitioned_sequences",
@@ -131,6 +133,7 @@ def main() -> int:
         f.write(sql)
 
     CleanupStatementsHelper.generate_cleanup_statements_sql()
+    DiffMixinHelper.generate_diff_mixin()
 
     for dict_name in diff:
         remove_empty(diff_control, dict_name)
@@ -1489,6 +1492,63 @@ class CleanupStatementsHelper:
         with open(os.path.join(cleanup_statements_path), "w") as f:
             f.write(cls.cleanup_statements)
             print(f"{cleanup_statements_path} successfully created.")
+
+
+class DiffMixinHelper:
+    @staticmethod
+    def get_typed_migration_tables(
+        migration_tables: dict[Collection, list[Field]],
+    ) -> dict[Collection, tuple[list[Field], dict[Field, str]]]:
+        typed_migration_tables = {}
+        for collection, fields in migration_tables.items():
+            unchanged_fields: list[Field] = []
+            changed_fields: dict[Field, str] = {}
+            for field in fields:
+                fdata = PREV_MODELS[collection]["fields"][field]
+                simple_type = None
+                if fdata.get("to"):
+                    simple_type = "string" if "generic" in fdata["type"] else "number"
+                    if "list" in fdata["type"]:
+                        simple_type += "[]"
+                elif any(fdata.get(attr) for attr in FieldAttributes.enum_definitions):
+                    simple_type = fdata["type"]
+
+                if simple_type:
+                    if isinstance((pg_type := PG_TYPES[simple_type]), Template):
+                        pg_type = pg_type.substitute(
+                            {
+                                "maxLength": Helper.get_varchar_max_length(fdata),
+                            }
+                        )
+                    changed_fields[field] = pg_type
+                else:
+                    unchanged_fields.append(field)
+            typed_migration_tables[collection] = (unchanged_fields, changed_fields)
+        return typed_migration_tables
+
+    @classmethod
+    def generate_diff_mixin(cls) -> None:
+        mig_directory = MigrationHelper.get_last_migration_directory()
+        migration_tables = getattr(
+            MigrationHelper.get_migration_class(mig_directory), "migration_tables", None
+        )
+        if not migration_tables:
+            print(
+                "No migration_tables defined in the migration class -> Skipping DiffMixin generation"
+            )
+            return
+
+        diff_mixin_path = os.path.join(MIGRATIONS_PATH, mig_directory, "diff_mixin.py")
+        with open(diff_mixin_path, "w") as f:
+            f.write(
+                "# Code generated. DO NOT EDIT.\n"
+                "# Import DiffMixin to the migration file and extend it in the Migration class.\n"
+                "\n\n"
+                "class DiffMixin:\n"
+                f"\ttyped_migration_tables = {cls.get_typed_migration_tables(migration_tables)}"
+            )
+            print(f"{diff_mixin_path} successfully created.")
+        subprocess.call(f"black {diff_mixin_path}", shell=True)
 
 
 if __name__ == "__main__":

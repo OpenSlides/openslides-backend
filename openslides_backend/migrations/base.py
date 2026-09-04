@@ -3,6 +3,7 @@ from typing import Any
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.patterns import Renames, Table
 
 from ..shared.filters import Filter
@@ -38,6 +39,9 @@ class BaseMigration:
     #   * data_manipulation: to perform move
     switched_writing_side: Any
 
+    # Also include the new type of the field if it has to be transformed
+    typed_migration_tables: dict[Collection, tuple[list[Field], dict[Field, str]]]
+
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
         """
@@ -51,8 +55,8 @@ class BaseMigration:
         """
         return ""
 
-    @staticmethod
-    def data_preparation(curs: Cursor[DictRow]) -> dict[str, Any] | None:
+    @classmethod
+    def data_preparation(cls, curs: Cursor[DictRow]) -> dict[str, Any] | None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
@@ -60,12 +64,13 @@ class BaseMigration:
         Input:
             cursor
         """
-        # If migration_tables and/or switched_writing_side are not None:
-        #   * Merge `migration_tables` and `switched_writing_side`,
-        #   * Save migration table names in `copied_tables`
-        #   * Then for each:
-        #       * copy_table
-        #       * append `copied_tables` with returned field name
+        # TODO: after implementing switched_writing_side extend `migration_tables`
+        # with collections and old writing side fields from `switched_writing_side``
+        if cls.typed_migration_tables:
+            cls.copied_tables = MigrationHelper.copy_tables(
+                curs, cls.typed_migration_tables
+            )
+        return None
 
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
