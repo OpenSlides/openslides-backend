@@ -10,9 +10,12 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.exceptions import MigrationException
 
 from ..shared.exceptions import ActionException
+from ..shared.patterns import Collection, Field
+from .patterns import Table
 
 OLD_TABLES = (
     "models",
@@ -428,37 +431,39 @@ class MigrationHelper:
         }
 
     @staticmethod
-    def copy_table(
-        curs: Cursor[DictRow], table_name: str, target_table_name: str
-    ) -> None:
+    def copy_tables(
+        curs: Cursor[DictRow],
+        migration_tables: dict[Collection, tuple[list[Field], dict[Field, str]]],
+    ) -> list[Table]:
         """
-        Copies the table with its definition and rows. Does not copy triggers and foreign key constraints.
+        Copies the given fields of each collection into the new migration table:
+            * Copies the data without changing for migration_tables[0]
+            * Changes the data type to the given one for the fields in migration_tables[1]
+        Does not copy triggers and foreign key constraints.
+        Returns the list of the created migration tables.
         For use in data_preparation step of migration.
         """
-        target_table = sql.Identifier(target_table_name)
-        table_t = sql.Identifier(table_name)
-        curs.execute(
-            sql.SQL(
-                "CREATE TABLE {target_table} (LIKE {table_t} INCLUDING ALL);"
-            ).format(target_table=target_table, table_t=table_t)
-        )
+        copied_tables = []
+        for collection, fields_data in migration_tables.items():
+            query_fields = [
+                *[field_name for field_name in fields_data[0]],
+                *[
+                    sql.SQL("{} AS {}").format(
+                        sql.SQL("{}::{}").format(field_name, simple_type), field_name
+                    )
+                    for field_name, simple_type in fields_data[1].items()
+                ],
+            ]
 
-        fields = curs.execute(sql.SQL("""
-                SELECT *
-                FROM information_schema.columns
-                WHERE table_schema = 'public'
-                AND table_name = {table};
-                """).format(table=table_name)).fetchall()
-        curs.execute(
-            sql.SQL(
-                "INSERT INTO {target_table} ({fields}) SELECT {fields} FROM {table_t};"
-            ).format(
-                target_table=target_table,
-                table_t=table_t,
-                fields=sql.SQL(", ").join(
-                    sql.SQL(data["column_name"])
-                    for data in fields
-                    if data["is_generated"] != "ALWAYS"
-                ),
+            target_table = HelperGetNames.get_table_name(collection, migration=True)
+            curs.execute(
+                sql.SQL(
+                    "CREATE TABLE {target_table} AS SELECT {columns} FROM {view};"
+                ).format(
+                    target_table=sql.Identifier(target_table),
+                    columns=sql.SQL(", ").join(query_fields),
+                    view=collection,
+                )
             )
-        )
+            copied_tables.append(target_table)
+        return copied_tables

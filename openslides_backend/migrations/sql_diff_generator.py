@@ -1,9 +1,11 @@
 import os
 import re
+import subprocess
 import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
+from string import Template
 from typing import Any, cast
 
 import simplejson as json
@@ -17,11 +19,12 @@ from meta.dev.src.generate_sql_schema import (
     Helper,
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
-from meta.dev.src.typing import SchemaZoneKey
+from meta.dev.src.typing import PG_TYPES, SchemaZoneKey
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
+from openslides_backend.migrations.patterns import Renames
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
@@ -31,7 +34,6 @@ from openslides_backend.migrations.yaml_diff_generator import (
     FieldAttributes,
     MetaAttributesRemoveTuple,
     RemoveDiffDict,
-    Renames,
     dumpjson,
     generate_diff,
     prev_models_context,
@@ -39,7 +41,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.patterns import Collection, CollectionField
+from openslides_backend.shared.patterns import Collection, CollectionField, Field
 
 TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_partitioned_sequences",
@@ -129,6 +131,9 @@ def main() -> int:
         "w",
     ) as f:
         f.write(sql)
+
+    CleanupStatementsHelper.generate_cleanup_statements_sql()
+    DiffMixinHelper.generate_diff_mixin()
 
     for dict_name in diff:
         remove_empty(diff_control, dict_name)
@@ -855,8 +860,9 @@ def handle_add_field_attributes(
     field_name: str,
     field_def_diff: dict[str, Any],
     dc_field_def: dict[str, Any],
-) -> str:
+) -> tuple[str, str]:
     constraints_sql = ""
+    extra_sql_lines = ""
     collection_name = table_name[:-2]
     for constraint, value in field_def_diff.items():
         """
@@ -938,11 +944,15 @@ def handle_add_field_attributes(
                 # TODO
                 pass
             case "required":
-                constraints_sql += Helper.get_inline_required_constraint(
-                    table_name, field_name
+                extra_sql_lines += add_not_null_conditionally(
+                    collection_name,
+                    field_name,
+                    CURR_MODELS[collection_name]["fields"][field_name],
+                    True,
                 )
             case "enum":
                 # TODO
+                # handle_enum_change()
                 pass
             case "equal_fields":
                 # TODO
@@ -1001,7 +1011,7 @@ def handle_add_field_attributes(
                     f"{table_name}/{field_name}: {constraint}, {value}"
                 )
         del dc_field_def[constraint]
-    return constraints_sql
+    return constraints_sql, extra_sql_lines
 
 
 def handle_edit_field_attributes(
@@ -1048,6 +1058,17 @@ def handle_edit_field_attributes(
                     collection_name, bool(write_fields), is_view_field
                 )
                 # TODO recreate affected triggers
+            case "required":
+                if value is True:
+                    constraints_sql += add_not_null_conditionally(
+                        collection_name,
+                        field_name,
+                        CURR_MODELS[collection_name]["fields"][field_name],
+                        False,
+                    )
+            case "enum" | "items":
+                pass
+                # if not all the items from old enum are in new enum: handle_enum_change
             case _:
                 raise NotImplementedError(f"{constraint}: {value}")
         del dc_field_def[0][constraint]
@@ -1380,11 +1401,11 @@ def handle_add_tree(
             dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
             for field_name, field_def in fields.items():
                 if fields_idx == 0:
-                    # field added
-                    constraints_sql = handle_add_field_attributes(
+                    constraints_sql, extra_sql = handle_add_field_attributes(
                         table_name, field_name, field_def, dc_fields[field_name]
                     )
                     sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+                    sql += extra_sql
                 else:
                     # field altered
                     sql += handle_edit_field_attributes(
@@ -1415,6 +1436,144 @@ def handle_edit_tree(
         remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
         remove_empty(dc_edit_tree_dict, collection_name)
     return sql
+
+
+def add_not_null_conditionally(
+    collection_name: str, field_name: str, field_def: dict[str, Any], is_new_field: bool
+) -> str:
+    set_not_null = AlterSchemaHelper.get_set_column_attribute_statement(
+        collection_name, field_name, "NOT NULL"
+    )
+    if default := field_def.get("default"):
+        get_statement_func = (
+            AlterSchemaHelper.get_update_all_entries_statement
+            if is_new_field
+            else AlterSchemaHelper.get_update_empty_entries_statement
+        )
+        return (
+            get_statement_func(collection_name, field_name, default, field_def["type"])
+            + set_not_null
+        )
+
+    CleanupStatementsHelper.update_cleanup_statements(set_not_null)
+    return ""
+
+
+# def handle_enum_change():
+#    1. Create new enum
+#    2. Drop view + add to alter_views
+#    3. Change type:
+#        * enum -> varchar
+#        * items -> varchar[]
+#    4. Add to cleanup statements:
+#        * Drop view
+#        * Change type to the new enum/enum[]
+#        * Create view
+
+
+class CleanupStatementsHelper:
+    cleanup_statements = ""
+
+    @classmethod
+    def update_cleanup_statements(cls, new_string: str) -> None:
+        cls.cleanup_statements += new_string
+
+    @classmethod
+    def generate_cleanup_statements_sql(cls) -> None:
+        if not cls.cleanup_statements:
+            print(
+                "No cleanup statements were generated -> Skipping cleanup_statements.sql generation"
+            )
+        cleanup_statements_path = os.path.join(
+            MIGRATIONS_PATH,
+            MigrationHelper.get_last_migration_directory(),
+            "cleanup_statements.sql",
+        )
+        with open(os.path.join(cleanup_statements_path), "w") as f:
+            f.write(cls.cleanup_statements)
+            print(f"{cleanup_statements_path} successfully created.")
+
+
+class DiffMixinHelper:
+    @staticmethod
+    def get_typed_migration_tables(
+        migration_tables: dict[Collection, list[Field]],
+    ) -> dict[Collection, tuple[list[Field], dict[Field, str]]]:
+        typed_migration_tables = {}
+        for collection, fields in migration_tables.items():
+            unchanged_fields: list[Field] = []
+            changed_fields: dict[Field, str] = {}
+            for field in fields:
+                fdata = PREV_MODELS[collection]["fields"][field]
+                simple_type = None
+                if fdata.get("to"):
+                    simple_type = "string" if "generic" in fdata["type"] else "number"
+                    if "list" in fdata["type"]:
+                        simple_type += "[]"
+                elif any(fdata.get(attr) for attr in FieldAttributes.enum_definitions):
+                    simple_type = fdata["type"]
+
+                if simple_type:
+                    if isinstance((pg_type := PG_TYPES[simple_type]), Template):
+                        pg_type = pg_type.substitute(
+                            {
+                                "maxLength": Helper.get_varchar_max_length(fdata),
+                            }
+                        )
+                    changed_fields[field] = pg_type
+                else:
+                    unchanged_fields.append(field)
+            typed_migration_tables[collection] = (unchanged_fields, changed_fields)
+        return typed_migration_tables
+
+    @classmethod
+    def generate_diff_mixin(cls) -> None:
+        mig_directory = MigrationHelper.get_last_migration_directory()
+        migration_tables = getattr(
+            MigrationHelper.get_migration_class(mig_directory), "migration_tables", None
+        )
+        if not migration_tables:
+            print(
+                "No migration_tables defined in the migration class -> Skipping DiffMixin generation"
+            )
+            return
+
+        diff_mixin_path = os.path.join(MIGRATIONS_PATH, mig_directory, "diff_mixin.py")
+        with open(diff_mixin_path, "w") as f:
+            f.write(
+                "# Code generated. DO NOT EDIT.\n"
+                "# Import DiffMixin to the migration file and extend it in the Migration class.\n"
+                "\n\n"
+                "class DiffMixin:\n"
+                f"\ttyped_migration_tables = {cls.get_typed_migration_tables(migration_tables)}"
+            )
+            print(f"{diff_mixin_path} successfully created.")
+        subprocess.call(f"black {diff_mixin_path}", shell=True)
+
+        lines = ""
+        for collection, fields_data in cls.get_typed_migration_tables(
+            migration_tables
+        ).items():
+            query_fields = [
+                *[field_name for field_name in fields_data[0]],
+                *[
+                    f"{field_name}::{simple_type} AS {field_name}"
+                    for field_name, simple_type in fields_data[1].items()
+                ],
+            ]
+
+            target_table = HelperGetNames.get_table_name(collection, migration=True)
+            lines += f"CREATE TABLE {target_table} AS SELECT {', '.join(query_fields)} FROM \"{collection}\";\n"
+
+        with open(
+            os.path.join(
+                MIGRATIONS_PATH,
+                mig_directory,
+                "diff_mixin_debug.sql",
+            ),
+            "w",
+        ) as f:
+            f.write(lines)
 
 
 if __name__ == "__main__":

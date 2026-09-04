@@ -1,0 +1,38 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  entries:
+    type: text[]
+    restriction_mode: A
+  original_model_id:
+    type: string
+    restriction_mode: A
+    constant: true
+  model_id:
+    type: generic-relation
+    to:
+      collections:
+        - user
+        - motion
+        - assignment
+      field: history_entry_ids
+    restriction_mode: A
+    reference:
+      - user
+      - motion
+      - assignment
+  position_id:
+    type: relation
+    to: history_position/entry_ids
+    required: true
+    restriction_mode: A
+    constant: true
+    reference: history_position
+  meeting_id:
+    type: relation
+    to: meeting/relevant_history_entry_ids
+    restriction_mode: A
+    reference: meeting

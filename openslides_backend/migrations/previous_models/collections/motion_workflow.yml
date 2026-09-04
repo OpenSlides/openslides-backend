@@ -1,0 +1,46 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: A
+    constant: true
+  state_ids:
+    type: relation-list
+    to: motion_state/workflow_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  first_state_id:
+    type: relation
+    reference: motion_state
+    to: motion_state/first_state_of_workflow_id
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+  default_workflow_meeting_id:
+    type: relation
+    to: meeting/motions_default_workflow_id
+    restriction_mode: A
+  default_amendment_workflow_meeting_id:
+    type: relation
+    to: meeting/motions_default_amendment_workflow_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_workflow_ids
+    required: true
+    restriction_mode: A
+    constant: true

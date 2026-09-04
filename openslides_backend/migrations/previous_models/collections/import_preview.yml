@@ -1,0 +1,31 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    enum:
+      - account
+      - participant
+      - topic
+      - committee
+      - motion
+    restriction_mode: A
+  state:
+    type: string
+    required: true
+    enum:
+      - warning
+      - error
+      - done
+    restriction_mode: A
+  created:
+    type: timestamp
+    required: true
+    restriction_mode: A
+  result:
+    type: JSON
+    restriction_mode: A

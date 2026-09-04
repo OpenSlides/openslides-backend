@@ -1,0 +1,173 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    restriction_mode: A
+  description:
+    type: HTMLStrict
+    restriction_mode: A
+  # Settings (configurable by the client)
+  legal_notice:
+    type: text
+    restriction_mode: A
+  privacy_policy:
+    type: text
+    restriction_mode: A
+  login_text:
+    type: text
+    restriction_mode: A
+  reset_password_verbose_errors:
+    type: boolean
+    restriction_mode: B
+  gender_ids:
+    type: relation-list
+    to: gender/organization_id
+    reference: gender
+    restriction_mode: A
+  disable_forward_with_attachments:
+    type: boolean
+    restriction_mode: A
+  restrict_edit_forward_committees:
+    type: boolean
+    restriction_mode: A
+  # Configuration (only for the server owner)
+  enable_electronic_voting:
+    type: boolean
+    restriction_mode: B
+  enable_chat:
+    type: boolean
+    restriction_mode: A
+  limit_of_meetings:
+    type: number
+    description: Maximum of active meetings for the whole organization. 0 means no limitation at all
+    restriction_mode: C
+    default: 0
+    minimum: 0
+  limit_of_users:
+    type: number
+    description: Maximum of active users for the whole organization. 0 means no limitation at all
+    restriction_mode: C
+    default: 0
+    minimum: 0
+  default_language:
+    type: string
+    restriction_mode: A
+    enum: languages
+    default: en
+  time_zone:
+    type: timezone
+    restriction_mode: A
+  require_duplicate_from:
+    type: boolean
+    restriction_mode: A
+  enable_anonymous:
+    type: boolean
+    restriction_mode: A
+  restrict_editing_same_level_committee_admins:
+    type: boolean
+    restriction_mode: A
+  # Saml settings
+  saml_enabled:
+    type: boolean
+    restriction_mode: A
+  saml_login_button_text:
+    type: string
+    default: SAML login
+    restriction_mode: A
+  saml_attr_mapping:
+    type: JSON
+    restriction_mode: D
+  saml_metadata_idp:
+    type: text
+    restriction_mode: D
+  saml_metadata_sp:
+    type: text
+    restriction_mode: D
+  saml_private_key:
+    type: text
+    restriction_mode: D
+  committee_ids:
+    type: relation-list
+    to: committee/organization_id
+    restriction_mode: B
+    reference: committee
+  active_meeting_ids:
+    type: relation-list
+    restriction_mode: A
+    to: meeting/is_active_in_organization_id
+  archived_meeting_ids:
+    type: relation-list
+    restriction_mode: B
+    to: meeting/is_archived_in_organization_id
+  template_meeting_ids:
+    type: relation-list
+    to: meeting/template_for_organization_id
+    restriction_mode: A
+  organization_tag_ids:
+    type: relation-list
+    restriction_mode: A
+    to: organization_tag/organization_id
+    reference: organization_tag
+  theme_id:
+    type: relation
+    required: true
+    restriction_mode: A
+    to: theme/theme_for_organization_id
+    reference: theme
+  theme_ids:
+    type: relation-list
+    restriction_mode: A
+    to: theme/organization_id
+    reference: theme
+  mediafile_ids:
+    type: relation-list
+    to: mediafile/owner_id
+    on_delete: CASCADE
+    restriction_mode: A
+  published_mediafile_ids:
+    type: relation-list
+    to: mediafile/published_to_meetings_in_organization_id
+    restriction_mode: E
+  user_ids:
+    type: relation-list
+    restriction_mode: C
+    to: user/organization_id
+    reference: user
+  users_email_sender:
+    type: string
+    default: OpenSlides
+    restriction_mode: A
+  users_email_replyto:
+    type: string
+    restriction_mode: A
+  users_email_subject:
+    type: string
+    default: OpenSlides access data
+    restriction_mode: A
+  users_email_body:
+    type: text
+    default: >-
+      Dear {name},
+
+
+      this is your personal OpenSlides login:
+
+
+      {url}
+
+      Username: {username}
+
+      Password: {password}
+
+
+
+      This email was generated automatically.
+    restriction_mode: A
+  url:
+    type: string
+    default: https://example.com
+    restriction_mode: A

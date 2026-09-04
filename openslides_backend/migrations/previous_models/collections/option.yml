@@ -1,0 +1,63 @@
+unique_together:
+  - content_object_id, poll_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  text:
+    type: HTMLStrict
+    restriction_mode: A
+  "yes":
+    type: decimal(6)
+    restriction_mode: B
+  "no":
+    type: decimal(6)
+    restriction_mode: B
+  abstain:
+    type: decimal(6)
+    restriction_mode: B
+  poll_id:
+    type: relation
+    to: poll/option_ids
+    reference: poll
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  used_as_global_option_in_poll_id:
+    type: relation
+    to: poll/global_option_id
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant_legacy: true
+  vote_ids:
+    type: relation-list
+    to: vote/option_id
+    reference: vote
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  content_object_id:
+    type: generic-relation
+    to:
+      - motion/option_ids
+      - user/option_ids
+      - poll_candidate_list/option_id
+    reference:
+      - motion
+      - user
+      - poll_candidate_list
+    restriction_mode: A
+    constant_legacy: true
+  meeting_id:
+    type: relation
+    to: meeting/option_ids
+    reference: meeting
+    required: true
+    restriction_mode: A
+    constant: true

@@ -1,0 +1,149 @@
+unique_together:
+  - meeting_id, external_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  external_id:
+    type: string
+    restriction_mode: A
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  permissions:
+    type: string[]
+    items:
+      enum:
+        - agenda_item.can_manage
+        - agenda_item.can_see
+        - agenda_item.can_see_internal
+        - assignment.can_manage
+        - assignment.can_manage_polls
+        - assignment.can_nominate_other
+        - assignment.can_nominate_self
+        - assignment.can_see
+        - chat.can_manage
+        - list_of_speakers.can_be_speaker
+        - list_of_speakers.can_manage
+        - list_of_speakers.can_see
+        - list_of_speakers.can_manage_moderator_notes
+        - list_of_speakers.can_see_moderator_notes
+        - mediafile.can_manage
+        - mediafile.can_see
+        - meeting.can_manage_logos_and_fonts
+        - meeting.can_manage_settings
+        - meeting.can_see_autopilot
+        - meeting.can_see_frontpage
+        - meeting.can_see_history
+        - meeting.can_see_livestream
+        - motion.can_create
+        - motion.can_create_amendments
+        - motion.can_forward
+        - motion.can_manage
+        - motion.can_manage_metadata
+        - motion.can_manage_polls
+        - motion.can_see
+        - motion.can_see_internal
+        - motion.can_see_origin
+        - motion.can_support
+        - poll.can_manage
+        - poll.can_see_progress
+        - projector.can_manage
+        - projector.can_see
+        - tag.can_manage
+        - user.can_manage
+        - user.can_manage_presence
+        - user.can_see_sensitive_data
+        - user.can_see
+        - user.can_update
+        - user.can_edit_own_delegation
+    restriction_mode: A
+  weight:
+    type: number
+    restriction_mode: A
+  meeting_user_ids:
+    type: relation-list
+    to: meeting_user/group_ids
+    restriction_mode: A
+    equal_fields: meeting_id
+  default_group_for_meeting_id:
+    type: relation
+    to: meeting/default_group_id
+    on_delete: PROTECT
+    restriction_mode: A
+  admin_group_for_meeting_id:
+    type: relation
+    to: meeting/admin_group_id
+    on_delete: PROTECT
+    restriction_mode: A
+  anonymous_group_for_meeting_id:
+    type: relation
+    to: meeting/anonymous_group_id
+    on_delete: PROTECT
+    restriction_mode: A
+  meeting_mediafile_access_group_ids:
+    type: relation-list
+    to: meeting_mediafile/access_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_mediafile_inherited_access_group_ids:
+    type: relation-list
+    to: meeting_mediafile/inherited_access_group_ids
+    description: Calculated field.
+    read_only: true
+    restriction_mode: A
+  read_comment_section_ids:
+    type: relation-list
+    to: motion_comment_section/read_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  write_comment_section_ids:
+    type: relation-list
+    to: motion_comment_section/write_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  read_chat_group_ids:
+    type: relation-list
+    to: chat_group/read_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  write_chat_group_ids:
+    type: relation-list
+    to: chat_group/write_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  poll_ids:
+    type: relation-list
+    to: poll/entitled_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  used_as_motion_poll_default_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_poll_default_group_ids
+    restriction_mode: A
+  used_as_assignment_poll_default_id:
+    type: relation
+    reference: meeting
+    to: meeting/assignment_poll_default_group_ids
+    restriction_mode: A
+  used_as_topic_poll_default_id:
+    type: relation
+    reference: meeting
+    to: meeting/topic_poll_default_group_ids
+    restriction_mode: A
+  used_as_poll_default_id:
+    type: relation
+    reference: meeting
+    to: meeting/poll_default_group_ids
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/group_ids
+    required: true
+    restriction_mode: A
+    constant: true

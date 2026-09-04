@@ -1,0 +1,36 @@
+unique_together:
+  - meeting_id, name
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  color:
+    type: color
+    restriction_mode: A
+  default_time:
+    type: number
+    minimum: 0
+    restriction_mode: A
+  meeting_user_ids:
+    type: relation-list
+    equal_fields: meeting_id
+    restriction_mode: A
+    to: meeting_user/structure_level_ids
+  structure_level_list_of_speakers_ids:
+    type: relation-list
+    equal_fields: meeting_id
+    restriction_mode: A
+    to: structure_level_list_of_speakers/structure_level_id
+  meeting_id:
+    type: relation
+    required: true
+    reference: meeting
+    to: meeting/structure_level_ids
+    constant: true
+    restriction_mode: A
