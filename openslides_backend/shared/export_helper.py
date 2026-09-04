@@ -27,7 +27,10 @@ HISTORY_FIELDS_PER_COLLECTION = {
     "user": ["history_entry_ids", "history_position_ids"],
     **{
         collection: ["history_entry_ids"]
-        for collection in ["assignment", "motion", "topic"]
+        for collection in getattr(
+            model_registry["history_entry"]().get_field("model_id"), "to", {}
+        )
+        if collection != "user"
     },
 }
 
