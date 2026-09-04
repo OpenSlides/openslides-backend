@@ -3,6 +3,7 @@ import subprocess
 from string import Template
 
 from meta.dev.src.generate_sql_schema import Helper
+from meta.dev.src.helper_get_names import HelperGetNames
 from meta.dev.src.typing import PG_TYPES
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
@@ -91,3 +92,37 @@ class DiffMixinHelper:
             )
             print(f"{diff_mixin_path} successfully created.")
         subprocess.call(f"black {diff_mixin_path}", shell=True)
+        cls.generate_diff_mixin_debug()
+
+    @classmethod
+    def generate_diff_mixin_debug(cls) -> None:
+        lines = ""
+        mig_directory = MigrationHelper.get_last_migration_directory()
+        migration_tables = getattr(
+            MigrationHelper.get_migration_class(mig_directory), "migration_tables", None
+        )
+        assert migration_tables is not None
+
+        for collection, fields_data in cls.get_typed_migration_tables(
+            migration_tables
+        ).items():
+            query_fields = [
+                *[field_name for field_name in fields_data[0]],
+                *[
+                    f"{field_name}::{simple_type} AS {field_name}"
+                    for field_name, simple_type in fields_data[1].items()
+                ],
+            ]
+
+            target_table = HelperGetNames.get_table_name(collection, migration=True)
+            lines += f"CREATE TABLE {target_table} AS SELECT {', '.join(query_fields)} FROM \"{collection}\";\n"
+
+        with open(
+            os.path.join(
+                MIGRATIONS_PATH,
+                mig_directory,
+                "diff_mixin_debug.sql",
+            ),
+            "w",
+        ) as f:
+            f.write(lines)
