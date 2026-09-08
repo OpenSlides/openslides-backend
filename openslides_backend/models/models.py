@@ -1545,14 +1545,10 @@ class MeetingUser(Model):
         is_view_field=True,
     )
     acting_ballot_ids = fields.RelationListField(
-        to={"poll_ballot_user": "acting_meeting_user_id"},
-        on_delete=fields.OnDelete.SET_NULL,
-        is_view_field=True,
+        to={"poll_ballot_user": "acting_meeting_user_id"}, is_view_field=True
     )
     represented_ballot_ids = fields.RelationListField(
-        to={"poll_ballot_user": "represented_meeting_user_id"},
-        on_delete=fields.OnDelete.SET_NULL,
-        is_view_field=True,
+        to={"poll_ballot_user": "represented_meeting_user_id"}, is_view_field=True
     )
     poll_entitled_user_ids = fields.RelationListField(
         to={"poll_entitled_user": "meeting_user_id"}, is_view_field=True
@@ -2395,7 +2391,7 @@ class PollBallot(Model):
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.DecimalField(constant=True, default="1.000000")
     split = fields.BooleanField(default=False)
-    value = fields.TextField(constant=True)
+    value = fields.TextField()
     poll_id = fields.RelationField(
         to={"poll": "ballot_ids"}, required=True, constant=True
     )
