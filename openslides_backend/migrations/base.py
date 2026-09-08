@@ -206,8 +206,9 @@ class BaseMigration:
             cursor
         """
 
-    @staticmethod
-    def data_manipulation(curs: Cursor[DictRow], stash: dict[str, Any] | None) -> None:
+    def data_manipulation(
+        self, curs: Cursor[DictRow], stash: dict[str, Any] | None
+    ) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:

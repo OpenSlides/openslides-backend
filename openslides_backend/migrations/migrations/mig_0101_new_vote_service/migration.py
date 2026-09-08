@@ -1,4 +1,12 @@
+from typing import Any
+
+from psycopg import Cursor
+
+# from psycopg import Cursor, sql
+from psycopg.rows import DictRow
+
 from openslides_backend.migrations.base import BaseMigration
+from openslides_backend.shared.filters import FilterOperator
 
 from .diff_mixin import DiffMixin
 
@@ -82,3 +90,55 @@ class Migration(DiffMixin, BaseMigration):
     @staticmethod
     def find_meeting_user(user_id: int, meeting_id: int) -> int | None:
         pass
+
+    def data_manipulation(
+        self, curs: Cursor[DictRow], stash: dict[str, Any] | None
+    ) -> None:
+        self.update_all_entries(
+            curs, "meeting", "topic_poll_default_method", "selection"
+        )
+        # TODO: update intermediate table
+        # self.update_from_mig_table_sql(
+        #     curs,
+        #     "meeting_user",
+        #     ["vote_delegated_to_ids"],
+        #     [
+        #         sql.SQL("ARRAY[{source_column}]").format(
+        #             source_column=sql.Identifier("vote_delegated_to_id")
+        #         )
+        #     ],
+        # )
+        self.update_from_mig_table_sql(
+            curs,
+            "poll",
+            ["anonymized"],
+            ["is_pseudoanonymized"],
+        )
+        poll_type_to_visibility_map = {
+            "analog": "manually",
+            "named": "open",
+            "pseudoanonymous": "secret",
+            "cryptographic": "secret",
+        }
+        self.update_from_lookup_map(
+            curs,
+            "poll",
+            "visibility",
+            [
+                (FilterOperator("type", "=", poll_type), True, poll_visibility)
+                for poll_type, poll_visibility in poll_type_to_visibility_map.items()
+            ],
+        )
+        self.update_matching_entries_multiple_columns(
+            curs,
+            "poll",
+            ["state", "published"],
+            ["finished", True],
+            FilterOperator("state", "=", "published"),
+        )
+        self.update_matching_entries_multiple_columns(
+            curs,
+            "poll",
+            ["allow_invalid", "allow_vote_split"],
+            [False, False],
+        )
