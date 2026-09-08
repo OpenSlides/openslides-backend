@@ -9,7 +9,7 @@ from openslides_backend.shared.interfaces.collection_field_lock import (
 )
 from openslides_backend.shared.typing import LockResult, PartialModel
 
-from ...shared.filters import Filter
+from ...shared.filters import Filter, SqlArguments
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId, Id
 from .commands import GetManyRequest
@@ -25,7 +25,6 @@ COLLECTION_MAX_LEN = 32
 FQID_MAX_LEN = 48  # collection + id
 COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
-SqlArguments = list[str | int]
 SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
 
 
