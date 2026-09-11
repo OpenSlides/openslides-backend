@@ -85,6 +85,53 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
         )
 
     @staticmethod
+    def get_update_array_add_values_part(column: str, distinct: bool) -> sql.Composed:
+        if distinct:
+            return sql.SQL(
+                "{column} = ARRAY(SELECT DISTINCT unnest(COALESCE({column}, '{{}}') || %s))"
+            ).format(
+                column=sql.Identifier(column),
+            )
+        else:
+            return sql.SQL("{column} = COALESCE({column}, '{{}}') || %s").format(
+                column=sql.Identifier(column),
+            )
+
+    @staticmethod
+    def get_update_array_remove_values_part(
+        column: str, values: list[Any]
+    ) -> sql.Composable:
+        expression: sql.Composable = sql.Identifier(column)
+        for value in values:
+            expression = sql.SQL("array_remove({expression}, %s)").format(
+                expression=expression,
+            )
+        return sql.SQL("{column} = {expression}").format(
+            column=sql.Identifier(column), expression=expression
+        )
+
+    @staticmethod
+    def get_update_array_replace_values_part(
+        column: str, distinct: bool
+    ) -> sql.Composed:
+        if distinct:
+            return sql.SQL("""
+                {column} = CASE
+                WHEN {column} IS NULL THEN NULL
+                ELSE ARRAY(
+                    SELECT DISTINCT value
+                    FROM unnest(array_replace({column}, %s, %s)) AS value
+                )
+                END
+                """).format(
+                column=sql.Identifier(column),
+            )
+        else:
+            return sql.SQL("{column} = array_replace({column}, %s, %s)").format(
+                column=sql.Identifier(column),
+            )
+
+    @staticmethod
     def get_lookup_part_from_other_table(
         target_table_or_collection: str,
         filter_string: sql.Composable,
@@ -482,3 +529,101 @@ class BaseMigration:
                 ),
             )
         )
+
+    @staticmethod
+    def update_array(
+        curs: Cursor[DictRow],
+        collection: str,
+        column: str,
+        add: list[Any] = [],
+        remove: list[Any] = [],
+        replace: dict[Any, Any] = {},
+        dictinct: bool = True,
+        filter_or_condition: Filter | str | None = None,
+    ) -> None:
+        filter_arguments: SqlArguments = []
+        condition: sql.Composable | None = (
+            BaseMigration._get_filter_query_and_arguments(
+                collection, filter_or_condition, filter_arguments
+            )
+            if filter_or_condition
+            else None
+        )
+
+        if add:
+            BaseMigration._handle_update_array_add(
+                curs, collection, column, add, condition, filter_arguments, dictinct
+            )
+
+        if remove:
+            BaseMigration._handle_update_array_remove(
+                curs, collection, column, remove, condition, filter_arguments
+            )
+
+        if replace:
+            BaseMigration._handle_update_array_replace(
+                curs, collection, column, replace, condition, filter_arguments, dictinct
+            )
+
+    @staticmethod
+    def _handle_update_array_add(
+        curs: Cursor[DictRow],
+        collection: str,
+        column: str,
+        add: list[Any],
+        condition: sql.Composable | None,
+        filter_arguments: SqlArguments,
+        distinct: bool,
+    ) -> None:
+        curs.execute(
+            BaseMigrationSqlHelper.get_update_entries_sql(
+                collection,
+                BaseMigrationSqlHelper.get_update_array_add_values_part(
+                    column, distinct
+                ),
+                condition,
+            ),
+            [add, *filter_arguments],
+        )
+
+    @staticmethod
+    def _handle_update_array_remove(
+        curs: Cursor[DictRow],
+        collection: str,
+        column: str,
+        remove: list[Any],
+        condition: sql.Composable | None,
+        filter_arguments: SqlArguments,
+    ) -> None:
+        curs.execute(
+            BaseMigrationSqlHelper.get_update_entries_sql(
+                collection,
+                BaseMigrationSqlHelper.get_update_array_remove_values_part(
+                    column, remove
+                ),
+                condition,
+            ),
+            [*remove, *filter_arguments],
+        )
+
+    @staticmethod
+    def _handle_update_array_replace(
+        curs: Cursor[DictRow],
+        collection: str,
+        column: str,
+        replace: dict[Any, Any],
+        condition: sql.Composable | None,
+        filter_arguments: SqlArguments,
+        distinct: bool,
+    ) -> None:
+        for old, new in replace.items():
+            curs.execute(
+                BaseMigrationSqlHelper.get_update_entries_sql(
+                    collection,
+                    BaseMigrationSqlHelper.get_update_array_replace_values_part(
+                        column, distinct
+                    ),
+                    condition,
+                ),
+                [old, new, *filter_arguments],
+            )

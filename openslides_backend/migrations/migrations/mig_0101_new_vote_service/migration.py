@@ -142,3 +142,9 @@ class Migration(DiffMixin, BaseMigration):
             ["allow_invalid", "allow_vote_split"],
             [False, False],
         )
+        self.update_array(
+            curs,
+            "group",
+            "permissions",
+            replace={"poll.can_manage": "agenda_item.can_manage_polls"},
+        )

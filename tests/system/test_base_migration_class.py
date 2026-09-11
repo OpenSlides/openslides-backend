@@ -283,3 +283,235 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         for i in range(1, 14):
             self.assert_model_exists(f"option/{i}", {"text": f"Result {(i + 7) * 2}"})
+
+    def setup_history_entries(self) -> None:
+        base_entries_data = {
+            1: None,
+            2: ["a"],
+            3: ["b"],
+            4: ["c"],
+            5: ["a", "b", "c", "d"],
+        }
+        self.set_models(
+            {
+                "history_position/148": {
+                    "user_id": 1,
+                    "original_user_id": 1,
+                },
+                **{
+                    f"history_entry/{i}": {
+                        "entries": entries,
+                        "position_id": 148,
+                    }
+                    for i, entries in base_entries_data.items()
+                },
+                **{
+                    f"history_entry/{i + 10}": {
+                        "entries": entries,
+                        "position_id": 148,
+                    }
+                    for i, entries in base_entries_data.items()
+                },
+            }
+        )
+
+    def test_update_array_add(self) -> None:
+        """Should update all entries"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            add=["b"],
+            dictinct=False,
+        )
+        for i, entries in {
+            1: ["b"],
+            2: ["a", "b"],
+            3: ["b", "b"],
+            4: ["c", "b"],
+            5: ["a", "b", "c", "d", "b"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+
+    def test_update_array_add_distinct(self) -> None:
+        """Should update all entries. Resulting entries should not contain duplicates"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            add=["b"],
+        )
+        for i, entries in {
+            1: ["b"],
+            2: ["a", "b"],
+            3: ["b"],
+            4: ["c", "b"],
+            5: ["a", "b", "c", "d"],
+        }.items():
+            assert set(self.get_model(f"history_entry/{i}")["entries"]) == set(entries)
+            assert set(self.get_model(f"history_entry/{i + 10}")["entries"]) == set(
+                entries
+            )
+
+    def test_update_array_add_multi(self) -> None:
+        """Should update all entries. Resulting entries should not contain duplicates"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            add=["a", "b"],
+        )
+        for i, entries in {
+            1: ["a", "b"],
+            2: ["a", "b"],
+            3: ["b", "a"],
+            4: ["c", "a", "b"],
+            5: ["a", "b", "c", "d"],
+        }.items():
+            assert set(self.get_model(f"history_entry/{i}")["entries"]) == set(entries)
+            assert set(self.get_model(f"history_entry/{i + 10}")["entries"]) == set(
+                entries
+            )
+
+    def test_update_array_remove(self) -> None:
+        """Should update all entries"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            remove=["b"],
+        )
+        for i, entries in {
+            1: None,
+            2: ["a"],
+            3: [],
+            4: ["c"],
+            5: ["a", "c", "d"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+
+    def test_update_array_remove_multi(self) -> None:
+        """Should update all entries"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            remove=["a", "b"],
+        )
+        for i, entries in {
+            1: None,
+            2: [],
+            3: [],
+            4: ["c"],
+            5: ["c", "d"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+
+    def test_update_array_replace(self) -> None:
+        """Should update all entries"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            replace={"b": "c"},
+            dictinct=False,
+        )
+        for i, entries in {
+            1: None,
+            2: ["a"],
+            3: ["c"],
+            4: ["c"],
+            5: ["a", "c", "c", "d"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+
+    def test_update_array_replace_distinct(self) -> None:
+        """Should update all entries. Resulting entries should not contain duplicates"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            replace={"b": "c"},
+        )
+        for i, entries in {
+            1: None,
+            2: ["a"],
+            3: ["c"],
+            4: ["c"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+        for i in [5, 15]:
+            assert set(self.get_model(f"history_entry/{i}")["entries"]) == {
+                "a",
+                "c",
+                "d",
+            }
+
+    def test_update_array_replace_multi(self) -> None:
+        """Should update all entries. Resulting entries should not contain duplicates"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            replace={"b": "c", "a": "e"},
+        )
+        for i, entries in {
+            1: None,
+            2: ["e"],
+            3: ["c"],
+            4: ["c"],
+        }.items():
+            self.assert_model_exists(f"history_entry/{i}", {"entries": entries})
+            self.assert_model_exists(f"history_entry/{i + 10}", {"entries": entries})
+        for i in [5, 15]:
+            assert set(self.get_model(f"history_entry/{i}")["entries"]) == {
+                "e",
+                "c",
+                "d",
+            }
+
+    def test_update_array_all_actions_filter(self) -> None:
+        """Should update only entries that match the filter. Resulting entries should not contain duplicates"""
+        self.setup_history_entries()
+        self.update_array(
+            self.connection.cursor(),
+            "history_entry",
+            "entries",
+            add=["a"],
+            remove=["b"],
+            replace={"c": "d"},
+            filter_or_condition=FilterOperator("id", "<", 10),
+        )
+        for i, changed_entries in {
+            1: ["a"],
+            2: ["a"],
+            3: ["a"],
+            4: ["d", "a"],
+            5: ["a", "d", "a"],
+        }.items():
+            assert set(self.get_model(f"history_entry/{i}")["entries"]) == set(
+                changed_entries
+            )
+        for i, unchanged_entries in {
+            1: None,
+            2: ["a"],
+            3: ["b"],
+            4: ["c"],
+            5: ["a", "b", "c", "d"],
+        }.items():
+            self.assert_model_exists(
+                f"history_entry/{i + 10}", {"entries": unchanged_entries}
+            )
