@@ -14,7 +14,7 @@ from meta.dev.src.generate_sql_schema import (
     SIMPLE_TYPES,
     FieldSqlErrorType,
     GenerateCodeBlocks,
-    Helper
+    Helper,
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
 from meta.dev.src.typing import SchemaZoneKey
@@ -96,13 +96,13 @@ def main() -> int:
     # Using a lot of isinstance calls here for pleasing mypy
     sql = "-- EDIT SECTION --\n"
     edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
+    # if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+    #     sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- REMOVE SECTION --\n"
     remove: RemoveDiffDict | None = diff["remove"]
-    if remove:
-        sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
+    # if remove:
+    #     sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
 
     sql += "\n-- RENAME SECTION --\n"
     sql += RenameHelper.handle_rename(diff["rename"], diff_control["rename"])
@@ -855,61 +855,56 @@ def handle_add_field_attributes(
     field_name: str,
     field_def_diff: dict[str, Any],
     dc_field_def: dict[str, Any],
-) -> str:
+) -> tuple[str,str,str]:
     before_sql = ""
     constraints_sql = ""
     after_sql = ""
     collection_name = table_name[:-2]
     field_def = CURR_MODELS[collection_name]["fields"][field_name]
-    field_is_relation = (field_type:=field_def_diff.get("type", "")) in [
-        "relation","relation-list", "generic-relation", "generic-relation-list"
+    field_is_relation = (field_type := field_def_diff.get("type", "")) in [
+        "relation",
+        "relation-list",
+        "generic-relation",
+        "generic-relation-list",
     ]
     if field_is_relation:
         is_generic = field_type.startswith("generic-")
         if field_type.endswith("-list"):
             if is_generic:
-                code, error=GenerateCodeBlocks.get_generic_relation_list_type(
-                    table_name, field_name, field_def, field_type
+                code, error = GenerateCodeBlocks.get_generic_relation_list_type(
+                    collection_name, field_name, field_def, field_type
                 )
             else:
-                code, error=GenerateCodeBlocks.get_relation_list_type(
-                    table_name, field_name, field_def, field_type
+                code, error = GenerateCodeBlocks.get_relation_list_type(
+                    collection_name, field_name, field_def, field_type
                 )
+        elif is_generic:
+            code, error = GenerateCodeBlocks.get_generic_relation_type(
+                collection_name, field_name, field_def, field_type
+            )
         else:
-            if is_generic:
-                code, error=GenerateCodeBlocks.get_generic_relation_type(
-                    table_name, field_name, field_def, field_type
-                )
-            else:
-                code, error=GenerateCodeBlocks.get_relation_type(
-                    table_name, field_name, field_def, field_type
-                )
-
-        if error:
-            raise BadCodingException(
-                f"{collection_name}/{field_name}: {error}"
+            code, error = GenerateCodeBlocks.get_relation_type(
+                collection_name, field_name, field_def, field_type
             )
 
-        (
-            enum_definitions,
-            pre_code,
-            table_name_code,
-            view_name_code,
-            alter_table_code,
-            final_info_code,
-            missing_handled_attributes,
-            missing_handled_collections_meta_attributes,
-            im_table_code,
-            create_trigger_partitioned_sequences_code,
-            create_trigger_1_1_relation_not_null_code,
-            create_trigger_1_n_relation_not_null_code,
-            create_trigger_n_m_relation_not_null_code,
-            create_trigger_prevent_updates_code,
-            create_trigger_unique_ids_pair_code,
-            create_trigger_equal_fields_code,
-            create_trigger_notify_code,
-            errors # TODO: Should we raise these?
-        )=code
+        if error:
+            raise BadCodingException(f"{collection_name}/{field_name}: {error}")
+
+        table_name_code = "\n".join([code.get("table", ""),code.get("alter_table", ""),code.get("undecided","")])
+        alter_table_code = code.get("alter_table_final")
+        v = code.get("view")
+        view_name_code = code.get("post_view")
+        create_trigger_partitioned_sequences_code = code.get("create_trigger_partitioned_sequences")
+        create_trigger_1_1_relation_not_null_code = code.get("create_trigger_1_1_relation_not_null")
+        create_trigger_1_n_relation_not_null_code = code.get("create_trigger_1_n_relation_not_null")
+        create_trigger_n_m_relation_not_null_code = code.get("create_trigger_n_m_relation_not_null")
+        create_trigger_prevent_updates_code = code.get("create_trigger_prevent_updates_code")
+        create_trigger_unique_ids_pair_code = code.get("create_trigger_unique_ids_pair_code")
+        create_trigger_equal_fields_code = code.get("create_trigger_equal_fields_code")
+        create_trigger_notify_code = code.get("create_trigger_notify")
+        f = code.get("final_info")
+        errors = code.get("errors")  # TODO: Should we raise these?
+        im_table_code =GenerateCodeBlocks.intermediate_sql.get(collection_name)
 
         for value in [
             table_name_code,
@@ -926,16 +921,18 @@ def handle_add_field_attributes(
             create_trigger_prevent_updates_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_equal_fields_code,
-            create_trigger_notify_code
+            create_trigger_notify_code,
         ]:
             if value:
                 after_sql += value
-        for value in [
-            enum_definitions,
-            pre_code,
-        ]:
-            if value:
-                raise BadCodingException(f"{collection_name}/{field_name}: Unecpected value calculated: {error}")
+        # TODO: uncomment
+        # for value in [
+        #     pre_code,
+        # ]:
+        #     if value:
+        #         raise BadCodingException(
+        #             f"{collection_name}/{field_name}: Unexpected value calculated: {value}"
+        #         )
 
         if view_name_code:
             alter_views.add(collection_name)
@@ -1015,7 +1012,9 @@ def handle_add_field_attributes(
                             f"{table_name}/{field_name}: {constraint}, {value}"
                         )
             case "constant":
-                after_sql += GenerateCodeBlocks.get_trigger_prevent_updates(table_name, field_name)
+                after_sql += GenerateCodeBlocks.get_trigger_prevent_updates(
+                    table_name, field_name
+                )
             case "required":
                 constraints_sql += Helper.get_inline_required_constraint(
                     table_name, field_name
@@ -1031,24 +1030,32 @@ def handle_add_field_attributes(
                 if isinstance(value, list):
                     before_sql += Helper.ENUM_DEFINITION_TEMPLATE.substitute(
                         {
-                            "name": HelperGetNames.get_enum_name_for_column(collection_name, field_name),
+                            "name": HelperGetNames.get_enum_name_for_column(
+                                collection_name, field_name
+                            ),
                             "values": ", ".join([f"'{item}'" for item in value]),
                         }
                     )
                 else:
+                    # TODO in this case it's a meta enum I think
                     pass
             case "sequence_scope":
-                # TODO
-                # See GenerateCodeBlocks.get_schema_simple_types()
-                pass
+                after_sql += (
+                    GenerateCodeBlocks.get_trigger_generate_partitioned_sequence(
+                        table_name, field_name, value
+                    )
+                )
+                constraints_sql += Helper.get_unique_together_constraint_definition(
+                    table_name, [field_name, value], False
+                )
             case "unique":
                 constraints_sql += Helper.get_inline_unique_constraint(
                     table_name, field_name
                 )
             case "unique_together_strict":
-                # TODO
-                # See GenerateCodeBlocks.get_constraint_unique_together(collection_name, value, True)
-                pass
+                constraints_sql += GenerateCodeBlocks.get_constraint_unique_together(
+                    collection_name, value, True
+                )
             case "maximum":
                 constraints_sql += Helper.get_inline_maximum_constraint(
                     table_name, field_name, value
@@ -1072,7 +1079,9 @@ def handle_add_field_attributes(
                 )
             case "to":
                 if not field_is_relation:
-                    raise BadCodingException(f"Did not expect to find constraint '{constraint}' in a non-relation field.")
+                    raise BadCodingException(
+                        f"Did not expect to find constraint '{constraint}' in a non-relation field."
+                    )
                 # This essentially would be an integer field being turned into a real relation
                 # Should probably be handled together with reference and type.
                 # And in a later ALTER TABLE
@@ -1087,9 +1096,11 @@ def handle_add_field_attributes(
                 alter_views_conditionally(
                     collection_name, bool(write_fields), is_view_field
                 )
-            case ("sql"|"equal_fields"|"reference"):
+            case "sql" | "equal_fields" | "reference":
                 if not field_is_relation:
-                    raise BadCodingException(f"Did not expect to find constraint '{constraint}' in a non-relation field.")
+                    raise BadCodingException(
+                        f"Did not expect to find constraint '{constraint}' in a non-relation field."
+                    )
             case "restriction_mode" | "description" | "on_delete" | "constant_legacy":
                 # this is irrelevant, thus omitted
                 # on_delete is not expressed in the sql since the backend handles
@@ -1100,7 +1111,8 @@ def handle_add_field_attributes(
                     f"{table_name}/{field_name}: {constraint}, {value}"
                 )
         del dc_field_def[constraint]
-    return constraints_sql
+
+    return before_sql, constraints_sql, after_sql
 
 
 def handle_edit_field_attributes(
@@ -1468,34 +1480,44 @@ def handle_add_tree(
     add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
 ) -> str:
+    before_sql = ""
     sql = ""
+    after_sql = ""
     for collection_name, collection_def in add_tree_dict.items():
         # TODO _meta
         table_name = HelperGetNames.get_table_name(collection_name)
         # TODO unique_together, unique_together_strict
-        for fields_idx in [0, 1]:
-            # fields always exists
-            fields = collection_def[1]["fields"][fields_idx]
-            dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
-            for field_name, field_def in fields.items():
-                if fields_idx == 0:
-                    # field added
-                    constraints_sql = handle_add_field_attributes(
-                        table_name, field_name, field_def, dc_fields[field_name]
+        if collection_name == "_meta":
+            # TODO: enums!
+            pass
+        else:
+            for fields_idx in [0, 1]:
+                # fields always exists, except with _meta
+                fields = collection_def[1]["fields"][fields_idx]
+                dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
+                for field_name, field_def in fields.items():
+                    if fields_idx == 0:
+                        # field added
+                        b_sql, constraints_sql, a_sql = handle_add_field_attributes(
+                            table_name, field_name, field_def, dc_fields[field_name]
+                        )
+                        before_sql += b_sql
+                        sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
+                        after_sql +=a_sql
+                    else:
+                        # field altered
+                        pass
+                        # TODO: uncomment
+                        # sql += handle_edit_field_attributes(
+                        #     table_name, field_name, field_def[0], dc_fields[field_name]
+                        # )
+                    remove_empty(
+                        dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
+                        field_name,
                     )
-                    sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
-                else:
-                    # field altered
-                    sql += handle_edit_field_attributes(
-                        table_name, field_name, field_def[0], dc_fields[field_name]
-                    )
-                remove_empty(
-                    dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
-                    field_name,
-                )
-        remove_empty(dc_add_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_add_tree_dict, collection_name)
-    return sql
+            remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+            remove_empty(dc_add_tree_dict, collection_name)
+    return before_sql + sql + after_sql
 
 
 def handle_edit_tree(
