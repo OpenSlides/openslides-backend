@@ -179,6 +179,10 @@ class EqualFieldsHelper:
 
     @classmethod
     def update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+        """
+        Merges equal fields of both sides of the relation and updates equal_fields_diff internally
+        if it wasn't checked before. Potentially just from the other side.
+        """
         if field_name in cls.checked_equal_fields.get(collection_name, set()):
             return
 
@@ -1066,25 +1070,27 @@ class EditHelper:
                         )
                     else:
                         # Only for 1:1 relations and simple types
-                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
+                        prev_field_def = PREV_MODELS[collection_name]["fields"][
+                            field_name
+                        ]
                         if type_ not in [*SIMPLE_TYPES, "relation"]:
                             continue
                         if type_ == "relation":
                             with prev_models_context():
                                 foreign_table_field: TableFieldType = (
                                     TableFieldType.get_definitions_from_foreign(
-                                        field_def.get("to"),
-                                        field_def.get("reference"),
+                                        prev_field_def.get("to"),
+                                        prev_field_def.get("reference"),
                                     )
                                 )
                                 if foreign_table_field.field_def["type"] != "relation":
                                     continue
-                                # TODO: below TODO is a copy paste from handle_remove_field_attributes. Check if this needs the reverse case or can be deleted.
-                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                                if was_view_field(
-                                    collection_name, field_name, field_def
-                                ):
-                                    continue
+                            # TODO: below TODO is a copy paste from handle_remove_field_attributes. Check if this needs the reverse case or can be deleted.
+                            # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+                            if was_view_field(
+                                collection_name, field_name, prev_field_def
+                            ):
+                                continue
                         constraints_sql += AlterSchemaHelper.get_drop_trigger_statement(
                             collection_name,
                             HelperGetNames.get_constant_field_trigger_name(
@@ -1105,7 +1111,7 @@ class EditHelper:
                         table_name, {}
                     ):
                         # Shouldn't be a case since this is already skipped in yaml diff generator.
-                        # TODO decide whether to fail or delete this check
+                        # TODO decide whether to fail or DELETE this check
                         print(
                             f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
                         )
@@ -1147,16 +1153,9 @@ class EditHelper:
         result = ""
         if "relation" in type_:
             own_table_field = TableFieldType(collection_name, field_name, field_def)
-            if "generic" in type_:
-                foreign_table_fields = InternalHelper.get_definitions_from_foreign_list(
-                    field_def.get("to"), field_def.get("reference")
-                )
-            else:
-                foreign_table_fields = [
-                    TableFieldType.get_definitions_from_foreign(
-                        field_def.get("to"), field_def.get("reference")
-                    )
-                ]
+            foreign_table_fields = (
+                InternalHelper.get_foreign_definitions_from_field_def(field_def)
+            )
             state, *_ = InternalHelper.check_relation_definitions(
                 own_table_field, foreign_table_fields
             )
@@ -1247,8 +1246,6 @@ class EditHelper:
                 break
             expected_idx = nmbr - len(add_attributes)
             try:
-                if field_name == "state":
-                    pass
                 idx_old = values_old.index(v_new)
             except ValueError:
                 # value not in list
