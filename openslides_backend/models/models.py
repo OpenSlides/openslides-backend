@@ -1448,7 +1448,7 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
     id = fields.IntegerField(required=True, constant=True)
     sort_result_by_votes = fields.BooleanField(default=True)
     visibility = fields.CharField(
-        constraints={"enum": ["manually", "named", "open", "secret"]}
+        default="secret", constraints={"enum": ["manually", "named", "open", "secret"]}
     )
     allow_abstain = fields.BooleanField(default=True)
     allow_nota = fields.BooleanField(default=False)
