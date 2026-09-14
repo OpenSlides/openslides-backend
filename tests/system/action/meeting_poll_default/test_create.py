@@ -73,7 +73,7 @@ class MeetingPollDefaultCreateActionTest(BaseActionTestCase):
                 "allow_nota": False,
                 "strike_out": False,
                 "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
-                "visibility": Poll.VISIBILITY_MANUALLY,
+                "visibility": Poll.VISIBILITY_SECRET,
                 "group_ids": None,
                 "display_chart": "pie",
             },

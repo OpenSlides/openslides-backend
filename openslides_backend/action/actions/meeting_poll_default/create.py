@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ....models.models import MeetingPollDefault, Poll
+from ....models.models import MeetingPollDefault
 from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 from ...util.action_type import ActionType
@@ -48,13 +48,6 @@ class MeetingPollDefaultCreate(CreateAction):
         )
         self.check_equal_fields(instance, poll_type_field_name, poll_type_field_value)
         self.check_prevent_updates(instance, poll_type_field_name)
-
-        if "visibility" not in instance:
-            instance["visibility"] = (
-                Poll.VISIBILITY_MANUALLY
-                if poll_type_field_name == "used_as_topic_poll_config_in_meeting_id"
-                else Poll.VISIBILITY_SECRET
-            )
 
         if (
             poll_type_field_name == "used_as_topic_poll_config_in_meeting_id"
