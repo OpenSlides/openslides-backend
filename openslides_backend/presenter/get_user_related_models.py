@@ -48,7 +48,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                 "committee_management_ids",
             ],
         )
-        users = self.datastore.get_many([gmr]).get("user", {})
+        users = self.datastore.get_many([gmr], lock_result=False).get("user", {})
         for user_id, user in users.items():
             result[user_id] = {}
             self.check_permissions_for_scope(user_id)
@@ -65,7 +65,8 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             return []
 
         gm_result = self.datastore.get_many(
-            [GetManyRequest("committee", user["committee_ids"], ["id", "name"])]
+            [GetManyRequest("committee", user["committee_ids"], ["id", "name"])],
+            lock_result=False,
         )
         return [
             {
@@ -99,7 +100,8 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                         meeting_user_ids,
                         [*result_fields, "group_ids", "meeting_id"],
                     )
-                ]
+                ],
+                lock_result=False,
             )["meeting_user"].values()
             if meeting_user.pop("group_ids", None)
         ]
@@ -112,7 +114,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             [meeting_user["meeting_id"] for meeting_user in meeting_users],
             ["id", "name", "is_active_in_organization_id", "locked_from_inside"],
         )
-        meetings = self.datastore.get_many([gmr]).get("meeting", {})
+        meetings = self.datastore.get_many([gmr], lock_result=False).get("meeting", {})
         operator_meetings = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             ["meeting_ids"],
