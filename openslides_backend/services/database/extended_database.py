@@ -763,7 +763,7 @@ class ExtendedDatabase(Database):
         This is a programming safety mechanism to ensure the presenters don't
         select with locking on.
         """
-        if self.never_lock and lock_result:
+        if self.env.is_dev_mode() and self.never_lock and lock_result:
             raise BadCodingException(
                 "ExtendedDatabase running in never_lock mode, all requests must have locking set to false."
             )
