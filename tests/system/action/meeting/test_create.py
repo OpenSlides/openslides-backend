@@ -232,7 +232,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "used_as_topic_poll_config_in_meeting_id": 1,
                 "group_ids": [3],
                 "sort_result_by_votes": True,
-                "visibility": Poll.VISIBILITY_MANUALLY,
+                "visibility": Poll.VISIBILITY_SECRET,
                 "allow_abstain": True,
                 "allow_nota": False,
                 "strike_out": False,
