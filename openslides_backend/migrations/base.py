@@ -153,6 +153,66 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
             filter_string=filter_string,
         )
 
+    @staticmethod
+    def normalize_optional_condition(
+        condition: sql.Composable | None,
+    ) -> sql.Composable:
+        return (
+            sql.SQL(" WHERE {condition}").format(condition=condition)
+            if condition
+            else sql.SQL("")
+        )
+
+    @staticmethod
+    def get_join_table_part(
+        table: Table, columns: dict[Field, tuple[Table, Field]]
+    ) -> sql.Composable:
+        return sql.SQL(" JOIN {table} ON {columns}").format(
+            table=sql.Identifier(table),
+            columns=sql.SQL(" AND ").join(
+                sql.SQL(
+                    "{table}.{column} = {main_table_alias}.{main_table_column}"
+                ).format(
+                    table=sql.Identifier(table),
+                    column=sql.Identifier(own_column),
+                    main_table_alias=sql.Identifier(main_table_and_column[0]),
+                    main_table_column=sql.Identifier(main_table_and_column[1]),
+                )
+                for own_column, main_table_and_column in columns.items()
+            ),
+        )
+
+    @staticmethod
+    def get_join_values_part(
+        values: list[dict[str, str]],
+        intermediate_columns: list[str],
+        join_on: list[str],
+        main_table_alias: str,
+        values_alias: str = "v",
+    ) -> sql.Composable:
+        return sql.SQL(
+            " JOIN (VALUES {values}) AS {values_alias}({intermediate_columns}) ON {join_on}"
+        ).format(
+            values=sql.SQL(", ").join(
+                sql.SQL("({placeholders})").format(
+                    placeholders=sql.SQL(", ").join(sql.Placeholder() for _ in row)
+                )
+                for row in values
+            ),
+            values_alias=sql.Identifier(values_alias),
+            intermediate_columns=sql.SQL(", ").join(
+                sql.Identifier(column) for column in intermediate_columns
+            ),
+            join_on=sql.SQL(" AND ").join(
+                sql.SQL("{main_table_alias}.{column} = {values_alias}.{column}").format(
+                    main_table_alias=sql.Identifier(main_table_alias),
+                    values_alias=sql.Identifier(values_alias),
+                    column=sql.Identifier(column),
+                )
+                for column in join_on
+            ),
+        )
+
     # -- Methods for building the queries --
     @staticmethod
     def get_update_entries_sql(
@@ -165,11 +225,45 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
                 HelperGetNames.get_table_name(collection_or_table_name)
             ),
             set_part=set_part,
-            filter=(
-                sql.SQL(" WHERE {condition}").format(condition=condition)
-                if condition
-                else sql.SQL("")
+            filter=BaseMigrationSqlHelper.normalize_optional_condition(condition),
+        )
+
+    @staticmethod
+    def get_insert_from_other_table_sql(
+        source_table: str,
+        target_table: str,
+        target_columns: list[str],
+        select_list: list[tuple[str, Field]],
+        join_on_part: sql.Composable | None = None,
+        condition: sql.Composable | None = None,
+    ) -> sql.Composed:
+        """
+        transfer_from_source: map of the columns that should be transfered from the source table
+        where source and target columns have different names:
+            * key: column name in the target table into which the value will be inserted
+            * value: column in the source table from which the value will be taken
+        """
+
+        return sql.SQL("""
+            INSERT INTO {target_table} ({target_columns})
+            SELECT {select_list}
+            FROM {source_table} {join_on_part}{filter}
+            RETURNING "id";
+        """).format(
+            target_table=sql.Identifier(target_table),
+            target_columns=sql.SQL(", ").join(
+                sql.Identifier(column) for column in target_columns
             ),
+            select_list=sql.SQL(", ").join(
+                sql.SQL("{table_alias}.{column}").format(
+                    table_alias=sql.Identifier(item[0]),
+                    column=sql.Identifier(item[1]),
+                )
+                for item in select_list
+            ),
+            source_table=sql.Identifier(source_table),
+            join_on_part=join_on_part,
+            filter=BaseMigrationSqlHelper.normalize_optional_condition(condition),
         )
 
 
@@ -627,3 +721,83 @@ class BaseMigration:
                 ),
                 [old, new, *filter_arguments],
             )
+
+    @staticmethod
+    def insert_from_other_table(
+        curs: Cursor[DictRow],
+        target_collection: str,
+        main_source_table: str,
+        additional_souce_tables: dict[Table, dict[Field, tuple[Table, Field]]] = {},
+        copy_from_source_tables: dict[Table, dict[Field, Field]] = {},
+        generate_from_map: list[dict[Field, Any]] = [],
+        values_join_on: list[Field] = [],
+        filter_or_condition: Filter | str | None = None,
+    ) -> list[int]:
+        """
+        transfer_from_source_table: map of the columns that should be transfered from the source table
+        where source and target columns have different names:
+            * key: column name in the target table into which the value will be inserted
+            * value: column in the source table from which the value will be taken
+        """
+        join_on_parts: list[sql.Composable] = []
+        if generate_from_map:
+            assert (
+                values_join_on
+            ), "'generate_from_map' must be used only together with 'values_join_on'."
+            intermediate_columns = list(generate_from_map[0].keys())
+            assert all(
+                [
+                    set(generate_from_map[i]) == set(intermediate_columns)
+                    for i in range(1, len(generate_from_map))
+                ]
+            ), "All dictionaries in 'generate_from_map' must have the same keys."
+            join_on_parts.append(
+                BaseMigrationSqlHelper.get_join_values_part(
+                    generate_from_map,
+                    intermediate_columns,
+                    values_join_on,
+                    main_source_table,
+                )
+            )
+        else:
+            intermediate_columns = []
+
+        for table, join_on_columns in additional_souce_tables.items():
+            join_on_parts.append(
+                BaseMigrationSqlHelper.get_join_table_part(table, join_on_columns)
+            )
+
+        target_columns: list[str] = [
+            column for column in intermediate_columns if column not in values_join_on
+        ]
+        select_list: list[tuple[str, Field]] = [
+            ("v", column) for column in target_columns
+        ]
+        for table, columns in copy_from_source_tables.items():
+            target_columns.extend(columns.values())
+            select_list.extend([(table, column) for column in columns.keys()])
+
+        arguments: SqlArguments = [
+            row[column_name]
+            for row in generate_from_map
+            for column_name in intermediate_columns
+        ]
+        condition: sql.Composable | None = (
+            BaseMigration._get_filter_query_and_arguments(
+                target_collection, filter_or_condition, arguments
+            )
+            if filter_or_condition
+            else None
+        )
+        curs.execute(
+            BaseMigrationSqlHelper.get_insert_from_other_table_sql(
+                source_table=main_source_table,
+                target_table=HelperGetNames.get_table_name(target_collection),
+                target_columns=target_columns,
+                select_list=select_list,
+                join_on_part=sql.SQL(" ").join(join_on_parts),
+                condition=condition,
+            ),
+            arguments,
+        )
+        return [item["id"] for item in curs.fetchall()]
