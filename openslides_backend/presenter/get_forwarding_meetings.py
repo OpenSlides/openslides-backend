@@ -52,6 +52,7 @@ class GetForwardingMeetings(BasePresenter):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", request_meeting_id),
             ["committee_id", "is_active_in_organization_id", "name"],
+            lock_result=False,
         )
         if not meeting.get("is_active_in_organization_id"):
             raise PresenterException(
@@ -61,11 +62,13 @@ class GetForwardingMeetings(BasePresenter):
         committee = self.datastore.get(
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["forward_to_committee_ids"],
+            lock_result=False,
         )
         organization_timezone = (
             self.datastore.get(
                 ONE_ORGANIZATION_FQID,
                 ["time_zone"],
+                lock_result=False,
             ).get("time_zone")
             or "UTC"
         )
@@ -75,6 +78,7 @@ class GetForwardingMeetings(BasePresenter):
             forward_to_committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", forward_to_committee_id),
                 ["name", "default_meeting_id"],
+                lock_result=False,
             )
             forward_to_committee_meetings = self.datastore.filter(
                 "meeting",
@@ -85,6 +89,7 @@ class GetForwardingMeetings(BasePresenter):
                     FilterOperator("id", "!=", request_meeting_id),
                 ),
                 ["name", "start_time", "end_time", "time_zone"],
+                lock_result=False,
             )
 
             meetings_list = []

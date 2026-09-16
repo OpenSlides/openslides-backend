@@ -208,7 +208,8 @@ class BaseImportAction(BaseImportJsonUploadAction):
     import_state = ImportState.DONE
 
     def prefetch(self, action_data: ActionData) -> None:
-        store_id = cast(list[dict[str, Any]], action_data)[0]["id"]
+        if not (store_id := cast(list[dict[str, Any]], action_data)[0].get("id")):
+            raise ActionException("Payload must contain import_preview id.")
         import_preview = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),
             ["result", "state", "name"],
