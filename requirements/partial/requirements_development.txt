@@ -1,9 +1,9 @@
 aiosmtpd==1.4.6
-autoflake==2.3.3
+autoflake==2.4.0
 black==26.5.1
 debugpy==1.8.21
 flake8==7.3.0
-isort==8.0.1
+isort==9.0.1
 mypy==2.3.1
 pip-check==3.2.1
 pytest==9.1.1
@@ -18,7 +18,8 @@ types-bleach==6.4.0.20260728
 types-PyYAML==6.0.12.20260815
 types-requests==2.33.0.20260712
 types-simplejson==4.1.0.20260724
-types-Pygments==2.20.0.20260728
+types-Pygments==2.21.0.20260819
 
 # analyze pstats from Profiler
 snakeviz==2.2.2
+py-spy==0.4.2
