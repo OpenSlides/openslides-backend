@@ -61,7 +61,7 @@ class SearchForIdByExternalId(BasePresenter):
         if is_group := self.data["collection"] == "group":
             mapped_fields.append("meeting_id")
         filtered = self.datastore.filter(
-            self.data["collection"], filter_, mapped_fields
+            self.data["collection"], filter_, mapped_fields, lock_result=False
         )
         if is_group and len(filtered):
             self.filter_out_locked_meeting_groups(filtered)

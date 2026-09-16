@@ -93,6 +93,7 @@ class ExtendedDatabase(Database):
 
     _changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
+    never_lock: bool = False
 
     def __init__(
         self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
@@ -174,6 +175,7 @@ class ExtendedDatabase(Database):
         changes - all updates to any model during the action are saved in there.
         The parameter use_changed_models defines whether they are searched or not.
         """
+        self._check_never_lock(lock_result)
         if fqid is None:
             raise BadCodingException("No fqid. Offer at least one fqid.")
         try:
@@ -251,6 +253,7 @@ class ExtendedDatabase(Database):
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
+        self._check_never_lock(lock_result)
         if use_changed_models:
             mapped_fields_per_collection_and_id: dict[str, dict[int, Any]] = (
                 defaultdict(dict)
@@ -355,6 +358,7 @@ class ExtendedDatabase(Database):
         mapped_fields: list[str] = [],
         lock_result: bool = True,
     ) -> dict[Id, PartialModel]:
+        self._check_never_lock(lock_result)
         return self.database_reader.get_all(
             collection, MappedFields(mapped_fields), lock_result
         )
@@ -367,6 +371,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> dict[int, PartialModel]:
+        self._check_never_lock(lock_result)
         if not filter_:
             result = self.database_reader.get_all(
                 collection, MappedFields(mapped_fields), lock_result
@@ -463,6 +468,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
+        self._check_never_lock(lock_result)
         if method not in VALID_AGGREGATE_FUNCTIONS:
             raise BadCodingException(f"Invalid aggregate function: {method}")
         if use_changed_models and self._changed_models[collection]:
@@ -642,6 +648,7 @@ class ExtendedDatabase(Database):
         lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
+        self._check_never_lock(lock_result)
         return self.database_reader.execute_custom_select(query, lock_result, arguments)
 
     def _model_fits_subfilter(
@@ -747,3 +754,16 @@ class ExtendedDatabase(Database):
                 raise NotImplementedError("Operator %= is not supported")
             case default:
                 raise NotImplementedError(f"Operator {default} is not supported")
+
+    def _check_never_lock(self, lock_result: LockResult) -> None:
+        """
+        A check for select methods that can lock.
+        Raises a BadCodingException if locking is on and never_lock is enabled.
+
+        This is a programming safety mechanism to ensure the presenters don't
+        select with locking on.
+        """
+        if self.env.is_dev_mode() and self.never_lock and lock_result:
+            raise BadCodingException(
+                "ExtendedDatabase running in never_lock mode, all requests must have locking set to false."
+            )

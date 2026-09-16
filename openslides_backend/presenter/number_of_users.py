@@ -34,12 +34,13 @@ class NumberOfUsers(BasePresenter):
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
             ["limit_of_users"],
+            lock_result=False,
         )
         limit_of_users = organization.get("limit_of_users")
         if limit_of_users == 0:
             return {"possible": True}
         filter_ = FilterOperator("is_active", "=", True)
-        count_of_users = self.datastore.count("user", filter_)
+        count_of_users = self.datastore.count("user", filter_, lock_result=False)
         if (
             count_of_users + self.data["number_of_users_to_add_or_activate"]
             > limit_of_users
