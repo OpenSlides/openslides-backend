@@ -236,6 +236,7 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
         select_list: list[tuple[str, Field]],
         join_on_part: sql.Composable | None = None,
         condition: sql.Composable | None = None,
+        return_fields: list[str] = ["id"],
     ) -> sql.Composed:
         """
         transfer_from_source: map of the columns that should be transfered from the source table
@@ -248,7 +249,7 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
             INSERT INTO {target_table} ({target_columns})
             SELECT {select_list}
             FROM {source_table} {join_on_part}{filter}
-            RETURNING "id";
+            RETURNING {return_fields};
         """).format(
             target_table=sql.Identifier(target_table),
             target_columns=sql.SQL(", ").join(
@@ -264,6 +265,7 @@ class BaseMigrationSqlHelper(BaseSqlQueryHelper):
             source_table=sql.Identifier(source_table),
             join_on_part=join_on_part,
             filter=BaseMigrationSqlHelper.normalize_optional_condition(condition),
+            return_fields=sql.SQL(", ").join(sql.SQL(field) for field in return_fields),
         )
 
 
@@ -597,7 +599,7 @@ class BaseMigration:
             )
 
     @staticmethod
-    def update_from_mig_table_sql(
+    def update_from_mig_table(
         curs: Cursor[DictRow],
         collection: str,
         target_column_names: list[str],
@@ -621,6 +623,68 @@ class BaseMigration:
                         HelperGetNames.get_table_name(table, True)
                     ),
                 ),
+            )
+        )
+
+    @staticmethod
+    def update_from_other_table(
+        curs: Cursor[DictRow],
+        target_collection: Collection,
+        target_column_names: list[str],
+        source_collection: Collection,
+        from_migration_table: bool,
+        values: list[Any],
+        match_condition: Filter | str,
+        filter_source_table: Filter | str | None = None,
+        filter_target_table: Filter | str | None = None,
+    ) -> None:
+        target_table = HelperGetNames.get_table_name(target_collection)
+        source_table = HelperGetNames.get_table_name(
+            source_collection, from_migration_table
+        )
+        filter_arguments: SqlArguments = []
+        filters: list[sql.Composable] = []
+        if isinstance(match_condition, str):
+            filters.append(
+                BaseMigration._get_filter_query_and_arguments(
+                    target_collection, match_condition, filter_arguments
+                )
+            )
+        else:
+            filters.append(
+                BaseMigration._get_filter_query_and_arguments(
+                    target_collection,
+                    match_condition,
+                    filter_arguments,
+                    from_migration_table,
+                    source_collection,
+                )
+            )
+
+        for filter_or_condition, table in [
+            (filter_source_table, source_table),
+            (filter_target_table, target_table),
+        ]:
+            if filter_or_condition is not None:
+                filters.append(
+                    BaseMigration._get_filter_query_and_arguments(
+                        target_collection,
+                        filter_or_condition,
+                        filter_arguments,
+                        table_alias=table,
+                    ),
+                )
+
+        curs.execute(
+            BaseMigrationSqlHelper.get_update_entries_sql(
+                target_table,
+                set_part=BaseMigrationSqlHelper.get_transfer_from_other_table_part(
+                    source_collection,
+                    target_column_names,
+                    values,
+                    from_migration_table,
+                ),
+                condition=sql.SQL(" AND ").join(filters),
             )
         )
 
@@ -732,6 +796,7 @@ class BaseMigration:
         generate_from_map: list[dict[Field, Any]] = [],
         values_join_on: list[Field] = [],
         filter_or_condition: Filter | str | None = None,
+        return_fields: list[str] = [],
     ) -> list[int]:
         """
         transfer_from_source_table: map of the columns that should be transfered from the source table
@@ -797,6 +862,7 @@ class BaseMigration:
                 select_list=select_list,
                 join_on_part=sql.SQL(" ").join(join_on_parts),
                 condition=condition,
+                return_fields=return_fields,
             ),
             arguments,
         )
