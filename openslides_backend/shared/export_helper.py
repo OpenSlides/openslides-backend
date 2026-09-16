@@ -103,6 +103,7 @@ def export_meeting(
                             ),
                         ],
                         use_changed_models=False,
+                        lock_result=False,
                     )["mediafile"]
                 )
                 next_file_ids = list(
