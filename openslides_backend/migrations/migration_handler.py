@@ -21,6 +21,7 @@ from ..migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from ..migrations.migrations.base import MigrationCursor
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
@@ -295,9 +296,9 @@ class MigrationHandler(BaseHandler):
             )
             self.logger.info("Executing migration: " + module_name)
 
-            # checks wether the methods are available and executes them.
-            mig_class.data_definition(self.cursor)
-            mig_class.data_manipulation(self.cursor)
+            with MigrationCursor(self.cursor.connection) as migration_cursor:
+                mig_class.data_definition(migration_cursor)
+                mig_class.data_manipulation(migration_cursor)
 
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.FINALIZATION_REQUIRED
@@ -329,7 +330,9 @@ class MigrationHandler(BaseHandler):
                         import_module(f"{MODULE_PATH}{module_name}"), "Migration"
                     )
                     self.logger.info("Pre check: " + module_name + " ...")
-                    if errors := mig_class.check_prerequisites(self.cursor):
+                    with MigrationCursor(self.cursor.connection) as migration_cursor:
+                        errors = mig_class.check_prerequisites(migration_cursor)
+                    if errors:
                         if minimum_required_index:
                             MigrationHelper.set_database_migration_info(
                                 self.cursor,
@@ -448,7 +451,8 @@ class MigrationHandler(BaseHandler):
             mig_class = getattr(
                 import_module(f"{MODULE_PATH}{module_name}"), "Migration"
             )
-            mig_class.cleanup(self.cursor)
+            with MigrationCursor(self.cursor.connection) as migration_cursor:
+                mig_class.cleanup(migration_cursor)
 
         unified_replace_tables, relevant_mis = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
