@@ -42,6 +42,16 @@ class ActionException(View400Exception):
     action_error_index: int | None
     action_data_error_index: int | None
 
+    def __init__(
+        self,
+        message: str,
+        additional_json: dict[str, Any] = {},
+        message_args: dict[str, Any] = {},
+    ) -> None:
+        super().__init__(message)
+        self.additional_json = additional_json
+        self.message_args = message_args
+
     def get_json(self) -> dict[str, Any]:
         json = super().get_json()
         if hasattr(self, "action_error_index") and self.action_error_index is not None:
@@ -51,6 +61,7 @@ class ActionException(View400Exception):
             and self.action_data_error_index is not None
         ):
             json["action_data_error_index"] = self.action_data_error_index
+        json["message_args"] = self.message_args
         return json
 
 

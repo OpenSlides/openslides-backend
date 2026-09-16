@@ -639,7 +639,14 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Invalid date format" in response.json["message"]
+        assert (
+            "Invalid date for column {{field}}: Got {{content}}; expected format YYYY-MM-DD"
+            in response.json["message"]
+        )
+        assert response.json["message_args"] == {
+            "field": "meeting_end_time",
+            "content": "12XX-broken",
+        }
 
     def test_json_upload_start_date_after_end_date(self) -> None:
         self.set_models({"organization/1": {"time_zone": "Europe/Chisinau"}})

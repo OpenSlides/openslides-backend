@@ -493,6 +493,62 @@ class ParticipantJsonUpload(BaseActionTestCase):
         for key in fix_fields.keys():
             assert row["data"][key]["value"] == fix_fields[key]
 
+    def test_json_upload_wrong_gender(self) -> None:
+        self.set_up_test_models()
+        self.set_models(
+            {
+                "user/34": {
+                    "username": "MaxMustermann",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                },
+            }
+        )
+
+        fix_fields = {
+            "username": "bob",
+            "gender": "notAGender",
+        }
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "vote_weight": "1.456",
+                        "is_present": "0",
+                        **fix_fields,
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        for key in fix_fields.keys():
+            assert entry["data"][key]["value"] == fix_fields[key]
+        assert entry["data"]["username"] == {
+            "value": "bob",
+            "info": ImportState.DONE,
+        }
+        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
+        assert entry["data"]["vote_weight"] == {
+            "value": "1.456000",
+            "info": ImportState.DONE,
+        }
+        assert entry["data"]["is_present"] == {"value": False, "info": ImportState.DONE}
+        assert entry["data"]["groups"] == [
+            {"value": "testgroup", "info": "generated", "id": 1}
+        ]
+        assert entry["data"]["gender"] == {
+            "value": "notAGender",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: Gender 'notAGender' is not in the allowed gender list. Please choose a valid gender option."
+            in entry["messages"]
+        )
+
     def test_json_upload_names_generate_username_password_create_meeting(self) -> None:
         self.set_up_test_models()
         self.set_models(
@@ -508,7 +564,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         fix_fields = {
             "first_name": "Max",
             "last_name": "Mustermann",
-            "gender": "notAGender",
         }
         response = self.request(
             "participant.json_upload",
@@ -549,14 +604,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert entry["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
-        assert entry["data"]["gender"] == {
-            "value": "notAGender",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "Gender 'notAGender' is not in the allowed gender list."
-            in entry["messages"]
-        )
 
     def test_json_upload_invalid_vote_weight(self) -> None:
         self.set_up_test_models()
@@ -716,7 +763,14 @@ class ParticipantJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Could not parse 2/3 expect decimal" in response.json["message"]
+        assert (
+            "Invalid format for column {{field}}: Got {{content}}; expected decimal number with point separation (e.g. 1.234567)"
+            in response.json["message"]
+        )
+        assert response.json["message_args"] == {
+            "field": "vote_weight",
+            "content": "2/3",
+        }
 
     def test_json_upload_update_member_number_in_existing_participant_error(
         self,
@@ -1813,7 +1867,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "username": "new_user5",
                         "saml_id": "saml5",
                         "structure_level": ["level up", "no. 5"],
-                        "gender": "unknown",
                     },
                     {"saml_id": "new_saml6", "groups": ["group4"], "is_present": "1"},
                     {
@@ -1881,7 +1934,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
@@ -1892,7 +1944,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "level up", "info": ImportState.NEW},
                 {"value": "no. 5", "info": ImportState.NEW},
             ],
-            "gender": {"info": ImportState.WARNING, "value": "unknown"},
         }
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW

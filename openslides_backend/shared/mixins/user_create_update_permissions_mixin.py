@@ -103,7 +103,8 @@ class PermissionVarStore:
                             list(user_committees),
                             ["meeting_ids", "all_child_ids"],
                         )
-                    ]
+                    ],
+                    lock_result=False,
                 )
                 .get("committee", {})
                 .values()
@@ -124,7 +125,8 @@ class PermissionVarStore:
                                 list(child_ids),
                                 ["meeting_ids"],
                             )
-                        ]
+                        ],
+                        lock_result=False,
                     )
                     .get("committee", {})
                     .values()
@@ -154,6 +156,7 @@ class PermissionVarStore:
                 meeting_user = self.datastore.get(
                     fqid_from_collection_and_id("meeting_user", meeting_user_id),
                     ["group_ids", "locked_out"],
+                    lock_result=False,
                 )
                 group_ids = (
                     meeting_user.get("group_ids")
@@ -174,7 +177,8 @@ class PermissionVarStore:
                             list(all_groups),
                             ["meeting_id", "permissions", "admin_group_for_meeting_id"],
                         )
-                    ]
+                    ],
+                    lock_result=False,
                 )
                 .get("group", {})
                 .values()
