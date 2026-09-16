@@ -1,0 +1,58 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  rejected:
+    type: boolean
+    default: false
+    restriction_mode: A
+  internal:
+    type: boolean
+    default: false
+    restriction_mode: A
+  type:
+    type: string
+    enum:
+      - replacement
+      - insertion
+      - deletion
+      - other
+    default: replacement
+    restriction_mode: A
+  other_description:
+    type: string
+    restriction_mode: A
+  line_from:
+    type: number
+    minimum: 0
+    required: true
+    restriction_mode: A
+  line_to:
+    type: number
+    minimum: 0
+    required: true
+    restriction_mode: A
+  text:
+    type: HTMLStrict
+    restriction_mode: A
+  creation_time:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
+  motion_id:
+    type: relation
+    reference: motion
+    to: motion/change_recommendation_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_change_recommendation_ids
+    required: true
+    restriction_mode: A
+    constant: true

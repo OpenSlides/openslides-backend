@@ -276,8 +276,9 @@ class Migration(BaseMigration):
             )
         return ""
 
-    @staticmethod
-    def data_manipulation(curs: Cursor[DictRow], stash: dict[str, Any] | None) -> None:
+    def data_manipulation(
+        self, curs: Cursor[DictRow], stash: dict[str, Any] | None
+    ) -> None:
         """
         Purpose:
             Iterates over chunks of the DB table models and writes the data into the respective DB tables
@@ -367,8 +368,7 @@ class Migration(BaseMigration):
         for command, values in insert_intermediate_t_commands:
             curs.execute(command, values)
 
-    @staticmethod
-    def cleanup(curs: Cursor[DictRow]) -> None:
+    def cleanup(self, curs: Cursor[DictRow]) -> None:
         """
         Purpose:
             Deletes the old tables

@@ -1,0 +1,79 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  begin_time:
+    type: timestamp
+    restriction_mode: A
+  end_time:
+    type: timestamp
+    restriction_mode: A
+  pause_time:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
+  unpause_time:
+    type: timestamp
+    restriction_mode: A
+  total_pause:
+    type: number
+    restriction_mode: A
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  speech_state:
+    type: string
+    enum:
+      - contribution
+      - pro
+      - contra
+      - intervention
+      - interposed_question
+    restriction_mode: A
+  answer:
+    type: boolean
+    restriction_mode: A
+  note:
+    type: string
+    maxLength: 250
+    restriction_mode: A
+  point_of_order:
+    type: boolean
+    restriction_mode: A
+    constant_legacy: true
+  list_of_speakers_id:
+    type: relation
+    reference: list_of_speakers
+    to: list_of_speakers/speaker_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  structure_level_list_of_speakers_id:
+    type: relation
+    equal_fields: meeting_id
+    restriction_mode: A
+    reference: structure_level_list_of_speakers
+    to: structure_level_list_of_speakers/speaker_ids
+  meeting_user_id:
+    type: relation
+    reference: meeting_user
+    to: meeting_user/speaker_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  point_of_order_category_id:
+    type: relation
+    reference: point_of_order_category
+    to: point_of_order_category/speaker_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/speaker_ids
+    required: true
+    restriction_mode: A
+    constant: true

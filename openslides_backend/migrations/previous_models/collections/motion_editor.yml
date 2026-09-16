@@ -1,0 +1,31 @@
+unique_together:
+  - meeting_user_id, motion_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  weight:
+    type: number
+    restriction_mode: A
+  meeting_user_id:
+    type: relation
+    reference: meeting_user
+    to: meeting_user/motion_editor_ids
+    restriction_mode: A
+  motion_id:
+    type: relation
+    reference: motion
+    to: motion/editor_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_editor_ids
+    required: true
+    restriction_mode: A
+    constant: true

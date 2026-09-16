@@ -1,16 +1,13 @@
 from psycopg import sql
 
 from openslides_backend.models.base import model_registry
-from openslides_backend.models.fields import Field
-from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
-from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
+from openslides_backend.shared.filters import BaseSqlQueryHelper, Filter, SqlArguments
 
-from .interface import SqlArguments
 from .mapped_fields import MappedFields
 
 
 # TODO move insert and select creation into this class?
-class SqlQueryHelper:
+class SqlQueryHelper(BaseSqlQueryHelper):
     def build_select_from_mapped_fields(
         self, mapped_fields: MappedFields
     ) -> sql.Composed:
@@ -90,111 +87,7 @@ class SqlQueryHelper:
             arguments,
         )
 
-    def build_filter_str(
-        self,
-        filter_: Filter,
-        arguments: SqlArguments,
-        collection: str,
-        table_alias: str = "",
-    ) -> sql.Composed | sql.Identifier:
-        """
-        appends the values to the arguments list
-        returns the filter string
-        """
-        if isinstance(filter_, Not):
-            return sql.SQL("NOT ({filter_str})").format(
-                filter_str=self.build_filter_str(
-                    filter_.not_filter, arguments, collection, table_alias
-                )
-            )
-        elif isinstance(filter_, Or):
-            return sql.SQL(" OR ").join(
-                sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(
-                        part, arguments, collection, table_alias
-                    )
-                )
-                for part in filter_.or_filter
-            )
-        elif isinstance(filter_, And):
-            return sql.SQL(" AND ").join(
-                sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(
-                        part, arguments, collection, table_alias
-                    )
-                )
-                for part in filter_.and_filter
-            )
-        elif isinstance(filter_, FilterOperator):
-            if table_alias:
-                table_column: sql.Composed | sql.Identifier = sql.SQL(
-                    "{table_alias}.{column_name}"
-                ).format(
-                    table_alias=sql.Identifier(table_alias),
-                    column_name=sql.Identifier(filter_.field),
-                )
-            else:
-                table_column = sql.Identifier(filter_.field)
-            if filter_.value is None:
-                if filter_.operator not in ("=", "!="):
-                    raise InvalidFormat("You can only compare to None with = or !=")
-                operator = (
-                    filter_.operator[::-1].replace("=", "IS").replace("!", " NOT")
-                )
-                condition = sql.SQL("{table_column} {operator} NULL").format(
-                    table_column=table_column, operator=sql.SQL(operator)
-                )
-            else:
-                if filter_.operator == "~=":
-                    condition = sql.SQL(
-                        "LOWER({table_column}) = LOWER(%s::text)"
-                    ).format(table_column=table_column)
-                elif filter_.operator == "%=":
-                    condition = sql.SQL("{table_column} ILIKE %s::text").format(
-                        table_column=table_column
-                    )
-                elif filter_.operator == "in":
-                    condition = sql.SQL("{table_column} = ANY(%s)").format(
-                        table_column=table_column
-                    )
-                elif filter_.operator == "has":
-                    condition = sql.SQL("%s = ANY({table_column})").format(
-                        table_column=table_column
-                    )
-                # TODO delete or use if all backend tests were run.
-                # elif filter_.operator in ("=", "!=") and isinstance(filter_.value, str):
-                #     condition = sql.SQL("{table_column} {filter_operator} %s::text").format(
-                #         table_column=table_column, filter_operator=sql.SQL(filter_.operator)
-                #     )
-                elif filter_.operator in ("=", "!=") and isinstance(
-                    filter_.value, list
-                ):
-                    field = model_registry[collection]().get_field(filter_.field)
-                    condition = sql.SQL(
-                        "{table_column} {filter_operator} %s{type}"
-                    ).format(
-                        table_column=table_column,
-                        filter_operator=sql.SQL(filter_.operator),
-                        type=self.get_array_type(
-                            field,
-                            (type(next(iter(filter_.value))) if filter_.value else int),
-                        ),
-                    )
-                else:
-                    condition = sql.SQL("{table_column} {filter_operator} %s").format(
-                        table_column=table_column,
-                        filter_operator=sql.SQL(filter_.operator),
-                    )
-                arguments += [filter_.value]
-            return condition
-        else:
-            raise BadCodingException("Invalid filter type")
-
-    def get_array_type(self, field: Field, list_type: type) -> sql.Composable:
-        if list_type == int:
-            return sql.SQL("::integer[]")
-        elif enum_name := getattr(field, "enum_name", None):
-            return sql.SQL(f"::{enum_name}")
-        elif list_type == str:
-            return sql.SQL("::text[]")
-        raise ValueError("Only integer, string or enum lists are supported.")
+    @staticmethod
+    def get_enum_array_name(collection: str, field_name: str) -> str | None:
+        field = model_registry[collection]().get_field(field_name)
+        return getattr(field, "enum_name", None)

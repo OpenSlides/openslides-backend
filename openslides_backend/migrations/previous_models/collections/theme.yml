@@ -1,0 +1,166 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    restriction_mode: A
+    type: string
+    required: true
+  accent_100:
+    restriction_mode: A
+    type: color
+  accent_200:
+    restriction_mode: A
+    type: color
+  accent_300:
+    restriction_mode: A
+    type: color
+  accent_400:
+    restriction_mode: A
+    type: color
+  accent_50:
+    restriction_mode: A
+    type: color
+  accent_500:
+    restriction_mode: A
+    type: color
+    required: true
+    default: "#2196f3"
+  accent_600:
+    restriction_mode: A
+    type: color
+  accent_700:
+    restriction_mode: A
+    type: color
+  accent_800:
+    restriction_mode: A
+    type: color
+  accent_900:
+    restriction_mode: A
+    type: color
+  accent_a100:
+    restriction_mode: A
+    type: color
+  accent_a200:
+    restriction_mode: A
+    type: color
+  accent_a400:
+    restriction_mode: A
+    type: color
+  accent_a700:
+    restriction_mode: A
+    type: color
+  primary_100:
+    restriction_mode: A
+    type: color
+  primary_200:
+    restriction_mode: A
+    type: color
+  primary_300:
+    restriction_mode: A
+    type: color
+  primary_400:
+    restriction_mode: A
+    type: color
+  primary_50:
+    restriction_mode: A
+    type: color
+  primary_500:
+    restriction_mode: A
+    type: color
+    required: true
+    default: "#317796"
+  primary_600:
+    restriction_mode: A
+    type: color
+  primary_700:
+    restriction_mode: A
+    type: color
+  primary_800:
+    restriction_mode: A
+    type: color
+  primary_900:
+    restriction_mode: A
+    type: color
+  primary_a100:
+    restriction_mode: A
+    type: color
+  primary_a200:
+    restriction_mode: A
+    type: color
+  primary_a400:
+    restriction_mode: A
+    type: color
+  primary_a700:
+    restriction_mode: A
+    type: color
+  warn_100:
+    restriction_mode: A
+    type: color
+  warn_200:
+    restriction_mode: A
+    type: color
+  warn_300:
+    restriction_mode: A
+    type: color
+  warn_400:
+    restriction_mode: A
+    type: color
+  warn_50:
+    restriction_mode: A
+    type: color
+  warn_500:
+    restriction_mode: A
+    type: color
+    required: true
+    default: "#f06400"
+  warn_600:
+    restriction_mode: A
+    type: color
+  warn_700:
+    restriction_mode: A
+    type: color
+  warn_800:
+    restriction_mode: A
+    type: color
+  warn_900:
+    restriction_mode: A
+    type: color
+  warn_a100:
+    restriction_mode: A
+    type: color
+  warn_a200:
+    restriction_mode: A
+    type: color
+  warn_a400:
+    restriction_mode: A
+    type: color
+  warn_a700:
+    restriction_mode: A
+    type: color
+  headbar:
+    restriction_mode: A
+    type: color
+  "yes":
+    restriction_mode: A
+    type: color
+  "no":
+    restriction_mode: A
+    type: color
+  abstain:
+    restriction_mode: A
+    type: color
+  theme_for_organization_id:
+    restriction_mode: A
+    to: organization/theme_id
+    type: relation
+  organization_id:
+    type: relation
+    default: 1
+    reference: organization
+    to: organization/theme_ids
+    restriction_mode: A
+    constant: true
+    required: true

@@ -1,0 +1,27 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  tagged_ids:
+    type: generic-relation-list
+    to:
+      collections:
+        - agenda_item
+        - assignment
+        - motion
+      field: tag_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/tag_ids
+    required: true
+    restriction_mode: A
+    constant: true

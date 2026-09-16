@@ -1,0 +1,143 @@
+unique_together:
+  - name, workflow_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  weight:
+    type: number
+    required: true
+    restriction_mode: A
+  recommendation_label:
+    type: string
+    restriction_mode: A
+  is_internal:
+    type: boolean
+    restriction_mode: A
+  css_class:
+    type: string
+    enum:
+      - grey
+      - red
+      - green
+      - lightblue
+      - yellow
+    default: lightblue
+    required: true
+    restriction_mode: A
+  restrictions:
+    type: string[]
+    default: []
+    restriction_mode: A
+  allow_support:
+    type: boolean
+    default: false
+    restriction_mode: A
+  allow_create_poll:
+    type: boolean
+    default: false
+    restriction_mode: A
+  allow_submitter_edit:
+    type: boolean
+    default: false
+    restriction_mode: A
+  set_number:
+    type: boolean
+    default: true
+    restriction_mode: A
+  show_state_extension_field:
+    type: boolean
+    default: false
+    restriction_mode: A
+  show_recommendation_extension_field:
+    type: boolean
+    default: false
+    restriction_mode: A
+  merge_amendment_into_final:
+    type: string
+    enum:
+      - do_not_merge
+      - undefined
+      - do_merge
+    default: undefined
+    restriction_mode: A
+  allow_motion_forwarding:
+    type: boolean
+    restriction_mode: A
+    default: false
+  allow_amendment_forwarding:
+    type: boolean
+    restriction_mode: A
+  set_workflow_timestamp:
+    type: boolean
+    restriction_mode: A
+    default: false
+  state_button_label:
+    type: string
+    restriction_mode: A
+  submitter_withdraw_state_id:
+    type: relation
+    reference: motion_state
+    to: motion_state/submitter_withdraw_back_ids
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
+  submitter_withdraw_back_ids:
+    type: relation-list
+    to: motion_state/submitter_withdraw_state_id
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
+  next_state_ids:
+    type: relation-list
+    to: motion_state/previous_state_ids
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
+  previous_state_ids:
+    type: relation-list
+    to: motion_state/next_state_ids
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
+  motion_ids:
+    type: relation-list
+    to: motion/state_id
+    on_delete: PROTECT
+    equal_fields: meeting_id
+    restriction_mode: A
+  motion_recommendation_ids:
+    type: relation-list
+    to: motion/recommendation_id
+    equal_fields: meeting_id
+    restriction_mode: A
+  workflow_id:
+    type: relation
+    reference: motion_workflow
+    to: motion_workflow/state_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+  first_state_of_workflow_id:
+    type: relation
+    to: motion_workflow/first_state_id
+    on_delete: PROTECT
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_state_ids
+    required: true
+    restriction_mode: A
+    constant: true

@@ -13,6 +13,7 @@ from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
 from meta.dev.src.helper_get_names import InternalHelper, build_models_yaml_content
 from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.patterns import Renames
 
 """
 To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
@@ -23,7 +24,6 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
-Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
 CollectionsRemoveTuple = tuple[list[str], dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
 MetaAttributesRemoveTuple = tuple[list[str], dict[str, Any]]
@@ -134,8 +134,8 @@ def validate_renames(renames: Renames) -> None:
 def load_renames() -> Renames:
     directory = MigrationHelper.get_last_migration_directory()
     renames: Renames = getattr(
-        MigrationHelper.get_migration_class(directory), "renames", ({}, {})
-    )
+        MigrationHelper.get_migration_class(directory), "renames", None
+    ) or ({}, {})
     validate_renames(renames)
     return renames
 

@@ -1,0 +1,35 @@
+unique_together:
+  - motion_id, section_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  comment:
+    type: HTMLStrict
+    required: true
+    restriction_mode: A
+  motion_id:
+    type: relation
+    reference: motion
+    to: motion/comment_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  section_id:
+    type: relation
+    reference: motion_comment_section
+    to: motion_comment_section/comment_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_comment_ids
+    required: true
+    restriction_mode: A
+    constant: true

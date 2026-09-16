@@ -1,0 +1,2 @@
+ALTER TABLE action_worker_t ALTER COLUMN created SET NOT NULL;
+ALTER TABLE action_worker_t ALTER COLUMN name SET NOT NULL;

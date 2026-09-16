@@ -1,0 +1,31 @@
+enum_definitions:
+  languages:
+    - en
+    - de
+    - it
+    - es
+    - ru
+    - cs
+    - fr
+  ballot_paper_selection:
+    - NUMBER_OF_DELEGATES
+    - NUMBER_OF_ALL_PARTICIPANTS
+    - CUSTOM_NUMBER
+  poll_backends:
+    - long
+    - fast
+  onehundred_percent_bases:
+    - Y
+    - YN
+    - YNA
+    - N
+    - valid
+    - cast
+    - entitled
+    - entitled_present
+    - disabled
+id_field: &id_field
+  type: number
+  restriction_mode: A
+  constant: true
+  required: true

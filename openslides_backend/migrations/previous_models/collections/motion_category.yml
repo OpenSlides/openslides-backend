@@ -1,0 +1,53 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  prefix:
+    type: string
+    restriction_mode: A
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  level:
+    type: number
+    description: Calculated field.
+    read_only: true
+    restriction_mode: A
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: A
+    constant: true
+  parent_id:
+    type: relation
+    reference: motion_category
+    to: motion_category/child_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  child_ids:
+    type: relation-list
+    to: motion_category/parent_id
+    equal_fields: meeting_id
+    restriction_mode: A
+  motion_ids:
+    type: relation-list
+    to: motion/category_id
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_category_ids
+    required: true
+    restriction_mode: A
+    constant: true

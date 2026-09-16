@@ -1,0 +1,26 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  text:
+    type: string
+    required: true
+    restriction_mode: A
+  rank:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/point_of_order_category_ids
+    required: true
+    restriction_mode: A
+    constant: true
+  speaker_ids:
+    type: relation-list
+    to: speaker/point_of_order_category_id
+    equal_fields: meeting_id
+    restriction_mode: A

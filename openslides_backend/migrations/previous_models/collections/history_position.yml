@@ -1,0 +1,24 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  timestamp:
+    type: timestamp
+    restriction_mode: A
+    read_only: true
+  original_user_id:
+    type: number
+    restriction_mode: A
+    constant: true
+  user_id:
+    type: relation
+    to: user/history_position_ids
+    restriction_mode: A
+    reference: user
+  entry_ids:
+    type: relation-list
+    to: history_entry/position_id
+    restriction_mode: A
+    on_delete: CASCADE
