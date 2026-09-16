@@ -284,20 +284,20 @@ class ExtendedDatabase(Database):
                         results.setdefault(collection, {}).setdefault(id_, {}).update(
                             model
                         )
-            # delete fields set to None in changed models
-            for (
-                collection,
-                mapped_fields_per_id,
-            ) in mapped_fields_per_collection_and_id.items():
-                for id_, mapped_fields in mapped_fields_per_id.items():
-                    for field in mapped_fields:
-                        if (
-                            collection in results
-                            and id_ in results[collection]
-                            and field in results[collection][id_]
-                            and results[collection][id_][field] is None
-                        ):
-                            del results[collection][id_][field]
+                # delete fields set to None in changed models
+                for (
+                    collection,
+                    mapped_fields_per_id,
+                ) in mapped_fields_per_collection_and_id.items():
+                    for id_, mapped_fields in mapped_fields_per_id.items():
+                        for field in mapped_fields:
+                            if (
+                                collection in results
+                                and id_ in results[collection]
+                                and field in results[collection][id_]
+                                and results[collection][id_][field] is None
+                            ):
+                                del results[collection][id_][field]
         else:
             results = self.database_reader.get_many(get_many_requests, lock_result)
         return results
@@ -331,11 +331,9 @@ class ExtendedDatabase(Database):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
                         for field in mapped_fields:
-                            if field in changed_model or changed_model.get("meta_new"):
-                                results[collection][id_][field] = changed_model.get(
-                                    field, None
-                                )
-                            else:
+                            if field in changed_model:
+                                results[collection][id_][field] = changed_model[field]
+                            elif not changed_model.get("meta_new"):
                                 missing_fields_per_collection_and_id[collection][
                                     id_
                                 ].append(field)
