@@ -78,6 +78,7 @@ class PresenterHandler(BaseHandler):
         # Parse presentations and creates response
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, self.logging, self.env)
+            self.datastore.never_lock = True
             response, access_token = self.parse_presenters(request)
         self.logger.debug("Request was successful. Send response now.")
         return response, access_token

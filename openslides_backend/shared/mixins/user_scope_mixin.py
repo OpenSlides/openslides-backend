@@ -282,7 +282,8 @@ class UserScopeMixin(BaseServiceProvider):
                         meeting_ids,
                         ["committee_id", "is_active_in_organization_id"],
                     )
-                ]
+                ],
+                lock_result=False,
             ).get("meeting", {})
 
             for meeting_id, meeting_data in raw_meetings_data.items():

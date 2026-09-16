@@ -99,6 +99,11 @@ class ParticipantImport(BaseActionTestCase):
         self.assert_model_not_exists("import_preview/1")
         self.assert_model_not_exists("user/2")
 
+    def test_import_no_id(self) -> None:
+        response = self.request("participant.import", {"import": True})
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Payload must contain import_preview id."
+
     def test_import_wrong_invalid_name_in_preview(self) -> None:
         self.update_model("import_preview/1", {"name": "account"})
         response = self.request("participant.import", {"id": 1, "import": True})
