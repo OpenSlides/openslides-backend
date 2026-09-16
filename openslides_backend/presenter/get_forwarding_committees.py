@@ -48,11 +48,13 @@ class GetForwardingCommittees(BasePresenter):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", self.data["meeting_id"]),
             ["committee_id"],
+            lock_result=False,
         )
 
         committee = self.datastore.get(
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["receive_forwardings_from_committee_ids"],
+            lock_result=False,
         )
 
         if not committee.get("receive_forwardings_from_committee_ids"):
@@ -61,7 +63,9 @@ class GetForwardingCommittees(BasePresenter):
         result = []
         for committee_id in committee["receive_forwardings_from_committee_ids"]:
             committee_data = self.datastore.get(
-                fqid_from_collection_and_id("committee", committee_id), ["name"]
+                fqid_from_collection_and_id("committee", committee_id),
+                ["name"],
+                lock_result=False,
             )
             if committee_data.get("name"):
                 result.append(committee_data["name"])

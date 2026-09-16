@@ -47,6 +47,7 @@ class GetValidTimezones(BasePresenter):
             user_data = self.datastore.get(
                 fqid_from_collection_and_id("user", self.user_id),
                 ["committee_management_ids", "meeting_ids"],
+                lock_result=False,
             )
             if not user_data.get("committee_management_ids") and not any(
                 has_perm(
