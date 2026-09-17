@@ -272,21 +272,41 @@ class ExtendedDatabase(Database):
             )
             # fetch missing fields in the changed_models from the db and merge into the results
             if missing_fields_per_collection_and_id:
+                gmr_base: dict[Collection, dict[tuple[str, ...], list[int]]] = (
+                    defaultdict(lambda: defaultdict(list))
+                )
+                for (
+                    collection,
+                    id_fields_dict,
+                ) in missing_fields_per_collection_and_id.items():
+                    for id_, fields in id_fields_dict.items():
+                        gmr_base[collection][tuple(fields)].append(id_)
                 get_many_requests = [
-                    GetManyRequest(collection, [id_], fields)
-                    for collection, id_fields_dict in missing_fields_per_collection_and_id.items()
-                    for id_, fields in id_fields_dict.items()
+                    GetManyRequest(collection, ids, list(fields))
+                    for collection, fields_ids_dict in gmr_base.items()
+                    for fields, ids in fields_ids_dict.items()
                 ]
                 missing_results = self.database_reader.get_many(
                     get_many_requests, lock_result
                 )
                 for collection, models in missing_results.items():
-                    for id_, model in models.items():
-                        # we can just update the model with the db fields since they must not have been
-                        # present previously
-                        results.setdefault(collection, {}).setdefault(id_, {}).update(
-                            model
-                        )
+                    for id_ in missing_fields_per_collection_and_id[collection]:
+                        if model := models.get(id_):
+                            # we can just update the model with the db fields since they must not have been
+                            # present previously
+                            results.setdefault(collection, {}).setdefault(
+                                id_, {}
+                            ).update(model)
+                            if (
+                                missing_fields_per_collection_and_id.get(
+                                    collection, {}
+                                ).get(id_)
+                                == []
+                            ):
+                                # assuming that whole model is needed and we want that?
+                                for field, value in results[collection][id_].items():
+                                    if value is None:
+                                        del results[collection][id_][field]
         else:
             results = self.database_reader.get_many(get_many_requests, lock_result)
         return results
@@ -321,7 +341,8 @@ class ExtendedDatabase(Database):
                     if mapped_fields:
                         for field in mapped_fields:
                             if field in changed_model:
-                                results[collection][id_][field] = changed_model[field]
+                                if (val := changed_model[field]) is not None:
+                                    results[collection][id_][field] = val
                             elif not changed_model.get("meta_new"):
                                 missing_fields_per_collection_and_id[collection][
                                     id_
