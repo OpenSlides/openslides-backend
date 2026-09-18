@@ -259,8 +259,6 @@ class ExtendedDatabase(Database):
                 defaultdict(dict)
             )
             for request in get_many_requests:
-                if not request.mapped_fields:
-                    raise DatabaseException("No mapped fields given.")
                 collection = request.collection
                 for id_ in request.ids:
                     mapped_fields_per_collection_and_id[collection][id_] = list(
@@ -290,21 +288,24 @@ class ExtendedDatabase(Database):
                     get_many_requests, lock_result
                 )
                 for collection, models in missing_results.items():
-                    for id_ in missing_fields_per_collection_and_id[collection]:
+                    for id_, missing_fields in missing_fields_per_collection_and_id[
+                        collection
+                    ].items():
                         if model := models.get(id_):
                             # we can just update the model with the db fields since they must not have been
                             # present previously
-                            results.setdefault(collection, {}).setdefault(
-                                id_, {}
-                            ).update(model)
-                            if (
-                                missing_fields_per_collection_and_id.get(
-                                    collection, {}
-                                ).get(id_)
-                                == []
-                            ):
-                                # assuming that whole model is needed and we want that?
-                                for field, value in results[collection][id_].items():
+                            model.update(
+                                results.setdefault(collection, {}).get(id_, {})
+                            )
+                            results[collection][id_] = model
+                            if missing_fields == []:
+                                # See in _get_many_from_changed_models: if the model is not new
+                                # and mapped_fields are [] (i.e. all fields)
+                                # _get_many_from_changed_models will leave the None fields in
+                                # to ensure they don't get overwritten with the newly loaded data.
+                                for field, value in list(
+                                    results[collection][id_].items()
+                                ):
                                     if value is None:
                                         del results[collection][id_][field]
         else:
