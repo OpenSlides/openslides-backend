@@ -361,12 +361,6 @@ class ExtendedDatabase(Database):
                     missing_fields_per_collection_and_id[collection][
                         id_
                     ] = mapped_fields
-        for (
-            collection,
-            id_fields_dict,
-        ) in missing_fields_per_collection_and_id.items():
-            for id_, fields in id_fields_dict.items():
-                gmr_base[collection][tuple(fields)].append(id_)
         return (results, missing_fields_per_collection_and_id, gmr_base)
 
     def get_all(
