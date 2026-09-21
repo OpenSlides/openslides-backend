@@ -265,20 +265,11 @@ class ExtendedDatabase(Database):
                         request.mapped_fields
                     )
             # fetch results from changed models
-            results, missing_fields_per_collection_and_id = (
+            results, missing_fields_per_collection_and_id, gmr_base = (
                 self._get_many_from_changed_models(mapped_fields_per_collection_and_id)
             )
             # fetch missing fields in the changed_models from the db and merge into the results
             if missing_fields_per_collection_and_id:
-                gmr_base: dict[Collection, dict[tuple[str, ...], list[int]]] = (
-                    defaultdict(lambda: defaultdict(list))
-                )
-                for (
-                    collection,
-                    id_fields_dict,
-                ) in missing_fields_per_collection_and_id.items():
-                    for id_, fields in id_fields_dict.items():
-                        gmr_base[collection][tuple(fields)].append(id_)
                 get_many_requests = [
                     GetManyRequest(collection, ids, list(fields))
                     for collection, fields_ids_dict in gmr_base.items()
@@ -316,7 +307,9 @@ class ExtendedDatabase(Database):
         self,
         mapped_fields_per_collection_and_id: MappedFieldsPerCollectionAndId,
     ) -> tuple[
-        dict[Collection, dict[int, PartialModel]], MappedFieldsPerCollectionAndId
+        dict[Collection, dict[int, PartialModel]],
+        MappedFieldsPerCollectionAndId,
+        dict[Collection, dict[tuple[str, ...], list[int]]],
     ]:
         """
         Returns a dictionary of the changed models for the given collections together with all
@@ -327,6 +320,9 @@ class ExtendedDatabase(Database):
         )
         missing_fields_per_collection_and_id: MappedFieldsPerCollectionAndId = (
             defaultdict(lambda: defaultdict(list))
+        )
+        gmr_base: dict[Collection, dict[tuple[str, ...], list[int]]] = defaultdict(
+            lambda: defaultdict(list)
         )
         for (
             collection,
@@ -340,6 +336,7 @@ class ExtendedDatabase(Database):
                 if changed_model := self._changed_models[collection].get(id_, dict()):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
+                        has_missing = False
                         for field in mapped_fields:
                             if field in changed_model:
                                 if (val := changed_model[field]) is not None:
@@ -348,15 +345,29 @@ class ExtendedDatabase(Database):
                                 missing_fields_per_collection_and_id[collection][
                                     id_
                                 ].append(field)
+                                has_missing = True
+                        if has_missing:
+                            fields = missing_fields_per_collection_and_id[collection][
+                                id_
+                            ]
+                            gmr_base[collection][tuple(fields)].append(id_)
                     else:
                         # assuming that whole model is needed and we want that?
                         results[collection][id_] = changed_model
                         missing_fields_per_collection_and_id[collection][id_] = []
+                        gmr_base[collection][tuple([])].append(id_)
                 else:
+                    gmr_base[collection][tuple(mapped_fields)].append(id_)
                     missing_fields_per_collection_and_id[collection][
                         id_
                     ] = mapped_fields
-        return (results, missing_fields_per_collection_and_id)
+        for (
+            collection,
+            id_fields_dict,
+        ) in missing_fields_per_collection_and_id.items():
+            for id_, fields in id_fields_dict.items():
+                gmr_base[collection][tuple(fields)].append(id_)
+        return (results, missing_fields_per_collection_and_id, gmr_base)
 
     def get_all(
         self,
