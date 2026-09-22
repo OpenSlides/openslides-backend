@@ -1002,7 +1002,11 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_only_one_sl_exists(self) -> None:
-        """Shows: no errors if one structure level exists and the other doesn't. Latter being created."""
+        """
+        Shows:
+            * No errors if one structure level exists and the other doesn't. Latter being created.
+            * Lists for structure levels and groups are also accepted.
+        """
         self.create_model("structure_level/1", {"name": "structure1", "meeting_id": 1})
         response = self.request(
             "user.save_saml_account",
@@ -1011,12 +1015,12 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "member_number": "LV_Königholz",
                 "email": "holzi@holz.de",
                 "participant_number": "MG_1254",
-                "idp_group_attribute": "Delegates",
+                "idp_group_attribute": ["Delegates"],
                 "kv_member_number": "KV_Könighols",
                 "kv_email": "hols@holz.de",
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
-                "kv_structure": "structure2",
+                "kv_structure": ["structure2"],
             },
         )
         self.assert_status_code(response, 200)
