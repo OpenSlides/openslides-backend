@@ -35,6 +35,7 @@ from openslides_backend.migrations.yaml_diff_generator import (
     Renames,
     dumpjson,
     generate_diff,
+    is_primary_side,
     prev_models_context,
     was_primary_side,
     was_view_field,
@@ -54,7 +55,7 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
 ]
 
 
-def get_schema_sql_dict() -> dict[str, dict[str, str]]:
+def get_schema_sql_dict() -> dict[str, dict[str, Any]]:
     return {
         "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
         "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
@@ -64,11 +65,11 @@ def get_schema_sql_dict() -> dict[str, dict[str, str]]:
     }
 
 
+GenerateCodeBlocks.generate_the_code()
+CURR_CODE_BLOCKS = get_schema_sql_dict()
 with prev_models_context():
     GenerateCodeBlocks.generate_the_code()
     PREV_CODE_BLOCKS = get_schema_sql_dict()
-GenerateCodeBlocks.generate_the_code()
-CURR_CODE_BLOCKS = get_schema_sql_dict()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -163,7 +164,9 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
         sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.trigger_sql[collection_name]
+        for triggers_dict in GenerateCodeBlocks.trigger_sql[collection_name].values():
+            for triggers in triggers_dict.values():
+                sql += triggers
     for collection_name in add:
         found.add(collection_name)
         sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
@@ -174,60 +177,78 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
 
 
 class EqualFieldsHelper:
+    """
+    Purpose is to streamline the (re-)generation and deletion of equal fields triggers)
+    First use update_equal_fields_diff for collecting the to be updated fields.
+    Then use handle_alter_equal_fields to get the whole sql string for all fields.
+    """
+
+    # Below variables follow this structure:
+    # writing_side collection : changed fields, in terms of equal fields
+    # Both sides are stored in this if a field is checked
     checked_equal_fields: dict[str, set[str]] = defaultdict(set)
-    equal_fields_diff: dict[str, set[str]] = defaultdict(set)
+    drop_equal_fields_diff: dict[str, set[str]] = defaultdict(set)
+    add_equal_fields_diff: dict[str, set[str]] = defaultdict(set)
 
     @classmethod
-    def update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+    def update_equal_fields_diff(
+        cls,
+        collection_name: str,
+        field_name: str,
+        add: bool = False,
+        drop: bool = False,
+    ) -> None:
         """
         Merges equal fields of both sides of the relation and updates equal_fields_diff internally
         if it wasn't checked before. Potentially just from the other side.
         """
         if field_name in cls.checked_equal_fields.get(collection_name, set()):
             return
+        if add:
+            cls._update_equal_fields_diff(collection_name, field_name)
+        if drop:
+            with prev_models_context():
+                cls._update_equal_fields_diff(collection_name, field_name)
 
-        own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
-        type_ = own_field_def["type"]
-
-        if type_.startswith("generic"):
-            foreign_table_fields: list[TableFieldType] = (
-                InternalHelper.get_definitions_from_foreign_list(
-                    own_field_def.get("to"), own_field_def.get("reference")
-                )
-            )
-            cls.equal_fields_diff[collection_name].add(field_name)
-            for foreign_field in foreign_table_fields:
-                cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
+    @classmethod
+    def _update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+        is_previous = InternalHelper.MODELS is PREV_MODELS
+        if is_previous:
+            relevant_models = PREV_MODELS
+            equal_fiels_diff = cls.drop_equal_fields_diff
         else:
-            foreign_table_field: TableFieldType = (
-                TableFieldType.get_definitions_from_foreign(
-                    own_field_def.get("to"),
-                    own_field_def.get("reference"),
+            relevant_models = CURR_MODELS
+            equal_fiels_diff = cls.add_equal_fields_diff
+
+        own_field_def = relevant_models[collection_name]["fields"][field_name]
+        type_ = own_field_def["type"]
+        if not (is_writing_side := type_.startswith("generic")):
+            if is_previous:
+                is_writing_side = was_primary_side(
+                    collection_name, field_name, own_field_def
                 )
-            )
-            if was_primary_side(collection_name, field_name, own_field_def):
-                cls.equal_fields_diff[collection_name].add(field_name)
             else:
-                cls.equal_fields_diff[foreign_table_field.table].add(
-                    foreign_table_field.column
+                is_writing_side = is_primary_side(
+                    collection_name, field_name, own_field_def
                 )
-            cls.checked_equal_fields[foreign_table_field.table].add(
-                foreign_table_field.column
-            )
+
+        for foreign_field in InternalHelper.get_foreign_definitions_from_field_def(
+            own_field_def
+        ):
+            if is_writing_side:
+                equal_fiels_diff[collection_name].add(field_name)
+            else:
+                equal_fiels_diff[foreign_field.table].add(foreign_field.column)
+            cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
         cls.checked_equal_fields[collection_name].add(field_name)
 
     @classmethod
     def handle_alter_equal_fields(cls) -> str:
-        # TODO: This method includes commented out lines for cases when triggers have to added.
-        # handle_add and handle edit sould probably already handle all such cases. If it's true,
-        # the commented out lines should be removed.
-
         result = ""
         to_drop: list[tuple[Table, TriggerName]] = []
-        # to_add = []
 
-        for collection_name, field_names in cls.equal_fields_diff.items():
-            for field_name in field_names:
+        for collection_name, field_names in cls.drop_equal_fields_diff.items():
+            for field_name in sorted(field_names):
                 prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
                 prev_own_table_field = TableFieldType(
                     collection_name, field_name, prev_own_field_def
@@ -260,8 +281,16 @@ class EqualFieldsHelper:
             result += AlterSchemaHelper.get_drop_trigger_statement(
                 table_name, trigger_name
             )
-        # for table in to_add:
-        #     pass
+
+        for collection_name, field_names in cls.add_equal_fields_diff.items():
+            for field_name in sorted(field_names):
+                result += CURR_CODE_BLOCKS["trigger_sql"][collection_name][field_name][
+                    "create_trigger_equal_fields_code"
+                ]
+
+        # reinitialize for next round
+        cls.drop_equal_fields_diff = defaultdict(set)
+        cls.add_equal_fields_diff = defaultdict(set)
         return result
 
     @classmethod
@@ -310,7 +339,6 @@ class EqualFieldsHelper:
             type_,
             to_drop,
         )
-        # if added_equal_fields := curr_equal_fields - prev_equal_fields:
 
     @classmethod
     def handle_generic_relations(
@@ -348,10 +376,6 @@ class EqualFieldsHelper:
         removed_collectionfields = prev_collectionfields - curr_collectionfields
         remaining_collectionfields = prev_collectionfields - removed_collectionfields
 
-        # if added_collectionfields := (
-        #     curr_collectionfields - prev_collectionfields
-        # ):
-
         if remaining_collectionfields:
             own_equal_fields_changed = cls.equal_fields_changed(
                 prev_own_field_def, curr_own_field_def
@@ -371,20 +395,6 @@ class EqualFieldsHelper:
                         curr_own_table_field,
                         curr_foreign_table_field,
                     )
-
-                    # prev_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         prev_own_table_field, prev_foreign_table_field
-                    #     )
-                    # )
-                    # curr_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         curr_own_table_field, curr_foreign_table_field
-                    #     )
-                    # )
-                    # if added_equal_fields := (
-                    #     curr_equal_fields - prev_equal_fields
-                    # ):
 
         if removed_collectionfields:
             for collectionfield in removed_collectionfields:
@@ -652,7 +662,7 @@ class RemoveHelper:
 
                     if field_def.get("equal_fields"):
                         EqualFieldsHelper.update_equal_fields_diff(
-                            collection_name, field_name
+                            collection_name, field_name, drop=True
                         )
 
             if drop_column:
@@ -755,10 +765,9 @@ class RemoveHelper:
                             ),
                         )
                     case "equal_fields":
-                        with prev_models_context():
-                            EqualFieldsHelper.update_equal_fields_diff(
-                                collection_name, field_name
-                            )
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name, drop=True
+                        )
                     case value if value in FieldAttributes.skipped_in_schema:
                         pass
                     case "type":
@@ -1031,6 +1040,7 @@ class EditHelper:
                 )
             remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
             remove_empty(dc_edit_tree_dict, collection_name)
+        sql += EqualFieldsHelper.handle_alter_equal_fields()
         return sql
 
     @staticmethod
@@ -1135,7 +1145,10 @@ class EditHelper:
                         NotImplementedError(
                             f"{constraint}: {value} is probably a view field or unmentioned in renames."
                         )
-
+                    if field_def.get("equal_fields"):
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name, drop=True, add=True
+                        )
                     is_view_field, _, write_fields = get_view_field_state_write_fields(
                         collection_name,
                         field_name,
@@ -1485,15 +1498,20 @@ class RenameHelper:
         match attr:
             # TODO handle log_triggers field attribute
             case "default" | "required":
+                # TODO regenerate not null triggers also on collection level
                 # Don't have names.
                 pass
-            case "sql" | "equal_fields" | "constant" | "reference":
+            case "sql" | "equal_fields" | "reference":
                 # Skipped out of separate reasons.
                 # "sql" View columns will always already be renamed.
-                # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
+                # "equal_fields" are always treated by the other side which cannot be
+                # redirected or renamed as that would lead to changes in this field.
                 # "reference" Covered by 'to'.
                 pass
+            # case "constant":
+            #     # TODO regenerate triggers also on collection level
             case "to":
+                # TODO regenerate unique ids pair triggers for self referencing fields
                 name = RenameHelper.handle_attribute_to(
                     collection_name, field_name, field_def
                 )
@@ -1507,6 +1525,7 @@ class RenameHelper:
                     ([field_name] if attr == "unique" else field_name),
                 )
             case "type":
+                # TODO regenerate sequence triggers
                 match field_def["type"]:
                     case "timezone":
                         name = HelperGetNames.get_timezone_constraint_name(
@@ -1585,7 +1604,12 @@ class RenameHelper:
             result += AlterSchemaHelper.get_rename_constraint(
                 table_name_new, constraint_name_old, constraint_name_new
             )
-        for trigger_key in TRIGGER_KEYS:
+        for trigger_key in [
+            entry
+            for entry in TRIGGER_KEYS
+            if entry != "create_trigger_equal_fields_code"
+        ]:
+            # TODO needs to be deleted and need to find a place where the log triggers can be regenerated
             if tk_old := field_old.get(trigger_key):
                 tk_new = field_new[trigger_key]
                 for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
