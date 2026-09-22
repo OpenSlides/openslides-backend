@@ -161,18 +161,11 @@ def dumpjson(diff: dict[str, Any]) -> None:
 
 
 def generate_diff() -> dict[str, Any]:
-    # Edits caused by adding or removing field attributes
-    secondary_edits: dict[str, Any] = {}
-
     return {
         "rename": RENAMES,
-        "remove": generate_remove_diff_dict(
-            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
-        ),
+        "remove": generate_remove_diff_dict(PREV_MODELS, CURR_MODELS, RENAMES),
         "add": create_add_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
-        "edit": create_edit_recursive(
-            PREV_MODELS, CURR_MODELS, RENAMES, secondary_edits
-        ),
+        "edit": create_edit_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
     }
 
 
@@ -188,11 +181,10 @@ def generate_remove_diff_dict(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames,
-    secondary_edits: dict[str, Any],
 ) -> RemoveDiffDict | None:
     enum_tree: EnumTypesRemoveDict = {}
     plain_remove_diff = create_remove_recursive(
-        prev_models, curr_models, renames, secondary_edits, enum_tree
+        prev_models, curr_models, renames, enum_tree
     )
     if plain_remove_diff is None:
         return None
@@ -212,7 +204,6 @@ def create_remove_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict,
-    secondary_edits: dict[str, Any],
     enum_tree: EnumTypesRemoveDict,
     path: tuple[str, ...] = (),
 ) -> CollectionsRemoveTuple | None:
@@ -240,15 +231,8 @@ def create_remove_recursive(
             if key in [*CollectionAttributes.unique_together, "log_triggers"]:
                 # Old definitions are needed to re-build the trigger definitions names
                 tree[key] = prev_value
-            elif key == "maxLength":
-                # Should be processed as type change
-                update_edits_tree(secondary_edits, path[0], path[2], "maxLength", None)
             elif is_enum(key) and len(path) >= 3:
-                # Should be processed as type change
-                if "type" in curr_models:
-                    update_edits_tree(
-                        secondary_edits, path[0], path[2], "type", curr_models["type"]
-                    )
+                missing_entries.append("enum")
                 # Delete enum only when it is defined on the field
                 if is_field_enum(prev_value):
                     enum_tree.setdefault(path[0], []).append(path[2])
@@ -265,7 +249,6 @@ def create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
                 recurse_renames.get(key, {}),
-                secondary_edits,
                 enum_tree,
                 path + (key,),
             )
@@ -317,7 +300,6 @@ def create_edit_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict[str, Any],
-    secondary_edits: dict[str, Any] = {},
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """
     Returns the edited entries on pos 0 and the sub trees on pos 1.
@@ -350,11 +332,6 @@ def create_edit_recursive(
                 )
                 if result is not None:
                     tree[key] = result
-    if secondary_edits:
-        for collection, collection_data in secondary_edits.items():
-            for field_name, field_data in collection_data[1]["fields"][1].items():
-                for attr, value in field_data[0].items():
-                    update_edits_tree(tree, collection, field_name, attr, value)
     if edited_entries or tree:
         return (edited_entries, tree)
     else:
