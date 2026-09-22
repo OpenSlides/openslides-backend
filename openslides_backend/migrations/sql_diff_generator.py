@@ -1554,15 +1554,20 @@ class RenameHelper:
         match attr:
             # TODO handle log_triggers field attribute
             case "default" | "required":
+                # TODO regenerate not null triggers also on collection level
                 # Don't have names.
                 pass
-            case "sql" | "equal_fields" | "constant" | "reference":
+            case "sql" | "equal_fields" | "reference":
                 # Skipped out of separate reasons.
                 # "sql" View columns will always already be renamed.
-                # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
+                # "equal_fields" are always treated by the other side which cannot be 
+                # redirected or renamed as that would lead to changes in this field.
                 # "reference" Covered by 'to'.
                 pass
+            # case "constant":
+            #     # TODO regenerate triggers also on collection level
             case "to":
+                # TODO regenerate unique ids pair triggers for self referencing fields
                 name = RenameHelper.handle_attribute_to(
                     collection_name, field_name, field_def
                 )
@@ -1576,6 +1581,7 @@ class RenameHelper:
                     ([field_name] if attr == "unique" else field_name),
                 )
             case "type":
+                # TODO regenerate sequence triggers
                 match field_def["type"]:
                     case "timezone":
                         name = HelperGetNames.get_timezone_constraint_name(
@@ -1659,6 +1665,7 @@ class RenameHelper:
             for entry in TRIGGER_KEYS
             if entry != "create_trigger_equal_fields_code"
         ]:
+        # TODO needs to be deleted and need to find a place where the log triggers can be regenerated
             if tk_old := field_old.get(trigger_key):
                 tk_new = field_new[trigger_key]
                 for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
