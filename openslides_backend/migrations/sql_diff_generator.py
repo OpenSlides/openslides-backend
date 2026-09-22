@@ -235,30 +235,17 @@ class EqualFieldsHelper:
         for foreign_field in InternalHelper.get_foreign_definitions_from_field_def(
             own_field_def
         ):
-            # if is_previous:
             if is_writing_side:
                 equal_fiels_diff[collection_name].add(field_name)
             else:
                 equal_fiels_diff[foreign_field.table].add(foreign_field.column)
-            # else:
-            #     if is_writing_side:
-            #         cls.add_equal_fields_diff[collection_name].add(field_name)
-            #     else:
-            #         cls.add_equal_fields_diff[foreign_field.table].add(
-            #             foreign_field.column
-            #         )
             cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
         cls.checked_equal_fields[collection_name].add(field_name)
 
     @classmethod
     def handle_alter_equal_fields(cls) -> str:
-        # TODO: This method includes commented out lines for cases when triggers have to added.
-        # handle_add and handle edit sould probably already handle all such cases. If it's true,
-        # the commented out lines should be removed.
-
         result = ""
         to_drop: list[tuple[Table, TriggerName]] = []
-        # to_add = []
 
         for collection_name, field_names in cls.drop_equal_fields_diff.items():
             for field_name in sorted(field_names):
@@ -300,10 +287,6 @@ class EqualFieldsHelper:
                 result += CURR_CODE_BLOCKS["trigger_sql"][collection_name][field_name][
                     "create_trigger_equal_fields_code"
                 ]
-        # for table_name in to_add:
-        #     result += AlterSchemaHelper.get_add_trigger_statement(
-        #         table_name, trigger_name
-        #     )
 
         # reinitialize for next round
         cls.drop_equal_fields_diff = defaultdict(set)
@@ -356,27 +339,6 @@ class EqualFieldsHelper:
             type_,
             to_drop,
         )
-        # added_equal_fields = curr_equal_fields - prev_equal_fields
-        # GenerateCodeBlocks.get_trigger_definitions_check_equals(
-        #     added_equal_fields, curr_own_table_field, curr_foreign_table_field, FieldSqlErrorType.FIELD
-        # )
-        # for equal_field in added_equal_fields:
-        # (
-        #     own_trigger_name,
-        #     own_table,
-        #     foreign_trigger_name,
-        #     foreign_table,
-        #     own_on_update_fields,
-        #     foreign_on_update_fields,
-        #     own_event_str,
-        #     own_collection,
-        #     own_column,
-        # ) = Helper.get_config_for_trigger_definitions_check_equals(
-        #     own_table_field,
-        #     foreign_table_field,
-        #     equal_field,
-        #     specified_relation_field,
-        # )
 
     @classmethod
     def handle_generic_relations(
@@ -414,10 +376,6 @@ class EqualFieldsHelper:
         removed_collectionfields = prev_collectionfields - curr_collectionfields
         remaining_collectionfields = prev_collectionfields - removed_collectionfields
 
-        # if added_collectionfields := (
-        #     curr_collectionfields - prev_collectionfields
-        # ):
-
         if remaining_collectionfields:
             own_equal_fields_changed = cls.equal_fields_changed(
                 prev_own_field_def, curr_own_field_def
@@ -437,20 +395,6 @@ class EqualFieldsHelper:
                         curr_own_table_field,
                         curr_foreign_table_field,
                     )
-
-                    # prev_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         prev_own_table_field, prev_foreign_table_field
-                    #     )
-                    # )
-                    # curr_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         curr_own_table_field, curr_foreign_table_field
-                    #     )
-                    # )
-                    # if added_equal_fields := (
-                    #     curr_equal_fields - prev_equal_fields
-                    # ):
 
         if removed_collectionfields:
             for collectionfield in removed_collectionfields:
@@ -1560,7 +1504,7 @@ class RenameHelper:
             case "sql" | "equal_fields" | "reference":
                 # Skipped out of separate reasons.
                 # "sql" View columns will always already be renamed.
-                # "equal_fields" are always treated by the other side which cannot be 
+                # "equal_fields" are always treated by the other side which cannot be
                 # redirected or renamed as that would lead to changes in this field.
                 # "reference" Covered by 'to'.
                 pass
@@ -1665,7 +1609,7 @@ class RenameHelper:
             for entry in TRIGGER_KEYS
             if entry != "create_trigger_equal_fields_code"
         ]:
-        # TODO needs to be deleted and need to find a place where the log triggers can be regenerated
+            # TODO needs to be deleted and need to find a place where the log triggers can be regenerated
             if tk_old := field_old.get(trigger_key):
                 tk_new = field_new[trigger_key]
                 for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
