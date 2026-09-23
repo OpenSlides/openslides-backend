@@ -1077,6 +1077,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/21": {
                     "poll_id": 1,
                     "meeting_user_id": 14,
+                    "present": True,
                 },
                 "poll_ballot/12": {
                     "value": "no",
@@ -1091,6 +1092,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/22": {
                     "poll_id": 1,
                     "meeting_user_id": 15,
+                    "present": True,
                 },
                 "poll_ballot/13": {
                     "value": "4",
@@ -1105,6 +1107,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/23": {
                     "poll_id": 2,
                     "meeting_user_id": 12,
+                    "present": True,
                 },
                 "poll_ballot/14": {
                     "value": "abstain",
@@ -1119,6 +1122,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/24": {
                     "poll_id": 5,
                     "meeting_user_id": 43,
+                    "present": True,
                 },
                 "group/7": {
                     "meeting_user_ids": [75],
@@ -1137,6 +1141,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/25": {
                     "poll_id": 6,
                     "meeting_user_id": 75,
+                    "present": False,
                 },
                 "poll_ballot/16": {"value": "10", "poll_id": 6},
                 "poll_ballot_user/6": {
@@ -1147,6 +1152,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/26": {
                     "poll_id": 6,
                     "meeting_user_id": 73,
+                    "present": True,
                 },
             }
         )
