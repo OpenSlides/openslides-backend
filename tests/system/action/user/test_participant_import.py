@@ -324,28 +324,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert result["rows"][0]["state"] == ImportState.DONE
         assert result["rows"][0]["data"] == {
             "id": 2,
-            "first_name": {
-                "value": "Wilhelm",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
-            "last_name": {
-                "value": "Aberhatnurhut",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
-            "email": {
-                "value": "will@helm.hut",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
             "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
             "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
-            "default_password": {
-                "value": "123",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
+            "default_password": {"value": "123", "info": ImportState.DONE},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
         self.assert_model_exists(
@@ -491,35 +475,15 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "id": 10,
             "username": {"id": 10, "info": ImportState.DONE, "value": "user10"},
-            "saml_id": {"info": ImportState.NEW, "value": "saml_id10", "changed": True},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
-            "is_present": {"info": ImportState.DONE, "value": False, "changed": True},
-            "vote_weight": {
-                "info": ImportState.DONE,
-                "value": "2.800000",
-                "changed": True,
-            },
+            "saml_id": {"info": ImportState.NEW, "value": "saml_id10"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "is_present": {"info": ImportState.DONE, "value": False},
+            "vote_weight": {"info": ImportState.DONE, "value": "2.800000"},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
-            "structure_level": [
-                {"info": ImportState.DONE, "value": "new sl", "id": 2, "changed": True}
-            ],
-            "number": {
-                "info": ImportState.DONE,
-                "value": "new number",
-                "changed": True,
-            },
-            "comment": {
-                "info": ImportState.DONE,
-                "value": "new comment",
-                "changed": True,
-            },
+            "structure_level": [{"info": ImportState.DONE, "value": "new sl", "id": 2}],
+            "number": {"info": ImportState.DONE, "value": "new number"},
+            "comment": {"info": ImportState.DONE, "value": "new comment"},
         }
-        assert row["list_delete_amounts"] == {"structure_level": 1}
-
         self.assert_model_exists(
             "user/10",
             {
@@ -555,16 +519,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "id": 10,
             "username": {"id": 10, "info": "done", "value": "user10"},
-            "saml_id": {"info": "error", "value": "saml_id10", "changed": True},
-            "default_password": {"info": "warning", "value": "", "changed": False},
-            "is_present": {"info": "done", "value": False, "changed": True},
-            "vote_weight": {"info": "done", "value": "2.800000", "changed": True},
+            "saml_id": {"info": "error", "value": "saml_id10"},
+            "default_password": {"info": "warning", "value": ""},
+            "is_present": {"info": "done", "value": False},
+            "vote_weight": {"info": "done", "value": "2.800000"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
-            "structure_level": [
-                {"info": "done", "value": "new sl", "id": 2, "changed": True}
-            ],
-            "number": {"info": "done", "value": "new number", "changed": True},
-            "comment": {"info": "done", "value": "new comment", "changed": True},
+            "structure_level": [{"info": "done", "value": "new sl", "id": 2}],
+            "number": {"info": "done", "value": "new number"},
+            "comment": {"info": "done", "value": "new comment"},
         }
 
     def test_json_upload_user_not_found_anymore(
@@ -584,9 +546,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "id": 11,
             "saml_id": {"info": "done", "value": "saml_id11"},
             "username": {"id": 11, "info": ImportState.ERROR, "value": "user11"},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def test_json_upload_update_multiple_users_okay(self) -> None:
@@ -755,38 +715,22 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.assert_status_code(response, 200)
         assert (result := response.json["results"][0][0])["state"] == ImportState.DONE
         row = result["rows"][0]
-        assert row["state"] == ImportState.REFERENCED
+        assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
         ]
         assert row["data"] == {
             "id": 2,
-            "saml_id": {
-                "info": ImportState.NEW,
-                "value": "test_saml_id2",
-                "changed": True,
-            },
-            "username": {"id": 2, "info": ImportState.REFERENCED, "value": "user2"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
+            "username": {"id": 2, "info": ImportState.DONE, "value": "user2"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {
-                    "id": created_groups["group4"],
-                    "info": "new",
-                    "value": "group4",
-                    "changed": True,
-                },
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
-            "structure_level": [
-                {"info": "new", "value": "level up", "id": 2, "changed": True}
-            ],
-            "gender": {"id": 3, "info": "done", "value": "diverse", "changed": True},
+            "structure_level": [{"info": "new", "value": "level up", "id": 2}],
+            "gender": {"id": 3, "info": "done", "value": "diverse"},
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][1]
         assert row["state"] == ImportState.DONE
@@ -797,39 +741,24 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "id": 3,
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
-            "vote_weight": {
-                "info": ImportState.DONE,
-                "value": "3.345678",
-                "changed": True,
-            },
-            "groups": [{"id": 3, "info": "done", "value": "group3", "changed": True}],
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
+            "groups": [{"id": 3, "info": "done", "value": "group3"}],
         }
-        assert row["list_delete_amounts"] == {"groups": 2}
 
         row = result["rows"][2]
-        assert row["state"] == ImportState.REFERENCED
+        assert row["state"] == ImportState.DONE
         assert row["messages"] == []
         assert row["data"] == {
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
-            "username": {"id": 4, "info": ImportState.REFERENCED, "value": "user4"},
+            "username": {"id": 4, "info": ImportState.DONE, "value": "user4"},
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
-                {
-                    "id": created_groups["group4"],
-                    "info": "new",
-                    "value": "group4",
-                    "changed": True,
-                }
+                {"id": created_groups["group4"], "info": "new", "value": "group4"}
             ],
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][3]
         assert row["state"] == ImportState.NEW
@@ -839,18 +768,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
             "saml_id": {"info": ImportState.NEW, "value": "saml5"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
             "structure_level": [
                 {"info": ImportState.NEW, "value": "level up", "id": 2},
                 {"info": ImportState.DONE, "value": "no. 5", "id": 1},
             ],
         }
-        assert "list_delete_amounts" not in row
 
         self.assert_model_exists("structure_level/2", {"name": "level up"})
 
@@ -862,17 +786,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.NEW, "value": "new_saml6"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "is_present": {"info": "done", "value": True},
             "groups": [
                 {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
     def test_json_upload_update_multiple_users_all_error(self) -> None:
         self.json_upload_multiple_users()
@@ -913,25 +832,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         ]
         assert row["data"] == {
             "id": 2,
-            "saml_id": {
-                "info": ImportState.NEW,
-                "value": "test_saml_id2",
-                "changed": True,
-            },
+            "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
             "username": {"id": 2, "info": ImportState.ERROR, "value": "user2"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [
-                {"id": 3, "info": "warning", "value": "group3", "changed": True},
-                {"info": "new", "value": "group4", "changed": True},
+                {"id": 3, "info": "warning", "value": "group3"},
+                {"info": "new", "value": "group4"},
             ],
-            "structure_level": [{"info": "new", "value": "level up", "changed": True}],
-            "gender": {"id": 3, "info": "done", "value": "diverse", "changed": True},
+            "structure_level": [{"info": "new", "value": "level up"}],
+            "gender": {"id": 3, "info": "done", "value": "diverse"},
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
@@ -944,19 +854,10 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "id": 3,
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
-            "vote_weight": {
-                "info": ImportState.DONE,
-                "value": "3.345678",
-                "changed": True,
-            },
-            "groups": [{"id": 3, "info": "error", "value": "group3", "changed": True}],
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
+            "groups": [{"id": 3, "info": "error", "value": "group3"}],
         }
-        assert row["list_delete_amounts"] == {"groups": 2}
 
         row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
@@ -970,10 +871,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
-                {"info": "new", "value": "group4", "changed": True},
+                {"info": "new", "value": "group4"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
@@ -984,18 +884,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
             "saml_id": {"info": ImportState.ERROR, "value": "saml5"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
             "structure_level": [
                 {"info": ImportState.NEW, "value": "level up"},
                 {"info": ImportState.NEW, "value": "no. 5"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
@@ -1006,17 +901,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "is_present": {"info": "done", "value": True},
             "groups": [
                 {"info": "new", "value": "group4"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
         row = result["rows"][5]
         assert row["state"] == ImportState.NEW
@@ -1035,7 +925,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"info": "new", "value": "unknown"},
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]
-        assert "list_delete_amounts" not in row
 
     def test_json_upload_with_complicated_names(self) -> None:
         self.json_upload_with_complicated_names()
@@ -1073,16 +962,15 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"id": 2, "info": "done", "value": "user2"},
             "first_name": {"info": "done", "value": "Jim"},
             "email": {"info": "done", "value": "Jim.Knopf@Lummer.land"},
-            "vote_weight": {"info": "done", "value": "1.234560", "changed": True},
-            "default_password": {"info": "done", "value": "", "changed": False},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "done", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
-                {"id": 2, "info": "done", "value": "group2", "changed": True},
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {"id": 7, "info": "new", "value": "group4", "changed": True},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
             ],
         }
-        assert "list_delete_amounts" not in row
         self.assert_model_exists(
             "user/2",
             {
@@ -1130,13 +1018,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"id": 2, "info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
             "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
-            "vote_weight": {"info": "done", "value": "1.234560", "changed": True},
-            "default_password": {"info": "remove", "value": "", "changed": False},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
-                {"id": 2, "info": "done", "value": "group2", "changed": True},
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {"id": 7, "info": "new", "value": "group4", "changed": True},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
             ],
         }
         self.assert_model_exists(
@@ -1179,13 +1067,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
             "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
-            "vote_weight": {"info": "done", "value": "1.234560", "changed": True},
-            "default_password": {"info": "remove", "value": "", "changed": False},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
-                {"id": 2, "info": "done", "value": "group2", "changed": True},
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {"id": 7, "info": "new", "value": "group4", "changed": True},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
             ],
             "member_number": {"id": 2, "value": "M3MNUM", "info": "remove"},
         }
@@ -1231,7 +1119,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"info": "done", "value": "user2"},
             "first_name": {"info": "done", "value": "Jim"},
             "vote_weight": {"info": "error", "value": "1.234560"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "default_password": {"info": "warning", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
                 {"id": 2, "info": "done", "value": "group2"},
@@ -1354,15 +1242,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         ]
         assert row["data"] == {
             "id": 2,
-            "default_password": {"value": "", "info": "warning", "changed": False},
-            "username": {"info": "error", "value": "newname", "changed": True},
-            "saml_id": {"info": "new", "value": "some_other_saml", "changed": True},
-            "first_name": {"info": "done", "value": "second", "changed": True},
-            "last_name": {"info": "done", "value": "second_to_last", "changed": True},
+            "default_password": {"value": "", "info": "warning"},
+            "username": {"info": "error", "value": "newname"},
+            "saml_id": {"info": "new", "value": "some_other_saml"},
+            "first_name": {"info": "done", "value": "second"},
+            "last_name": {"info": "done", "value": "second_to_last"},
             "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def test_json_upload_add_member_number(self) -> None:
@@ -1737,25 +1623,29 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         ]
         assert response.json["results"][0][0]["rows"][0]["data"] == {
             "id": 2,
-            "first_name": {"info": ImportState.DONE, "value": "alice", "changed": True},
+            "first_name": {
+                "info": ImportState.DONE,
+                "value": "alice",
+            },
             "groups": [
                 {
                     "id": 1,
                     "info": ImportState.GENERATED,
                     "value": "group1",
-                    "changed": True,
                 },
             ],
-            "external": {"info": ImportState.ERROR, "value": False, "changed": True},
+            "external": {
+                "info": ImportState.ERROR,
+                "value": False,
+            },
             "home_committee": {
                 "id": 2,
                 "info": ImportState.ERROR,
                 "value": "Home",
-                "changed": True,
             },
             "username": {
                 "id": 2,
-                "info": ImportState.REFERENCED,
+                "info": ImportState.DONE,
                 "value": "Alice",
             },
         }
@@ -1823,13 +1713,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"id": 2, "info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
             "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
-            "vote_weight": {"info": "done", "value": "1.234560", "changed": True},
-            "default_password": {"info": "remove", "value": "", "changed": False},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
-                {"id": 2, "info": "done", "value": "group2", "changed": True},
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {"id": 7, "info": "new", "value": "group4", "changed": True},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
             ],
         }
         self.assert_model_exists(
@@ -1853,24 +1743,3 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "group_ids": [1, 2, 3, 7],
             },
         )
-
-    def test_json_upload_update_reference_via_two_attributes(self) -> None:
-        self.json_upload_update_reference_via_two_attributes()
-        response = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response, 200)
-        row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.DONE
-        assert row["data"] == {
-            "id": 2,
-            "saml_id": {"info": "done", "value": "old_one"},
-            "username": {"info": "done", "value": "test", "id": 2},
-            "default_password": {
-                "value": "",
-                "info": ImportState.WARNING,
-                "changed": False,
-            },
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert row["list_delete_amounts"] == {"groups": 1}

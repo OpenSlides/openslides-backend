@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState
@@ -80,7 +79,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
         assert {"name": "groups created", "value": 2} in response.json["results"][0][0][
             "statistics"
         ]
@@ -120,7 +118,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_remove_last_admins(self) -> None:
         self.set_up_test_models()
@@ -153,7 +150,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
         assert response.json["results"][0][0]["rows"][1] == {
             "state": ImportState.ERROR,
             "messages": ["Error: Cannot remove last member of admin group"],
@@ -166,7 +162,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][1]
 
     def test_json_upload_empty_data(self) -> None:
         self.set_up_test_models()
@@ -223,7 +218,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "number": {"value": "strange number", "info": ImportState.DONE},
             },
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_results(self) -> None:
         self.set_up_test_models()
@@ -332,7 +326,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"name": "total", "value": 1},
                 {"name": "created", "value": 1},
                 {"name": "updated", "value": 0},
-                {"name": "referenced", "value": 0},
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
                 {"name": "structure levels created", "value": 0},
@@ -481,39 +474,24 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.REFERENCED
+        assert row["state"] == ImportState.DONE
         assert row["data"]["id"] == 34
         assert row["data"]["default_password"] == {
             "value": "new default password",
             "info": "done",
-            "changed": True,
         }
-        assert row["data"]["username"] == {
-            "value": "test",
-            "info": ImportState.REFERENCED,
-            "id": 34,
-        }
-        assert row["data"]["vote_weight"] == {
-            "value": "1.456000",
-            "info": "done",
-            "changed": True,
-        }
+        assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
+        assert row["data"]["vote_weight"] == {"value": "1.456000", "info": "done"}
         assert row["data"]["is_present"] == {"value": False, "info": "done"}
-        assert row["data"]["gender"] == {
-            "id": 1,
-            "value": "male",
-            "info": "done",
-            "changed": True,
-        }
+        assert row["data"]["gender"] == {"id": 1, "value": "male", "info": "done"}
         assert row["data"]["groups"] == [
-            {"value": "testgroup", "info": "generated", "id": 1, "changed": True}
+            {"value": "testgroup", "info": "generated", "id": 1}
         ]
         assert row["data"]["structure_level"] == [
-            {"value": "testlevel", "info": "done", "id": 1, "changed": True}
+            {"value": "testlevel", "info": "done", "id": 1}
         ]
         for key in fix_fields.keys():
             assert row["data"][key]["value"] == fix_fields[key]
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_wrong_gender(self) -> None:
         self.set_up_test_models()
@@ -626,7 +604,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert entry["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_invalid_vote_weight(self) -> None:
         self.set_up_test_models()
@@ -661,7 +638,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
             "groups": [{"id": 1, "info": "generated", "value": "testgroup"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_not_sufficient_field_permission_update_with_wrong_email(
         self,
@@ -717,7 +693,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "vote_weight": {"value": "1.234560", "info": "done"},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_wrong_email(self) -> None:
         self.create_meeting(1)
@@ -769,7 +744,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "Error: 'this.is@wrong,too' is not a valid email address."
             in row["messages"]
         )
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_with_illegal_decimal_value(self) -> None:
         self.create_meeting(1)
@@ -838,7 +812,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_duplicate_member_numbers(self) -> None:
         self.create_meeting(1)
@@ -881,8 +854,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test1", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
-
         assert import_preview["result"]["rows"][1]["state"] == ImportState.ERROR
         assert import_preview["result"]["rows"][1]["messages"] == [
             "Error: Found more users with the same member number"
@@ -893,7 +864,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test2"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][1]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant(
         self,
@@ -939,7 +909,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"info": "done", "value": "test", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant_2(
         self,
@@ -980,13 +949,15 @@ class ParticipantJsonUpload(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "default_password": {
+                "info": "warning",
+                "value": "",
+            },
             "member_number": {"info": ImportState.ERROR, "value": "new_one"},
             "username": {"info": "done", "value": "test", "id": 2},
             "saml_id": {"info": "done", "value": "tessst"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_other_persons_member_number_in_existing_participant_3(
         self,
@@ -1040,7 +1011,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "email": {"info": "done", "value": "fritz.chen@scho.ol"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def prepare_locked_out_test(
         self,
@@ -1089,7 +1059,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 2, "info": "error", "value": "admin"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_create_locked_out_user_can_manage_error(self) -> None:
         self.prepare_locked_out_test()
@@ -1117,7 +1086,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 3, "info": "error", "value": "can_manage"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_self_error(self) -> None:
         self.prepare_locked_out_test()
@@ -1152,7 +1120,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_meeting_admin_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1179,7 +1146,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 2, "info": "error", "value": "admin"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_superadmin_error(self) -> None:
         self.prepare_locked_out_test("test", oml=OrganizationManagementLevel.SUPERADMIN)
@@ -1206,12 +1172,11 @@ class ParticipantJsonUpload(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "id": 2,
-            "username": {"info": "referenced", "value": "test", "id": 2},
+            "username": {"info": "done", "value": "test", "id": 2},
             "locked_out": {"info": "error", "value": True},
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
@@ -1229,7 +1194,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert import_preview["result"]["rows"][0]["data"]["is_active"] == {
             "value": False,
             "info": ImportState.ERROR,
-            "changed": True,
         }
         assert (
             "A superadmin is not allowed to set himself inactive."
@@ -1238,11 +1202,10 @@ class ParticipantJsonUpload(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "id": 1,
-            "username": {"info": "referenced", "value": "admin", "id": 1},
-            "is_active": {"info": "error", "value": False, "changed": True},
+            "username": {"info": "done", "value": "admin", "id": 1},
+            "is_active": {"info": "error", "value": False},
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_other_oml_error(self) -> None:
         self.prepare_locked_out_test(
@@ -1271,12 +1234,11 @@ class ParticipantJsonUpload(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "id": 2,
-            "username": {"info": "referenced", "value": "test", "id": 2},
+            "username": {"info": "done", "value": "test", "id": 2},
             "locked_out": {"info": "error", "value": True},
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_locked_out_on_cml_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1314,7 +1276,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_update_meeting_admin_on_locked_out_user_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
@@ -1340,7 +1301,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"info": "error", "value": "admin", "id": 2}],
         }.items():
             assert data[key] == value
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_permission_as_locked_out(self) -> None:
         self.create_meeting()
@@ -1413,7 +1373,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "external": {"value": False, "info": ImportState.GENERATED},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_home_committee_multiple_found(self) -> None:
         self.set_up_test_models()
@@ -1449,17 +1408,12 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "id": 2,
             "first_name": {"value": "Bob", "info": ImportState.DONE},
             "last_name": {"value": "will fail", "info": ImportState.DONE},
-            "username": {
-                "id": 2,
-                "value": "BobWillFail",
-                "info": ImportState.REFERENCED,
-            },
+            "username": {"id": 2, "value": "BobWillFail", "info": ImportState.DONE},
             "home_committee": {"value": "There are two", "info": ImportState.ERROR},
             "default_password": {"value": "ouch", "info": ImportState.DONE},
             "external": {"value": False, "info": ImportState.DONE},
             "groups": [{"id": 1, "value": "testgroup", "info": ImportState.DONE}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def test_json_upload_set_home_committee_and_set_external_to_true(self) -> None:
         self.set_up_test_models()
@@ -1500,7 +1454,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "external": {"value": True, "info": ImportState.ERROR},
             "groups": [{"value": "test", "info": ImportState.NEW}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -1546,31 +1499,14 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert result["rows"][0]["state"] == ImportState.DONE
         assert result["rows"][0]["data"] == {
             "id": 2,
-            "first_name": {
-                "value": "Wilhelm",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
-            "last_name": {
-                "value": "Aberhatnurhut",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
-            "email": {
-                "value": "will@helm.hut",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
             "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
             "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
-            "default_password": {
-                "value": "123",
-                "info": ImportState.DONE,
-                "changed": True,
-            },
+            "default_password": {"value": "123", "info": ImportState.DONE},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def json_upload_saml_id_new(self) -> None:
         self.create_meeting(4)
@@ -1621,7 +1557,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data0 == {
             "saml_id": {"info": "new", "value": "test_saml_id"},
             "username": {"info": "generated", "value": "test_saml_id2"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "default_password": {"info": "warning", "value": ""},
             "groups": [{"value": "group1", "info": ImportState.DONE, "id": 1}],
         }
 
@@ -1683,21 +1619,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.WARNING
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "saml_id": {"info": "new", "value": "test_saml_id", "changed": True},
-            "username": {"info": ImportState.REFERENCED, "value": "test", "id": 2},
-            "default_password": {"info": "warning", "value": "", "changed": False},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
+            "saml_id": {"info": "new", "value": "test_saml_id"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "default_password": {"info": "warning", "value": ""},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-        assert "list_delete_amounts" not in response.json["results"][0][0]["rows"][0]
 
     def json_upload_update_saml_id_in_existing_participant(self) -> None:
         self.set_models(
@@ -1724,16 +1657,14 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "saml_id": {"info": "done", "value": "new_one", "changed": True},
-            "username": {"info": ImportState.REFERENCED, "value": "test", "id": 2},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
+            "saml_id": {"info": "done", "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_username_set_saml_id_remove_presence(self) -> None:
@@ -1792,20 +1723,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["data"] == {
             "id": 10,
             "username": {"value": "user10", "info": "done", "id": 10},
-            "saml_id": {"value": "saml_id10", "info": "new", "changed": True},
-            "default_password": {"value": "", "info": "warning", "changed": False},
-            "is_present": {"value": False, "info": "done", "changed": True},
-            "vote_weight": {"value": "2.800000", "info": "done", "changed": True},
+            "saml_id": {"value": "saml_id10", "info": "new"},
+            "default_password": {"value": "", "info": "warning"},
+            "is_present": {"value": False, "info": "done"},
+            "vote_weight": {"value": "2.800000", "info": "done"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
-            "structure_level": [
-                {"id": 2, "info": "done", "value": "new sl", "changed": True}
-            ],
+            "structure_level": [{"id": 2, "info": "done", "value": "new sl"}],
             **{
-                k: {"value": v, "info": ImportState.DONE, "changed": True}
-                for k, v in fix_fields.items()
+                k: {"value": v, "info": ImportState.DONE} for k, v in fix_fields.items()
             },
         }
-        assert row["list_delete_amounts"] == {"structure_level": 1}
 
     def json_upload_username_username_and_saml_id_found(self) -> None:
         self.set_models(
@@ -1830,14 +1757,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.REFERENCED
+        assert row["state"] == ImportState.DONE
         assert row["data"] == {
             "id": 11,
-            "username": {"value": "user11", "info": ImportState.REFERENCED, "id": 11},
+            "username": {"value": "user11", "info": ImportState.DONE, "id": 11},
             "saml_id": {"value": "saml_id11", "info": ImportState.DONE},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_multiple_users(self) -> None:
@@ -1963,30 +1888,22 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.WARNING
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
-            "saml_id": {"info": "new", "value": "test_saml_id2", "changed": True},
-            "username": {"id": 2, "info": ImportState.REFERENCED, "value": "user2"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "saml_id": {"info": "new", "value": "test_saml_id2"},
+            "username": {"id": 2, "info": "done", "value": "user2"},
+            "default_password": {"info": "warning", "value": ""},
             "groups": [
-                {"id": 3, "info": "done", "value": "group3", "changed": True},
-                {"info": "new", "value": "group4", "changed": True},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"info": "new", "value": "group4"},
             ],
-            "structure_level": [
-                {"value": "level up", "info": ImportState.NEW, "changed": True}
-            ],
-            "gender": {
-                "id": 3,
-                "info": ImportState.DONE,
-                "value": "diverse",
-                "changed": True,
-            },
+            "structure_level": [{"value": "level up", "info": ImportState.NEW}],
+            "gender": {"id": 3, "info": ImportState.DONE, "value": "diverse"},
         }
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][1]["messages"] == [
@@ -1996,35 +1913,23 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "id": 3,
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
-            "default_password": {
-                "info": ImportState.WARNING,
-                "value": "",
-                "changed": False,
-            },
-            "groups": [{"id": 3, "info": "done", "value": "group3", "changed": True}],
-            "vote_weight": {
-                "info": ImportState.DONE,
-                "value": "3.345678",
-                "changed": True,
-            },
-        }
-        assert import_preview["result"]["rows"][1]["list_delete_amounts"] == {
-            "groups": 2
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "groups": [{"id": 3, "info": "done", "value": "group3"}],
+            "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
         }
 
-        assert import_preview["result"]["rows"][2]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][2]["messages"] == []
         assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
-            "username": {"id": 4, "info": ImportState.REFERENCED, "value": "user4"},
+            "username": {"id": 4, "info": "done", "value": "user4"},
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
-                {"info": "new", "value": "group4", "changed": True},
+                {"info": "new", "value": "group4"},
             ],
         }
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][2]
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
@@ -2033,14 +1938,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
             "username": {"info": "done", "value": "new_user5"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "default_password": {"info": "warning", "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
             "structure_level": [
                 {"value": "level up", "info": ImportState.NEW},
                 {"value": "no. 5", "info": ImportState.NEW},
             ],
         }
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][3]
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
@@ -2049,7 +1953,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["result"]["rows"][4]["data"] == {
             "saml_id": {"info": "new", "value": "new_saml6"},
             "username": {"info": "generated", "value": "new_saml6"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
+            "default_password": {"info": "warning", "value": ""},
             "is_present": {"info": "done", "value": True},
             "groups": [
                 {"info": "new", "value": "group4"},
@@ -2176,17 +2080,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"value": "user2", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
             "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
-            "vote_weight": {"value": "1.234560", "info": "done", "changed": True},
+            "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
-            "default_password": {"value": "", "info": "remove", "changed": False},
+            "default_password": {"value": "", "info": "remove"},
             "groups": [
                 {"value": "group1", "info": "done", "id": 1},
-                {"value": "group2", "info": "done", "id": 2, "changed": True},
-                {"value": "group3", "info": "done", "id": 3, "changed": True},
-                {"value": "group4", "info": "new", "changed": True},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "new"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
     def json_upload_no_permissions_to_set_meeting_external_fields_on_superadmin(
         self,
@@ -2242,17 +2145,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"value": "user2", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
             "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
-            "vote_weight": {"value": "1.234560", "info": "done", "changed": True},
+            "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
-            "default_password": {"value": "", "info": "remove", "changed": False},
+            "default_password": {"value": "", "info": "remove"},
             "groups": [
                 {"value": "group1", "info": "done", "id": 1},
-                {"value": "group2", "info": "done", "id": 2, "changed": True},
-                {"value": "group3", "info": "done", "id": 3, "changed": True},
-                {"value": "group4", "info": "new", "changed": True},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "new"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
     def json_upload_not_sufficient_field_permission_update_with_member_number(
         self,
@@ -2314,17 +2216,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "member_number": {"value": "M3MNUM", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
             "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
-            "vote_weight": {"value": "1.234560", "info": "done", "changed": True},
+            "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
-            "default_password": {"value": "", "info": "remove", "changed": False},
+            "default_password": {"value": "", "info": "remove"},
             "groups": [
                 {"value": "group1", "info": "done", "id": 1},
-                {"value": "group2", "info": "done", "id": 2, "changed": True},
-                {"value": "group3", "info": "done", "id": 3, "changed": True},
-                {"value": "group4", "info": "new", "changed": True},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "new"},
             ],
         }
-        assert "list_delete_amounts" not in row
 
     def json_upload_sufficient_field_permission_create(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
@@ -2362,7 +2263,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "first_name": {"value": "Jim", "info": "done"},
             "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "new"},
-            "default_password": {"value": "", "info": "warning", "changed": False},
+            "default_password": {"value": "", "info": "warning"},
             "groups": [
                 {"value": "group1", "info": "done", "id": 1},
                 {"value": "group2", "info": "done", "id": 2},
@@ -2399,13 +2300,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "info": ImportState.DONE,
                     "value": "test user",
                 },
-                "first_name": {
-                    "info": ImportState.DONE,
-                    "value": "test",
-                    "changed": True,
-                },
+                "first_name": {"info": ImportState.DONE, "value": "test"},
                 "groups": [
-                    {"id": 3, "info": "done", "value": "group3"},
+                    {
+                        "id": 3,
+                        "info": "done",
+                        "value": "group3",
+                    },
                 ],
             },
         }
@@ -2428,34 +2329,24 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "test",
                         "saml_id": "old_one",
+                        "default_vote_weight": "4.500000",
                     }
                 ],
             },
         )
         self.assert_status_code(response, 200)
         import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == [
-            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
-        ]
+        assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
             "saml_id": {"info": "done", "value": "old_one"},
             "username": {"info": "done", "value": "test", "id": 2},
-            "default_password": {
-                "value": "",
-                "info": ImportState.WARNING,
-                "changed": False,
-            },
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
+            "default_vote_weight": {"info": "done", "value": "4.500000"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_set_member_number_in_existing_participants(self) -> None:
@@ -2507,27 +2398,17 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row == {
             "id": 2,
             "username": {"info": "done", "value": "test1", "id": 2},
-            "member_number": {"info": "new", "value": "new_one", "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
+            "member_number": {"info": "new", "value": "new_one"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
         row = import_preview["result"]["rows"][1]["data"]
         assert row == {
             "id": 3,
             "username": {"info": "done", "value": "test2", "id": 3},
             "saml_id": {"info": "done", "value": "samLidman"},
-            "default_password": {"info": "warning", "value": "", "changed": False},
-            "member_number": {"info": "new", "value": "another_new_1", "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][1]["list_delete_amounts"] == {
-            "groups": 1
+            "default_password": {"info": "warning", "value": ""},
+            "member_number": {"info": "new", "value": "another_new_1"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
         row = import_preview["result"]["rows"][2]["data"]
         assert row == {
@@ -2536,13 +2417,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "first_name": {"info": "done", "value": "Hasan"},
             "last_name": {"info": "done", "value": "Ame"},
             "email": {"info": "done", "value": "hasaN.ame@nd.email"},
-            "member_number": {"info": "new", "value": "UGuessedIt", "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][2]["list_delete_amounts"] == {
-            "groups": 1
+            "member_number": {"info": "new", "value": "UGuessedIt"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_set_other_matching_criteria_in_existing_participant_via_member_number(
@@ -2588,18 +2464,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "default_password": {"value": "", "info": "warning", "changed": False},
-            "username": {"info": "new", "value": "newname", "changed": True},
-            "saml_id": {"info": "new", "value": "some_other_saml", "changed": True},
-            "first_name": {"info": "done", "value": "second", "changed": True},
-            "last_name": {"info": "done", "value": "second_to_last", "changed": True},
+            "default_password": {"value": "", "info": "warning"},
+            "username": {"info": "new", "value": "newname"},
+            "saml_id": {"info": "new", "value": "some_other_saml"},
+            "first_name": {"info": "done", "value": "second"},
+            "last_name": {"info": "done", "value": "second_to_last"},
             "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_add_member_number(self) -> None:
@@ -2636,13 +2507,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "id": 2,
             "member_number": {"info": "done", "value": "old_one", "id": 2},
             "username": {"info": "done", "value": "test"},
-            "vote_weight": {"info": "done", "value": "4.345678", "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "group1", "changed": True}
-            ],
-        }
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
+            "vote_weight": {"info": "done", "value": "4.345678"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
     def json_upload_new_participant_with_member_number(self) -> None:
@@ -2671,7 +2537,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
-            "default_password": {"value": "", "info": "warning", "changed": False},
+            "default_password": {"value": "", "info": "warning"},
             "username": {"info": "done", "value": "newname"},
             "saml_id": {"info": "new", "value": "some_other_saml"},
             "first_name": {"info": "done", "value": "second"},
@@ -2763,15 +2629,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
                 "username": {"id": 2, "value": "bob", "info": ImportState.DONE},
                 "groups": [
-                    {
-                        "value": "group1",
-                        "info": ImportState.GENERATED,
-                        "id": 1,
-                        "changed": True,
-                    },
+                    {"value": "group1", "info": ImportState.GENERATED, "id": 1},
                 ],
             },
-            "list_delete_amounts": {"groups": 1},
         }
         row = response.json["results"][0][0]["rows"][1]
         assert row["state"] == ImportState.NEW
@@ -2803,15 +2663,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
                 "username": {"id": 2, "value": "bob", "info": ImportState.DONE},
                 "groups": [
-                    {
-                        "value": "group1",
-                        "info": ImportState.GENERATED,
-                        "id": 1,
-                        "changed": True,
-                    },
+                    {"value": "group1", "info": ImportState.GENERATED, "id": 1},
                 ],
             },
-            "list_delete_amounts": {"groups": 1},
         }
 
     def json_upload_remove_last_admin_in_template(self) -> None:
@@ -2841,15 +2695,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
                 "username": {"id": 2, "value": "bob", "info": ImportState.DONE},
                 "groups": [
-                    {
-                        "value": "group1",
-                        "info": ImportState.GENERATED,
-                        "id": 1,
-                        "changed": True,
-                    },
+                    {"value": "group1", "info": ImportState.GENERATED, "id": 1},
                 ],
             },
-            "list_delete_amounts": {"groups": 1},
         }
 
     def json_upload_multi_with_locked_out(self) -> None:
@@ -2937,54 +2785,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["statistics"] == [
-            {
-                "name": "total",
-                "value": 11,
-            },
-            {
-                "name": "created",
-                "value": 2,
-            },
-            {
-                "name": "updated",
-                "value": 6,
-            },
-            {
-                "name": "referenced",
-                "value": 3,
-            },
-            *[
-                {"name": n, "value": 0}
-                for n in [
-                    "error",
-                    "warning",
-                    "structure levels created",
-                    "groups created",
-                ]
-            ],
-        ]
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
         rows = import_preview["result"]["rows"]
         assert not any(len(row["messages"]) for row in rows)
         assert not any(row["state"] != ImportState.NEW for row in rows[:2])
-        assert not any(
-            rows[i]["state"] != ImportState.DONE for i in [2, 4, *range(7, len(rows))]
-        )
-
-        assert not any("list_delete_amounts" in rows[i] for i in [0, 1, 3, 5, 6])
-        assert not any(
-            rows[i]["list_delete_amounts"] != {"groups": 1} for i in [2, 4, 7, 8, 9, 10]
-        )
-        assert not any(rows[i]["state"] != ImportState.REFERENCED for i in [3, 5, 6])
+        assert not any(row["state"] != ImportState.DONE for row in rows[2:])
         data = [row["data"] for row in rows]
-        assert data[0]["locked_out"] == {"info": "done", "value": True}
-        assert data[1]["locked_out"] == {"info": "done", "value": True}
         assert not any(
-            date["locked_out"] != {"info": "done", "value": True, "changed": True}
-            for date in data[2:9]
+            date["locked_out"] != {"info": "done", "value": True} for date in data[0:9]
         )
         assert not any(data[i + 2]["id"] != participant1 + i for i in range(9))
         i = 0
@@ -3018,16 +2828,24 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "participant1",
         }
         assert data[i]["groups"] == [
-            {"id": 4, "info": "done", "value": "can_update", "changed": True},
+            {
+                "id": 4,
+                "info": "done",
+                "value": "can_update",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
             "id": foreign_cml,
-            "info": ImportState.REFERENCED,
+            "info": "done",
             "value": "foreign_cml",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "generated", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "generated",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3036,25 +2854,37 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "can_update",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "generated", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "generated",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
             "id": foreign_meeting_admin,
-            "info": ImportState.REFERENCED,
+            "info": "done",
             "value": "foreign_meeting_admin",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "generated", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "generated",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
             "id": foreign_can_manage,
-            "info": ImportState.REFERENCED,
+            "info": "done",
             "value": "foreign_can_manage",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "generated", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "generated",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3063,7 +2893,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "can_manage",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "done", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "done",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3072,7 +2906,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "meeting_admin",
         }
         assert data[i]["groups"] == [
-            {"id": 1, "info": "done", "value": "default", "changed": True},
+            {
+                "id": 1,
+                "info": "done",
+                "value": "default",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3081,7 +2919,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "locked_out1",
         }
         assert data[i]["groups"] == [
-            {"id": 2, "info": "done", "value": "admin", "changed": True},
+            {
+                "id": 2,
+                "info": "done",
+                "value": "admin",
+            },
         ]
         i += 1
         assert data[i]["username"] == {
@@ -3090,7 +2932,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "locked_out2",
         }
         assert data[i]["groups"] == [
-            {"id": 3, "info": "done", "value": "can_manage", "changed": True},
+            {
+                "id": 3,
+                "info": "done",
+                "value": "can_manage",
+            },
         ]
 
     def json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group(
@@ -3132,15 +2978,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True, "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "default", "changed": True}
-            ],
+            "locked_out": {"info": "done", "value": True},
+            "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
-        }
 
     def json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
         self,
@@ -3180,15 +3021,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         for key, value in {
             "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True, "changed": True},
-            "groups": [
-                {"id": 1, "info": "generated", "value": "default", "changed": True}
-            ],
+            "locked_out": {"info": "done", "value": True},
+            "groups": [{"id": 1, "info": "generated", "value": "default"}],
         }.items():
             assert data[key] == value
-        assert import_preview["result"]["rows"][0]["list_delete_amounts"] == {
-            "groups": 1
-        }
 
     def json_upload_set_home_committee(self, has_perm: bool = True) -> None:
         self.create_committee(1, name="Home")
@@ -3258,7 +3094,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         if old_perm and new_perm:
             assert import_preview["result"]["rows"][0]["messages"] == []
         else:
@@ -3269,7 +3105,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.REFERENCED,
+            "info": ImportState.DONE,
             "value": "Alice",
         }
         if old_perm and new_perm:
@@ -3277,13 +3113,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "info": ImportState.DONE,
                 "value": "Home",
                 "id": 2,
-                "changed": True,
             }
-            assert data["external"] == {
-                "info": ImportState.GENERATED,
-                "value": False,
-                "changed": True,
-            }
+            assert data["external"] == {"info": ImportState.GENERATED, "value": False}
         else:
             assert data["home_committee"] == {
                 "info": ImportState.REMOVE,
@@ -3291,7 +3122,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "id": 2,
             }
             assert data["external"] == {"info": ImportState.REMOVE, "value": False}
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false(self) -> None:
         self.create_committee(1, name="Home")
@@ -3309,27 +3139,21 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.REFERENCED,
+            "info": ImportState.DONE,
             "value": "Alice",
         }
         assert data["home_committee"] == {
             "info": ImportState.DONE,
             "value": "Home",
             "id": 1,
-            "changed": True,
         }
-        assert data["external"] == {
-            "info": ImportState.DONE,
-            "value": False,
-            "changed": True,
-        }
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
+        assert data["external"] == {"info": ImportState.DONE, "value": False}
 
     def json_upload_update_external_true(
         self, with_home_committee: bool = False, has_home_committee_perms: bool = True
@@ -3355,7 +3179,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         messages = [
             "If external is set to true, any home_committee that was set will be removed."
         ]
@@ -3367,11 +3191,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
         assert data["username"] == {
-            "info": ImportState.REFERENCED,
+            "info": ImportState.DONE,
             "value": "Alice",
             "id": alice_id,
         }
-        home_committee: dict[str, Any] = {
+        assert data["home_committee"] == {
             "info": (
                 ImportState.GENERATED
                 if has_home_committee_perms
@@ -3379,19 +3203,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ),
             "value": None,
         }
-        external: dict[str, Any] = {
+        assert data["external"] == {
             "info": (
                 ImportState.DONE if has_home_committee_perms else ImportState.REMOVE
             ),
             "value": True,
         }
-        if has_home_committee_perms:
-            if home_committee["value"] or with_home_committee:
-                home_committee["changed"] = True
-            external["changed"] = True
-        assert data["home_committee"] == home_committee
-        assert data["external"] == external
-        assert "list_delete_amounts" not in import_preview["result"]["rows"][0]
 
     def json_upload_update_home_committee_and_external_false_no_perms_new(self) -> None:
         self.create_committee(1, name="Old home")
@@ -3414,7 +3231,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.REFERENCED
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
             "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
         ]
@@ -3422,7 +3239,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data["id"] == alice_id
         assert data["username"] == {
             "id": alice_id,
-            "info": ImportState.REFERENCED,
+            "info": ImportState.DONE,
             "value": "Alice",
         }
         assert data["home_committee"] == {

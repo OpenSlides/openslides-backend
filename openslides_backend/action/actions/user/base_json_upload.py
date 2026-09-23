@@ -114,9 +114,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         self.generate_statistics()
         return {}
 
-    def get_row_state_for_update_row(self, id_: int) -> ImportState:
-        return ImportState.DONE
-
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         messages: list[str] = []
         id_: int | None = None
@@ -135,11 +132,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                         username, "default_password"
                     ),
                 )
-                self.row_state = self.get_row_state_for_update_row(id_)
+                self.row_state = ImportState.DONE
                 entry["id"] = id_
                 entry["username"] = {
                     "value": username,
-                    "info": self.row_state,
+                    "info": ImportState.DONE,
                     "id": id_,
                 }
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
@@ -172,12 +169,12 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     self.saml_id_lookup.get_field_by_name(saml_id, "default_password"),
                 )
 
-                self.row_state = self.get_row_state_for_update_row(id_)
+                self.row_state = ImportState.DONE
                 entry["id"] = id_
                 if isinstance(username, str):
                     entry["username"] = {
                         "value": username,
-                        "info": self.row_state,
+                        "info": ImportState.DONE,
                         "id": id_,
                     }
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
@@ -214,7 +211,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                             names_and_email, "default_password"
                         ),
                     )
-                    self.row_state = self.get_row_state_for_update_row(id_)
+                    self.row_state = ImportState.DONE
                     entry["id"] = id_
                     entry["username"] = {
                         "value": (
@@ -222,7 +219,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                             if isinstance(username, dict)
                             else username
                         ),
-                        "info": self.row_state,
+                        "info": ImportState.DONE,
                         "id": id_,
                     }
                 elif check_result == ResultType.NOT_FOUND or id_ == 0:
@@ -287,7 +284,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     entry["member_number"] = {
                         "id": id_,
                         "value": member_number,
-                        "info": self.get_row_state_for_update_row(id_),
+                        "info": ImportState.DONE,
                     }
                     if not entry.get("username"):
                         entry["username"] = {
@@ -300,7 +297,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     ):
                         entry["username"]["info"] = ImportState.NEW
                     if self.row_state != ImportState.ERROR:
-                        self.row_state = entry["member_number"]["info"]
+                        self.row_state = ImportState.DONE
                 elif check_result == ResultType.FOUND_MORE_IDS:
                     self.row_state = ImportState.ERROR
                     entry["member_number"] = {
@@ -362,9 +359,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 or old_default_password
             ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
-                if self.check_changes:
-                    entry["default_password"]["changed"] = False
-
                 messages.append(
                     f"Because this {self.import_name} is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )
@@ -624,7 +618,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 if (username := entry.get("username"))
             ],
             field="username",
-            mapped_fields=["username", "saml_id", "default_password", "meeting_ids"],
+            mapped_fields=["username", "saml_id", "default_password"],
         )
         self.saml_id_lookup = Lookup(
             self.datastore,
@@ -635,7 +629,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 if not entry.get("username") and (saml_id := entry.get("saml_id"))
             ],
             field="saml_id",
-            mapped_fields=["saml_id", "username", "default_password", "meeting_ids"],
+            mapped_fields=["saml_id", "username", "default_password"],
         )
         self.names_email_lookup = Lookup(
             self.datastore,
@@ -655,7 +649,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 and names_email != ("", "", "")
             ],
             field=("first_name", "last_name", "email"),
-            mapped_fields=["username", "saml_id", "default_password", "meeting_ids"],
+            mapped_fields=["username", "saml_id", "default_password"],
         )
         self.all_saml_id_lookup = Lookup(
             self.datastore,
@@ -673,7 +667,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 if (member_number := entry.get("member_number"))
             ],
             field="member_number",
-            mapped_fields=["username", "member_number", "saml_id", "meeting_ids"],
+            mapped_fields=["username", "member_number", "saml_id"],
         )
         self.gender_dict = self.datastore.get_all(
             "gender", ["id", "name"], lock_result=False
