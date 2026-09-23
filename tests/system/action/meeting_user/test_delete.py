@@ -224,6 +224,7 @@ class MeetingUserDelete(BaseActionTestCase):
                 "poll_entitled_user/1": {
                     "meeting_user_id": 5,
                     "poll_id": 20,
+                    "present": True,
                 },
             }
         )

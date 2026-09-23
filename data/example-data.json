@@ -1916,6 +1916,7 @@
             "anonymized": true,
             "live_voting_enabled": false,
             "published": true,
+            "allow_empty": false,
             "allow_invalid": false,
             "allow_vote_split": false,
             "content_object_id": "motion/1",
@@ -1936,6 +1937,7 @@
             "anonymized": true,
             "live_voting_enabled": false,
             "published": true,
+            "allow_empty": false,
             "allow_invalid": false,
             "allow_vote_split": false,
             "content_object_id": "assignment/1",
@@ -1951,6 +1953,7 @@
             "anonymized": false,
             "live_voting_enabled": false,
             "published": false,
+            "allow_empty": true,
             "allow_invalid": false,
             "allow_vote_split": false,
             "content_object_id": "motion/1",
@@ -1969,6 +1972,7 @@
             "anonymized": false,
             "live_voting_enabled": false,
             "published": false,
+            "allow_empty": true,
             "allow_invalid": false,
             "allow_vote_split": false,
             "content_object_id": "topic/1",
@@ -1984,6 +1988,7 @@
             "anonymized": false,
             "live_voting_enabled": false,
             "published": false,
+            "allow_empty": false,
             "allow_invalid": false,
             "allow_vote_split": false,
             "content_object_id": "assignment/1",
@@ -2006,6 +2011,7 @@
             "anonymized": false,
             "live_voting_enabled": false,
             "published": false,
+            "allow_empty": false,
             "allow_invalid": false,
             "allow_vote_split": true,
             "content_object_id": "assignment/1",
@@ -2205,12 +2211,14 @@
         "1": {
             "id": 1,
             "poll_id": 3,
-            "meeting_user_id": 1
+            "meeting_user_id": 1,
+            "present": true
         },
         "2": {
             "id": 2,
             "poll_id": 3,
-            "meeting_user_id": null
+            "meeting_user_id": null,
+            "present": false
         }
     },
     "assignment": {

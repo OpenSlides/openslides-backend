@@ -2324,6 +2324,10 @@ class Poll(Model, PollModelMixin):
             "description": "Set to true, after finished was called with anonymize."
         },
     )
+    allow_empty = fields.BooleanField(
+        default=False,
+        constraints={"description": "If true, the vote service accepts empty ballots."},
+    )
     allow_invalid = fields.BooleanField(
         default=False,
         constraints={
@@ -2513,7 +2517,12 @@ class PollConfigRatingScore(Model):
     required_majority = fields.CharField(
         default="no_majority",
         constraints={
-            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+            "enum": [
+                "no_majority",
+                "two_third_majority",
+                "absolute_majority",
+                "simple_majority",
+            ]
         },
     )
 
@@ -2546,7 +2555,12 @@ class PollConfigSelection(Model):
     required_majority = fields.CharField(
         default="no_majority",
         constraints={
-            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+            "enum": [
+                "no_majority",
+                "two_third_majority",
+                "absolute_majority",
+                "simple_majority",
+            ]
         },
     )
     display_chart = fields.CharField()
@@ -2572,6 +2586,7 @@ class PollEntitledUser(Model):
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "poll_entitled_user_ids"}
     )
+    present = fields.BooleanField(required=True)
 
 
 class PollOption(Model):
