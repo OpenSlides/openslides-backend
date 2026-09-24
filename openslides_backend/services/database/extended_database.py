@@ -313,7 +313,8 @@ class ExtendedDatabase(Database):
     ]:
         """
         Returns a dictionary of the changed models for the given collections together with all
-        missing fields.
+       Returns a dictionary of the changed models for the given collections together with all
+       missing fields. Also returns the base data for a get many request for missing fields in the shape of: {collection: {tuple(missing fields): [ids of this config]}}
         """
         results: dict[Collection, dict[int, PartialModel]] = defaultdict(
             lambda: defaultdict(dict)
