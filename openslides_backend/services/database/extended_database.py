@@ -352,7 +352,7 @@ class ExtendedDatabase(Database):
                             ]
                             gmr_base[collection][tuple(fields)].append(id_)
                     else:
-                        # assuming that whole model is needed and we want that?
+                        # The whole model is requested.
                         results[collection][id_] = changed_model
                         missing_fields_per_collection_and_id[collection][id_] = []
                         gmr_base[collection][tuple([])].append(id_)
