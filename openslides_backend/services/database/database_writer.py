@@ -323,7 +323,7 @@ class DatabaseWriter(SqlQueryHelper):
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
                         array_type_dict[field_name] = self.get_array_type(
-                            type(value_list[0]), collection, field_name
+                            collection, field_name, type(value_list[0])
                         )
                     if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field

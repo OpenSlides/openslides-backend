@@ -261,9 +261,9 @@ class BaseSqlQueryHelper:
                         table_column=table_column,
                         filter_operator=sql.SQL(filter_.operator),
                         type=cls.get_array_type(
-                            (type(next(iter(filter_.value))) if filter_.value else int),
                             collection,
                             filter_.field,
+                            (type(next(iter(filter_.value))) if filter_.value else int),
                         ),
                     )
                 else:
@@ -276,20 +276,6 @@ class BaseSqlQueryHelper:
         else:
             raise BadCodingException("Invalid filter type")
 
-    @staticmethod
-    def get_enum_array_name(
-        collection: str, field_name: str, *args: Any, **kwargs: Any
-    ) -> str | None:
-        raise NotImplementedError()
-
     @classmethod
-    def get_array_type(
-        cls, list_type: type, collection: str, field: str
-    ) -> sql.Composable:
-        if list_type == int:
-            return sql.SQL("::integer[]")
-        elif enum_array_name := cls.get_enum_array_name(collection, field):
-            return sql.SQL(f"::{enum_array_name}")
-        elif list_type == str:
-            return sql.SQL("::text[]")
-        raise ValueError("Only integer, string or enum lists are supported.")
+    def get_array_type(cls, collection: str, field: str, *args: Any) -> sql.Composable:
+        raise NotImplementedError()

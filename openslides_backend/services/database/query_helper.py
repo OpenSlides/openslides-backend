@@ -87,7 +87,16 @@ class SqlQueryHelper(BaseSqlQueryHelper):
             arguments,
         )
 
-    @staticmethod
-    def get_enum_array_name(collection: str, field_name: str) -> str | None:
-        field = model_registry[collection]().get_field(field_name)
-        return getattr(field, "enum_name", None)
+    @classmethod
+    def get_array_type(
+        cls, collection: str, field: str, list_type: type
+    ) -> sql.Composable:
+        if list_type == int:
+            return sql.SQL("::integer[]")
+        elif enum_array_name := getattr(
+            model_registry[collection]().get_field(field), "enum_name", None
+        ):
+            return sql.SQL(f"::{enum_array_name}")
+        elif list_type == str:
+            return sql.SQL("::text[]")
+        raise ValueError("Only integer, string or enum lists are supported.")

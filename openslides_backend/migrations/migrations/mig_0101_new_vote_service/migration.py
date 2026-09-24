@@ -1,10 +1,11 @@
 from typing import Any
 
 from psycopg import Cursor
-# from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.base import BaseMigration
+from openslides_backend.migrations.patterns import Join, JoinOn
 from openslides_backend.shared.filters import FilterOperator, Or
 
 from .diff_mixin import DiffMixin
@@ -94,7 +95,7 @@ class Migration(DiffMixin, BaseMigration):
         self, curs: Cursor[DictRow], stash: dict[str, Any] | None
     ) -> None:
         self.update_all_entries(
-            curs, "meeting", "topic_poll_default_method", "selection"
+            curs, "meeting", {"topic_poll_default_method": "selection"}
         )
         # TODO: update intermediate table
         # self.update_from_mig_table(
@@ -110,8 +111,7 @@ class Migration(DiffMixin, BaseMigration):
         self.update_from_mig_table(
             curs,
             "poll",
-            ["anonymized"],
-            ["is_pseudoanonymized"],
+            {"anonymized": "is_pseudoanonymized"},
         )
         poll_type_to_visibility_map = {
             "analog": "manually",
@@ -119,7 +119,7 @@ class Migration(DiffMixin, BaseMigration):
             "pseudoanonymous": "secret",
             "cryptographic": "secret",
         }
-        poll_onehundred_percent_bases_map = {
+        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]] = {
             "Y": {
                 "onehundred_percent_base": "no_general",
                 "strike_out": False,
@@ -157,40 +157,41 @@ class Migration(DiffMixin, BaseMigration):
                 "strike_out": False,
             },
         }
-        self.update_from_lookup_map(
+        self.update_from_values_map(
             curs,
             "poll",
-            "visibility",
             [
-                (FilterOperator("type", "=", poll_type), True, poll_visibility)
+                {"type": poll_type, "visibility": poll_visibility}
                 for poll_type, poll_visibility in poll_type_to_visibility_map.items()
             ],
+            ["type"],
         )
-        self.update_matching_entries_multiple_columns(
+        self.update_matching_entries(
             curs,
             "poll",
-            ["state", "published"],
-            ["finished", True],
+            {"state": "finished", "published": True},
             FilterOperator("state", "=", "published"),
         )
-        self.update_matching_entries_multiple_columns(
-            curs,
-            "poll",
-            ["allow_invalid", "allow_vote_split"],
-            [False, False],
-        )
+        # self.update_all_entries(
+        #     curs,
+        #     "poll",
+        #     {"allow_invalid": False, "allow_vote_split": False},
+        # )
         self.update_array(
             curs,
             "group",
             "permissions",
             replace={"poll.can_manage": "agenda_item.can_manage_polls"},
         )
+        self.create_meeting_poll_defaults(
+            curs, poll_type_to_visibility_map, poll_onehundred_percent_bases_map
+        )
 
     @staticmethod
     def create_meeting_poll_defaults(
         curs: Cursor[DictRow],
         poll_type_to_visibility_map: dict[str, str],
-        poll_onehundred_percent_bases_map: dict[str, tuple[str, bool]],
+        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
     ) -> None:
         # From meeting to meeting_poll_default
 
@@ -239,6 +240,11 @@ class Migration(DiffMixin, BaseMigration):
             #     YNA: meeting_poll_default/allow_abstain -> true
             #     meeting/poll_default_method:
             #     N: meeting_poll_default/strike_out -> true
+
+            values_join_on = [
+                fields_map["onehundred_percent_base"],
+                fields_map["visibility"],
+            ]
             if poll_type == "assignment":
                 generate_from_map = [
                     {
@@ -262,6 +268,7 @@ class Migration(DiffMixin, BaseMigration):
                         "YNA": "rating_approval",
                     }.items()
                 ]
+                values_join_on.append("assignment_poll_default_method")
             else:
                 generate_from_map = [
                     {
@@ -277,75 +284,97 @@ class Migration(DiffMixin, BaseMigration):
                     for source_ohp_base, target_ohp_base_values in poll_onehundred_percent_bases_map.items()
                     for type_, visibility in poll_type_to_visibility_map.items()
                 ]
-            new_ids = BaseMigration.insert_from_other_table(
-                curs,
-                target_collection="meeting_poll_default",
-                main_source_table="meeting_t",
-                copy_from_source_tables={
-                    "meeting_m": {
-                        "id": "meeting_id",
-                        **(
-                            {fields_map["sort_result_by_votes"]: "sort_result_by_votes"}
-                            if "sort_result_by_votes" in fields_map
-                            else {}
-                        ),
-                    }
-                },
-                generate_from_map=generate_from_map,
+            new_ids = list(
+                BaseMigration.insert_from_other_table(
+                    curs,
+                    target_collection="meeting_poll_default",
+                    copy_from_source_tables={
+                        "meeting_m": {
+                            "id": "meeting_id",
+                            **(
+                                {
+                                    fields_map[
+                                        "sort_result_by_votes"
+                                    ]: "sort_result_by_votes"
+                                }
+                                if "sort_result_by_votes" in fields_map
+                                else {}
+                            ),
+                        }
+                    },
+                    values_map=generate_from_map,
+                    join_values_on_columns=values_join_on,
+                ).keys()
             )
+            meeting_t = HelperGetNames.get_table_name("meeting_poll_default")
+            poll_default_t = HelperGetNames.get_table_name("meeting_poll_default")
             BaseMigration.update_from_other_table(
                 curs,
                 target_collection="meeting",
-                target_column_names=[f"{poll_type}_poll_config_id"],
-                source_collection="meeting_poll_default",
-                from_migration_table=False,
-                values=["id"],
-                match_condition="meeting_t.id = meeting_poll_default_t.meeting_id",
-                filter_source_table=FilterOperator("id", "in", new_ids),
+                source_tables=[
+                    Join(
+                        poll_default_t,
+                        [JoinOn("meeting_id", (meeting_t, "id"))],
+                        FilterOperator("id", "in", new_ids),
+                    )
+                ],
+                copy_from_source_tables={
+                    poll_default_t: {"id": f"{poll_type}_poll_config_id"}
+                },
             )
+            meeting_m = HelperGetNames.get_table_name("meeting", True)
             BaseMigration.update_from_other_table(
                 curs,
                 target_collection="meeting_poll_default",
-                target_column_names=["group_ids"],
-                source_collection="meeting",
-                from_migration_table=True,
-                values=[f"{poll_type}_poll_default_group_ids"],
-                match_condition="meeting_t.id = meeting_poll_default_t.meeting_id",
+                source_tables=[
+                    Join(
+                        meeting_m,
+                        [JoinOn("id", (poll_default_t, "meeting_id"))],
+                        FilterOperator("id", "in", new_ids),
+                    )
+                ],
+                copy_from_source_tables={
+                    meeting_m: {f"{poll_type}_poll_default_group_ids": "group_ids"}
+                },
                 filter_target_table=FilterOperator("id", "in", new_ids),
             )
             BaseMigration.update_from_other_table(
                 curs,
                 target_collection="meeting_poll_default",
-                target_column_names=["strike_out"],
-                values=[True],
-                source_collection="meeting",
-                from_migration_table=True,
-                match_condition="meeting_t.id = meeting_poll_default_t.meeting_id",
-                filter_source_table=Or(
-                    FilterOperator(column, "=", "N")
-                    for column in [
-                        "assignment_poll_default_method",
-                        "motion_poll_default_method",
-                        "poll_default_method",
-                    ]
-                ),
+                source_tables=[
+                    Join(
+                        meeting_m,
+                        [JoinOn("id", (poll_default_t, "meeting_id"))],
+                        Or(
+                            FilterOperator(column, "=", "N")
+                            for column in [
+                                "assignment_poll_default_method",
+                                "motion_poll_default_method",
+                                "poll_default_method",
+                            ]
+                        ),
+                    )
+                ],
                 filter_target_table=FilterOperator("id", "in", new_ids),
+                # new_values={"strike_out": True},
             )
             BaseMigration.update_from_other_table(
                 curs,
                 target_collection="meeting_poll_default",
-                target_column_names=["allow_abstain"],
-                values=[True],
-                source_collection="meeting",
-                from_migration_table=True,
-                match_condition="meeting_t.id = meeting_poll_default_t.meeting_id",
-                filter_source_table=Or(
-                    FilterOperator(column, "=", "YNA")
-                    for column in [
-                        "assignment_poll_default_method",
-                        "motion_poll_default_method",
-                        "poll_default_method",
-                    ]
-                ),
+                source_tables=[
+                    Join(
+                        meeting_m,
+                        [JoinOn("id", (poll_default_t, "meeting_id"))],
+                        Or(
+                            FilterOperator(column, "=", "YNA")
+                            for column in [
+                                "assignment_poll_default_method",
+                                "motion_poll_default_method",
+                                "poll_default_method",
+                            ]
+                        ),
+                    )
+                ],
                 filter_target_table=FilterOperator("id", "in", new_ids),
+                # new_values={"allow_abstain": True},
             )
