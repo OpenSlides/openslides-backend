@@ -1964,3 +1964,70 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             ],
             "state": ImportState.DONE,
         }
+
+    def json_upload_with_only_new_with_parents(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "root"},
+                    {"name": "level 1", "parent": "root"},
+                    {"name": "level 2", "parent": "level 1"},
+                    {"name": "level 3", "parent": "level 2"},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response, 0) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                }
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 3",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
