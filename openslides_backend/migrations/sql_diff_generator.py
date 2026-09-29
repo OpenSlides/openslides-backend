@@ -618,10 +618,11 @@ class RemoveHelper:
                 dc_remove_tuple[0],
                 collection_name,
             )
-        if len(field_attrs_to_remove := remove_tuple[1]):
-            result += cls.handle_remove_field_attributes(
-                field_attrs_to_remove, dc_remove_tuple[1], collection_name
-            )
+        # TODO: uncomment
+        # if len(field_attrs_to_remove := remove_tuple[1]):
+        #     result += cls.handle_remove_field_attributes(
+        #         field_attrs_to_remove, dc_remove_tuple[1], collection_name
+        #     )
         return result
 
     @classmethod
@@ -897,11 +898,15 @@ def handle_add_field_attributes(
             )
             if is_list:
                 # generic list
-                is_view_field = is_view_field or not primary
-                if not is_view_field:
+                cant_generate = is_view_field or not primary
+                is_view_field = True
+                if not cant_generate:
                     code, error = GenerateCodeBlocks.get_generic_relation_list_type(
                         collection_name, field_name, field_def, field_type
                     )
+                    for field in ["table", "alter_table", "undecided"]:
+                        if field in code:
+                            del code[field]
                     gm_foreign_table, *_ = Helper.get_gm_table_for_gm_nm_relation_lists(
                         own_table_field, foreign_table_fields
                     )
@@ -930,13 +935,17 @@ def handle_add_field_attributes(
             )
             if is_list:
                 # relation list
-                is_view_field = (
+                cant_generate = (
                     is_view_field or state == FieldSqlErrorType.ERROR or not primary
                 )
-                if not is_view_field:
+                is_view_field = True
+                if not cant_generate:
                     code, error = GenerateCodeBlocks.get_relation_list_type(
                         collection_name, field_name, field_def, field_type
                     )
+                    for field in ["table", "alter_table", "undecided"]:
+                        if field in code:
+                            del code[field]
                     nm_table_name, *_ = Helper.get_nm_table_for_n_m_relation_lists(
                         own_table_field, foreign_table_field
                     )
@@ -987,11 +996,10 @@ def handle_add_field_attributes(
             create_trigger_notify_code = code.get("create_trigger_notify")
             # errors = code.get("errors")  # TODO: Should we raise these?
 
-            if table_name_code:
-                table_name_code = table_name_code.lstrip("\n ")
-                if table_name_code.startswith(field_name):
-                    table_name_code = " ".join(table_name_code.split(" ")[1:])
-                constraints_sql += f" {table_name_code}"
+            if table_code := table_name_code.lstrip("\n "):
+                if table_code.startswith(field_name):
+                    table_code = " ".join(table_code.split(" ")[1:])
+                constraints_sql += f" {table_code}".rstrip()
             for value in [
                 alter_table_code,
                 create_trigger_partitioned_sequences_code,
@@ -1223,15 +1231,16 @@ class EditHelper:
         for collection_name, collection_def in edit_tree_dict.items():
             table_name = HelperGetNames.get_table_name(collection_name)
             # TODO unique_together, unique_together_strict
-            dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
-            for field_name, field_def in collection_def[1]["fields"][1].items():
-                sql += EditHelper.handle_edit_field_attributes(
-                    table_name, field_name, field_def[0], dc_fields[field_name]
-                )
-                remove_empty(
-                    dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
-                )
-            remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
+            # TODO: uncomment
+            # dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
+            # for field_name, field_def in collection_def[1]["fields"][1].items():
+            #     sql += EditHelper.handle_edit_field_attributes(
+            #         table_name, field_name, field_def[0], dc_fields[field_name]
+            #     )
+            #     remove_empty(
+            #         dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
+            #     )
+            # remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
             remove_empty(dc_edit_tree_dict, collection_name)
         return sql
 
@@ -1886,9 +1895,11 @@ def handle_add_tree(
                         after_sql += a_sql
                     else:
                         # field altered
-                        sql += EditHelper.handle_edit_field_attributes(
-                            table_name, field_name, field_def[0], dc_fields[field_name]
-                        )
+                        pass
+                        # TODO: uncomment
+                        # sql += EditHelper.handle_edit_field_attributes(
+                        #     table_name, field_name, field_def[0], dc_fields[field_name]
+                        # )
                     remove_empty(
                         dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
                         field_name,
