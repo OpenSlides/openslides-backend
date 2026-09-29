@@ -8,6 +8,7 @@ from textwrap import dedent
 from typing import Any, cast
 
 import simplejson as json
+from sqlfluff import fix
 
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
@@ -26,7 +27,6 @@ from openslides_backend.migrations.migration_helper import (
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
-    RENAMES,
     CollectionsRemoveTuple,
     EnumTypesRemoveDict,
     FieldAttributes,
@@ -130,7 +130,7 @@ def main() -> int:
         ),
         "w",
     ) as f:
-        f.write(sql)
+        f.write(fix(sql))
 
     for dict_name in diff:
         remove_empty(diff_control, dict_name)
@@ -380,7 +380,7 @@ class EqualFieldsHelper:
             own_equal_fields_changed = cls.equal_fields_changed(
                 prev_own_field_def, curr_own_field_def
             )
-            for collectionfield in remaining_collectionfields:
+            for collectionfield in sorted(remaining_collectionfields):
                 prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
                 curr_foreign_table_field = curr_foreign_table_fields[collectionfield]
                 if own_equal_fields_changed or cls.equal_fields_changed(
@@ -397,7 +397,7 @@ class EqualFieldsHelper:
                     )
 
         if removed_collectionfields:
-            for collectionfield in removed_collectionfields:
+            for collectionfield in sorted(removed_collectionfields):
                 prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
                 cls.update_to_drop_for_generic(
                     prev_own_table_field,
@@ -474,7 +474,7 @@ class EqualFieldsHelper:
         is_generic_relation: bool,
     ) -> list[tuple[Collection, TriggerName]]:
         to_drop = []
-        for equal_field in equal_fields:
+        for equal_field in sorted(equal_fields):
             if is_generic_relation:
                 generic_plain_field_name = HelperGetNames.get_generic_plain_field_name(
                     own_table_field.column,
@@ -509,7 +509,7 @@ class EqualFieldsHelper:
         is_generic_relation: bool,
     ) -> list[tuple[Collection, TriggerName]]:
         to_drop = []
-        for equal_field in equal_fields:
+        for equal_field in sorted(equal_fields):
             own_table = HelperGetNames.get_table_name(own_table_field.table)
             foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
             if is_generic_relation:
@@ -1132,19 +1132,10 @@ class EditHelper:
                 case "sql":
                     alter_views.add(collection_name)
                 case "reference" | "to":
-                    if table_name in RENAMES[0] or field_name in RENAMES[1].get(
-                        table_name, {}
-                    ):
-                        # Shouldn't be a case since this is already skipped in yaml diff generator.
-                        # TODO decide whether to fail or DELETE this check
-                        print(
-                            f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
-                        )
-                        continue
-                    else:
-                        NotImplementedError(
-                            f"{constraint}: {value} is probably a view field or unmentioned in renames."
-                        )
+                    # TODO recreate other affected triggers and foreign key constraints
+                    print(
+                        f"Renaming fields with 'to' like '{collection_name}/{field_name}' isn't fully implemented yet."
+                    )
                     if field_def.get("equal_fields"):
                         EqualFieldsHelper.update_equal_fields_diff(
                             collection_name, field_name, drop=True, add=True
@@ -1157,15 +1148,54 @@ class EditHelper:
                     alter_views_conditionally(
                         collection_name, bool(write_fields), is_view_field
                     )
-                    # TODO recreate affected triggers
-                case value if value in FieldAttributes.skipped_in_schema:
+                # case attribute if attribute in FieldAttributes.field_attributes:
+                case "minimum" | "maximum" | "minLength" | "unique":
+                    constraints_sql = EditHelper.handle_max_min_unique(
+                        collection_name,
+                        field_name,
+                        constraint,
+                        value,
+                        add=True,
+                        drop=True,
+                    )
+                case attr if attr in FieldAttributes.skipped_in_schema:
                     pass
                 case _:
                     # Currently unhandled:
                     # "required" "unique" as they are only present with true and will be deleted if false.
                     # type changes are not yet supported
-                    raise NotImplementedError(f"{constraint}: {value}")
+                    raise NotImplementedError(
+                        f"{constraint}: edit field {collection_name}/{field_name} with value {value}"
+                    )
             del dc_field_def[0][constraint]
+        return constraints_sql
+
+    @staticmethod
+    def handle_max_min_unique(
+        collection_name: str,
+        field_name: str,
+        constraint: str,
+        value: bool | int,
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        constraints_sql = ""
+        if drop:
+            constraint_name_func = getattr(
+                HelperGetNames,
+                f"get_{constraint.lower()}_constraint_name",
+            )
+            name = constraint_name_func(
+                collection_name,
+                ([field_name] if constraint == "unique" else field_name),
+            )
+            constraints_sql += AlterSchemaHelper.get_drop_table_constraint_statement(
+                collection_name, name
+            )
+        if add:
+            constraints_sql += AlterSchemaHelper.get_add_table_constraint_statement(
+                constraint, collection_name, field_name, value
+            )
         return constraints_sql
 
     @staticmethod
@@ -1386,7 +1416,6 @@ class RenameHelper:
                 collection_name, collection_def_new
             )
             collection_def_old = PREV_MODELS[collection_name]["fields"]
-            GenerateCodeBlocks.intermediate_tables = dict()
             with prev_models_context():
                 fk_idx_names_old = RenameHelper.get_alter_table_final_names(
                     collection_name, collection_def_old
@@ -1627,6 +1656,9 @@ class RenameHelper:
             lambda: defaultdict(list)
         )
         errors: list[str] = []
+
+        # Clean up the intermediate tables to prevent 'Tried to create im_table '{nm_table_name}' twice' error.
+        GenerateCodeBlocks.intermediate_tables = dict()
 
         for fname, fdata in fields.items():
             method_or_str, type_ = GenerateCodeBlocks.get_method(fname, fdata)
