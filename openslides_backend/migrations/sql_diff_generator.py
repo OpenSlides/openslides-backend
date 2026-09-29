@@ -110,10 +110,16 @@ def main() -> int:
 
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
+    top_sql = ""
+    coll_sql = ""
+    add_sql = ""
     if isinstance(add, tuple) and isinstance(add[0], dict):
-        sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
+        coll_sql = generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip(
+            "\n"
+        )
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
-        sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+        top_sql, add_sql = handle_add_tree(add_tree_dict, diff_control["add"][1])
+    sql += top_sql + coll_sql + add_sql
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
@@ -1114,15 +1120,11 @@ def handle_add_field_attributes(
                         # The new enum definition will have to be added.
                         # TODO: existing field gets new enum value.
                         if isinstance(value, list):
-                            before_sql += Helper.ENUM_DEFINITION_TEMPLATE.substitute(
-                                {
-                                    "name": HelperGetNames.get_enum_name_for_column(
-                                        collection_name, field_name
-                                    ),
-                                    "values": ", ".join(
-                                        [f"'{item}'" for item in value]
-                                    ),
-                                }
+                            before_sql += Helper.get_enum_type_definition(
+                                HelperGetNames.get_enum_name_for_column(
+                                    collection_name, field_name
+                                ),
+                                value,
                             )
                         else:
                             # TODO in this case it's a meta enum I think
@@ -1858,29 +1860,42 @@ class RenameHelper:
 def handle_add_tree(
     add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
+) -> tuple[str, str]:
+    top_sql = ""
     before_sql = ""
     sql = ""
     after_sql = ""
     for collection_name, collection_def in add_tree_dict.items():
-        # TODO _meta
         table_name = HelperGetNames.get_table_name(collection_name)
-        # TODO unique_together, unique_together_strict
+        # TODO: This probably ought to be moved to the collection create method
         if collection_name == "_meta":
-            # TODO: enums!
-            pass
+            for idx in range(len(collection_def)):
+                fields = collection_def[idx]
+                for field_name, field_def in fields.items():
+                    match (idx, field_name):
+                        case (1, "enum_definitions"):
+                            assert isinstance(field_def, tuple)
+                            assert not field_def[1]
+                            assert isinstance(field_def[0], dict)
+                            for key, vals in field_def[0].items():
+                                top_sql += (
+                                    Helper.get_enum_type_definition(
+                                        HelperGetNames.get_enum_name(key), vals
+                                    )
+                                    + before_sql
+                                )
+                        case _:
+                            raise BadCodingException(
+                                f"Meta field {field_name} at position {idx} not implemented."
+                            )
         else:
             for fields_idx in [0, 1]:
+                # TODO unique_together, unique_together_strict
                 # fields always exists, except with _meta
                 fields = collection_def[1]["fields"][fields_idx]
                 dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
                 alter_table_sql = ""
                 for field_name, field_def in fields.items():
-                    if (
-                        collection_name == "meeting"
-                        and field_name == "assignment_poll_default_method"
-                    ):
-                        pass
                     if fields_idx == 0:
                         # field added
                         b_sql, constraints_sql, a_sql, is_view_field = (
@@ -1908,7 +1923,7 @@ def handle_add_tree(
                     sql += f"ALTER TABLE {table_name}{alter_table_sql.rstrip(',')}\n\n"
             remove_empty(dc_add_tree_dict[collection_name][1], "fields")
             remove_empty(dc_add_tree_dict, collection_name)
-    return before_sql + sql + after_sql
+    return top_sql, before_sql + sql + after_sql
 
 
 if __name__ == "__main__":
