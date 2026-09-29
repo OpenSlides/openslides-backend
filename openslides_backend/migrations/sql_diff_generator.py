@@ -19,7 +19,7 @@ from meta.dev.src.generate_sql_schema import (
     Helper,
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
-from meta.dev.src.typing import SchemaZoneKey
+from meta.dev.src.typing import SchemaZoneKey, TriggerSqlDict
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
@@ -55,7 +55,7 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
 ]
 
 
-def get_schema_sql_dict() -> dict[str, dict[str, Any]]:
+def get_schema_sql_dict() -> dict[str, dict[str, str] | TriggerSqlDict]:
     return {
         "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
         "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
@@ -94,27 +94,29 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    # Has to happen before remove: field types have to change before dropping the enum
-    # Using a lot of isinstance calls here for pleasing mypy
-    sql = "-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += EditHelper.handle_edit_tree(edit_dict, diff_control["edit"][1])
-
-    sql += "\n-- REMOVE SECTION --\n"
+    # Has to happen before anything so we know about removed thus inaccessible structures.
+    sql = "-- REMOVE SECTION --\n"
     remove: RemoveDiffDict | None = diff["remove"]
     if remove:
         sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
 
+    # Also drops a few things and should remain second. See comment for REMOVE SECTION.
     sql += "\n-- RENAME SECTION --\n"
     sql += RenameHelper.handle_rename(diff["rename"], diff_control["rename"])
 
+    # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
     if isinstance(add, tuple) and isinstance(add[0], dict):
         sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
     if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
         sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+
+    # Things like equal fields triggers depend on renames and possibly added collections.
+    sql += "\n-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += EditHelper.handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
@@ -155,10 +157,17 @@ def alter_views_conditionally(
 
 def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> str:
     sql = ""
+    # TODO found currently serves no real purpose. It seems however its intended use
+    # is to collect all related collections to update their views also.
     found = set()
     for collection_name in add:
         found.add(collection_name)
         sql += GenerateCodeBlocks.table_sql[collection_name]
+    for collection_name in add:
+        found.add(collection_name)
+        for field_def in CURR_MODELS[collection_name]["fields"].values():
+            if write_fields := field_def.get("write_fields"):
+                sql += GenerateCodeBlocks.intermediate_sql[write_fields[0]]
     for collection_name in add:
         found.add(collection_name)
         sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
@@ -167,13 +176,24 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
         for triggers_dict in GenerateCodeBlocks.trigger_sql[collection_name].values():
             for triggers in triggers_dict.values():
                 sql += triggers
-    for collection_name in add:
-        found.add(collection_name)
-        sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
     for collection_name in found:
         del dc_add[collection_name]
         alter_views.add(collection_name)
     return sql
+
+
+def is_allowed_constant_field(
+    collection_name: str, field_name: str, field_def: dict[str, Any]
+) -> bool:
+    """True for 1:1 (currently only writing side), 1:n, 1g:1 relations and simple types"""
+    type_ = field_def["type"]
+    if type_ not in [*SIMPLE_TYPES, "relation", "generic-relation"]:
+        return False
+    if type_ == "relation":
+        # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+        if was_view_field(collection_name, field_name, field_def):
+            return False
+    return True
 
 
 class EqualFieldsHelper:
@@ -282,9 +302,10 @@ class EqualFieldsHelper:
                 table_name, trigger_name
             )
 
+        trigger_sql_dict = cast(TriggerSqlDict, CURR_CODE_BLOCKS["trigger_sql"])
         for collection_name, field_names in cls.add_equal_fields_diff.items():
             for field_name in sorted(field_names):
-                result += CURR_CODE_BLOCKS["trigger_sql"][collection_name][field_name][
+                result += trigger_sql_dict[collection_name][field_name][
                     "create_trigger_equal_fields_code"
                 ]
 
@@ -537,8 +558,13 @@ class EqualFieldsHelper:
                     (foreign_table, foreign_trigger_name),
                 ]
             )
+            table_trigger_tuple = (intermediate_table, intermediate_trigger_name)
             if intermediate_table not in RemoveHelper.intermediate_tables_to_remove:
-                to_drop.append((intermediate_table, intermediate_trigger_name))
+                to_drop.append(table_trigger_tuple)
+            else:
+                print(
+                    f"This trigger isn't dropped since it is already dropped together with its table: {table_trigger_tuple}"
+                )
 
         return to_drop
 
@@ -739,25 +765,12 @@ class RemoveHelper:
                     case "sql":
                         alter_views.add(collection_name)
                     case "constant":
-                        # Only for 1:1 relations and simple types
-                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
-                        if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
+                        if not is_allowed_constant_field(
+                            collection_name,
+                            field_name,
+                            PREV_MODELS[collection_name]["fields"][field_name],
+                        ):
                             continue
-                        if field_def["type"] == "relation":
-                            with prev_models_context():
-                                foreign_table_field: TableFieldType = (
-                                    TableFieldType.get_definitions_from_foreign(
-                                        field_def.get("to"),
-                                        field_def.get("reference"),
-                                    )
-                                )
-                                if foreign_table_field.field_def["type"] != "relation":
-                                    continue
-                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                                if was_view_field(
-                                    collection_name, field_name, field_def
-                                ):
-                                    continue
                         result += AlterSchemaHelper.get_drop_trigger_statement(
                             collection_name,
                             HelperGetNames.get_constant_field_trigger_name(
@@ -1087,41 +1100,14 @@ class EditHelper:
                     )
                 case "constant":
                     # This case will most likely never appear since we just delete and add booleans.
-                    if value:
-                        constraints_sql += (
-                            GenerateCodeBlocks.get_trigger_prevent_updates(
-                                collection_name, field_name
-                            )
-                        )
-                    else:
-                        # Only for 1:1 relations and simple types
-                        prev_field_def = PREV_MODELS[collection_name]["fields"][
-                            field_name
-                        ]
-                        if type_ not in [*SIMPLE_TYPES, "relation"]:
-                            continue
-                        if type_ == "relation":
-                            with prev_models_context():
-                                foreign_table_field: TableFieldType = (
-                                    TableFieldType.get_definitions_from_foreign(
-                                        prev_field_def.get("to"),
-                                        prev_field_def.get("reference"),
-                                    )
-                                )
-                                if foreign_table_field.field_def["type"] != "relation":
-                                    continue
-                            # TODO: below TODO is a copy paste from handle_remove_field_attributes. Check if this needs the reverse case or can be deleted.
-                            # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                            if was_view_field(
-                                collection_name, field_name, prev_field_def
-                            ):
-                                continue
-                        constraints_sql += AlterSchemaHelper.get_drop_trigger_statement(
-                            collection_name,
-                            HelperGetNames.get_constant_field_trigger_name(
-                                table_name, field_name
-                            ),
-                        )
+                    constraints_sql = EditHelper.handle_constant(
+                        table_name,
+                        collection_name,
+                        field_name,
+                        PREV_MODELS[collection_name]["fields"][field_name],
+                        add=value,
+                        drop=not value,
+                    )
                 case "enum":
                     values_old = PREV_MODELS[collection_name]["fields"][field_name][
                         constraint
@@ -1131,6 +1117,10 @@ class EditHelper:
                     )
                 case "sql":
                     alter_views.add(collection_name)
+                case "equal_fields":
+                    EqualFieldsHelper.update_equal_fields_diff(
+                        collection_name, field_name, drop=True, add=True
+                    )
                 case "reference" | "to":
                     # TODO recreate other affected triggers and foreign key constraints
                     print(
@@ -1197,6 +1187,32 @@ class EditHelper:
                 constraint, collection_name, field_name, value
             )
         return constraints_sql
+
+    @staticmethod
+    def handle_constant(
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        if is_allowed_constant_field(collection_name, field_name, field_def):
+            trigger_sql = ""
+            if add:
+                trigger_sql += GenerateCodeBlocks.get_trigger_prevent_updates(
+                    collection_name, field_name
+                )
+            if drop:
+                trigger_sql += AlterSchemaHelper.get_drop_trigger_statement(
+                    collection_name,
+                    HelperGetNames.get_constant_field_trigger_name(
+                        table_name, field_name
+                    ),
+                )
+            return trigger_sql
+        else:
+            return ""
 
     @staticmethod
     def handle_required(
@@ -1382,6 +1398,7 @@ class RenameHelper:
         result = ""
         collection_renames = renames[0]
         field_renames = renames[1]
+        result += cls.recreate_intermediate_tables(renames)
 
         for collection_name_old, collection_name_new in collection_renames.items():
             table_name_new = HelperGetNames.get_table_name(collection_name_new)
@@ -1405,6 +1422,10 @@ class RenameHelper:
                 )
             for field_name in collection_def_old:
                 result += RenameHelper.rename_inline_constraint_sql(
+                    collection_name_old, collection_name_new, field_name, field_name
+                )
+            for field_name in collection_def_old:
+                result += RenameHelper.recreate_triggers(
                     collection_name_old, collection_name_new, field_name, field_name
                 )
             del dc_rename_dict[0][collection_name_old]
@@ -1447,10 +1468,96 @@ class RenameHelper:
                     fk_idx_names_old[field_name_old],
                     fk_idx_names_new[field_name_new],
                 )
+                result += RenameHelper.recreate_triggers(
+                    collection_name, collection_name, field_name_old, field_name_new
+                )
                 del dc_collection[field_name_old]
             # TODO Renaming and redefining constraints
             # TODO unique together constraints
             remove_empty(dc_rename_dict[1], collection_name)
+            result += EqualFieldsHelper.handle_alter_equal_fields()
+        return result
+
+    @classmethod
+    def recreate_intermediate_tables(cls, renames: Renames) -> str:
+        result = ""
+        collection_renames = renames[0]
+        field_renames = renames[1]
+        intermediate_tables_dropped: list[str] = []
+
+        def handle_recreate(
+            collection_name_old: str,
+            collection_name_new: str,
+            field_name_old: str,
+            field_name_new: str,
+        ) -> str:
+            table_redefinitions = ""
+            if "relation" in field_def_old["type"]:
+                _, _, write_fields_old = get_view_field_state_write_fields(
+                    collection_name_old, field_name_old, field_def_old
+                )
+                _, _, write_fields_new = get_view_field_state_write_fields(
+                    collection_name_new,
+                    field_name_new,
+                    collection_def_new[field_name_new],
+                )
+                if write_fields_old and write_fields_new:
+                    table = write_fields_old[0]
+                    if table not in intermediate_tables_dropped:
+                        intermediate_tables_dropped.append(table)
+                        table_redefinitions += (
+                            AlterSchemaHelper.get_drop_table_statement(table)
+                        )
+                        RemoveHelper.intermediate_tables_to_remove.add(table)
+
+                        table = write_fields_new[0]
+                        table_redefinitions += cast(
+                            str, CURR_CODE_BLOCKS["intermediate_sql"][table]
+                        )
+            if table_redefinitions:
+                table_redefinitions += "\n"
+            return table_redefinitions
+
+        # recreate for renamed collection
+        for collection_name_old, collection_name_new in collection_renames.items():
+            collection_def_new = CURR_MODELS[collection_name_new]["fields"]
+            collection_def_old = PREV_MODELS[collection_name_old]["fields"]
+            for field_name, field_def_old in collection_def_old.items():
+                result += handle_recreate(
+                    collection_name_old, collection_name_new, field_name, field_name
+                )
+
+        # recreate for renamed field
+        for collection_name, collection_diff in field_renames.items():
+            collection_def_new = CURR_MODELS[collection_name]["fields"]
+            collection_def_old = PREV_MODELS[collection_name]["fields"]
+            for field_name_old, field_name_new in collection_diff.items():
+                field_def_old = collection_def_old[field_name_old]
+                result += handle_recreate(
+                    collection_name, collection_name, field_name_old, field_name_new
+                )
+        if result:
+            result = f"-- drop intermediate tables\n{result}\n"
+        return result
+
+    @classmethod
+    def recreate_triggers(
+        cls,
+        collection_name_old: str,
+        collection_name_new: str,
+        field_name_old: str,
+        field_name_new: str,
+    ) -> str:
+        result = ""
+        field_def = CURR_MODELS[collection_name_new]["fields"][field_name_new]
+        if "equal_fields" in field_def:
+            # only collect for later recreation
+            EqualFieldsHelper.update_equal_fields_diff(
+                collection_name_old, field_name_old, drop=True
+            )
+            EqualFieldsHelper.update_equal_fields_diff(
+                collection_name_new, field_name_new, add=True
+            )
         return result
 
     @classmethod
@@ -1494,6 +1601,7 @@ class RenameHelper:
                     diff_control,
                     names_list,
                     enum_names,
+                    result,
                 )
         assert not diff_control, f"{diff_control} left after attribute check of rename."
         for name_old, name_new in zip(enum_names_new, enum_names_old):
@@ -1522,6 +1630,7 @@ class RenameHelper:
         diff_control: list[str],
         names_list: list[str],
         enum_names: list[str],
+        trigger_sql: str,
     ) -> None:
         name = None
         match attr:
@@ -1537,8 +1646,15 @@ class RenameHelper:
                 # redirected or renamed as that would lead to changes in this field.
                 # "reference" Covered by 'to'.
                 pass
-            # case "constant":
-            #     # TODO regenerate triggers also on collection level
+            case "constant":
+                trigger_sql += EditHelper.handle_constant(
+                    collection_name,
+                    collection_name,
+                    field_name,
+                    field_def,
+                    add=True,
+                    drop=True,
+                )
             case "to":
                 # TODO regenerate unique ids pair triggers for self referencing fields
                 name = RenameHelper.handle_attribute_to(
