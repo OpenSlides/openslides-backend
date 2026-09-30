@@ -1212,3 +1212,89 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "all_child_ids": [3, 4],
             },
         )
+
+    def test_json_upload_with_only_new_with_parents(self) -> None:
+        self.json_upload_with_only_new_with_parents()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response, 0) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                }
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 3",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        self.assert_model_exists(
+            "committee/1",
+            {"name": "root", "child_ids": [2], "all_child_ids": [2, 3, 4]},
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": "level 1",
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [3],
+                "all_child_ids": [3, 4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "name": "level 2",
+                "parent_id": 2,
+                "all_parent_ids": [1, 2],
+                "child_ids": [4],
+                "all_child_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {"name": "level 3", "parent_id": 3, "all_parent_ids": [1, 2, 3]},
+        )
