@@ -187,13 +187,10 @@ def is_allowed_constant_field(
 ) -> bool:
     """True for 1:1 (currently only writing side), 1:n, 1g:1 relations and simple types"""
     type_ = field_def["type"]
-    if type_ not in [*SIMPLE_TYPES, "relation", "generic-relation"]:
-        return False
     if type_ == "relation":
         # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-        if was_view_field(collection_name, field_name, field_def):
-            return False
-    return True
+        return not was_view_field(collection_name, field_name, field_def)
+    return type_ in [*SIMPLE_TYPES, "generic-relation"]
 
 
 class EqualFieldsHelper:
@@ -232,8 +229,7 @@ class EqualFieldsHelper:
 
     @classmethod
     def _update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
-        is_previous = InternalHelper.MODELS is PREV_MODELS
-        if is_previous:
+        if is_previous := InternalHelper.MODELS is PREV_MODELS:
             relevant_models = PREV_MODELS
             equal_fiels_diff = cls.drop_equal_fields_diff
         else:
