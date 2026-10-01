@@ -208,10 +208,10 @@ class EqualFieldsHelper:
             if was_primary_side(collection_name, field_name, own_field_def):
                 cls.equal_fields_diff[collection_name].add(field_name)
             else:
-                cls.equal_fields_diff[foreign_table_field.table].add(
+                cls.equal_fields_diff[foreign_table_field.view].add(
                     foreign_table_field.column
                 )
-            cls.checked_equal_fields[foreign_table_field.table].add(
+            cls.checked_equal_fields[foreign_table_field.view].add(
                 foreign_table_field.column
             )
         cls.checked_equal_fields[collection_name].add(field_name)
@@ -468,14 +468,14 @@ class EqualFieldsHelper:
             if is_generic_relation:
                 generic_plain_field_name = HelperGetNames.get_generic_plain_field_name(
                     own_table_field.column,
-                    foreign_table_field.table,
+                    foreign_table_field.view,
                     foreign_table_field.ref_column,
                 )
             else:
                 generic_plain_field_name = None
 
-            own_table = HelperGetNames.get_table_name(own_table_field.table)
-            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+            own_table = own_table_field.table
+            foreign_table = foreign_table_field.table
             own_trigger_name, foreign_trigger_name = (
                 HelperGetNames.get_trigger_names_for_check_equals(
                     equal_field,
@@ -483,7 +483,7 @@ class EqualFieldsHelper:
                     generic_plain_field_name or own_table_field.column,
                     foreign_table,
                     foreign_table_field.column,
-                    foreign_table_field.table,
+                    foreign_table_field.view,
                 )
             )
             to_drop.append((own_table, own_trigger_name))
@@ -499,9 +499,9 @@ class EqualFieldsHelper:
         is_generic_relation: bool,
     ) -> list[tuple[Collection, TriggerName]]:
         to_drop = []
-        for equal_field in equal_fields:
-            own_table = HelperGetNames.get_table_name(own_table_field.table)
-            foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
+        for equal_field in sorted(equal_fields):
+            own_table = own_table_field.table
+            foreign_table = foreign_table_field.table
             if is_generic_relation:
                 intermediate_table = HelperGetNames.get_gm_table_name(own_table_field)
             else:
@@ -670,7 +670,7 @@ class RemoveHelper:
                     fk, idx = HelperGetNames.get_fk_and_index_name(
                         HelperGetNames.get_table_name(collection_name),
                         field_name,
-                        HelperGetNames.get_table_name(foreign_table_field.table),
+                        foreign_table_field.table,
                         foreign_table_field.ref_column,
                     )
                     result += AlterSchemaHelper.get_drop_table_constraint_statement(
@@ -1156,6 +1156,60 @@ class EditHelper:
         return constraints_sql
 
     @staticmethod
+    def handle_max_min_unique(
+        collection_name: str,
+        field_name: str,
+        constraint: str,
+        value: bool | int,
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        constraints_sql = ""
+        if drop:
+            constraint_name_func = getattr(
+                HelperGetNames,
+                f"get_{constraint.lower()}_constraint_name",
+            )
+            name = constraint_name_func(
+                collection_name,
+                ([field_name] if constraint == "unique" else field_name),
+            )
+            constraints_sql += AlterSchemaHelper.get_drop_table_constraint_statement(
+                collection_name, name
+            )
+        if add:
+            constraints_sql += AlterSchemaHelper.get_add_table_constraint_statement(
+                constraint, collection_name, field_name, value
+            )
+        return constraints_sql
+
+    @staticmethod
+    def handle_constant(
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        if is_allowed_constant_field(collection_name, field_name, field_def):
+            trigger_sql = ""
+            if add:
+                trigger_sql += GenerateCodeBlocks.get_trigger_prevent_updates(
+                    collection_name, field_name
+                )
+            if drop:
+                trigger_sql += AlterSchemaHelper.get_drop_trigger_statement(
+                    collection_name,
+                    HelperGetNames.get_constant_field_trigger_name(
+                        table_name, field_name
+                    ),
+                )
+            return trigger_sql
+        else:
+            return ""
+
+    @staticmethod
     def handle_required(
         should_set: bool,
         table_name: str,
@@ -1178,14 +1232,14 @@ class EditHelper:
                 # detect 1:1 relation with view side
                 if type_.endswith("relation") and state == FieldSqlErrorType.SQL:
                     if foreign_table_field.field_def["type"] == "generic-relation":
-                        foreign_column = f"{foreign_table_field.column}_{own_table_field.table}_{own_table_field.ref_column}"
+                        foreign_column = f"{foreign_table_field.column}_{own_table_field.view}_{own_table_field.ref_column}"
                     else:
                         foreign_column = foreign_table_field.column
                     block = (
                         GenerateCodeBlocks.get_trigger_check_not_null_for_1_1_relation(
-                            own_table_field.table,
+                            own_table_field.view,
                             own_table_field.column,
-                            foreign_table_field.table,
+                            foreign_table_field.view,
                             foreign_column,
                         )
                     )
@@ -1200,9 +1254,9 @@ class EditHelper:
                         foreign_type_ := foreign_table_field.field_def["type"]
                     ) == "relation":
                         block = GenerateCodeBlocks.get_trigger_check_not_null_for_1_n(
-                            own_table_field.table,
+                            own_table_field.view,
                             own_table_field.column,
-                            foreign_table_field.table,
+                            foreign_table_field.view,
                             foreign_table_field.column,
                         )
                     elif foreign_type_ == "relation-list":
@@ -1339,6 +1393,8 @@ class RenameHelper:
         result = ""
         collection_renames = renames[0]
         field_renames = renames[1]
+        # TODO better rename intermediate table (and its columns)?
+        result += cls.recreate_intermediate_tables(renames)
 
         for collection_name_old, collection_name_new in collection_renames.items():
             table_name_new = HelperGetNames.get_table_name(collection_name_new)

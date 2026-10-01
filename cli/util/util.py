@@ -143,11 +143,11 @@ def get_write_fields_for_generic(
         table_name = HelperGetNames.get_gm_table_name(own)
     else:
         table_name = HelperGetNames.get_gm_table_name(foreign_fields[0])
-    field1 = f"{own.table}_{own.ref_column}"
+    field1 = f"{own.view}_{own.ref_column}"
     field2 = own.intermediate_column
     return (
         table_name,
         field1,
         field2,
-        [f"{field2}_{field.table}_{field.ref_column}" for field in foreign_fields],
+        [f"{field2}_{field.view}_{field.ref_column}" for field in foreign_fields],
     )
