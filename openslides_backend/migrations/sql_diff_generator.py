@@ -620,11 +620,10 @@ class RemoveHelper:
                 dc_remove_tuple[0],
                 collection_name,
             )
-        # TODO: uncomment
-        # if len(field_attrs_to_remove := remove_tuple[1]):
-        #     result += cls.handle_remove_field_attributes(
-        #         field_attrs_to_remove, dc_remove_tuple[1], collection_name
-        #     )
+        if len(field_attrs_to_remove := remove_tuple[1]):
+            result += cls.handle_remove_field_attributes(
+                field_attrs_to_remove, dc_remove_tuple[1], collection_name
+            )
         return result
 
     @classmethod
@@ -1272,16 +1271,15 @@ class EditHelper:
         for collection_name, collection_def in edit_tree_dict.items():
             table_name = HelperGetNames.get_table_name(collection_name)
             # TODO unique_together, unique_together_strict
-            # TODO: uncomment
-            # dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
-            # for field_name, field_def in collection_def[1]["fields"][1].items():
-            #     sql += EditHelper.handle_edit_field_attributes(
-            #         table_name, field_name, field_def[0], dc_fields[field_name]
-            #     )
-            #     remove_empty(
-            #         dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
-            #     )
-            # remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
+            dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
+            for field_name, field_def in collection_def[1]["fields"][1].items():
+                sql += EditHelper.handle_edit_field_attributes(
+                    table_name, field_name, field_def[0], dc_fields[field_name]
+                )
+                remove_empty(
+                    dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
+                )
+            remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
             remove_empty(dc_edit_tree_dict, collection_name)
         return sql
 
@@ -1956,10 +1954,9 @@ def handle_add_tree(
                         if field_def[1]:
                             pass
                         # field altered
-                        # TODO: uncomment
-                        # sql += EditHelper.handle_edit_field_attributes(
-                        #     table_name, field_name, field_def[0], dc_fields[field_name]
-                        # )
+                        sql += EditHelper.handle_edit_field_attributes(
+                            table_name, field_name, field_def[0], dc_fields[field_name]
+                        )
                     remove_empty(
                         dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
                         field_name,
