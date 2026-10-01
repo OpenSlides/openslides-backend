@@ -9,7 +9,17 @@ from openslides_backend.migrations.base import BaseMigration
 from openslides_backend.migrations.migrations.mig_0101_new_vote_service.diff_mixin import (
     DiffMixin,
 )
-from openslides_backend.migrations.patterns import Join, JoinOn
+from openslides_backend.migrations.patterns import (
+    ArrayDiff,
+    ColumnDataSource,
+    InsertFromTables,
+    Join,
+    JoinOn,
+    TableDataSource,
+    TableRef,
+    UpdateFromTables,
+    ValuesSource,
+)
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 from tests.system.action.base import BaseActionTestCase
 
@@ -108,10 +118,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
         self.update_matching_entries(
-            self.connection.cursor(),
-            "poll",
-            {"description": new_value},
-            lookup_filter,
+            self.connection.cursor(), "poll", {"description": new_value}, lookup_filter
         )
         assert len(self.datastore.filter("poll", test_filter, ["id"])) != 0
         assert (
@@ -129,10 +136,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         assert len(self.datastore.filter("vote", test_filter, ["id"])) == 0
         self.update_matching_entries(
-            self.connection.cursor(),
-            "vote",
-            new_values,
-            lookup_filter,
+            self.connection.cursor(), "vote", new_values, lookup_filter
         )
         assert len(self.datastore.filter("vote", test_filter, ["id"])) != 0
         assert (
@@ -153,13 +157,15 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.update_from_values_map(
             self.connection.cursor(),
             "poll",
-            [
-                {"type_m": "analog", "title": "manually"},
-                {"type_m": "named", "title": "open"},
-                {"type_m": "pseudoanonymous", "title": "secret"},
-                {"type_m": "cryptographic", "title": "secret"},
-            ],
-            ["type_m"],
+            ValuesSource(
+                [
+                    {"type_m": "analog", "title": "manually"},
+                    {"type_m": "named", "title": "open"},
+                    {"type_m": "pseudoanonymous", "title": "secret"},
+                    {"type_m": "cryptographic", "title": "secret"},
+                ],
+                ["type_m"],
+            ),
         )
         for poll_id, title in {
             1: "manually",
@@ -223,7 +229,9 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
 
         self.update_from_values_map(
-            self.connection.cursor(), "motion_state", replace_map, ["name"]
+            self.connection.cursor(),
+            "motion_state",
+            ValuesSource(replace_map, ["name"]),
         )
 
         assert len(
@@ -258,15 +266,29 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
         self.update_from_other_table(
             self.connection.cursor(),
-            target_collection="option",
-            source_tables=[Join("option_m", [JoinOn("id", ("option_t", "id"))])],
-            copy_from_source_tables={
-                "option_m": {
-                    "text": sql.SQL("'Result ' || ({source_column} * 2)::text").format(
-                        source_column=sql.Identifier("option_m", "temporary_column"),
+            UpdateFromTables(
+                target_table=TableRef("option", False),
+                copy_data=[
+                    TableDataSource(
+                        source_table=Join(
+                            TableRef("option", True),
+                            [JoinOn("id", TableRef("option", False), "id")],
+                        ),
+                        value_definition=[
+                            ColumnDataSource(
+                                target_column="text",
+                                transformed_column_value=sql.SQL(
+                                    "'Result ' || ({source_column} * 2)::text"
+                                ).format(
+                                    source_column=sql.Identifier(
+                                        "option_m", "temporary_column"
+                                    ),
+                                ),
+                            )
+                        ],
                     )
-                }
-            },
+                ],
+            ),
         )
 
         for i in range(1, 14):
@@ -277,15 +299,43 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.update_from_mig_table(
             self.connection.cursor(),
             "option",
-            {
-                "text": sql.SQL("'Result ' || ({source_column} * 5)::text").format(
-                    source_column=sql.Identifier("option_m", "temporary_column"),
+            [
+                ColumnDataSource(
+                    "text",
+                    transformed_column_value=sql.SQL(
+                        "'Result ' || ({source_column} * 5)::text"
+                    ).format(
+                        source_column=sql.Identifier("option_m", "temporary_column"),
+                    ),
                 )
-            },
+            ],
         )
 
         for i in range(1, 14):
             self.assert_model_exists(f"option/{i}", {"text": f"Result {(i + 7) * 5}"})
+
+        # -- Update matching entries with joins --
+        self.update_matching_entries(
+            self.connection.cursor(),
+            "option",
+            {"yes": Decimal("5.6"), "text": "Updated with joined table"},
+            filter_with_joined_tables=[
+                Join(
+                    TableRef("option", True),
+                    [JoinOn("id", TableRef("option", False), "id")],
+                    FilterOperator("temporary_column", ">", 11),
+                )
+            ],
+        )
+        for i in range(5, 14):
+            self.assert_model_exists(
+                f"option/{i}",
+                {"yes": Decimal("5.6"), "text": "Updated with joined table"},
+            )
+        for i in range(1, 5):
+            model = self.get_model(f"option/{i}")
+            assert model["yes"] != Decimal("5.6")
+            assert model["text"] != "Updated with joined table"
 
     def setup_history_entries(self) -> None:
         base_entries_data = {
@@ -325,7 +375,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            add={"b"},
+            ArrayDiff(add={"b"}),
         )
         for i, entries in {
             1: ["b"],
@@ -346,7 +396,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            add={"a", "b"},
+            ArrayDiff(add={"a", "b"}),
         )
         for i, entries in {
             1: ["a", "b"],
@@ -367,7 +417,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            remove={"b"},
+            ArrayDiff(remove={"b"}),
         )
         for i, entries in {
             1: None,
@@ -386,7 +436,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            remove={"a", "b"},
+            ArrayDiff(remove={"a", "b"}),
         )
         for i, entries in {
             1: None,
@@ -405,7 +455,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            replace={"b": "c"},
+            ArrayDiff(replace={"b": "c"}),
         )
         for i, entries in {
             1: None,
@@ -430,7 +480,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            replace={"b": "c", "a": "e"},
+            ArrayDiff(replace={"b": "c", "a": "e"}),
         )
         for i, entries in {
             1: None,
@@ -449,10 +499,8 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "history_entry",
             "entries",
-            add={"a"},
-            remove={"b"},
-            replace={"c": "d"},
-            filter_condition=FilterOperator("id", "<", 10),
+            ArrayDiff(add={"a"}, remove={"b"}, replace={"c": "d"}),
+            FilterOperator("id", "<", 10),
         )
         for i, changed_entries in {
             1: ["a"],
@@ -531,16 +579,20 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         self.insert_from_other_table(
             self.connection.cursor(),
-            target_collection="option",
-            copy_from_source_tables={
-                "poll_m": {
-                    "poll_id": "id",
-                    "meeting_id": "meeting_id",
-                }
-            },
-            values_map=values,
-            join_values_on_columns=["state", "pollmethod"],
-            filter_main_source_table=FilterOperator("type", "=", "analog"),
+            "option",
+            copy_from_source_tables=InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        Join(TableRef("poll", True), []),
+                        [
+                            ColumnDataSource("poll_id", "id"),
+                            ColumnDataSource("meeting_id", "meeting_id"),
+                        ],
+                    )
+                ],
+                filter_main_source_table=FilterOperator("type", "=", "analog"),
+            ),
+            values_source=ValuesSource(values, ["state", "pollmethod"]),
         )
         for values_dict in values:
             assert matching_polls[
@@ -590,22 +642,31 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
         new_ids = self.insert_from_other_table(
             self.connection.cursor(),
-            target_collection="poll_ballot_user",
-            main_source_table="vote_t",
-            additional_source_tables=[
-                Join(
-                    "meeting_user",
-                    [
-                        JoinOn("user_id", ("vote_t", "user_id")),
-                        JoinOn("meeting_id", ("vote_t", "meeting_id")),
-                    ],
-                ),
-                Join("option", [JoinOn("id", ("vote_t", "option_id"))]),
-            ],
-            copy_from_source_tables={
-                "option": {"poll_id": "poll_id"},
-                "meeting_user": {"acting_meeting_user_id": "id"},
-            },
+            "poll_ballot_user",
+            InsertFromTables(
+                main_source_table=TableRef("vote", False),
+                copy_data=[
+                    TableDataSource(
+                        Join(
+                            TableRef("option", is_view=True),
+                            [JoinOn("id", TableRef("vote", False), "option_id")],
+                        ),
+                        [ColumnDataSource("poll_id", "poll_id")],
+                    ),
+                    TableDataSource(
+                        Join(
+                            TableRef("meeting_user", is_view=True),
+                            [
+                                JoinOn("user_id", TableRef("vote", False), "user_id"),
+                                JoinOn(
+                                    "meeting_id", TableRef("vote", False), "meeting_id"
+                                ),
+                            ],
+                        ),
+                        [ColumnDataSource("acting_meeting_user_id", "id")],
+                    ),
+                ],
+            ),
         )
 
         expected_models = [
