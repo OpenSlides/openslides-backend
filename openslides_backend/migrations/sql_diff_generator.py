@@ -1395,6 +1395,7 @@ class RenameHelper:
         result = ""
         collection_renames = renames[0]
         field_renames = renames[1]
+        # TODO better rename intermediate table (and its columns)?
         result += cls.recreate_intermediate_tables(renames)
 
         for collection_name_old, collection_name_new in collection_renames.items():
@@ -1453,14 +1454,15 @@ class RenameHelper:
                 result += AlterSchemaHelper.get_rename_view_column(
                     collection_name, field_name_old, field_name_new
                 )
+                table_name = HelperGetNames.get_table_name(collection_name)
                 if not is_view_field:
                     result += AlterSchemaHelper.get_rename_table_column(
-                        HelperGetNames.get_table_name(collection_name),
+                        table_name,
                         field_name_old,
                         field_name_new,
                     )
                 result += RenameHelper.get_field_dependent_renames(
-                    HelperGetNames.get_table_name(collection_name),
+                    table_name,
                     fk_idx_names_old[field_name_old],
                     fk_idx_names_new[field_name_new],
                 )
