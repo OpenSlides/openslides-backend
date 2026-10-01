@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any, cast
+from typing import Any
 
 import simplejson as json
 from sqlfluff import fix
@@ -55,21 +55,23 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
 ]
 
 
-def get_schema_sql_dict() -> dict[str, dict[str, str] | TriggerSqlDict]:
-    return {
-        "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
-        "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
-        "view_sql": deepcopy(GenerateCodeBlocks.view_sql),
-        "trigger_sql": deepcopy(GenerateCodeBlocks.trigger_sql),
-        "intermediate_sql": deepcopy(GenerateCodeBlocks.intermediate_sql),
-    }
+def get_schema_sql_dict() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
+    return (
+        {
+            "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
+            "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
+            "view_sql": deepcopy(GenerateCodeBlocks.view_sql),
+            "intermediate_sql": deepcopy(GenerateCodeBlocks.intermediate_sql),
+        },
+        deepcopy(GenerateCodeBlocks.trigger_sql),
+    )
 
 
-GenerateCodeBlocks.generate_the_code()
-CURR_CODE_BLOCKS = get_schema_sql_dict()
 with prev_models_context():
     GenerateCodeBlocks.generate_the_code()
-    PREV_CODE_BLOCKS = get_schema_sql_dict()
+    PREV_CODE_BLOCKS, PREV_TRIGGER_SQL = get_schema_sql_dict()
+GenerateCodeBlocks.generate_the_code()
+CURR_CODE_BLOCKS, CURR_TRIGGER_SQL = get_schema_sql_dict()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -120,7 +122,7 @@ def main() -> int:
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
-        GenerateCodeBlocks.view_sql[collection_name]
+        CURR_CODE_BLOCKS["view_sql"][collection_name]
         for collection_name in sorted(alter_views)
     )
     sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
@@ -162,18 +164,18 @@ def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> 
     found = set()
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.table_sql[collection_name]
+        sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
     for collection_name in add:
         found.add(collection_name)
         for field_def in CURR_MODELS[collection_name]["fields"].values():
             if write_fields := field_def.get("write_fields"):
-                sql += GenerateCodeBlocks.intermediate_sql[write_fields[0]]
+                sql += CURR_CODE_BLOCKS["intermediate_sql"][write_fields[0]]
     for collection_name in add:
         found.add(collection_name)
-        sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
+        sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(collection_name, "")
     for collection_name in add:
         found.add(collection_name)
-        for triggers_dict in GenerateCodeBlocks.trigger_sql[collection_name].values():
+        for triggers_dict in CURR_TRIGGER_SQL[collection_name].values():
             for triggers in triggers_dict.values():
                 sql += triggers
     for collection_name in found:
@@ -298,10 +300,9 @@ class EqualFieldsHelper:
                 table_name, trigger_name
             )
 
-        trigger_sql_dict = cast(TriggerSqlDict, CURR_CODE_BLOCKS["trigger_sql"])
         for collection_name, field_names in cls.add_equal_fields_diff.items():
             for field_name in sorted(field_names):
-                result += trigger_sql_dict[collection_name][field_name][
+                result += CURR_TRIGGER_SQL[collection_name][field_name][
                     "create_trigger_equal_fields_code"
                 ]
 
@@ -1427,7 +1428,7 @@ class RenameHelper:
             del dc_rename_dict[0][collection_name_old]
 
         for collection_name, collection_diff in field_renames.items():
-            dc_collection = cast(dict, dc_rename_dict[1][collection_name])
+            dc_collection = dc_rename_dict[1][collection_name]
             collection_def_new = CURR_MODELS[collection_name]["fields"]
             fk_idx_names_new = RenameHelper.get_alter_table_final_names(
                 collection_name, collection_def_new
@@ -1452,7 +1453,6 @@ class RenameHelper:
                 result += AlterSchemaHelper.get_rename_view_column(
                     collection_name, field_name_old, field_name_new
                 )
-                # TODO rename intermediate table column
                 if not is_view_field:
                     result += AlterSchemaHelper.get_rename_table_column(
                         HelperGetNames.get_table_name(collection_name),
@@ -1507,9 +1507,9 @@ class RenameHelper:
                         RemoveHelper.intermediate_tables_to_remove.add(table)
 
                         table = write_fields_new[0]
-                        table_redefinitions += cast(
-                            str, CURR_CODE_BLOCKS["intermediate_sql"][table]
-                        )
+                        table_redefinitions += CURR_CODE_BLOCKS["intermediate_sql"][
+                            table
+                        ]
             if table_redefinitions:
                 table_redefinitions += "\n"
             return table_redefinitions
