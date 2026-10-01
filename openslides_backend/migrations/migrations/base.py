@@ -1,5 +1,13 @@
+from typing import NoReturn
+
 from psycopg import Cursor
 from psycopg.rows import DictRow
+
+
+class MigrationCursor(Cursor[DictRow]):
+    @property
+    def connection(self) -> NoReturn:
+        raise RuntimeError("Migration cursors do not expose their connection")
 
 
 class BaseMigration:
