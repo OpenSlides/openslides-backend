@@ -712,6 +712,10 @@ class RemoveHelper:
                     result += AlterSchemaHelper.get_drop_index_statement(
                         collection_name, idx
                     )
+                if "enum" in field_def:
+                    result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
+                        collection_name, field_name
+                    )
 
             dc_remove_list.remove(field_name)
         return result
