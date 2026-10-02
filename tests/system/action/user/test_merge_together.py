@@ -1077,6 +1077,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/21": {
                     "poll_id": 1,
                     "meeting_user_id": 14,
+                    "present": True,
                 },
                 "poll_ballot/12": {
                     "value": "no",
@@ -1091,6 +1092,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/22": {
                     "poll_id": 1,
                     "meeting_user_id": 15,
+                    "present": False,
                 },
                 "poll_ballot/13": {
                     "value": "4",
@@ -1105,6 +1107,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/23": {
                     "poll_id": 2,
                     "meeting_user_id": 12,
+                    "present": True,
                 },
                 "poll_ballot/14": {
                     "value": "abstain",
@@ -1119,6 +1122,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/24": {
                     "poll_id": 5,
                     "meeting_user_id": 43,
+                    "present": False,
                 },
                 "group/7": {
                     "meeting_user_ids": [75],
@@ -1137,6 +1141,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/25": {
                     "poll_id": 6,
                     "meeting_user_id": 75,
+                    "present": True,
                 },
                 "poll_ballot/16": {"value": "10", "poll_id": 6},
                 "poll_ballot_user/6": {
@@ -1147,6 +1152,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "poll_entitled_user/26": {
                     "poll_id": 6,
                     "meeting_user_id": 73,
+                    "present": True,
                 },
             }
         )
@@ -1258,13 +1264,24 @@ class UserMergeTogether(BaseActionTestCase):
 
         for id_ in [21, 23]:
             self.assert_model_exists(
-                f"poll_entitled_user/{id_}", {"meeting_user_id": 12}
+                f"poll_entitled_user/{id_}",
+                {"present": True, "meeting_user_id": 12},
             )
-        self.assert_model_exists("poll_entitled_user/22", {"meeting_user_id": 15})
-        self.assert_model_exists("poll_entitled_user/24", {"meeting_user_id": 42})
-        self.assert_model_exists("poll_entitled_user/25", {"meeting_user_id": 75})
         self.assert_model_exists(
-            "poll_entitled_user/26", {"meeting_user_id": 106 + add_to_creatable_ids}
+            "poll_entitled_user/22",
+            {"present": False, "meeting_user_id": 15},
+        )
+        self.assert_model_exists(
+            "poll_entitled_user/24",
+            {"present": False, "meeting_user_id": 42},
+        )
+        self.assert_model_exists(
+            "poll_entitled_user/25",
+            {"present": True, "meeting_user_id": 75},
+        )
+        self.assert_model_exists(
+            "poll_entitled_user/26",
+            {"present": True, "meeting_user_id": 106 + add_to_creatable_ids},
         )
 
         self.assert_model_exists(
