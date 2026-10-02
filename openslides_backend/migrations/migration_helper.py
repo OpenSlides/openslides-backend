@@ -390,21 +390,9 @@ class MigrationHelper:
         """
         module_name = MigrationHelper.migrations[migration_number]
         migration_class = MigrationHelper.get_migration_class(module_name)
-        return {col: {} for col in set(migration_class.ORIGIN_COLLECTIONS)}
-
-    @staticmethod
-    def get_replace_tables_from_database(
-        curs: Cursor[DictRow], migration_number: int
-    ) -> dict[str, Any]:
-        """
-        Returns the migration indexes replace tables, mapping the collection to its
-        migration copies, stored in the database.
-        """
-        if replace_tables := curs.execute(
-            f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
-        ).fetchone():
-            return replace_tables["replace_tables"]
-        raise MigrationException("Could not retrieve replace tables from database.")
+        return {
+            col: {} for col in set(getattr(migration_class, "ORIGIN_COLLECTIONS", []))
+        }
 
     @staticmethod
     def get_unified_replace_tables_from_database(
