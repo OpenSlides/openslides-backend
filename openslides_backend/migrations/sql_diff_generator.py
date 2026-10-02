@@ -55,7 +55,7 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
 ]
 
 
-def get_schema_sql_dict() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
+def get_schema_sql_dicts() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
     return (
         {
             "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
@@ -69,9 +69,9 @@ def get_schema_sql_dict() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
 
 with prev_models_context():
     GenerateCodeBlocks.generate_the_code()
-    PREV_CODE_BLOCKS, PREV_TRIGGER_SQL = get_schema_sql_dict()
+    PREV_CODE_BLOCKS, PREV_TRIGGER_SQL = get_schema_sql_dicts()
 GenerateCodeBlocks.generate_the_code()
-CURR_CODE_BLOCKS, CURR_TRIGGER_SQL = get_schema_sql_dict()
+CURR_CODE_BLOCKS, CURR_TRIGGER_SQL = get_schema_sql_dicts()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
