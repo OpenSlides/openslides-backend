@@ -33,7 +33,7 @@ from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
 
-from .conftest import OLD_TABLES
+from tests.system.migrations.conftest import OLD_TABLES
 
 # VARIABLE DECLARATION
 EXAMPLE_DATA_PATH = os.path.realpath(
