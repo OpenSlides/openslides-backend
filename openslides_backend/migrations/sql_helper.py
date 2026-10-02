@@ -138,7 +138,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         if not remove:
             return sql.SQL("")
         arguments.append(sorted(remove))
-        return sql.SQL("EXCEPT SELECT unnest({remove}{array_type})").format(
+        return sql.SQL(" EXCEPT SELECT unnest({remove}{array_type})").format(
             remove=sql.Placeholder(), array_type=array_type
         )
 
@@ -151,7 +151,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         if not add:
             return sql.SQL("")
         arguments.append(sorted(add))
-        return sql.SQL("UNION SELECT unnest({add}{array_type})").format(
+        return sql.SQL(" UNION SELECT unnest({add}{array_type})").format(
             add=sql.Placeholder(), array_type=array_type
         )
 
@@ -163,20 +163,11 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         add: sql.Composable,
         remove: sql.Composable,
     ) -> sql.Composed:
-        return sql.SQL("""
-            {column} = NULLIF(
-                ARRAY(
-                    SELECT DISTINCT list_element FROM (
-                        SELECT unnest({source}) AS list_element
-                        {remove}
-                        {add}
-
-                    ) AS elements
-                    ORDER BY list_element
-                ),
-                ARRAY[]{array_type}
-            )
-            """).format(
+        return sql.SQL(
+            "{column} = NULLIF("
+            "ARRAY(SELECT DISTINCT list_element FROM (SELECT unnest({source}) AS list_element{remove}{add}) AS elements ORDER BY list_element),"
+            "ARRAY[]{array_type})"
+        ).format(
             column=sql.Identifier(column),
             source=source,
             remove=remove,

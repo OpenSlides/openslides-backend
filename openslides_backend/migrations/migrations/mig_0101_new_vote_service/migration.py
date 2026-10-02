@@ -96,10 +96,6 @@ class Migration(DiffMixin, BaseMigration):
         ],
     }
 
-    @staticmethod
-    def find_meeting_user(user_id: int, meeting_id: int) -> int | None:
-        pass
-
     def data_manipulation(
         self, curs: Cursor[DictRow], stash: dict[str, Any] | None
     ) -> None:
@@ -195,8 +191,8 @@ class Migration(DiffMixin, BaseMigration):
             curs, poll_type_to_visibility_map, poll_onehundred_percent_bases_map
         )
 
-    @staticmethod
     def create_meeting_poll_defaults(
+        self,
         curs: Cursor[DictRow],
         poll_type_to_visibility_map: dict[str, str],
         poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
@@ -294,7 +290,7 @@ class Migration(DiffMixin, BaseMigration):
                     for type_, visibility in poll_type_to_visibility_map.items()
                 ]
             new_ids = list(
-                BaseMigration.insert_from_other_table(
+                self.insert_from_other_table(
                     curs,
                     "meeting_poll_default",
                     copy_from_source_tables=InsertFromTables(
@@ -329,7 +325,7 @@ class Migration(DiffMixin, BaseMigration):
                     values_source=ValuesSource(generate_from_map, values_join_on),
                 ).keys()
             )
-            BaseMigration.update_from_other_table(
+            self.update_from_other_table(
                 curs,
                 UpdateFromTables(
                     target_table=TableRef("meeting", False),
@@ -351,7 +347,7 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                 ),
             )
-            BaseMigration.update_from_other_table(
+            self.update_from_other_table(
                 curs,
                 UpdateFromTables(
                     target_table=TableRef("meeting_poll_default", False),
@@ -379,7 +375,7 @@ class Migration(DiffMixin, BaseMigration):
                 ),
                 filter_target_table=FilterOperator("id", "in", new_ids),
             )
-            BaseMigration.update_matching_entries(
+            self.update_matching_entries(
                 curs,
                 "meeting_poll_default",
                 {"strike_out": True},
@@ -405,7 +401,7 @@ class Migration(DiffMixin, BaseMigration):
                     )
                 ],
             )
-            BaseMigration.update_matching_entries(
+            self.update_matching_entries(
                 curs,
                 "meeting_poll_default",
                 {"allow_abstain": True},

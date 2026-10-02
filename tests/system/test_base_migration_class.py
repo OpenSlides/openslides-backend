@@ -29,6 +29,8 @@ from tests.system.action.base import BaseActionTestCase
 #   * Should use direct db-requests instead of assert_model_exists, get_model or other methods
 #     that use model_registry and need it to match the database structure
 #   * Should be more generic and not rely on example_data
+#   * Should cover all the possible valid data combinations
+#   * Should check the validation errors
 #   * Could be reasonable to split the tests into multiple files similarly to other generic tests
 #   * Should be moved to tests/system/migrations/
 # These tests were added solely to test the new methods on development stage and should not be used as is in the final version of dammi.

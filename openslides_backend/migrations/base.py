@@ -190,8 +190,8 @@ class BaseMigration:
             arguments,
         )
 
-    @staticmethod
     def update_all_entries(
+        self,
         curs: Cursor[DictRow],
         collection: Collection,
         new_values: dict[Column, Any],
@@ -199,14 +199,14 @@ class BaseMigration:
         """
         Sets the given simple values into the corresponding columns for all the collection entries.
         """
-        BaseMigration._base_update_entries(
+        self._base_update_entries(
             curs,
             collection=collection,
             new_values=new_values,
         )
 
-    @staticmethod
     def update_matching_entries(
+        self,
         curs: Cursor[DictRow],
         collection: Collection,
         new_values: dict[Column, Any],
@@ -228,7 +228,7 @@ class BaseMigration:
             raise BadCodingException(
                 "One out of 'filter_target_table', 'filter_migration_table' or 'joined_tables' must be defined."
             )
-        BaseMigration._base_update_entries(
+        self._base_update_entries(
             curs,
             collection=collection,
             new_values=new_values,
@@ -237,8 +237,8 @@ class BaseMigration:
             joined_tables=filter_with_joined_tables,
         )
 
-    @staticmethod
     def update_empty_cells(
+        self,
         curs: Cursor[DictRow],
         collection: Collection,
         column: Column,
@@ -262,8 +262,8 @@ class BaseMigration:
             arguments,
         )
 
-    @staticmethod
     def update_from_values_map(
+        self,
         curs: Cursor[DictRow],
         target_collection: Collection,
         values_source: ValuesSource,
@@ -281,15 +281,11 @@ class BaseMigration:
         arguments: SqlArguments = []
 
         from_part = MigrationSqlHelper.build_values_table(values_source, arguments)
-        join_conditions = BaseMigration._get_join_conditions_for_values(
+        join_conditions = self._get_join_conditions_for_values(
             values_source, TableRef(target_collection, False)
         )
         filter_conditions = (
-            [
-                BaseMigration._build_filter_query(
-                    filter_condition, arguments, target_collection
-                )
-            ]
+            [self._build_filter_query(filter_condition, arguments, target_collection)]
             if filter_condition is not None
             else []
         )
@@ -309,14 +305,14 @@ class BaseMigration:
             arguments,
         )
 
-    @staticmethod
     def update_from_mig_table(
+        self,
         curs: Cursor[DictRow],
         collection: Collection,
         copy_from_source_table: list[ColumnDataSource],
         filter_target_table: Filter | None = None,
     ) -> None:
-        BaseMigration.update_from_other_table(
+        self.update_from_other_table(
             curs,
             UpdateFromTables(
                 target_table=TableRef(collection, False),
@@ -333,15 +329,15 @@ class BaseMigration:
             filter_target_table,
         )
 
-    @staticmethod
     def update_from_other_table(
+        self,
         curs: Cursor[DictRow],
         copy_from_source_tables: UpdateFromTables,
         filter_target_table: Filter | None = None,
     ) -> None:
         arguments: SqlArguments = []
         joined_tables_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] = (
-            BaseMigration._get_joined_tables_data(
+            self._get_joined_tables_data(
                 copy_from_source_tables.joined_sources, arguments
             )
         )
@@ -352,7 +348,7 @@ class BaseMigration:
 
         if filter_target_table:
             filters.append(
-                BaseMigration._build_filter_query(
+                self._build_filter_query(
                     filter_target_table,
                     arguments,
                     copy_from_source_tables.target_table.collection,
@@ -375,8 +371,8 @@ class BaseMigration:
             arguments,
         )
 
-    @staticmethod
     def insert_from_other_table(
+        self,
         curs: Cursor[DictRow],
         target_collection: Collection,
         copy_from_source_tables: InsertFromTables,
@@ -398,7 +394,7 @@ class BaseMigration:
 
         target_columns = copy_from_source_tables.target_columns.copy()
         select_columns = copy_from_source_tables.select_columns.copy()
-        joined_tables_parts = BaseMigration._get_joined_tables_data(
+        joined_tables_parts = self._get_joined_tables_data(
             copy_from_source_tables.joined_sources, arguments
         )
 
@@ -408,7 +404,7 @@ class BaseMigration:
                     f"'copy_from_source_tables' and 'values_source' define multiple sources for column(s): {duplicates}."
                 )
             joined_tables_parts.append(
-                BaseMigration._get_joined_values_data(
+                self._get_joined_values_data(
                     values_source,
                     copy_from_source_tables.root_source,
                     arguments,
@@ -418,7 +414,7 @@ class BaseMigration:
             select_columns.extend(values_source.select_columns)
 
         filter_condition = (
-            BaseMigration._build_filter_query(
+            self._build_filter_query(
                 copy_from_source_tables.filter_main_source_table,
                 arguments,
                 target_collection,
@@ -442,8 +438,8 @@ class BaseMigration:
         )
         return {item["id"]: item for item in curs.fetchall()}
 
-    @staticmethod
     def update_array(
+        self,
         curs: Cursor[DictRow],
         collection: str,
         column: Column,
@@ -474,7 +470,7 @@ class BaseMigration:
                 ),
             ),
             filter_condition=(
-                BaseMigration._build_filter_query(
+                self._build_filter_query(
                     filter_target_table, filter_arguments, collection
                 )
                 if filter_target_table is not None
