@@ -5,6 +5,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
+#
 @register_action("meeting_poll_default.update", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingPollDefaultUpdate(UpdateAction):
     """
@@ -14,13 +15,16 @@ class MeetingPollDefaultUpdate(UpdateAction):
     model = MeetingPollDefault()
     schema = DefaultSchema(MeetingPollDefault()).get_update_schema(
         optional_properties=[
-            "allow_abstain",
-            "allow_nota",
-            "display_chart",
+            "allow_live_voting",
+            "default_live_voting_enabled",
+            "default_method",
+            "default_required_majority",
+            "enable_cumulative_voting",
+            "enable_max_options_limit",
+            "enable_max_yes_votes",
             "group_ids",
             "onehundred_percent_base",
             "sort_result_by_votes",
-            "strike_out",
             "visibility",
-        ]
+        ],
     )

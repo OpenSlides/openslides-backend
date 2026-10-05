@@ -1415,27 +1415,42 @@ class MeetingClone(BaseActionTestCase):
             "users_email_body": "body",
             "assignments_export_title": "title",
             "assignments_export_preamble": "pre",
-            "assignment_poll_default_method": "rating_approval",
             "assignment_poll_add_candidates_to_list_of_speakers": True,
-            "poll_enable_max_yes_votes": True,
-            "poll_enable_max_votes_per_option": False,
         }
         assignment_poll_settings = {
             "sort_result_by_votes": True,
             "visibility": "secret",
             "onehundred_percent_base": "valid",
-            "allow_abstain": True,
+            "enable_cumulative_voting": True,
+            "allow_live_voting": True,
+            "default_live_voting_enabled": True,
+            "enable_max_options_limit": True,
+            "enable_max_yes_votes": True,
+            "default_method": Poll.METHOD_RATING_APPROVAL_YN,
+            "default_required_majority": "no_majority",
         }
         motion_poll_settings = {
             "visibility": "secret",
             "onehundred_percent_base": "valid",
-            "allow_abstain": False,
+            "enable_cumulative_voting": True,
+            "allow_live_voting": True,
+            "default_live_voting_enabled": True,
+            "enable_max_options_limit": True,
+            "enable_max_yes_votes": True,
+            "default_method": Poll.METHOD_APPROVAL_YNA,
+            "default_required_majority": "two_third_majority",
         }
         topic_poll_settings = {
             "sort_result_by_votes": True,
             "visibility": "named",
             "onehundred_percent_base": "valid",
-            "display_chart": "pie",
+            "enable_cumulative_voting": False,
+            "allow_live_voting": False,
+            "default_live_voting_enabled": False,
+            "enable_max_options_limit": False,
+            "enable_max_yes_votes": False,
+            "default_method": Poll.METHOD_SELECTION_N,
+            "default_required_majority": "absolute_majority",
         }
         self.test_models.update(
             {

@@ -1,9 +1,13 @@
 from ....shared.typing import Schema
 
 meeting_poll_default_schema: Schema = {
-    "allow_abstain": {"type": "boolean"},
-    "allow_nota": {"type": "boolean"},
-    "display_chart": {"type": "string"},
+    "allow_live_voting": {"type": "boolean"},
+    "default_live_voting_enabled": {"type": "boolean"},
+    "default_method": {"type": "string"},
+    "default_required_majority": {"type": "string"},
+    "enable_cumulative_voting": {"type": "boolean"},
+    "enable_max_options_limit": {"type": "boolean"},
+    "enable_max_yes_votes": {"type": "boolean"},
     "group_ids": {
         "type": "array",
         "items": {"type": "integer"},
@@ -11,6 +15,5 @@ meeting_poll_default_schema: Schema = {
     },
     "onehundred_percent_base": {"type": "string"},
     "sort_result_by_votes": {"type": "boolean"},
-    "strike_out": {"type": "boolean"},
     "visibility": {"type": "string"},
 }

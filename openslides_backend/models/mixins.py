@@ -92,11 +92,13 @@ class PollModelMixin:
     VISIBILITY_OPEN = "open"
     VISIBILITY_SECRET = "secret"
 
-    METHOD_APPROVAL = "approval"
-    METHOD_SELECTION = "selection"
+    METHOD_APPROVAL_YN = "approval.yes_no"
+    METHOD_APPROVAL_YNA = "approval.yes_no_abstain"
+    METHOD_SELECTION_Y = "selection.yes"
+    METHOD_SELECTION_N = "selection.no"
     METHOD_RATING_SCORE = "rating_score"
-    METHOD_RATING_APPROVAL = "rating_approval"
-    METHOD_RATING_STV_SCOTTISH = "stv_scottish"
+    METHOD_RATING_APPROVAL_YN = "rating_approval.yes_no"
+    METHOD_RATING_APPROVAL_YNA = "rating_approval.yes_no_abstain"
 
     CONFIG_TYPE_APPROVAL = "poll_config_approval"
     CONFIG_TYPE_SELECTION = "poll_config_selection"

@@ -23,13 +23,16 @@ class MeetingPollDefaultCreate(CreateAction):
             "used_as_assignment_poll_config_in_meeting_id",
             "used_as_motion_poll_config_in_meeting_id",
             "used_as_topic_poll_config_in_meeting_id",
-            "allow_abstain",
-            "allow_nota",
-            "display_chart",
+            "allow_live_voting",
+            "default_live_voting_enabled",
+            "default_method",
+            "default_required_majority",
+            "enable_cumulative_voting",
+            "enable_max_options_limit",
+            "enable_max_yes_votes",
             "group_ids",
             "onehundred_percent_base",
             "sort_result_by_votes",
-            "strike_out",
             "visibility",
         ],
     )
@@ -48,12 +51,6 @@ class MeetingPollDefaultCreate(CreateAction):
         )
         self.check_equal_fields(instance, poll_type_field_name, poll_type_field_value)
         self.check_prevent_updates(instance, poll_type_field_name)
-
-        if (
-            poll_type_field_name == "used_as_topic_poll_config_in_meeting_id"
-            and "display_chart" not in instance
-        ):
-            instance["display_chart"] = "pie"
 
         return super().update_instance(instance)
 

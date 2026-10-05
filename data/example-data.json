@@ -369,17 +369,9 @@
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "assignments_export_title": "Elections",
             "assignment_poll_add_candidates_to_list_of_speakers": false,
-            "poll_enable_max_yes_votes": false,
-            "poll_enable_max_votes_per_option": false,
-            "assignment_poll_default_method": "selection",
             "assignment_poll_config_id": 1,
             "motion_poll_config_id": 2,
             "topic_poll_config_id": 3,
-            "topic_poll_default_method": "selection",
-            "poll_default_required_majority": "two_third_majority",
-            "poll_default_live_voting_enabled": false,
-            "poll_default_allow_invalid": false,
-            "poll_default_allow_vote_split": false,
             "poll_couple_countdown": true,
             "meeting_user_ids": [1, 2, 3],
             "projector_ids": [
@@ -600,9 +592,13 @@
         "sort_result_by_votes": true,
         "visibility": "secret",
         "onehundred_percent_base": "valid",
-        "allow_abstain": false,
-        "allow_nota": false,
-        "strike_out": false
+        "allow_live_voting": false,
+        "default_live_voting_enabled": false,
+        "enable_cumulative_voting": false,
+        "enable_max_options_limit": false,
+        "enable_max_yes_votes": false,
+        "default_method": "rating_approval.yes_no",
+        "default_required_majority": "no_majority"
       },
       "2": {
         "id": 2,
@@ -612,9 +608,13 @@
         "sort_result_by_votes": true,
         "visibility": "secret",
         "onehundred_percent_base": "valid",
-        "allow_abstain": true,
-        "allow_nota": false,
-        "strike_out": false
+        "allow_live_voting": false,
+        "default_live_voting_enabled": false,
+        "enable_cumulative_voting": false,
+        "enable_max_options_limit": false,
+        "enable_max_yes_votes": false,
+        "default_method": "approval.yes_no_abstain",
+        "default_required_majority": "two_third_majority"
       },
       "3": {
         "id": 3,
@@ -624,10 +624,13 @@
         "sort_result_by_votes": true,
         "visibility": "named",
         "onehundred_percent_base": "valid",
-        "allow_abstain": true,
-        "allow_nota": false,
-        "strike_out": false,
-        "display_chart": "pie"
+        "allow_live_voting": false,
+        "default_live_voting_enabled": false,
+        "enable_cumulative_voting": false,
+        "enable_max_options_limit": false,
+        "enable_max_yes_votes": false,
+        "default_method": "selection.no",
+        "default_required_majority": "absolute_majority"
       }
     },
     "group": {

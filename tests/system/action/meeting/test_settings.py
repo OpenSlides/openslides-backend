@@ -72,12 +72,14 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
         data = {
             "sort_result_by_votes": False,
             "visibility": "named",
-            "allow_abstain": False,
-            "allow_nota": True,
-            "strike_out": True,
             "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_CAST,
             "group_ids": [1],
-            "display_chart": "test",
+            "allow_live_voting": True,
+            "default_live_voting_enabled": True,
+            "enable_max_options_limit": True,
+            "enable_max_yes_votes": True,
+            "default_method": Poll.METHOD_RATING_APPROVAL_YN,
+            "default_required_majority": "two_third_majority",
         }
         response = self.request(
             "meeting.update",

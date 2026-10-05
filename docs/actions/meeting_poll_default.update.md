@@ -2,13 +2,16 @@
 ```js
 {
 // optional
-    allow_abstain: boolean;
-    allow_nota: boolean;
-    display_chart: string;
-    group_ids: Id[]
+    allow_live_voting: boolean;
+    default_live_voting_enabled: boolean;
+    default_method: string;
+    default_required_majority: string;
+    enable_cumulative_voting: boolean;
+    enable_max_options_limit: boolean;
+    enable_max_yes_votes: boolean;
+    group_ids: Id[];
     onehundred_percent_base: string;
     sort_result_by_votes: boolean;
-    strike_out: boolean;
     visibility: string;
 }
 ```

@@ -24,12 +24,15 @@ class MeetingPollDefaultUpdateActionTest(BaseActionTestCase):
         data = {
             "sort_result_by_votes": None,
             "visibility": None,
-            "allow_abstain": None,
-            "allow_nota": None,
-            "strike_out": None,
             "onehundred_percent_base": None,
             "group_ids": None,
-            "display_chart": None,
+            "enable_cumulative_voting": None,
+            "allow_live_voting": None,
+            "default_live_voting_enabled": None,
+            "enable_max_options_limit": None,
+            "enable_max_yes_votes": None,
+            "default_method": None,
+            "default_required_majority": None,
         }
         response = self.request("meeting_poll_default.update", {"id": 21, **data})
         self.assert_status_code(response, 200)
@@ -37,7 +40,7 @@ class MeetingPollDefaultUpdateActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         response = self.request(
-            "meeting_poll_default.update", {"id": 200, "allow_abstain": False}
+            "meeting_poll_default.update", {"id": 200, "enable_cumulative_voting": True}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -50,12 +53,14 @@ class MeetingPollDefaultUpdateActionTest(BaseActionTestCase):
             "meeting_poll_default.update",
             {
                 "id": 21,
-                "allow_nota": True,
+                "default_live_voting_enabled": True,
                 "wrong_id": "eleven",
             },
         )
         self.assert_status_code(response, 400)
-        self.assert_model_exists("meeting_poll_default/21", {"allow_nota": False})
+        self.assert_model_exists(
+            "meeting_poll_default/21", {"default_live_voting_enabled": False}
+        )
         self.assertIn(
             "data must not contain {'wrong_id'} properties", response.json["message"]
         )
