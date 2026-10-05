@@ -899,64 +899,14 @@ class Meeting(Model, MeetingModelMixin):
     assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField(
         default=False
     )
-    assignment_poll_default_method = fields.CharField(
-        default="selection",
-        constraints={
-            "enum": [
-                "approval",
-                "selection",
-                "rating_score",
-                "rating_approval",
-                "stv_scottish",
-            ]
-        },
-    )
     assignment_poll_config_id = fields.RelationField(
         to={"meeting_poll_default": "used_as_assignment_poll_config_in_meeting_id"}
     )
     motion_poll_config_id = fields.RelationField(
         to={"meeting_poll_default": "used_as_motion_poll_config_in_meeting_id"}
     )
-    topic_poll_default_method = fields.CharField(
-        default="selection",
-        constraints={
-            "enum": [
-                "approval",
-                "selection",
-                "rating_score",
-                "rating_approval",
-                "stv_scottish",
-            ]
-        },
-    )
     topic_poll_config_id = fields.RelationField(
         to={"meeting_poll_default": "used_as_topic_poll_config_in_meeting_id"}
-    )
-    poll_enable_max_yes_votes = fields.BooleanField(default=False)
-    poll_enable_max_votes_per_option = fields.BooleanField(default=False)
-    poll_default_required_majority = fields.CharField(
-        default="no_majority",
-        constraints={
-            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
-        },
-    )
-    poll_default_live_voting_enabled = fields.BooleanField(
-        default=False,
-        constraints={
-            "description": "Defines default 'poll.published' before finished option suggested to user. Is not used in the validations."
-        },
-    )
-    poll_default_allow_invalid = fields.BooleanField(
-        default=False,
-        constraints={
-            "description": "Defines default `poll.allow_invalid` option suggested to user."
-        },
-    )
-    poll_default_allow_vote_split = fields.BooleanField(
-        default=False,
-        constraints={
-            "description": "Defines default `poll.allow_vote_split` option suggested to user."
-        },
     )
     poll_couple_countdown = fields.BooleanField(default=True)
     poll_projection_name_order_first = fields.CharField(
@@ -1447,12 +1397,28 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
 
     id = fields.IntegerField(required=True, constant=True)
     sort_result_by_votes = fields.BooleanField(default=True)
+    allow_live_voting = fields.BooleanField(default=False)
+    enable_max_yes_votes = fields.BooleanField(default=False)
+    enable_cumulative_voting = fields.BooleanField(default=False)
+    enable_max_options_limit = fields.BooleanField(default=False)
+    default_method = fields.CharField(
+        constraints={
+            "enum": [
+                "approval.yes_no",
+                "approval.yes_no_abstain",
+                "selection.yes",
+                "selection.no",
+                "rating_score",
+                "rating_approval.yes_no",
+                "rating_approval.yes_no_abstain",
+            ]
+        }
+    )
     visibility = fields.CharField(
         default="secret", constraints={"enum": ["manually", "named", "open", "secret"]}
     )
-    allow_abstain = fields.BooleanField(default=True)
-    allow_nota = fields.BooleanField(default=False)
-    strike_out = fields.BooleanField(default=False)
+    default_live_voting_enabled = fields.BooleanField(default=False)
+    default_required_majority = fields.CharField(default="no_majority")
     onehundred_percent_base = fields.CharField(default="valid")
     group_ids = fields.RelationListField(
         to={"group": "used_in_meeting_poll_default_ids"},
@@ -1464,7 +1430,6 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
             [],
         ),
     )
-    display_chart = fields.CharField()
     used_as_assignment_poll_config_in_meeting_id = fields.RelationField(
         to={"meeting": "assignment_poll_config_id"}, is_view_field=True, constant=True
     )
