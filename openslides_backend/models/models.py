@@ -5,7 +5,7 @@ from .base import Model
 from .mixins import (
     AgendaItemModelMixin,
     MeetingModelMixin,
-    MeetingPollDefaultModelMixin,
+    MeetingPollSettingModelMixin,
     PollModelMixin,
 )
 
@@ -507,14 +507,14 @@ class Group(Model):
         is_primary=True,
         write_fields=("nm_group_poll_ids_poll_t", "group_id", "poll_id", []),
     )
-    used_in_meeting_poll_default_ids = fields.RelationListField(
-        to={"meeting_poll_default": "group_ids"},
+    used_in_meeting_poll_setting_ids = fields.RelationListField(
+        to={"meeting_poll_setting": "group_ids"},
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "nm_group_uimpdi_meeting_poll_default_t",
+            "nm_group_uimpsi_meeting_poll_setting_t",
             "group_id",
-            "meeting_poll_default_id",
+            "meeting_poll_setting_id",
             [],
         ),
     )
@@ -900,13 +900,13 @@ class Meeting(Model, MeetingModelMixin):
         default=False
     )
     assignment_poll_config_id = fields.RelationField(
-        to={"meeting_poll_default": "used_as_assignment_poll_config_in_meeting_id"}
+        to={"meeting_poll_setting": "used_as_assignment_poll_config_in_meeting_id"}
     )
     motion_poll_config_id = fields.RelationField(
-        to={"meeting_poll_default": "used_as_motion_poll_config_in_meeting_id"}
+        to={"meeting_poll_setting": "used_as_motion_poll_config_in_meeting_id"}
     )
     topic_poll_config_id = fields.RelationField(
-        to={"meeting_poll_default": "used_as_topic_poll_config_in_meeting_id"}
+        to={"meeting_poll_setting": "used_as_topic_poll_config_in_meeting_id"}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
     poll_projection_name_order_first = fields.CharField(
@@ -1054,8 +1054,8 @@ class Meeting(Model, MeetingModelMixin):
         is_view_field=True,
         is_primary=True,
     )
-    poll_default_ids = fields.RelationListField(
-        to={"meeting_poll_default": "meeting_id"},
+    poll_setting_ids = fields.RelationListField(
+        to={"meeting_poll_setting": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
     )
@@ -1391,9 +1391,9 @@ class MeetingMediafile(Model):
     )
 
 
-class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
-    collection = "meeting_poll_default"
-    verbose_name = "meeting poll default"
+class MeetingPollSetting(Model, MeetingPollSettingModelMixin):
+    collection = "meeting_poll_setting"
+    verbose_name = "meeting poll setting"
 
     id = fields.IntegerField(required=True, constant=True)
     sort_result_by_votes = fields.BooleanField(default=True)
@@ -1401,7 +1401,7 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
     enable_max_yes_votes = fields.BooleanField(default=False)
     enable_cumulative_voting = fields.BooleanField(default=False)
     enable_max_options_limit = fields.BooleanField(default=False)
-    default_method = fields.CharField(
+    method = fields.CharField(
         constraints={
             "enum": [
                 "approval.yes_no",
@@ -1417,15 +1417,15 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
     visibility = fields.CharField(
         default="secret", constraints={"enum": ["manually", "named", "open", "secret"]}
     )
-    default_live_voting_enabled = fields.BooleanField(default=False)
-    default_required_majority = fields.CharField(default="no_majority")
+    enable_live_voting = fields.BooleanField(default=False)
+    required_majority = fields.CharField(default="no_majority")
     onehundred_percent_base = fields.CharField(default="valid")
     group_ids = fields.RelationListField(
-        to={"group": "used_in_meeting_poll_default_ids"},
+        to={"group": "used_in_meeting_poll_setting_ids"},
         is_view_field=True,
         write_fields=(
-            "nm_group_uimpdi_meeting_poll_default_t",
-            "meeting_poll_default_id",
+            "nm_group_uimpsi_meeting_poll_setting_t",
+            "meeting_poll_setting_id",
             "group_id",
             [],
         ),
@@ -1440,7 +1440,7 @@ class MeetingPollDefault(Model, MeetingPollDefaultModelMixin):
         to={"meeting": "topic_poll_config_id"}, is_view_field=True, constant=True
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "poll_default_ids"}, required=True, constant=True
+        to={"meeting": "poll_setting_ids"}, required=True, constant=True
     )
 
 

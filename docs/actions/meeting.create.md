@@ -33,7 +33,7 @@ The following objects are created, too:
 - All default projectors (`meeting/default_projector_*_ids`, see `models.yml`) are set to that one projector
 - Motion workflow and states: Creates one workflow `"simple workflow"` which is set as `meeting/motions_default_workflow_id` and `meeting/motions_default_amendment_workflow_id`. Creates four states (analog as in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/data/initial-data.json)).
 - Two countdowns are created and set as `meeting/list_of_speakers_countdown` (name: "List of speakers countdown") and `meeting/voting_countdown` (name: "Voting countdown").
-- 3 `meeting_poll_default` items: one for each poll type (assignment, motion, topic).
+- 3 `meeting_poll_setting` items: one for each poll type (assignment, motion, topic).
 
 If `user_ids` are given, it checks if it is a subset of `committee/user_ids`. Each user is added to the meeting by being added to the default group.
 
@@ -42,11 +42,10 @@ If they aren't given and `set_as_template` is not true, there will be an error.
 
 The field `is_active_in_organization_id` is set to the organization_id.
 
-If a meeting is created, defaults are set for `meeting_poll_default`:
+If a meeting is created, defaults are set for `meeting_poll_setting`:
 * `group_ids` is the Delegates group
 * for topic polls:
   * `visibility` is `manually`
-  * `display_chart` is `pie`
 * for motion and topic polls:
   * `visibility` is `secret`
 

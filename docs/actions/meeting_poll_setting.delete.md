@@ -5,4 +5,4 @@
 
 ## Internal action
 
-Delete a `meeting_poll_default` item.
+Delete a `meeting_poll_setting` item.

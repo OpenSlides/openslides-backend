@@ -1046,7 +1046,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"anonymous_group_id": 4})
         self.assert_model_not_exists("group/5")
 
-    def base_anonymous_group_in_poll_default_field_test(self, field: str) -> None:
+    def base_anonymous_group_in_poll_setting_field_test(self, field: str) -> None:
         self.create_meeting()
         self.set_anonymous()
         response = self.request("meeting.update", {"id": 1, field: [4]})
@@ -1056,19 +1056,19 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_anonymous_in_assignment_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "assignment_poll_default_group_ids"
+    def test_anonymous_in_assignment_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "assignment_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_motion_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "motion_poll_default_group_ids"
+    def test_anonymous_in_motion_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "motion_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_topic_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "topic_poll_default_group_ids"
+    def test_anonymous_in_topic_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "topic_poll_setting_group_ids"
         )
 
     def test_update_enable_anonymous_check_language(self) -> None:

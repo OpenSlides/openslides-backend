@@ -3,14 +3,14 @@
 {
 // optional
     allow_live_voting: boolean;
-    default_live_voting_enabled: boolean;
-    default_method: string;
-    default_required_majority: string;
+    group_ids: Id[];
     enable_cumulative_voting: boolean;
+    enable_live_voting: boolean;
     enable_max_options_limit: boolean;
     enable_max_yes_votes: boolean;
-    group_ids: Id[];
+    method: string;
     onehundred_percent_base: string;
+    required_majority: string;
     sort_result_by_votes: boolean;
     visibility: string;
 }
@@ -18,7 +18,7 @@
 
 ## Internal action
 
-The action updates a `meeting_poll_default` item.
+The action updates a `meeting_poll_setting` item.
 
 Should only be called by meeting.update.
 

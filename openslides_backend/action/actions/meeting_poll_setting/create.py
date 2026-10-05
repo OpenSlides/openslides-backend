@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ....models.models import MeetingPollDefault
+from ....models.models import MeetingPollSetting
 from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 from ...util.action_type import ActionType
@@ -10,28 +10,28 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("meeting_poll_default.create", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingPollDefaultCreate(CreateAction):
+@register_action("meeting_poll_setting.create", action_type=ActionType.BACKEND_INTERNAL)
+class MeetingPollSettingCreate(CreateAction):
     """
-    Action to create a meeting_poll_default.
+    Action to create a meeting_poll_setting.
     """
 
-    model = MeetingPollDefault()
-    schema = DefaultSchema(MeetingPollDefault()).get_create_schema(
+    model = MeetingPollSetting()
+    schema = DefaultSchema(MeetingPollSetting()).get_create_schema(
         required_properties=["meeting_id"],
         optional_properties=[
             "used_as_assignment_poll_config_in_meeting_id",
             "used_as_motion_poll_config_in_meeting_id",
             "used_as_topic_poll_config_in_meeting_id",
             "allow_live_voting",
-            "default_live_voting_enabled",
-            "default_method",
-            "default_required_majority",
+            "group_ids",
             "enable_cumulative_voting",
+            "enable_live_voting",
             "enable_max_options_limit",
             "enable_max_yes_votes",
-            "group_ids",
+            "method",
             "onehundred_percent_base",
+            "required_majority",
             "sort_result_by_votes",
             "visibility",
         ],
@@ -40,7 +40,7 @@ class MeetingPollDefaultCreate(CreateAction):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll_types_fields = {
             field_name: value
-            for field_name in MeetingPollDefault.POLL_TYPE_FIELDS
+            for field_name in MeetingPollSetting.POLL_TYPE_FIELDS
             if (value := instance.get(field_name))
         }
         self.check_exactly_one_of(instance, poll_types_fields)
@@ -66,11 +66,11 @@ class MeetingPollDefaultCreate(CreateAction):
         # TODO: replace with exactly_one_of constraint (https://github.com/OpenSlides/openslides-meta/issues/540)
         if not len(poll_types_fields):
             raise ActionException(
-                f"One of the fields {MeetingPollDefault.POLL_TYPE_FIELDS} must be set."
+                f"One of the fields {MeetingPollSetting.POLL_TYPE_FIELDS} must be set."
             )
         if len(poll_types_fields) > 1:
             raise ActionException(
-                f"Only one of {MeetingPollDefault.POLL_TYPE_FIELDS} can be set."
+                f"Only one of {MeetingPollSetting.POLL_TYPE_FIELDS} can be set."
             )
 
     def check_equal_fields(
@@ -92,13 +92,13 @@ class MeetingPollDefaultCreate(CreateAction):
         self, instance: dict[str, Any], poll_type_field_name: str
     ) -> None:
         """
-        Prevents creating a new meeting_poll_default item if meeting already
-        contains meeting_poll_default for the same poll type.
+        Prevents creating a new meeting_poll_setting item if meeting already
+        contains meeting_poll_setting for the same poll type.
         """
         # TODO: replace with the updated prevent_updates constraint (https://github.com/OpenSlides/openslides-meta/issues/542)
         meeting_id = instance["meeting_id"]
         if self.datastore.filter(
-            "meeting_poll_default",
+            "meeting_poll_setting",
             FilterOperator(poll_type_field_name, "=", meeting_id),
             ["id"],
             lock_result=False,

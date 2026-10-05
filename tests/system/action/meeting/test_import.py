@@ -346,7 +346,7 @@ class MeetingImport(BaseActionTestCase):
             "read_chat_group_ids": [],
             "write_chat_group_ids": [],
             "poll_ids": [],
-            "used_in_meeting_poll_default_ids": [],
+            "used_in_meeting_poll_setting_ids": [],
             **data,
         }
 
@@ -888,18 +888,18 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_not_exists("user/3")
 
-    def test_with_poll_default_collections(self) -> None:
-        poll_defaults_data: dict[str, dict[str, Any]] = {
+    def test_with_poll_setting_collections(self) -> None:
+        poll_settings_data: dict[str, dict[str, Any]] = {
             "meeting": {
                 "1": {
-                    "poll_default_ids": [1, 2, 3],
+                    "poll_setting_ids": [1, 2, 3],
                     "assignment_poll_config_id": 1,
                     "motion_poll_config_id": 2,
                     "topic_poll_config_id": 3,
                 }
             },
-            "group": {"2": {"used_in_meeting_poll_default_ids": [1, 2, 3]}},
-            "meeting_poll_default": {
+            "group": {"2": {"used_in_meeting_poll_setting_ids": [1, 2, 3]}},
+            "meeting_poll_setting": {
                 str(id_): {
                     "id": id_,
                     f"used_as_{poll_type}_poll_config_in_meeting_id": 1,
@@ -910,11 +910,11 @@ class MeetingImport(BaseActionTestCase):
                     "group_ids": [2],
                     "enable_cumulative_voting": True,
                     "allow_live_voting": True,
-                    "default_live_voting_enabled": True,
+                    "enable_live_voting": True,
                     "enable_max_options_limit": True,
                     "enable_max_yes_votes": True,
-                    "default_method": Poll.METHOD_RATING_APPROVAL_YN,
-                    "default_required_majority": "no_majority",
+                    "method": Poll.METHOD_RATING_APPROVAL_YN,
+                    "required_majority": "no_majority",
                 }
                 for poll_type, id_ in {
                     "assignment": 1,
@@ -923,13 +923,13 @@ class MeetingImport(BaseActionTestCase):
                 }.items()
             },
         }
-        request_data = self.create_request_data(poll_defaults_data)
+        request_data = self.create_request_data(poll_settings_data)
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/2",
             {
-                "poll_default_ids": [1, 2, 3],
+                "poll_setting_ids": [1, 2, 3],
                 "assignment_poll_config_id": 1,
                 "motion_poll_config_id": 2,
                 "topic_poll_config_id": 3,
@@ -937,13 +937,13 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_exists(
             "group/5",
-            {"used_in_meeting_poll_default_ids": [1, 2, 3]},
+            {"used_in_meeting_poll_setting_ids": [1, 2, 3]},
         )
         for poll_type, id_ in {"assignment": 1, "motion": 2, "topic": 3}.items():
             self.assert_model_exists(
-                f"meeting_poll_default/{id_}",
+                f"meeting_poll_setting/{id_}",
                 {
-                    **poll_defaults_data["meeting_poll_default"][str(id_)],
+                    **poll_settings_data["meeting_poll_setting"][str(id_)],
                     "meeting_id": 2,
                     f"used_as_{poll_type}_poll_config_in_meeting_id": 2,
                     "group_ids": [5],

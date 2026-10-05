@@ -517,7 +517,7 @@
                 4,
                 5
             ],
-            "poll_default_ids": [1, 2, 3],
+            "poll_setting_ids": [1, 2, 3],
             "poll_ids": [
                 1,
                 2,
@@ -583,7 +583,7 @@
             "meeting_mediafile_ids": [1]
         }
     },
-    "meeting_poll_default": {
+    "meeting_poll_setting": {
       "1": {
         "id": 1,
         "meeting_id": 1,
@@ -593,12 +593,12 @@
         "visibility": "secret",
         "onehundred_percent_base": "valid",
         "allow_live_voting": false,
-        "default_live_voting_enabled": false,
+        "enable_live_voting": false,
         "enable_cumulative_voting": false,
         "enable_max_options_limit": false,
         "enable_max_yes_votes": false,
-        "default_method": "rating_approval.yes_no",
-        "default_required_majority": "no_majority"
+        "method": "rating_approval.yes_no",
+        "required_majority": "no_majority"
       },
       "2": {
         "id": 2,
@@ -609,12 +609,12 @@
         "visibility": "secret",
         "onehundred_percent_base": "valid",
         "allow_live_voting": false,
-        "default_live_voting_enabled": false,
+        "enable_live_voting": false,
         "enable_cumulative_voting": false,
         "enable_max_options_limit": false,
         "enable_max_yes_votes": false,
-        "default_method": "approval.yes_no_abstain",
-        "default_required_majority": "two_third_majority"
+        "method": "approval.yes_no_abstain",
+        "required_majority": "two_third_majority"
       },
       "3": {
         "id": 3,
@@ -625,12 +625,12 @@
         "visibility": "named",
         "onehundred_percent_base": "valid",
         "allow_live_voting": false,
-        "default_live_voting_enabled": false,
+        "enable_live_voting": false,
         "enable_cumulative_voting": false,
         "enable_max_options_limit": false,
         "enable_max_yes_votes": false,
-        "default_method": "selection.no",
-        "default_required_majority": "absolute_majority"
+        "method": "selection.no",
+        "required_majority": "absolute_majority"
       }
     },
     "group": {
@@ -683,7 +683,7 @@
                 5, 6
             ],
             "meeting_id": 1,
-            "used_in_meeting_poll_default_ids": [1, 2]
+            "used_in_meeting_poll_setting_ids": [1, 2]
         },
         "3": {
             "id": 3,
@@ -722,7 +722,7 @@
                 1
             ],
             "meeting_id": 1,
-            "used_in_meeting_poll_default_ids": [1, 2, 3]
+            "used_in_meeting_poll_setting_ids": [1, 2, 3]
         },
         "4": {
             "id": 4,

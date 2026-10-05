@@ -76,7 +76,7 @@ class MeetingModelMixin:
         ]
 
 
-class MeetingPollDefaultModelMixin:
+class MeetingPollSettingModelMixin:
     POLL_TYPE_FIELDS = [
         f"used_as_{poll_type}_poll_config_in_meeting_id" for poll_type in POLL_TYPES
     ]
