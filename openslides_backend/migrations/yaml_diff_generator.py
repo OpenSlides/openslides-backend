@@ -216,10 +216,8 @@ def create_remove_recursive(
     tree = {}
     if isinstance(renames, tuple):
         renames_dict = renames[0]
-        recurse_renames = {"fields": renames[1]}
     else:
         renames_dict = renames
-        recurse_renames = renames
 
     for key, prev_value in prev_models.items():
         if isinstance(renames_dict.get(key), str):
@@ -245,10 +243,14 @@ def create_remove_recursive(
                 ):
                     missing_entries.append(key)
         if key in curr_models and isinstance(prev_value, dict) and key != "items":
+            if isinstance(renames, tuple):
+                recurse_renames = {"fields": renames[1].get(key, {})}
+            else:
+                recurse_renames = renames.get(key, {})
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
-                recurse_renames.get(key, {}),
+                recurse_renames,
                 enum_tree,
                 path + (key,),
             )
@@ -364,9 +366,15 @@ def was_primary_side(
     collection_name: str, field_name: str, field_data: dict[str, Any]
 ) -> bool:
     with prev_models_context():
-        is_view_field, is_primary, _ = get_view_field_state_write_fields(
-            collection_name, field_name, field_data
-        )
+        return is_primary_side(collection_name, field_name, field_data)
+
+
+def is_primary_side(
+    collection_name: str, field_name: str, field_data: dict[str, Any]
+) -> bool:
+    is_view_field, is_primary, _ = get_view_field_state_write_fields(
+        collection_name, field_name, field_data
+    )
 
     return not is_view_field or is_primary
 
