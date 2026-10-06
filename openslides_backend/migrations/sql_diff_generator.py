@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any
+from typing import Any, cast
 
 import simplejson as json
 from sqlfluff import fix
