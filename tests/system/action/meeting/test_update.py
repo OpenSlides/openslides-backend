@@ -288,30 +288,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
 
-    def test_update_poll_default_required_majority(
-        self,
-    ) -> None:
-        self.basic_test({"poll_default_required_majority": "absolute_majority"})
-        self.assert_model_exists(
-            "meeting/1",
-            {"poll_default_required_majority": "absolute_majority"},
-        )
-
-    def test_update_poll_default_live_voting_enabled(self) -> None:
-        self.basic_test({"poll_default_live_voting_enabled": True})
-        self.assert_model_exists(
-            "meeting/1",
-            {"poll_default_live_voting_enabled": True},
-        )
-
-    def test_update_poll_default_allow_invalid(self) -> None:
-        self.basic_test({"poll_default_allow_invalid": True})
-        self.assert_model_exists("meeting/1", {"poll_default_allow_invalid": True})
-
-    def test_update_poll_default_allow_vote_split(self) -> None:
-        self.basic_test({"poll_default_allow_vote_split": True})
-        self.assert_model_exists("meeting/1", {"poll_default_allow_vote_split": True})
-
     def test_update_users_vote_delegations_max_amount(self) -> None:
         self.basic_test({"users_vote_delegations_max_amount": 4})
         self.assert_model_exists("meeting/1", {"users_vote_delegations_max_amount": 4})
@@ -1070,7 +1046,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"anonymous_group_id": 4})
         self.assert_model_not_exists("group/5")
 
-    def base_anonymous_group_in_poll_default_field_test(self, field: str) -> None:
+    def base_anonymous_group_in_poll_setting_field_test(self, field: str) -> None:
         self.create_meeting()
         self.set_anonymous()
         response = self.request("meeting.update", {"id": 1, field: [4]})
@@ -1080,19 +1056,19 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_anonymous_in_assignment_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "assignment_poll_default_group_ids"
+    def test_anonymous_in_assignment_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "assignment_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_motion_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "motion_poll_default_group_ids"
+    def test_anonymous_in_motion_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "motion_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_topic_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "topic_poll_default_group_ids"
+    def test_anonymous_in_topic_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "topic_poll_setting_group_ids"
         )
 
     def test_update_enable_anonymous_check_language(self) -> None:

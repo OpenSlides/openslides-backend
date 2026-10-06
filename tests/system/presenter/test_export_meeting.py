@@ -60,7 +60,7 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_category",
             "motion_block",
             "motion_change_recommendation",
-            "meeting_poll_default",
+            "meeting_poll_setting",
             "poll",
             "assignment",
             "assignment_candidate",
@@ -309,66 +309,82 @@ class TestExportMeeting(BasePresenterTestCase):
             }
         )
 
-    def test_export_meeting_find_poll_defaults(self) -> None:
-        poll_defaults_data = {
-            "meeting_poll_default/1": {
+    def test_export_meeting_find_poll_settings(self) -> None:
+        poll_settings_data = {
+            "meeting_poll_setting/1": {
                 "meeting_id": 1,
                 "used_as_assignment_poll_config_in_meeting_id": 1,
                 "group_ids": [2, 3],
                 "sort_result_by_votes": True,
                 "visibility": "open",
                 "onehundred_percent_base": "valid",
-                "allow_abstain": True,
-                "allow_nota": True,
+                "enable_cumulative_voting": True,
+                "allow_live_voting": True,
+                "enable_live_voting": True,
+                "enable_max_options_limit": True,
+                "enable_max_yes_votes": True,
+                "method": Poll.METHOD_RATING_APPROVAL_YN,
+                "required_majority": "no_majority",
             },
-            "meeting_poll_default/2": {
+            "meeting_poll_setting/2": {
                 "meeting_id": 1,
                 "used_as_motion_poll_config_in_meeting_id": 1,
                 "group_ids": [2, 3],
                 "sort_result_by_votes": False,
                 "visibility": "secret",
                 "onehundred_percent_base": "valid",
-                "allow_abstain": False,
-                "strike_out": True,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": True,
+                "enable_live_voting": True,
+                "enable_max_options_limit": True,
+                "enable_max_yes_votes": True,
+                "method": Poll.METHOD_APPROVAL_YNA,
+                "required_majority": "two_third_majority",
             },
-            "meeting_poll_default/3": {
+            "meeting_poll_setting/3": {
                 "meeting_id": 1,
                 "used_as_topic_poll_config_in_meeting_id": 1,
                 "group_ids": [3],
                 "sort_result_by_votes": True,
                 "visibility": "named",
                 "onehundred_percent_base": "valid",
-                "display_chart": "pie",
+                "enable_cumulative_voting": True,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": Poll.METHOD_SELECTION_N,
+                "required_majority": "absolute_majority",
             },
         }
-        poll_default_config_ids = {
+        poll_setting_config_ids = {
             "assignment_poll_config_id": 1,
             "motion_poll_config_id": 2,
             "topic_poll_config_id": 3,
         }
         self.set_models(
             {
-                "meeting/1": poll_default_config_ids,
-                "group/2": {"used_in_meeting_poll_default_ids": [1, 2]},
-                "group/3": {"used_in_meeting_poll_default_ids": [1, 2, 3]},
-                **poll_defaults_data,
+                "meeting/1": poll_setting_config_ids,
+                "group/2": {"used_in_meeting_poll_setting_ids": [1, 2]},
+                "group/3": {"used_in_meeting_poll_setting_ids": [1, 2, 3]},
+                **poll_settings_data,
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
-        for fqid, poll_default_data in poll_defaults_data.items():
+        for fqid, poll_setting_data in poll_settings_data.items():
             collection, id_ = fqid.split("/")
-            for k, v in poll_default_data.items():
+            for k, v in poll_setting_data.items():
                 assert data[collection][id_][k] == v
-        assert data["meeting"]["1"]["poll_default_ids"] == [1, 2, 3]
-        for field_name, config_id in poll_default_config_ids.items():
+        assert data["meeting"]["1"]["poll_setting_ids"] == [1, 2, 3]
+        for field_name, config_id in poll_setting_config_ids.items():
             assert data["meeting"]["1"][field_name] == config_id
         for group_id, config_ids in {2: [1, 2], 3: [1, 2, 3]}.items():
             assert (
-                data["group"][str(group_id)]["used_in_meeting_poll_default_ids"]
+                data["group"][str(group_id)]["used_in_meeting_poll_setting_ids"]
                 == config_ids
             )
-        assert "used_in_meeting_poll_default_ids" not in data["group"]["1"]
+        assert "used_in_meeting_poll_setting_ids" not in data["group"]["1"]
 
     def test_export_meeting_find_poll_configs(self) -> None:
         configs_data = {
@@ -571,10 +587,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "users_email_body": "blablabla",
                     "assignments_export_title": "Elections",
                     "assignment_poll_add_candidates_to_list_of_speakers": False,
-                    "assignment_poll_default_method": "rating_approval",
-                    "poll_enable_max_yes_votes": True,
-                    "poll_enable_max_votes_per_option": False,
-                    "topic_poll_default_method": "rating_approval",
                     "poll_couple_countdown": True,
                 },
                 "group/1": {

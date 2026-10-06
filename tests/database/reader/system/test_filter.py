@@ -236,7 +236,7 @@ def test_types_enum_list(db_connection: Connection) -> None:
             "poll_ids": None,
             "read_chat_group_ids": None,
             "read_comment_section_ids": None,
-            "used_in_meeting_poll_default_ids": None,
+            "used_in_meeting_poll_setting_ids": None,
             "weight": None,
             "write_chat_group_ids": None,
             "write_comment_section_ids": None,

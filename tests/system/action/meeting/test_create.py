@@ -70,7 +70,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "projector_countdown_warning_time": 0,
                 "organization_tag_ids": [3],
                 "is_active_in_organization_id": 1,
-                "poll_default_ids": [1, 2, 3],
+                "poll_setting_ids": [1, 2, 3],
                 "assignment_poll_config_id": 1,
                 "motion_poll_config_id": 2,
                 "topic_poll_config_id": 3,
@@ -84,7 +84,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("group/2", {"name": "Admin"})
         self.assert_model_exists(
             "group/3",
-            {"name": "Delegates", "used_in_meeting_poll_default_ids": [1, 2, 3]},
+            {"name": "Delegates", "used_in_meeting_poll_setting_ids": [1, 2, 3]},
         )
         self.assert_model_exists("group/4", {"name": "Staff"})
         self.assert_model_exists(
@@ -190,7 +190,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/1",
+            "meeting_poll_setting/1",
             {
                 "meeting_id": 1,
                 "used_as_assignment_poll_config_in_meeting_id": 1,
@@ -199,15 +199,18 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "group_ids": [3],
                 "sort_result_by_votes": True,
                 "visibility": Poll.VISIBILITY_SECRET,
-                "allow_abstain": True,
-                "allow_nota": False,
-                "strike_out": False,
                 "onehundred_percent_base": "valid",
-                "display_chart": None,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": None,
+                "required_majority": "no_majority",
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/2",
+            "meeting_poll_setting/2",
             {
                 "meeting_id": 1,
                 "used_as_assignment_poll_config_in_meeting_id": None,
@@ -216,15 +219,18 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "group_ids": [3],
                 "sort_result_by_votes": True,
                 "visibility": Poll.VISIBILITY_SECRET,
-                "allow_abstain": True,
-                "allow_nota": False,
-                "strike_out": False,
                 "onehundred_percent_base": "valid",
-                "display_chart": None,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": None,
+                "required_majority": "no_majority",
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/3",
+            "meeting_poll_setting/3",
             {
                 "meeting_id": 1,
                 "used_as_assignment_poll_config_in_meeting_id": None,
@@ -233,11 +239,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "group_ids": [3],
                 "sort_result_by_votes": True,
                 "visibility": Poll.VISIBILITY_SECRET,
-                "allow_abstain": True,
-                "allow_nota": False,
-                "strike_out": False,
                 "onehundred_percent_base": "valid",
-                "display_chart": "pie",
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": None,
+                "required_majority": "no_majority",
             },
         )
 
@@ -261,12 +270,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "start_time": datetime.fromtimestamp(1608120653, ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1608121653, ZoneInfo("UTC")),
                 "external_id": external_id,
-                "assignment_poll_default_method": Poll.METHOD_SELECTION,
-                "topic_poll_default_method": Poll.METHOD_SELECTION,
-                "poll_default_required_majority": "no_majority",
-                "poll_default_live_voting_enabled": False,
-                "poll_default_allow_invalid": False,
-                "poll_default_allow_vote_split": False,
             },
         )
 

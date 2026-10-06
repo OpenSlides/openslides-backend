@@ -78,11 +78,11 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [meeting.archive](actions/meeting.archive.md)
 - [meeting.unarchive](actions/meeting.unarchive.md)
 
-## Meeting poll defaults
+## Meeting poll settings
 
-- [meeting_poll_default.create](actions/meeting_poll_default.create.md)
-- [meeting_poll_default.update](actions/meeting_poll_default.delete.md)
-- [meeting_poll_default.update](actions/meeting_poll_default.update.md)
+- [meeting_poll_setting.create](actions/meeting_poll_setting.create.md)
+- [meeting_poll_setting.update](actions/meeting_poll_setting.delete.md)
+- [meeting_poll_setting.update](actions/meeting_poll_setting.update.md)
 
 ## Motions
 

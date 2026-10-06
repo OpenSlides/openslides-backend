@@ -26,9 +26,9 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
-from ..meeting_poll_default.create import MeetingPollDefaultCreate
-from ..meeting_poll_default.helper_mixin import meeting_poll_default_schema
-from ..meeting_poll_default.update import MeetingPollDefaultUpdate
+from ..meeting_poll_setting.create import MeetingPollSettingCreate
+from ..meeting_poll_setting.helper_mixin import meeting_poll_setting_schema
+from ..meeting_poll_setting.update import MeetingPollSettingUpdate
 from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
 
 meeting_settings_keys = [
@@ -155,21 +155,13 @@ meeting_settings_keys = [
     "users_forbid_delegator_to_vote",
     "assignments_export_title",
     "assignments_export_preamble",
-    "poll_enable_max_yes_votes",
-    "poll_enable_max_votes_per_option",
-    "poll_default_required_majority",
-    "poll_default_live_voting_enabled",
-    "poll_default_allow_invalid",
-    "poll_default_allow_vote_split",
     "assignment_poll_add_candidates_to_list_of_speakers",
-    "assignment_poll_default_method",
-    "topic_poll_default_method",
 ]
 
-meeting_poll_default_fields = {
-    f"{poll_type}_poll_default_{field_name}": type_
+meeting_poll_setting_fields = {
+    f"{poll_type}_poll_setting_{field_name}": type_
     for poll_type in POLL_TYPES
-    for field_name, type_ in meeting_poll_default_schema.items()
+    for field_name, type_ in meeting_poll_setting_schema.items()
 }
 
 
@@ -200,7 +192,7 @@ class MeetingUpdate(
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
-            **meeting_poll_default_fields,
+            **meeting_poll_setting_fields,
         },
     )
     check_email_field = "users_email_replyto"
@@ -321,9 +313,9 @@ class MeetingUpdate(
         self.check_anonymous_not_in_list_fields(
             instance,
             [
-                "assignment_poll_default_group_ids",
-                "topic_poll_default_group_ids",
-                "motion_poll_default_group_ids",
+                "assignment_poll_setting_group_ids",
+                "topic_poll_setting_group_ids",
+                "motion_poll_setting_group_ids",
             ],
             anonymous_group_id,
         )
@@ -337,28 +329,28 @@ class MeetingUpdate(
             instance["custom_translations"] = Jsonb(translations)
 
         # Set poll defaults
-        poll_default_data: dict[str, dict[str, Any]] = defaultdict(dict)
-        for field in meeting_poll_default_fields.keys():
+        poll_setting_data: dict[str, dict[str, Any]] = defaultdict(dict)
+        for field in meeting_poll_setting_fields.keys():
             if (value := instance.pop(field, None)) is not None:
-                poll_type, field_name = field.split("_poll_default_")
-                poll_default_data[poll_type][field_name] = value
+                poll_type, field_name = field.split("_poll_setting_")
+                poll_setting_data[poll_type][field_name] = value
 
-        if poll_default_data:
-            poll_types_to_poll_defaults_fields: dict[str, str] = {
+        if poll_setting_data:
+            poll_types_to_poll_settings_fields: dict[str, str] = {
                 poll_type: f"{poll_type}_poll_config_id"
-                for poll_type in poll_default_data.keys()
+                for poll_type in poll_setting_data.keys()
             }
-            db_poll_defaults = self.datastore.get(
+            db_poll_settings = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                list(poll_types_to_poll_defaults_fields.values()),
+                list(poll_types_to_poll_settings_fields.values()),
                 lock_result=False,
             )
             action_data_create = []
             action_data_update = []
 
-            for poll_type, data in poll_default_data.items():
-                if existing_id := db_poll_defaults.get(
-                    poll_types_to_poll_defaults_fields[poll_type]
+            for poll_type, data in poll_setting_data.items():
+                if existing_id := db_poll_settings.get(
+                    poll_types_to_poll_settings_fields[poll_type]
                 ):
                     action_data_update.append({"id": existing_id, **data})
                 else:
@@ -372,9 +364,9 @@ class MeetingUpdate(
                         }
                     )
             if action_data_create:
-                self.execute_other_action(MeetingPollDefaultCreate, action_data_create)
+                self.execute_other_action(MeetingPollSettingCreate, action_data_create)
             if action_data_update:
-                self.execute_other_action(MeetingPollDefaultUpdate, action_data_update)
+                self.execute_other_action(MeetingPollSettingUpdate, action_data_update)
 
         instance = super().update_instance(instance)
         return instance

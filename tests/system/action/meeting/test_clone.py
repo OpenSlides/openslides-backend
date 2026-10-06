@@ -1415,27 +1415,42 @@ class MeetingClone(BaseActionTestCase):
             "users_email_body": "body",
             "assignments_export_title": "title",
             "assignments_export_preamble": "pre",
-            "assignment_poll_default_method": "rating_approval",
             "assignment_poll_add_candidates_to_list_of_speakers": True,
-            "poll_enable_max_yes_votes": True,
-            "poll_enable_max_votes_per_option": False,
         }
         assignment_poll_settings = {
             "sort_result_by_votes": True,
             "visibility": "secret",
             "onehundred_percent_base": "valid",
-            "allow_abstain": True,
+            "enable_cumulative_voting": True,
+            "allow_live_voting": True,
+            "enable_live_voting": True,
+            "enable_max_options_limit": True,
+            "enable_max_yes_votes": True,
+            "method": Poll.METHOD_RATING_APPROVAL_YN,
+            "required_majority": "no_majority",
         }
         motion_poll_settings = {
             "visibility": "secret",
             "onehundred_percent_base": "valid",
-            "allow_abstain": False,
+            "enable_cumulative_voting": True,
+            "allow_live_voting": True,
+            "enable_live_voting": True,
+            "enable_max_options_limit": True,
+            "enable_max_yes_votes": True,
+            "method": Poll.METHOD_APPROVAL_YNA,
+            "required_majority": "two_third_majority",
         }
         topic_poll_settings = {
             "sort_result_by_votes": True,
             "visibility": "named",
             "onehundred_percent_base": "valid",
-            "display_chart": "pie",
+            "enable_cumulative_voting": False,
+            "allow_live_voting": False,
+            "enable_live_voting": False,
+            "enable_max_options_limit": False,
+            "enable_max_yes_votes": False,
+            "method": Poll.METHOD_SELECTION_N,
+            "required_majority": "absolute_majority",
         }
         self.test_models.update(
             {
@@ -1444,11 +1459,11 @@ class MeetingClone(BaseActionTestCase):
                     "motion_poll_config_id": 2,
                     "topic_poll_config_id": 3,
                 },
-                "group/2": {"used_in_meeting_poll_default_ids": [1, 2]},
-                "group/3": {"used_in_meeting_poll_default_ids": [1, 2, 3]},
-                "meeting_poll_default/1": {"meeting_id": 1, **assignment_poll_settings},
-                "meeting_poll_default/2": {"meeting_id": 1, **motion_poll_settings},
-                "meeting_poll_default/3": {"meeting_id": 1, **topic_poll_settings},
+                "group/2": {"used_in_meeting_poll_setting_ids": [1, 2]},
+                "group/3": {"used_in_meeting_poll_setting_ids": [1, 2, 3]},
+                "meeting_poll_setting/1": {"meeting_id": 1, **assignment_poll_settings},
+                "meeting_poll_setting/2": {"meeting_id": 1, **motion_poll_settings},
+                "meeting_poll_setting/3": {"meeting_id": 1, **topic_poll_settings},
             }
         )
         self.meeting_data.update(settings)
@@ -1465,11 +1480,11 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_poll_config_id": 4,
                 "motion_poll_config_id": 5,
                 "topic_poll_config_id": 6,
-                "poll_default_ids": [4, 5, 6],
+                "poll_setting_ids": [4, 5, 6],
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/4",
+            "meeting_poll_setting/4",
             {
                 "meeting_id": 2,
                 "used_as_assignment_poll_config_in_meeting_id": 2,
@@ -1478,7 +1493,7 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/5",
+            "meeting_poll_setting/5",
             {
                 "meeting_id": 2,
                 "used_as_motion_poll_config_in_meeting_id": 2,
@@ -1487,7 +1502,7 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_poll_default/6",
+            "meeting_poll_setting/6",
             {
                 "meeting_id": 2,
                 "used_as_topic_poll_config_in_meeting_id": 2,
@@ -1496,10 +1511,10 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "group/5", {"meeting_id": 2, "used_in_meeting_poll_default_ids": [4, 5]}
+            "group/5", {"meeting_id": 2, "used_in_meeting_poll_setting_ids": [4, 5]}
         )
         self.assert_model_exists(
-            "group/6", {"meeting_id": 2, "used_in_meeting_poll_default_ids": [4, 5, 6]}
+            "group/6", {"meeting_id": 2, "used_in_meeting_poll_setting_ids": [4, 5, 6]}
         )
 
     def test_limit_of_meetings_error(self) -> None:
