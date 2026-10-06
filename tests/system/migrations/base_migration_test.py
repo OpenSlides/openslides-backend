@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
@@ -34,7 +35,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
-from tests.system.util import get_route_path
+from tests.system.util import create_action_test_application, get_route_path
 
 DEPR_SQL_PATH = os.path.realpath(
     os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
@@ -45,14 +46,22 @@ MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 class BaseMigrationTestCase(TestCase):
     # has to be set by subclass
     migration_number: int
+
+    # defaults, can be overridden by subclass
+    MAX_WAIT = 15
+
+    # internally calculated variables
     migration_dir_list: list[str]
+    app: OpenSlidesBackendWSGIApplication
 
     def setUp(self) -> None:
         """
         Does not call super class to prevent usage of client and so forth.
         """
-        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
-        os.environ["MIG0100_I_READ_DOCS"] = "YES"
+        # Create services
+        self.app = create_action_test_application()
+
+        # Set up state before migration 100
 
         self.apply_test_relational_schema()
 
@@ -81,6 +90,8 @@ class BaseMigrationTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        cls.prepare_mig_100_environment()
+
         cls.migration_dir_list = [
             f
             for f in os.listdir(MIGRATIONS_PATH)
@@ -89,8 +100,22 @@ class BaseMigrationTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
+        for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
+            if os.getenv(key):
+                del os.environ[key]
+
         cls.apply_fresh_relational_schema()
         super().tearDownClass()
+
+    def make_migration_request(self) -> dict[str, Any]:
+        manager = MigrationManager(Mock(), Mock(), self.app.logging)
+        return manager.handle_request({"cmd": "migrate", "verbose": True})
+
+    @staticmethod
+    def prepare_mig_100_environment() -> None:
+        """Sets environment variables required for migration 100"""
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
 
     @staticmethod
     def apply_test_relational_schema() -> None:

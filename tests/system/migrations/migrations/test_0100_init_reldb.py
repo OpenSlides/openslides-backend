@@ -8,7 +8,6 @@ from typing import Any
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
-from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.migrations.migration_helper import (
@@ -16,7 +15,6 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
-from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.migrations.migrations.mig_0100_init_reldb.migration import (
     Migration,
     Sql_helper,
@@ -30,10 +28,9 @@ from openslides_backend.services.postgresql.utils import get_notify_names
 from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.action.util import get_internal_auth_header
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
-from tests.system.util import create_action_test_application, get_route_path
-from tests.util import AuthData, Client, Response
-
 from tests.system.migrations.conftest import OLD_TABLES
+from tests.system.util import get_route_path
+from tests.util import AuthData, Client, Response
 
 # VARIABLE DECLARATION
 EXAMPLE_DATA_PATH = os.path.realpath(
@@ -58,12 +55,10 @@ class TestMigration100(BaseMigrationTestCase):
     """
 
     migration_number = 100
-    app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
     DATA: dict[str, Any] = {}
-    MAX_WAIT = 15
     EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
 This migration will fundamentally restructure all data.
 For more information, see
@@ -89,25 +84,14 @@ For more information, see
                     f: v for f, v in model.items() if not f.startswith("meta_")
                 }
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        # 8) Final Cleanup
-        for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
-            if os.getenv(key):
-                del os.environ[key]
-        super().tearDownClass()
-
     def tearDown(self) -> None:
         super().tearDown()
         Sql_helper.offset = 0
 
     def setUp(self) -> None:
-        # 1.1) Create services and login.
-        self.app = create_action_test_application()
-        self.client = Client(self.app)
-
-        # 1.2) Setup data and other class variables
+        # 1.1) Create services, login, setup data and other class variables
         super().setUp()
+        self.client = Client(self.app)
         self.setup_data()
 
     def request(
@@ -304,6 +288,7 @@ For more information, see
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.prepare_mig_100_environment()
 
     def test_migration_fail_time_zone(self) -> None:
         os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
@@ -319,6 +304,7 @@ For more information, see
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.prepare_mig_100_environment()
 
     def test_migration_handler(self) -> None:
         # Prepare what manager would.
@@ -340,8 +326,7 @@ For more information, see
 
     def test_migration_manager(self) -> None:
         # 5) Call data_manipulation of module
-        manager = MigrationManager(Mock(), Mock(), self.app.logging)
-        result = manager.handle_request({"cmd": "migrate", "verbose": True})
+        result = self.make_migration_request()
         self.assertEqual(result["status"], MigrationState.MIGRATION_RUNNING)
         self.assertIn(
             self.EXPECTED_INTRODUCTION
@@ -396,7 +381,7 @@ For more information, see
                     "   VALUES (1, 'a curious theme', '#affe42', '#777fee', '#ac23dc');"
                 )
         wait_lock.release()
-        self.wait_for_migration_thread(15)
+        self.wait_for_migration_thread(self.MAX_WAIT)
 
         assert self.request("stats").json["stats"] == {
             "current_migration_index": 73,
