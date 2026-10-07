@@ -675,9 +675,7 @@ class RemoveHelper:
                     result += AlterSchemaHelper.get_drop_table_constraint_statement(
                         collection_name, fk
                     )
-                    result += AlterSchemaHelper.get_drop_index_statement(
-                        collection_name, idx
-                    )
+                    result += AlterSchemaHelper.get_drop_index_statement(idx)
 
             dc_remove_list.remove(field_name)
         return result
