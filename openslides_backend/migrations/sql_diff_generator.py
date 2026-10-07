@@ -109,12 +109,15 @@ def main() -> int:
     # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
     add = diff["add"]
-    if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
-        sql += handle_add_meta(add_tree_dict, diff_control["add"][1])
-    if isinstance(add, tuple) and isinstance(add[0], dict):
-        sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
-    if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
-        sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+    if isinstance(add, tuple):
+        if has_add_data := isinstance(add_tree_dict := add[1], dict):
+            sql += handle_add_meta(add_tree_dict, diff_control["add"][1])
+        if isinstance(add[0], dict):
+            sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip(
+                "\n"
+            )
+        if has_add_data:
+            sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
 
     # Things like equal fields triggers depend on renames and possibly added collections.
     sql += "\n-- EDIT SECTION --\n"
@@ -887,6 +890,13 @@ def handle_add_field_attributes(
     field_def_diff: dict[str, Any],
     dc_field_def: dict[str, Any],
 ) -> tuple[str, str, str, bool]:
+    """
+    Returns:
+    - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
+    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning). 
+    - after_sql: Free SQL to be run after the table creation
+    - is_view_field: Whether the field actually shows up in the table.
+    """
     collection_name = table_name[:-2]
     field_def = CURR_MODELS[collection_name]["fields"][field_name]
     field_is_relation = (field_type := field_def_diff.get("type", "")) in [
@@ -914,6 +924,8 @@ def handle_add_field_attributes(
                 is_sql_field,
             )
         )
+    if any(sql_str.strip("\n ") for sql_str in [constraints_sql, after_sql]):
+        alter_views.add(collection_name)
     return before_sql, constraints_sql.rstrip("\n,"), after_sql, is_view_field
 
 
@@ -925,8 +937,10 @@ def handle_add_relation_helper(
     is_view_field: bool,
 ) -> tuple[str, str, bool]:
     """
-    Function for calculating the constraints, later sql code
-    and whether the field is a view field for new relations.
+    Returns:
+    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning). 
+    - after_sql: Free SQL to be run after the table creation
+    - is_view_field: Whether the field actually shows up in the table.
     """
     constraints_sql = ""
     view_name_code: bool = True
@@ -944,7 +958,6 @@ def handle_add_relation_helper(
             ]
         )
         alter_table_code = code.get("alter_table_final")
-        view_name_code = bool(code.get("post_view", ""))
         trigger_code = ""
         for key in [
             "partitioned_sequences",
@@ -967,8 +980,6 @@ def handle_add_relation_helper(
             if value:
                 after_sql += value
 
-    if view_name_code:
-        alter_views.add(collection_name)
     return constraints_sql, after_sql, is_view_field
 
 
@@ -1041,7 +1052,7 @@ def handle_add_non_relation_helper(
                                 collection_name, field_name
                             )
                         case "timezone":
-                            collection_name += Helper.get_inline_timezone_constraint(
+                            constraints_sql += Helper.get_inline_timezone_constraint(
                                 table_name, field_name
                             )
                         case (
