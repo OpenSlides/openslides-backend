@@ -6,6 +6,7 @@ fields:
     required: true
   name:
     type: string
+    required: true
     restriction_mode: A
   state:
     type: string
@@ -14,6 +15,10 @@ fields:
       - running
       - end
       - aborted
+    restriction_mode: A
+  created:
+    type: timestamp
+    required: true
     restriction_mode: A
   timestamp:
     type: timestamp
