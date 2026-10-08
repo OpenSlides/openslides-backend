@@ -1090,7 +1090,8 @@ class EditHelper:
         collection_name: str, field_name: str, constraint: str, value: list[str] | str
     ) -> str:
         result = ""
-        values_old = PREV_MODELS[collection_name]["fields"][field_name][constraint]
+        field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
+        values_old = field_def_old[constraint]
         if isinstance(value, list):
             # field based enum composition got changed
             result += EditHelper.edit_enum(
@@ -1100,9 +1101,15 @@ class EditHelper:
             )
         else:
             # referenced meta enum got changed. We can't change directly here as this would potentially invalidate the column.
-            result += AlterSchemaHelper.get_change_column_type_statement(
+            result += AlterSchemaHelper.generate_change_column_type_statements(
                 collection_name, field_name, "text"
             )
+            alter_views.add(collection_name)
+            if field_def_old.get("default"):
+                # dropped since it retains its type and would later disturb conversion to the new enum.
+                result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                    collection_name, field_name, "DEFAULT"
+                )
         return result
 
     @staticmethod
