@@ -712,7 +712,8 @@ class RemoveHelper:
                     result += AlterSchemaHelper.get_drop_index_statement(
                         collection_name, idx
                     )
-                if "enum" in field_def:
+                if isinstance(field_def.get("enum"), list):
+                    # enum exists and is field based
                     result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
                         collection_name, field_name
                     )
