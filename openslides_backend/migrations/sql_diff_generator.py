@@ -1041,7 +1041,7 @@ class EditHelper:
         dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     ) -> str:
         sql = ""
-        meta = edit_tree_dict.pop("_meta")
+        meta = edit_tree_dict.pop("_meta", ({}, {}))
         for key, meta_def_part in meta[1].items():
             match key:
                 case "enum_definitions":
@@ -1086,6 +1086,26 @@ class EditHelper:
         return result
 
     @staticmethod
+    def handle_enum_field_attribute(
+        collection_name: str, field_name: str, constraint: str, value: list[str] | str
+    ) -> str:
+        result = ""
+        values_old = PREV_MODELS[collection_name]["fields"][field_name][constraint]
+        if isinstance(value, list):
+            # field based enum composition got changed
+            result += EditHelper.edit_enum(
+                value,
+                values_old,
+                HelperGetNames.get_enum_name_for_column(collection_name, field_name),
+            )
+        else:
+            # referenced meta enum got changed. We can't change directly here as this would potentially invalidate the column.
+            result += AlterSchemaHelper.get_change_column_type_statement(
+                collection_name, field_name, "text"
+            )
+        return result
+
+    @staticmethod
     def handle_edit_field_attributes(
         table_name: str,
         field_name: str,
@@ -1111,7 +1131,7 @@ class EditHelper:
                     )
                 case "constant":
                     # This case will most likely never appear since we just delete and add booleans.
-                    constraints_sql = EditHelper.handle_constant(
+                    constraints_sql += EditHelper.handle_constant(
                         table_name,
                         collection_name,
                         field_name,
@@ -1120,25 +1140,9 @@ class EditHelper:
                         drop=not value,
                     )
                 case "enum":
-                    values_old = PREV_MODELS[collection_name]["fields"][field_name][
-                        constraint
-                    ]
-                    if isinstance(value, list):
-                        # field based enum composition got changed
-                        constraints_sql += EditHelper.edit_enum(
-                            value,
-                            values_old,
-                            HelperGetNames.get_enum_name_for_column(
-                                collection_name, field_name
-                            ),
-                        )
-                    else:
-                        # referenced meta enum got changed. We can't change directly here as this would potentially invalidate the column.
-                        constraints_sql += (
-                            AlterSchemaHelper.get_change_column_type_statement(
-                                collection_name, field_name, "text"
-                            )
-                        )
+                    constraints_sql += EditHelper.handle_enum_field_attribute(
+                        collection_name, field_name, constraint, value
+                    )
                 case "sql":
                     alter_views.add(collection_name)
                 case "equal_fields":
