@@ -1039,8 +1039,23 @@ class EditHelper:
         edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
         dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     ) -> str:
-        # TODO meta: languages, ballot_paper_selection, poll_backends, onehundred_percent_bases, (id_field)
         sql = ""
+        meta = edit_tree_dict.pop("_meta")
+        for key, meta_def_part in meta[1].items():
+            match key:
+                case "enum_definitions":
+                    for enum, values in meta_def_part[0].items():
+                        sql += EditHelper.edit_enum(
+                            values,
+                            PREV_MODELS["_meta"]["enum_definitions"][enum],
+                            HelperGetNames.get_enum_name(enum),
+                        )
+                        del dc_edit_tree_dict["_meta"][1]["enum_definitions"][0][enum]
+                case _:
+                    NotImplementedError(f"meta-collection.yml changed in {key}.")
+            remove_empty(dc_edit_tree_dict["_meta"][1], key)
+            remove_empty(dc_edit_tree_dict, "_meta")
+
         for collection_name, collection_def in edit_tree_dict.items():
             table_name = HelperGetNames.get_table_name(collection_name)
             # TODO unique_together, unique_together_strict
@@ -1058,15 +1073,9 @@ class EditHelper:
         return sql
 
     @staticmethod
-    def get_recreate_enum(
-        enum_name: str, collection_name: str, field_name: str, values: list[str]
-    ) -> str:
+    def get_recreate_enum(enum_name: str, values: list[str]) -> str:
         result = ""
-        result += (
-            AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
-                collection_name, field_name
-            )
-        )
+        result += AlterSchemaHelper.get_drop_type_statement(enum_name)
         result += Helper.ENUM_DEFINITION_TEMPLATE.substitute(
             {
                 "name": enum_name,
@@ -1113,9 +1122,22 @@ class EditHelper:
                     values_old = PREV_MODELS[collection_name]["fields"][field_name][
                         constraint
                     ]
-                    constraints_sql += EditHelper.edit_enum(
-                        value, values_old, collection_name, field_name
-                    )
+                    if isinstance(value, list):
+                        # field based enum composition got changed
+                        constraints_sql += EditHelper.edit_enum(
+                            value,
+                            values_old,
+                            HelperGetNames.get_enum_name_for_column(
+                                collection_name, field_name
+                            ),
+                        )
+                    else:
+                        # referenced meta enum got changed. We can't change directly here as this would potentially invalidate the column.
+                        constraints_sql += (
+                            AlterSchemaHelper.get_change_column_type_statement(
+                                collection_name, field_name, "text"
+                            )
+                        )
                 case "sql":
                     alter_views.add(collection_name)
                 case "equal_fields":
@@ -1305,8 +1327,7 @@ class EditHelper:
     def edit_enum(
         values_new: list[str],
         values_old: list[str],
-        collection_name: str,
-        field_name: str,
+        enum_name: str,
     ) -> str:
         # not_found_streak = None
         recreate_enum = False
@@ -1363,29 +1384,21 @@ class EditHelper:
             recreate_enum = True
 
         # Do the stuff
-        enum_name = HelperGetNames.get_enum_name_for_column(collection_name, field_name)
         if recreate_enum:
             # recreate enum
-            alter_enum_sql += EditHelper.get_recreate_enum(
-                enum_name, collection_name, field_name, values_new
-            )
+            alter_enum_sql += EditHelper.get_recreate_enum(enum_name, values_new)
         else:
             for attr in add_attributes:
                 alter_enum_sql += AlterSchemaHelper.get_add_value_to_enum(
                     enum_name, attr
                 )
             if rename_attributes:
-                print(
-                    dedent(f"""
+                print(dedent(f"""
                         Renaming entries for '{enum_name}'.
                         {rename_attributes}
                         Make sure that this is intended.
                         Alternatively recreate it by replacing with:
-                        """)
-                    + EditHelper.get_recreate_enum(
-                        enum_name, collection_name, field_name, values_new
-                    )
-                )
+                        """) + EditHelper.get_recreate_enum(enum_name, values_new))
             for attr_old, attr_new in rename_attributes.items():
                 alter_enum_sql += AlterSchemaHelper.get_rename_value_in_enum(
                     enum_name, attr_old, attr_new
