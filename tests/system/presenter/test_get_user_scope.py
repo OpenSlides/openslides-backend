@@ -61,6 +61,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": False,
                 },
                 "3": {
                     "collection": "committee",
@@ -69,14 +70,16 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [63],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": True,
                 },
                 "4": {
-                    "collection": "meeting",
-                    "id": 1,
+                    "collection": "committee",
+                    "id": 60,
                     "user_oml": "",
                     "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": True,
                 },
                 "5": {
                     "collection": "organization",
@@ -85,14 +88,16 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": False,
                 },
                 "6": {
-                    "collection": "meeting",
+                    "collection": "organization",
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
                     "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": False,
                 },
                 "7": {
                     "collection": "meeting",
@@ -101,6 +106,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
+                    "is_committee_manager": False,
                 },
                 "8": {
                     "collection": "committee",
@@ -109,6 +115,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": 60,
+                    "is_committee_manager": False,
                 },
                 "9": {
                     "collection": "committee",
@@ -117,6 +124,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": 63,
+                    "is_committee_manager": False,
                 },
             },
         )
