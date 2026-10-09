@@ -1056,7 +1056,7 @@ class EditHelper:
                 case _:
                     raise NotImplementedError(f"meta-collection.yml changed in {key}.")
             remove_empty(dc_edit_tree_dict["_meta"][1], key)
-            remove_empty(dc_edit_tree_dict, "_meta")
+        remove_empty(dc_edit_tree_dict, "_meta")
 
         for collection_name, collection_def in edit_tree_dict.items():
             table_name = HelperGetNames.get_table_name(collection_name)
@@ -1469,6 +1469,19 @@ class RenameHelper:
     def handle_rename(cls, renames: Renames, dc_rename_dict: Renames) -> str:
         result = ""
         collection_renames = renames[0]
+        # TODO untested needed for renaming meta enums
+        meta = collection_renames.pop("_meta", {})
+        for key, meta_def_part in meta.items():
+            match key:
+                case "enum_definitions":
+                    for enum_old, enum_new in meta_def_part.items():
+                        sql += AlterSchemaHelper.get_rename_enum(name_old, name_new)
+                        del dc_rename_dict["_meta"]["enum_definitions"][enum_old]
+                case _:
+                    raise NotImplementedError(f"meta-collection.yml renamed in {key}.")
+            remove_empty(dc_rename_dict["_meta"], key)
+        remove_empty(dc_rename_dict, "_meta")
+
         field_renames = renames[1]
         # TODO better rename intermediate table (and its columns)?
         result += cls.recreate_intermediate_tables(renames)
