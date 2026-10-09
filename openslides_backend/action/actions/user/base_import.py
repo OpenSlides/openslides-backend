@@ -167,7 +167,7 @@ class BaseUserImport(BaseImportAction):
         self.validate_field(row, self.committee_map, "home_committee", False)
 
     def check_field_failures(
-        self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEFGHIJ"
+        self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEGHIJ"
     ) -> bool:
         substitutions: dict[str, Any] = {}
         for field in ["home_committee", "gender"]:
