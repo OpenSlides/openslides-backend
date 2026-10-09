@@ -113,7 +113,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 403)
         self.assertIn(
             error_text,
-            # "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
             response.json["message"],
         )
         self.assert_model_exists(
