@@ -118,15 +118,13 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            with get_new_os_conn() as db_connection:
-                self.db_connection = db_connection
-                self.user_id = user_id
-                self.internal = internal
+            self.user_id = user_id
+            self.internal = internal
 
-                try:
-                    payload_schema(payload)
-                except fastjsonschema.JsonSchemaException as exception:
-                    raise ActionException(exception.message)
+            try:
+                payload_schema(payload)
+            except fastjsonschema.JsonSchemaException as exception:
+                raise ActionException(exception.message)
 
             retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
@@ -144,20 +142,28 @@ class ActionHandler(BaseHandler):
 
                             def transform_to_list(
                                 tuple: tuple[WriteRequest | None, ActionResults | None],
-                            ) -> tuple[list[WriteRequest], ActionResults | None]:
+                            ) -> tuple[list[WriteRequest], ActionResults]:
                                 return (
                                     [tuple[0]] if tuple[0] is not None else [],
-                                    tuple[1],
+                                    tuple[1] if tuple[1] is not None else [],
                                 )
 
                             for element in payload:
                                 try:
-                                    result = self.execute_write_requests(
-                                        lambda e: transform_to_list(
-                                            self.perform_action(e)
-                                        ),
-                                        element,
-                                    )
+                                    result: list[Any] = []
+                                    for data_element in element["data"]:
+                                        result.extend(
+                                            self.execute_write_requests(
+                                                lambda e: transform_to_list(
+                                                    self.perform_action(e)
+                                                ),
+                                                {
+                                                    "action": element["action"],
+                                                    "data": [data_element],
+                                                },
+                                            )
+                                        )
+                                        self.datastore.connection.commit()
                                     results.append(result)
                                 except ActionException as exception:
                                     error = cast(ActionError, exception.get_json())

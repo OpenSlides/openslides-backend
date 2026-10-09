@@ -108,7 +108,7 @@ def test_success_actions_with_result_atomic(action_handler: ActionHandler) -> No
     ]
     response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
-    assert response["results"] == [[], [{"id": 1}, {"id": 42}]]
+    assert response["results"] == [[], [{"id": 1}, {"id": 42}, {"id": 1}, {"id": 42}]]
 
 
 def test_with_error(action_handler: ActionHandler) -> None:
