@@ -122,10 +122,11 @@ def main() -> int:
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
-        CURR_CODE_BLOCKS["view_sql"][collection_name]
+        AlterSchemaHelper.get_drop_view_statement(collection_name)
+        + CURR_CODE_BLOCKS["view_sql"][collection_name]
         for collection_name in sorted(alter_views)
     )
-    sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
+    sql += view_sql.lstrip("\n")
     with open(
         os.path.join(
             MIGRATIONS_PATH,
@@ -1753,9 +1754,13 @@ class RenameHelper:
                             collection_name, field_name
                         )
             case "enum":
-                enum_names.append(
-                    HelperGetNames.get_enum_name_for_column(collection_name, field_name)
-                )
+                if isinstance(field_def.get("enum"), list):
+                    enum_names.append(
+                        HelperGetNames.get_enum_name_for_column(
+                            collection_name, field_name
+                        )
+                    )
+                # else: meta enums don't have to be renamed.
             case value if value in FieldAttributes.skipped_in_schema:
                 pass
             case _:
