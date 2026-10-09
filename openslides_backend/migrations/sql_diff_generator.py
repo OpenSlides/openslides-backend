@@ -1053,7 +1053,7 @@ class EditHelper:
                         )
                         del dc_edit_tree_dict["_meta"][1]["enum_definitions"][0][enum]
                 case _:
-                    NotImplementedError(f"meta-collection.yml changed in {key}.")
+                    raise NotImplementedError(f"meta-collection.yml changed in {key}.")
             remove_empty(dc_edit_tree_dict["_meta"][1], key)
             remove_empty(dc_edit_tree_dict, "_meta")
 
@@ -1074,15 +1074,42 @@ class EditHelper:
         return sql
 
     @staticmethod
+    def get_change_enum_to_text(
+        collection_name: str, field_name: str, field_def_old: dict[str, Any]
+    ) -> str:
+        result = ""
+        # We can't exchange the type directly as this would potentially invalidate the column.
+        result += AlterSchemaHelper.generate_change_column_type_statements(
+            collection_name, field_name, "text"
+        )
+        alter_views.add(collection_name)
+        if field_def_old.get("default"):
+            # dropped since it retains its type and would later disturb conversion to the new enum.
+            result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                collection_name, field_name, "DEFAULT"
+            )
+        return result
+
+    @staticmethod
     def get_recreate_enum(enum_name: str, values: list[str]) -> str:
         result = ""
         result += AlterSchemaHelper.get_drop_type_statement(enum_name)
-        result += Helper.ENUM_DEFINITION_TEMPLATE.substitute(
-            {
-                "name": enum_name,
-                "values": ", ".join([f"'{item}'" for item in values]),
-            }
+        result += Helper.get_enum_type_definition(enum_name, values)
+        return result
+
+    @staticmethod
+    def get_recreate_enum_on_column(
+        collection_name: str,
+        field_name: str,
+        enum_name: str,
+        values: list[str],
+        field_def_old: dict[str, Any],
+    ) -> str:
+        result = ""
+        result = EditHelper.get_change_enum_to_text(
+            collection_name, field_name, field_def_old
         )
+        EditHelper.get_recreate_enum(enum_name, values)
         return result
 
     @staticmethod
@@ -1091,25 +1118,33 @@ class EditHelper:
     ) -> str:
         result = ""
         field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
-        values_old = field_def_old[constraint]
-        if isinstance(value, list):
-            # field based enum composition got changed
-            result += EditHelper.edit_enum(
-                value,
-                values_old,
-                HelperGetNames.get_enum_name_for_column(collection_name, field_name),
+        value_old = field_def_old[constraint]
+        if isinstance(value_old, list):
+            enum_name_old = HelperGetNames.get_enum_name_for_column(
+                collection_name, field_name
             )
-        else:
-            # referenced meta enum got changed. We can't change directly here as this would potentially invalidate the column.
-            result += AlterSchemaHelper.generate_change_column_type_statements(
-                collection_name, field_name, "text"
-            )
-            alter_views.add(collection_name)
-            if field_def_old.get("default"):
-                # dropped since it retains its type and would later disturb conversion to the new enum.
-                result += AlterSchemaHelper.get_drop_column_attribute_statement(
-                    collection_name, field_name, "DEFAULT"
+            if isinstance(value, list):
+                # field based enum composition got changed
+                result += EditHelper.edit_enum(value, value_old, enum_name_old)
+            else:
+                # changed from field based enum to meta enum
+                result = EditHelper.get_change_enum_to_text(
+                    collection_name, field_name, field_def_old
                 )
+                result += AlterSchemaHelper.get_drop_type_statement(enum_name_old)
+        else:
+            # Previously referencing meta enum.
+            if isinstance(value, list):
+                # changed from meta enum to field based enum
+                result += Helper.get_enum_type_definition(
+                    HelperGetNames.get_enum_name_for_column(
+                        collection_name, field_name
+                    ),
+                    value,
+                )
+            result = EditHelper.get_change_enum_to_text(
+                collection_name, field_name, field_def_old
+            )
         return result
 
     @staticmethod
@@ -1340,7 +1375,11 @@ class EditHelper:
         values_new: list[str],
         values_old: list[str],
         enum_name: str,
+        collection_name: str = "",
+        field_name: str = "",
+        field_def: dict[str, Any] = {},
     ) -> str:
+        """Adds new enum entries and renames entries when amount of entries matches. Otherwise recreates enum."""
         # not_found_streak = None
         recreate_enum = False
         add_attributes: list[str] = []
@@ -1396,9 +1435,15 @@ class EditHelper:
             recreate_enum = True
 
         # Do the stuff
+        if collection_name:
+            recreate_enum_sql = EditHelper.get_recreate_enum_on_column(
+                collection_name, field_name, enum_name, values_new, field_def
+            )
+        else:
+            recreate_enum_sql = EditHelper.get_recreate_enum(enum_name, values_new)
         if recreate_enum:
             # recreate enum
-            alter_enum_sql += EditHelper.get_recreate_enum(enum_name, values_new)
+            alter_enum_sql += recreate_enum_sql
         else:
             for attr in add_attributes:
                 alter_enum_sql += AlterSchemaHelper.get_add_value_to_enum(
@@ -1410,7 +1455,7 @@ class EditHelper:
                         {rename_attributes}
                         Make sure that this is intended.
                         Alternatively recreate it by replacing with:
-                        """) + EditHelper.get_recreate_enum(enum_name, values_new))
+                        """) + recreate_enum_sql)
             for attr_old, attr_new in rename_attributes.items():
                 alter_enum_sql += AlterSchemaHelper.get_rename_value_in_enum(
                     enum_name, attr_old, attr_new
