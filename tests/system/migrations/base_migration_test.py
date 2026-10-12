@@ -11,9 +11,10 @@ from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
-from psycopg import Cursor
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_helper import (
@@ -33,6 +34,12 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    collection_and_id_from_fqid,
+)
+from openslides_backend.shared.typing import PartialModel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
 from tests.system.util import create_action_test_application, get_route_path
@@ -107,9 +114,20 @@ class BaseMigrationTestCase(TestCase):
         cls.apply_fresh_relational_schema()
         super().tearDownClass()
 
+    def create_migration_manager(self) -> MigrationManager:
+        return MigrationManager(Mock(), Mock(), self.app.logging)
+
     def make_migration_request(self) -> dict[str, Any]:
-        manager = MigrationManager(Mock(), Mock(), self.app.logging)
+        manager = self.create_migration_manager()
         return manager.handle_request({"cmd": "migrate", "verbose": True})
+
+    def set_up_organization(self) -> None:
+        self.create_entries(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "Intevation", "theme_id": 1},
+                "theme/1": {"name": "standard theme"},
+            }
+        )
 
     @staticmethod
     def prepare_mig_100_environment() -> None:
@@ -248,3 +266,60 @@ class BaseMigrationTestCase(TestCase):
             data = json_dumps(data)
 
         return data
+
+    def create_entries(self, data: dict[FullQualifiedId, PartialModel]) -> None:
+        assert data, "data can not be empty"
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for fqid, data in data.items():
+                    assert data, "data can not contain empty dictionaries"
+                    collection, id_ = collection_and_id_from_fqid(fqid)
+                    table_name = HelperGetNames.get_table_name(collection)
+                    model_data = {**data, "id": id_}
+                    curs.execute(
+                        sql.SQL(
+                            "INSERT INTO {table_name} ({columns}) VALUES ({values});"
+                        ).format(
+                            table_name=sql.Identifier(table_name),
+                            columns=sql.SQL(", ").join(
+                                sql.Identifier(column) for column in model_data.keys()
+                            ),
+                            values=sql.SQL(", ").join(
+                                sql.Placeholder() for _ in model_data
+                            ),
+                        ),
+                        [*model_data.values()],
+                    )
+                conn.commit()
+
+    def update_entries(self, data: dict[FullQualifiedId, PartialModel]) -> None:
+        assert data, "data can not be empty"
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for fqid, collection_data in data.items():
+                    assert collection_data, "data can not contain empty dictionaries"
+                    collection, id_ = collection_and_id_from_fqid(fqid)
+                    table_name = HelperGetNames.get_table_name(collection)
+                    if len(data) == 1:
+                        set_part = sql.SQL("{column} = {placeholder}").format(
+                            column=sql.Identifier(list(data.keys())[0]),
+                            placeholder=sql.Placeholder(),
+                        )
+                    else:
+                        set_part = sql.SQL("({columns}) = ({placeholders})").format(
+                            columns=sql.SQL(", ").join(
+                                sql.Identifier(column) for column in data.keys()
+                            ),
+                            placeholders=sql.SQL(", ").join(
+                                sql.Placeholder() for _ in data
+                            ),
+                        )
+                    curs.execute(
+                        sql.SQL("UPDATE {table_name} {set_part} WHERE id={id}").format(
+                            table_name=sql.Identifier(table_name),
+                            set_part=set_part,
+                            id=sql.Placeholder(),
+                        ),
+                        [*data.values(), id_],
+                    )
+                conn.commit()
