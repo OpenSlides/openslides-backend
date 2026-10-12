@@ -6,6 +6,7 @@ from psycopg.rows import DictRow
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.patterns import (
     Column,
+    ColumnRef,
     ExtendedSqlArguments,
     Join,
     JoinOn,
@@ -48,6 +49,69 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             return sql.SQL(f"::{element_type_name}[]")
         raise BadCodingException(f"{table_name}/{field} is not an array column.")
 
+    @staticmethod
+    def _get_type(
+        table_name: Table,
+        column: Column,
+        curs: Cursor[DictRow],
+    ) -> str:
+        result = (
+            curs.execute(
+                sql.SQL("""
+                    SELECT
+                        pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type
+                    FROM pg_catalog.pg_attribute a
+                    JOIN pg_catalog.pg_class c
+                        ON c.oid = a.attrelid
+                    JOIN pg_catalog.pg_namespace n
+                        ON n.oid = c.relnamespace
+                    WHERE a.attrelid = {table_name}::regclass
+                    AND a.attname = {column_name}
+                    ORDER BY a.attnum;
+                    """).format(
+                    table_name=table_name,
+                    column_name=column,
+                )
+            ).fetchone()
+            or {}
+        )
+        if data_type := result.get("data_type"):
+            return data_type
+        raise BadCodingException(
+            f"Failed to retrieve the type of {table_name}/{column}."
+        )
+
+    @staticmethod
+    def get_type_for_casting(
+        curs: Cursor[DictRow],
+        table_name: Table,
+        column: Column,
+    ) -> sql.SQL | None:
+        """
+        Returns type for column if it is different from the type in the view.
+        """
+        # TODO (when dammi is merged): save types in DiffMixin and retrieve them from the dict. Move this method to BaseMigration.
+        if not table_name.endswith("_t"):
+            return None
+        type_ = MigrationSqlHelper._get_type(table_name, column, curs)
+        if type_.startswith("enum_"):
+            return sql.SQL(f"::{type_}")
+        return None
+
+    @staticmethod
+    def add_type_to_column_refs(
+        curs: Cursor[DictRow],
+        table_name: Table,
+        columns: list[tuple[ColumnRef, Column]],
+    ) -> None:
+        for column_ref, target_column in columns:
+            if (
+                type_ := MigrationSqlHelper.get_type_for_casting(
+                    curs, table_name, target_column
+                )
+            ) is not None:
+                column_ref.set_type(type_)
+
     # -- Methods for building SET part --
     @staticmethod
     def get_set_columns_part(
@@ -72,14 +136,19 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             )
 
     @staticmethod
-    def _build_identifier(
-        qualifier: str | None,
-        column: Column,
-    ) -> sql.Identifier:
-        if qualifier is None:
-            return sql.Identifier(column)
-
-        return sql.Identifier(qualifier, column)
+    def build_identifier(
+        column: Column, qualifier: str | None = None, type_: sql.SQL | None = None
+    ) -> sql.Identifier | sql.Composed:
+        identifier = (
+            sql.Identifier(column)
+            if qualifier is None
+            else sql.Identifier(qualifier, column)
+        )
+        if type_:
+            return sql.SQL("{identifier}{type}").format(
+                identifier=identifier, type=type_
+            )
+        return identifier
 
     @staticmethod
     def get_value_assignment(
@@ -88,22 +157,34 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         target_table: str | None = None,
     ) -> sql.Composed:
         return sql.SQL("{target} = {value}").format(
-            target=MigrationSqlHelper._build_identifier(target_table, target_column),
+            target=MigrationSqlHelper.build_identifier(target_column, target_table),
             value=value,
         )
 
     @staticmethod
     def get_column_assignment(
+        curs: Cursor[DictRow],
         target_column: Column,
         target_table: str | None = None,
         source_column: Column | None = None,
         source_table: str | None = None,
+        type_source_table: str | None = None,
     ) -> sql.Composed:
         if source_column is None:
             source_column = target_column
         return sql.SQL("{target} = {source}").format(
-            target=MigrationSqlHelper._build_identifier(target_table, target_column),
-            source=MigrationSqlHelper._build_identifier(source_table, source_column),
+            target=MigrationSqlHelper.build_identifier(target_column, target_table),
+            source=MigrationSqlHelper.build_identifier(
+                source_column,
+                source_table,
+                (
+                    MigrationSqlHelper.get_type_for_casting(
+                        curs, type_source_table, target_column
+                    )
+                    if type_source_table
+                    else None
+                ),
+            ),
         )
 
     # -- Methods for building parts for ARRAYs updates --
@@ -178,14 +259,14 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
     # -- Methods for building WHERE part --
     @staticmethod
     def get_lookup_part_from_other_table(
-        join: Join, filter_string: sql.Composable
+        curs: Cursor[DictRow], join: Join, filter_string: sql.Composable
     ) -> sql.Composed:
         return sql.SQL("EXISTS (SELECT 1 FROM {joined_table} WHERE {where})").format(
             joined_table=sql.Identifier(join.right_table.table_name),
             where=MigrationSqlHelper.join_conditions(
                 [
                     *MigrationSqlHelper.get_conditions_for_join(
-                        join.right_table.table_name, join.join_on
+                        curs, join.right_table.table_name, join.join_on
                     ),
                     filter_string,
                 ]
@@ -194,14 +275,20 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
 
     @staticmethod
     def get_conditions_for_join(
-        right_table: str, join_on_columns: list[JoinOn]
+        curs: Cursor[DictRow], right_table: str, join_on_columns: list[JoinOn]
     ) -> list[sql.Composable]:
         return [
-            sql.SQL("{left_table}.{left_column} = {right_table}.{right_column}").format(
-                right_table=sql.Identifier(right_table),
-                right_column=sql.Identifier(join_on.right_column),
-                left_table=sql.Identifier(join_on.left_table.table_name),
-                left_column=sql.Identifier(join_on.left_column),
+            sql.SQL("{left_column} = {right_column}").format(
+                left_column=sql.Identifier(
+                    join_on.left_table.table_name, join_on.left_column
+                ),
+                right_column=MigrationSqlHelper.build_identifier(
+                    join_on.right_column,
+                    right_table,
+                    MigrationSqlHelper.get_type_for_casting(
+                        curs, join_on.left_table.table_name, join_on.left_column
+                    ),
+                ),
             )
             for join_on in join_on_columns
         ]

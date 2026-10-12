@@ -147,26 +147,17 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
 
         # -- Update from map --
-        self.connection.commit()
-        # TODO: delete these 2 statements and change type_m to type in update_from_values_map to test enum type casting.
-        self.connection.cursor().execute(
-            "ALTER TABLE poll_t ADD COLUMN type_m varchar(256);"
-        )
-        self.connection.cursor().execute(
-            "UPDATE poll_t SET type_m = type::varchar(256);"
-        )
-
         self.update_from_values_map(
             self.connection.cursor(),
             "poll",
             ValuesSource(
                 [
-                    {"type_m": "analog", "title": "manually"},
-                    {"type_m": "named", "title": "open"},
-                    {"type_m": "pseudoanonymous", "title": "secret"},
-                    {"type_m": "cryptographic", "title": "secret"},
+                    {"type": "analog", "title": "manually"},
+                    {"type": "named", "title": "open"},
+                    {"type": "pseudoanonymous", "title": "secret"},
+                    {"type": "cryptographic", "title": "secret"},
                 ],
-                ["type_m"],
+                ["type"],
             ),
         )
         for poll_id, title in {
@@ -177,8 +168,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             5: "manually",
         }.items():
             self.assert_model_exists(f"poll/{poll_id}", {"title": title})
-        self.connection.commit()
-        self.connection.cursor().execute("ALTER TABLE poll_t DROP COLUMN type_m;")
 
         # -- Update from map multiple columns --
         filter_field_name = "name"

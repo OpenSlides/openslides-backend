@@ -4,12 +4,12 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
-from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.patterns import (
     ArrayDiff,
     Column,
     ColumnDataSource,
+    ColumnRef,
     ExtendedSqlArguments,
     InsertFromTables,
     Join,
@@ -169,6 +169,7 @@ class BaseMigration:
                             )
                         ],
                     ),
+                    curs=curs,
                 )
             )
         if joined_tables:
@@ -179,6 +180,8 @@ class BaseMigration:
                         filter_condition=join.filter_right_table,
                         arguments=arguments,
                         filter_other_table=join,
+                        filter_condition_table_alias=join.right_table.table_name,
+                        curs=curs,
                     )
                 )
         curs.execute(
@@ -321,6 +324,7 @@ class BaseMigration:
                 collection_or_table_name=target_collection,
                 set_part=sql.SQL(", ").join(
                     MigrationSqlHelper.get_column_assignment(
+                        curs=curs,
                         target_column=column,
                         source_table=values_source.alias,
                         type_source_table=target_table.table_name,
@@ -367,7 +371,7 @@ class BaseMigration:
         arguments: SqlArguments = []
         joined_tables_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] = (
             self._get_joined_tables_data(
-                copy_from_source_tables.joined_sources, arguments
+                curs, copy_from_source_tables.joined_sources, arguments
             )
         )
 
@@ -391,7 +395,15 @@ class BaseMigration:
                 collection_or_table_name=copy_from_source_tables.target_table.table_name,
                 set_part=sql.SQL(", ").join(
                     MigrationSqlHelper.get_value_assignment(target_column, value)
-                    for target_column, value in copy_from_source_tables.copy_data_map.items()
+                    for target_column, value in zip(
+                        copy_from_source_tables.target_columns,
+                        self._normalize_select_columns(
+                            curs,
+                            copy_from_source_tables.select_columns,
+                            copy_from_source_tables.target_table,
+                            copy_from_source_tables.target_columns,
+                        ),
+                    )
                 ),
                 source_table=sql.Identifier(source_table),
                 joined_tables=joined_tables,
@@ -420,11 +432,12 @@ class BaseMigration:
         and 'copy_from_source_tables'.
         """
         arguments: SqlArguments = []
+        target_table = TableRef(target_collection, False)
 
         target_columns = copy_from_source_tables.target_columns.copy()
         select_columns = copy_from_source_tables.select_columns.copy()
         joined_tables_parts = self._get_joined_tables_data(
-            copy_from_source_tables.joined_sources, arguments
+            curs, copy_from_source_tables.joined_sources, arguments
         )
 
         if values_source is not None:
@@ -434,6 +447,7 @@ class BaseMigration:
                 )
             joined_tables_parts.append(
                 self._get_joined_values_data(
+                    curs,
                     values_source,
                     copy_from_source_tables.root_source,
                     arguments,
@@ -455,9 +469,11 @@ class BaseMigration:
 
         curs.execute(
             MigrationSqlHelper.build_insert_from_other_table_sql(
-                target_table=HelperGetNames.get_table_name(target_collection),
+                target_table=target_table.table_name,
                 target_columns=MigrationSqlHelper.join_columns(target_columns),
-                select_columns=sql.SQL(", ").join(select_columns),
+                select_columns=self._join_select_columns(
+                    curs, select_columns, target_table, target_columns
+                ),
                 source_table=copy_from_source_tables.root_source.table_name,
                 joined_tables=joined_tables_parts,
                 condition=filter_condition,
@@ -516,6 +532,7 @@ class BaseMigration:
         target_collection: Collection | None = None,
         filter_other_table: Join | None = None,
         filter_condition_table_alias: str | None = None,
+        curs: Cursor[DictRow] | None = None,
     ) -> sql.Composable:
         """
         Builds lookup part of the SQL query. Also updates arguments.
@@ -540,7 +557,12 @@ class BaseMigration:
                 filter_condition_table_alias or "",
             )
         else:
+            if curs is None:
+                raise BadCodingException(
+                    "'curs' needs to be passed when 'filter_other_table' is used."
+                )
             return MigrationSqlHelper.get_lookup_part_from_other_table(
+                curs,
                 filter_other_table,
                 MigrationSqlHelper.build_filter_str(
                     filter_condition,
@@ -552,9 +574,10 @@ class BaseMigration:
 
     @staticmethod
     def _get_join_conditions_for_values(
-        values_source: ValuesSource, left_table: TableRef
+        curs: Cursor[DictRow], values_source: ValuesSource, left_table: TableRef
     ) -> list[sql.Composable]:
         return MigrationSqlHelper.get_conditions_for_join(
+            curs,
             values_source.alias,
             [
                 JoinOn(column, left_table, column)
@@ -564,14 +587,16 @@ class BaseMigration:
 
     @staticmethod
     def _get_joined_tables_data(
-        join_tables: list[TableDataSource], arguments: SqlArguments
+        curs: Cursor[DictRow],
+        join_tables: list[TableDataSource],
+        arguments: SqlArguments,
     ) -> list[tuple[str | sql.Composed, list[sql.Composable]]]:
         result: list[tuple[str | sql.Composed, list[sql.Composable]]] = []
         for data_source in join_tables:
             source_table = data_source.source_table
             conditions: list[sql.Composable] = (
                 MigrationSqlHelper.get_conditions_for_join(
-                    source_table.right_table.table_name, source_table.join_on
+                    curs, source_table.right_table.table_name, source_table.join_on
                 )
             )
             if source_table.filter_right_table is not None:
@@ -588,11 +613,48 @@ class BaseMigration:
 
     @staticmethod
     def _get_joined_values_data(
+        curs: Cursor[DictRow],
         values_source: ValuesSource,
         left_table: TableRef,
         arguments: SqlArguments,
     ) -> tuple[sql.Composed, list[sql.Composable]]:
         return (
             MigrationSqlHelper.build_values_table(values_source, arguments),
-            BaseMigration._get_join_conditions_for_values(values_source, left_table),
+            BaseMigration._get_join_conditions_for_values(
+                curs, values_source, left_table
+            ),
         )
+
+    @staticmethod
+    def _join_select_columns(
+        curs: Cursor[DictRow],
+        select_columns: list[ColumnRef | sql.Composed],
+        target_table: TableRef,
+        target_columns: list[Column],
+    ) -> sql.Composed:
+        return sql.SQL(", ").join(
+            BaseMigration._normalize_select_columns(
+                curs, select_columns, target_table, target_columns
+            )
+        )
+
+    @staticmethod
+    def _normalize_select_columns(
+        curs: Cursor[DictRow],
+        select_columns: list[ColumnRef | sql.Composed],
+        target_table: TableRef,
+        target_columns: list[Column],
+    ) -> list[sql.Composable]:
+        MigrationSqlHelper.add_type_to_column_refs(
+            curs,
+            target_table.table_name,
+            [
+                (select_column, target_columns[i])
+                for i, select_column in enumerate(select_columns)
+                if isinstance(select_column, ColumnRef)
+            ],
+        )
+        return [
+            column.identifier if isinstance(column, ColumnRef) else column
+            for column in select_columns
+        ]

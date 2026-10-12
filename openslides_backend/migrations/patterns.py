@@ -1,5 +1,5 @@
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, NewType, Union
 
 from psycopg import sql
@@ -67,6 +67,41 @@ class TableRef:
 
 
 @dataclass(frozen=True)
+class ColumnRef:
+    """
+    A reference to a table or view column.
+    """
+
+    column_name: Column
+    table: Table | View | None = None
+
+    # column_type needs to be editable since it has to be retrieved from the database
+    _column_type: str | None = field(init=False, default=None)
+
+    @property
+    def column_type(self) -> str | None:
+        return self._column_type
+
+    def set_type(self, value: sql.SQL) -> None:
+        if self._column_type is not None:
+            raise BadCodingException("'column_type' can not be changed once set.")
+        object.__setattr__(self, "_column_type", value)
+
+    @property
+    def identifier(self) -> sql.Identifier | sql.Composed:
+        identifier = (
+            sql.Identifier(self.column_name)
+            if self.table is None
+            else sql.Identifier(self.table, self.column_name)
+        )
+        if self.column_type:
+            return sql.SQL("{identifier}{type}").format(
+                identifier=identifier, type=self.column_type
+            )
+        return identifier
+
+
+@dataclass(frozen=True)
 class JoinOn:
     """
     Describes a column mapping between a joined table and its left table:
@@ -126,15 +161,13 @@ class ColumnDataSource:
                 "One out of 'source_column' and 'transformed_column_value' must be defined."
             )
 
-    def value(
-        self, source_table: TableRef | None = None
-    ) -> sql.Identifier | sql.Composed:
+    def value(self, source_table: TableRef | None = None) -> ColumnRef | sql.Composed:
         if self.source_column is not None:
             if source_table is None:
                 raise BadCodingException(
                     "'source_table' is required when 'source_column' is defined."
                 )
-            return sql.Identifier(source_table.table_name, self.source_column)
+            return ColumnRef(self.source_column, source_table.table_name)
         assert self.transformed_column_value is not None
         return self.transformed_column_value
 
@@ -163,7 +196,7 @@ class TableDataSource:
             )
 
     @property
-    def values_map(self) -> dict[Column, sql.Identifier | sql.Composed]:
+    def values_map(self) -> dict[Column, ColumnRef | sql.Composed]:
         return {
             data.target_column: data.value(self.source_table.right_table)
             for data in self.value_definition
@@ -210,23 +243,12 @@ class _CopyFromTables:
         ]
 
     @property
-    def select_columns(self) -> list[sql.Identifier | sql.Composed]:
+    def select_columns(self) -> list[ColumnRef | sql.Composed]:
         return [
             target_data.value(data_source.source_table.right_table)
             for data_source in self.copy_data
             for target_data in data_source.value_definition
         ]
-
-    @property
-    def copy_data_map(self) -> dict[Column, sql.Composable]:
-        """
-        Maps target columns to the corresponding sql-parts that describe the values to be set.
-        """
-        return {
-            data.target_column: data.value(data_source.source_table.right_table)
-            for data_source in self.copy_data
-            for data in data_source.value_definition
-        }
 
     def __post_init__(self) -> None:
         errors = []
@@ -498,5 +520,5 @@ class ValuesSource:
         ]
 
     @property
-    def select_columns(self) -> list[sql.Identifier]:
-        return [sql.Identifier(self.alias, column) for column in self.target_columns]
+    def select_columns(self) -> list[ColumnRef]:
+        return [ColumnRef(column, self.alias) for column in self.target_columns]
