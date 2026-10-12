@@ -497,7 +497,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         entry: dict[str, Any],
         messages: list[str],
         failing_msg: str,
-        field_groups: str = "ABDEFGHIJ",
+        field_groups: str = "ABDEGHIJ",
     ) -> None:
         payload_index = entry.pop("payload_index", None)
         # swapping needed for get_failing_fields and setting import states not to fail

@@ -43,6 +43,7 @@ class GetUserScope(UserScopeMixin, BasePresenter):
                 committee_meeting_ids,
                 user_in_archived_meetings_only,
                 home_committee_id,
+                is_committee_manager,
             ) = self.get_user_scope(user_id)
             committee_ids = [ci for ci in committee_meeting_ids.keys()]
             result[str(user_id)] = {
@@ -52,5 +53,6 @@ class GetUserScope(UserScopeMixin, BasePresenter):
                 "committee_ids": committee_ids,
                 "user_in_archived_meetings_only": user_in_archived_meetings_only,
                 "home_committee_id": home_committee_id,
+                "is_committee_manager": is_committee_manager,
             }
         return result

@@ -2642,7 +2642,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                     ]
                 else:
                     assert import_preview["result"]["rows"][row]["messages"] == [
-                        "Account is updated, but changes to the following field(s) are not possible: first_name, last_name, email, username, is_active, is_physical_person, gender_id, default_password"
+                        "Account is updated, but changes to the following field(s) are not possible: first_name, last_name, email, username, default_password, is_active, is_physical_person, gender_id"
                     ]
             else:
                 import_state = ImportState.DONE

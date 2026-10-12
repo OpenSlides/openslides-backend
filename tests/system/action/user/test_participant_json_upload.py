@@ -403,7 +403,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         {
                             "state": ImportState.DONE,
                             "messages": [
-                                "Account is added to the meeting, but changes to the following field(s) are not possible: username, gender_id, default_password"
+                                "Account is added to the meeting, but changes to the following field(s) are not possible: username, default_password, gender_id"
                             ],
                             "data": {
                                 "username": {
@@ -2169,7 +2169,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, default_password, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -2235,7 +2235,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, default_password, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -2306,7 +2306,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: member_number, first_name, email, username, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: member_number, first_name, email, default_password, username, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -3431,3 +3431,55 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "id": 2,
         }
         assert data["external"] == {"info": ImportState.REMOVE, "value": False}
+
+    def json_upload_for_meeting_member_comm_admin_as_group(
+        self, bob_group: int, bob_meeting: int
+    ) -> int:
+        self.create_meeting()
+        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.create_meeting(4, {"committee_id": 60})
+        self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
+
+        alice_id = self.create_user("alice")
+        self.set_committee_management_level([60], alice_id)
+        self.set_user_groups(alice_id, [1])
+
+        bob_id = self.create_user("bob")
+        self.set_user_groups(bob_id, [bob_group])
+
+        self.login(bob_id)
+        data = {
+            "email": "bob.email@malicious.de",
+        }
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": bob_meeting,
+                "data": [
+                    {"username": "alice", "email": "bob.email@malicious.de"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == (
+            ImportState.DONE if bob_meeting == 1 else ImportState.REFERENCED
+        )
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, email"
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data["id"] == alice_id
+        assert data["username"] == {
+            "id": alice_id,
+            "info": ImportState.REMOVE,
+            "value": "alice",
+        }
+        assert data["email"] == {
+            "info": ImportState.REMOVE,
+            "value": "bob.email@malicious.de",
+        }
+        return alice_id

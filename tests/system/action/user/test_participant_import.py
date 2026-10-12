@@ -1064,7 +1064,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, default_password, saml_id",
             "In contrast to preview you may import field(s) 'default_password, email, first_name, saml_id, username'",
         ]
         assert row["data"] == {
@@ -1122,7 +1122,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, default_password, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -1171,7 +1171,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: member_number, first_name, email, username, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: member_number, first_name, email, default_password, username, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -1815,7 +1815,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, default_password, saml_id",
         ]
         assert row["data"] == {
             "id": 2,
@@ -1874,3 +1874,43 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             ],
         }
         assert row["list_delete_amounts"] == {"groups": 1}
+
+    def import_for_meeting_member_comm_admin_as_group(
+        self, bob_group: int, bob_meeting: int
+    ) -> None:
+        alice_id = self.json_upload_for_meeting_member_comm_admin_as_group(
+            bob_group, bob_meeting
+        )
+
+        alice = self.get_model(alice_fqid := f"user/{alice_id}")
+
+        response = self.request(
+            "participant.import",
+            {
+                "meeting_id": bob_meeting,
+                "data": [
+                    {"username": "alice", "email": "bob.email@malicious.de"},
+                    {"username": "theNewGuy"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(alice_fqid, alice)
+
+    def import_email_for_meeting_member_comm_admin_as_same_meeting_admin(self) -> None:
+        self.import_for_meeting_member_comm_admin_as_group(2, 1)
+
+    def import_email_for_meeting_member_comm_admin_as_same_meeting_user_manager(
+        self,
+    ) -> None:
+        self.import_for_meeting_member_comm_admin_as_group(3, 1)
+
+    def import_email_for_meeting_member_comm_admin_as_different_meeting_admin(
+        self,
+    ) -> None:
+        self.import_for_meeting_member_comm_admin_as_group(5, 4)
+
+    def import_email_for_meeting_member_comm_admin_as_different_meeting_user_manager(
+        self,
+    ) -> None:
+        self.import_for_meeting_member_comm_admin_as_group(6, 4)

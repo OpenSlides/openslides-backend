@@ -34,7 +34,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None, bool]:
         """
         Parameter id_or_instance: id for existing user or instance for user creating and altering actions.
         Returns in the tuple:
@@ -46,6 +46,7 @@ class UserScopeMixin(BaseServiceProvider):
             of together with the respective meetings the user is part of
         * whether the user is only in archived meetings
         * his home_committee_id.
+        * whether he is a manager for any committee
         A committee can have no meetings if the user just has committee management rights and is
         not part of any of its meetings.
         """
@@ -76,7 +77,11 @@ class UserScopeMixin(BaseServiceProvider):
             committee_meetings,
             user_in_archived_meetings_only,
         ) = self.calculate_scope_data(
-            meeting_ids, committees_manager, home_committee_id
+            meeting_ids,
+            committees_manager,
+            home_committee_id,
+            oml_right,
+            committees_manager,
         )
 
         return (
@@ -86,12 +91,12 @@ class UserScopeMixin(BaseServiceProvider):
             committee_meetings,
             user_in_archived_meetings_only,
             home_committee_id,
+            bool(committees_manager),
         )
 
     def check_permissions_for_scope(
         self,
         instance_id: int,
-        always_check_user_oml: bool = True,
         meeting_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
         """
@@ -108,9 +113,10 @@ class UserScopeMixin(BaseServiceProvider):
             committees_to_meetings,
             user_in_archived_meetings_only,
             _,
+            _,
         ) = self.get_user_scope(instance_id)
 
-        if self._check_oml_levels(always_check_user_oml, user_oml):
+        if self._check_oml_levels(user_oml):
             return
         if scope == UserScope.Committee:
             self._check_permissions_for_scope_committee(scope_id)
@@ -200,6 +206,8 @@ class UserScopeMixin(BaseServiceProvider):
         meeting_ids: list[int],
         committees_manager: set[int],
         home_committee_id: int | None,
+        oml: OrganizationManagementLevel | None,
+        committee_management_ids: set[int] | None,
     ) -> tuple[UserScope, int, dict[int, list[int]], bool]:
         """
         Helper function used in method get_user_scope.
@@ -222,6 +230,8 @@ class UserScopeMixin(BaseServiceProvider):
             active_meetings_committee,
             active_committee_meetings,
             committee_meetings,
+            oml,
+            committee_management_ids,
         )
         user_committee_meetings = (
             active_committee_meetings
@@ -314,15 +324,23 @@ class UserScopeMixin(BaseServiceProvider):
         active_meetings_committee: dict[int, int],
         active_committee_meetings: dict[int, list[int]],
         committee_meetings: dict[int, list[int]],
+        oml: OrganizationManagementLevel | None,
+        committee_management_ids: set[int] | None,
     ) -> tuple[UserScope, int]:
         """
         Helper function used in method calculate_scope_data.
         Determines user's scope and scope ID.
         """
+        if oml:
+            return UserScope.Organization, 1
         if home_committee_id:
             return UserScope.Committee, home_committee_id
 
-        if len(active_meetings_committee) == 1 and len(active_committee_meetings) == 1:
+        if (
+            len(active_meetings_committee) == 1
+            and len(active_committee_meetings) == 1
+            and not committee_management_ids
+        ):
             return UserScope.Meeting, next(iter(active_meetings_committee))
 
         if len(committee_meetings) == 1:
@@ -402,21 +420,17 @@ class UserScopeMixin(BaseServiceProvider):
             for admin_users in meeting_id_to_admin_user_ids.values()
         )
 
-    def _check_oml_levels(self, always_check_user_oml: bool, user_oml: str) -> bool:
+    def _check_oml_levels(self, user_oml: str) -> bool:
         """
         Raises error if always_check_user_oml=True and request user doesn't
         have at least the same OML as requested user.
         Otherwise passes without further scope-specific checks if request user
         has OML can_manage_users.
         """
-        if (
-            always_check_user_oml
-            and user_oml
-            and not has_organization_management_level(
-                self.datastore,
-                self.user_id,
-                perm := OrganizationManagementLevel(user_oml),
-            )
+        if user_oml and not has_organization_management_level(
+            self.datastore,
+            self.user_id,
+            perm := OrganizationManagementLevel(user_oml),
         ):
             raise MissingPermission({perm: 1})
         if has_organization_management_level(
