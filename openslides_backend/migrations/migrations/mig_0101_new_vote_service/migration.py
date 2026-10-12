@@ -170,6 +170,7 @@ class Migration(DiffMixin, BaseMigration):
                 ],
                 ["type"],
             ),
+            join_values_to_mig_table=True,
         )
         self.update_matching_entries(
             curs,

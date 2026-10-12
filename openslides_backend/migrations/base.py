@@ -267,26 +267,53 @@ class BaseMigration:
         curs: Cursor[DictRow],
         target_collection: Collection,
         values_source: ValuesSource,
-        filter_condition: Filter | None = None,
+        filter_target_table: Filter | None = None,
+        join_values_to_mig_table: bool = False,
     ) -> None:
         """
-        Updates rows in the target collection using values from `values_source`.
+        Updates rows in the target table using values from `values_source`.
 
         Columns in `values_source.join_on_columns` are used to match source rows
         with target rows, while the remaining columns provide the values to set
         into the matching rows.
 
         Optional filter_condition can further restrict the rows being updated.
-        """
-        arguments: SqlArguments = []
 
-        from_part = MigrationSqlHelper.build_values_table(values_source, arguments)
-        join_conditions = self._get_join_conditions_for_values(
-            values_source, TableRef(target_collection, False)
-        )
+        `join_values_to_mig_table` allows to join the 'values_source' to the
+        columns of the related migration table instead of the target table.
+        """
+        target_table = TableRef(target_collection, False)
+        arguments: SqlArguments = []
+        filter_conditions: list[sql.Composable] = []
+        join_conditions: list[sql.Composable]
+        from_part: sql.Composable
+        joined_tables_parts: (
+            list[tuple[str | sql.Composed, list[sql.Composable]]] | None
+        ) = None
+
+        if join_values_to_mig_table:
+            mig_table = TableRef(target_collection, True)
+            from_part = sql.Identifier(mig_table.table_name)
+            joined_tables_parts = [
+                self._get_joined_values_data(curs, values_source, mig_table, arguments)
+            ]
+            join_conditions = MigrationSqlHelper.get_conditions_for_join(
+                curs,
+                mig_table.table_name,
+                [JoinOn("id", target_table, "id")],
+            )
+        else:
+            from_part = MigrationSqlHelper.build_values_table(values_source, arguments)
+            join_conditions = self._get_join_conditions_for_values(
+                curs, values_source, target_table
+            )
         filter_conditions = (
-            [self._build_filter_query(filter_condition, arguments, target_collection)]
-            if filter_condition is not None
+            [
+                self._build_filter_query(
+                    filter_target_table, arguments, target_collection
+                )
+            ]
+            if filter_target_table is not None
             else []
         )
         curs.execute(
@@ -296,10 +323,12 @@ class BaseMigration:
                     MigrationSqlHelper.get_column_assignment(
                         target_column=column,
                         source_table=values_source.alias,
+                        type_source_table=target_table.table_name,
                     )
                     for column in values_source.target_columns
                 ),
                 source_table=from_part,
+                joined_tables=joined_tables_parts,
                 filter_condition=[*join_conditions, *filter_conditions],
             ),
             arguments,
