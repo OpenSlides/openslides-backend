@@ -1,6 +1,6 @@
 from typing import Any
 
-from psycopg import Cursor
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from openslides_backend.migrations.base import BaseMigration
@@ -14,6 +14,7 @@ from openslides_backend.migrations.patterns import (
     UpdateFromTables,
     ValuesSource,
 )
+from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.filters import FilterOperator
 
 from .diff_mixin import DiffMixin
@@ -97,9 +98,31 @@ class Migration(DiffMixin, BaseMigration):
         ],
     }
 
+    @staticmethod
+    def validate_data_compatibility(curs: Cursor[DictRow]) -> None:
+        errors = []
+        for field_name, allowed_pollmethods in {
+            "assignment_poll_default_method": ["Y", "N", "YN", "YNA"],
+            "motion_poll_default_method": ["YN", "YNA"],
+            "poll_default_method": ["N"],
+        }.items():
+            if entries := curs.execute(
+                sql.SQL(
+                    "SELECT id from meeting_m where {column} <> ALL({values});"
+                ).format(column=sql.Identifier(field_name), values=sql.Placeholder()),
+                [allowed_pollmethods],
+            ).fetchall():
+                errors.append(
+                    f"Detected invalid values in field {field_name} for meetings: {[entry['id'] for entry in entries]}. "
+                    f"Allowed values are: {allowed_pollmethods}."
+                )
+        if errors:
+            raise BadCodingException("\n".join(errors))
+
     def data_manipulation(
         self, curs: Cursor[DictRow], stash: dict[str, Any] | None
     ) -> None:
+        self.validate_data_compatibility(curs)
         # TODO: update intermediate table
         # self.update_from_mig_table(
         #     curs,
