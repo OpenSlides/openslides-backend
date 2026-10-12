@@ -10,13 +10,13 @@ psycopg[binary]==3.3.6
 psycopg-pool==3.3.3
 requests==2.34.2
 roman==5.2
-simplejson==4.1.2
+simplejson==4.2.0
 Werkzeug==3.1.9
 python-magic==0.4.27
 python-sql==1.8.1
 pygments==2.21.0
 pyyaml==6.0.3
-sqlfluff==4.3.0
+sqlfluff==4.4.0
 
 # opentelemetry
 opentelemetry-api==1.45.0
