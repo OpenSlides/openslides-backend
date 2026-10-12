@@ -323,6 +323,8 @@ class InsertFromTables(_CopyFromTables):
     Each target column in 'copy_data' must have a single source.
     Source tables must form a valid join tree rooted at 'main_source_table'
     or the first source table.
+    If main_source_table is None and len(copy_data) == 1,
+    copy_data[0].source_table.join_on will be ignored and should be defined as an empty list.
     """
 
     main_source_table: TableRef | None = None
