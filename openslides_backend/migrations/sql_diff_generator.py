@@ -584,7 +584,9 @@ class RemoveHelper:
         if "collections" in remove:
             collections_remove_tuple: CollectionsRemoveTuple = remove["collections"]
             for collection_name in collections_remove_tuple[0]:
-                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
+                result += AlterSchemaHelper.get_drop_table_statement(
+                    collection_name, PREV_CODE_BLOCKS["view_sql"]
+                )
                 dc_remove_dict["collections"][0].remove(collection_name)
             result += cls.handle_remove_tree(
                 collections_remove_tuple[1], dc_remove_dict["collections"][1]
@@ -634,7 +636,9 @@ class RemoveHelper:
                         )
                         remove_empty(dc_remove_tree_dict, collection_name)
         for table in sorted(cls.intermediate_tables_to_remove):
-            result += AlterSchemaHelper.get_drop_table_statement(table)
+            result += AlterSchemaHelper.get_drop_table_statement(
+                table, PREV_CODE_BLOCKS["view_sql"]
+            )
         result += EqualFieldsHelper.handle_alter_equal_fields()
         return result
 
@@ -691,7 +695,7 @@ class RemoveHelper:
 
             if drop_column:
                 result += AlterSchemaHelper.get_drop_column_statement(
-                    collection_name, field_name
+                    collection_name, field_name, PREV_CODE_BLOCKS["view_sql"]
                 )
                 type_ = field_def["type"]
                 if "relation" in type_ and not type_.startswith("generic"):
@@ -1618,7 +1622,9 @@ class RenameHelper:
                     if table not in intermediate_tables_dropped:
                         intermediate_tables_dropped.append(table)
                         table_redefinitions += (
-                            AlterSchemaHelper.get_drop_table_statement(table)
+                            AlterSchemaHelper.get_drop_table_statement(
+                                table, PREV_CODE_BLOCKS["view_sql"]
+                            )
                         )
                         RemoveHelper.intermediate_tables_to_remove.add(table)
 
