@@ -1796,8 +1796,8 @@ class RenameHelper:
                         name = HelperGetNames.get_color_constraint_name(
                             collection_name, field_name
                         )
-            case "enum":
-                if isinstance(field_def.get("enum"), list):
+            case "enum" | "items":
+                if isinstance(field_def.get("items", field_def).get("enum"), list):
                     enum_names.append(
                         HelperGetNames.get_enum_name_for_column(
                             collection_name, field_name
