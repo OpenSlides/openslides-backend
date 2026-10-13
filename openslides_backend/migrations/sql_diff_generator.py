@@ -1489,20 +1489,29 @@ class RenameHelper:
     def handle_rename(cls, renames: Renames, dc_rename_dict: Renames) -> str:
         result = ""
         collection_renames = renames[0]
-        # TODO untested needed for renaming meta enums
-        meta = collection_renames.pop("_meta", {})
-        for key, meta_def_part in meta.items():
-            match key:
-                case "enum_definitions":
-                    for enum_old, enum_new in meta_def_part.items():
-                        sql += AlterSchemaHelper.get_rename_enum(name_old, name_new)
-                        del dc_rename_dict["_meta"]["enum_definitions"][enum_old]
-                case _:
-                    raise NotImplementedError(f"meta-collection.yml renamed in {key}.")
-            remove_empty(dc_rename_dict["_meta"], key)
-        remove_empty(dc_rename_dict, "_meta")
-
         field_renames = renames[1]
+        meta_renames = field_renames.pop("_meta", {})
+
+        if meta_renames:
+            dc_meta_renames = dc_rename_dict[1]["_meta"]
+            for key, meta_def_part in meta_renames.items():
+                match key:
+                    case "enum_definitions":
+                        assert isinstance(dc_meta_renames["enum_definitions"], dict)
+                        assert isinstance(meta_def_part, dict)
+                        for enum_old, enum_new in meta_def_part.items():
+                            result += AlterSchemaHelper.get_rename_enum(
+                                HelperGetNames.get_enum_name(enum_old),
+                                HelperGetNames.get_enum_name(enum_new),
+                            )
+                            del dc_meta_renames["enum_definitions"][enum_old]
+                    case _:
+                        raise NotImplementedError(
+                            f"meta-collection.yml renamed in {key}."
+                        )
+                remove_empty(dc_meta_renames, key)
+            remove_empty(dc_rename_dict[1], "_meta")
+
         # TODO better rename intermediate table (and its columns)?
         result += cls.recreate_intermediate_tables(renames)
 
@@ -1639,6 +1648,7 @@ class RenameHelper:
             collection_def_old = PREV_MODELS[collection_name]["fields"]
             for field_name_old, field_name_new in collection_diff.items():
                 field_def_old = collection_def_old[field_name_old]
+                assert isinstance(field_name_new, str)
                 result += handle_recreate(
                     collection_name, collection_name, field_name_old, field_name_new
                 )
