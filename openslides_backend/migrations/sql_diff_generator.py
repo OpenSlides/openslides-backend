@@ -1091,9 +1091,8 @@ class EditHelper:
     def get_change_enum_to_text(
         collection_name: str, field_name: str, field_def_old: dict[str, Any]
     ) -> str:
-        result = ""
         # We can't exchange the type directly as this would potentially invalidate the column.
-        result += AlterSchemaHelper.generate_change_column_type_statements(
+        result = AlterSchemaHelper.generate_change_column_type_statements(
             collection_name, field_name, "text"
         )
         alter_views.add(collection_name)
@@ -1106,8 +1105,7 @@ class EditHelper:
 
     @staticmethod
     def get_recreate_enum(enum_name: str, values: list[str]) -> str:
-        result = ""
-        result += AlterSchemaHelper.get_drop_type_statement(enum_name)
+        result = AlterSchemaHelper.get_drop_type_statement(enum_name)
         result += Helper.get_enum_type_definition(enum_name, values)
         return result
 
@@ -1119,11 +1117,10 @@ class EditHelper:
         values: list[str],
         field_def_old: dict[str, Any],
     ) -> str:
-        result = ""
         result = EditHelper.get_change_enum_to_text(
             collection_name, field_name, field_def_old
         )
-        EditHelper.get_recreate_enum(enum_name, values)
+        result += EditHelper.get_recreate_enum(enum_name, values)
         return result
 
     @staticmethod
@@ -1144,7 +1141,7 @@ class EditHelper:
                 result += EditHelper.edit_enum(value, value_old, enum_name_old)
             else:
                 # changed from field based enum to meta enum
-                result = EditHelper.get_change_enum_to_text(
+                result += EditHelper.get_change_enum_to_text(
                     collection_name, field_name, field_def_old
                 )
                 result += AlterSchemaHelper.get_drop_type_statement(enum_name_old)
@@ -1158,7 +1155,7 @@ class EditHelper:
                     ),
                     value,
                 )
-            result = EditHelper.get_change_enum_to_text(
+            result += EditHelper.get_change_enum_to_text(
                 collection_name, field_name, field_def_old
             )
         return result
