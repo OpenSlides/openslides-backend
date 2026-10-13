@@ -1044,17 +1044,8 @@ class AddHelper:
             raw_table_code = ""
             alter_table_code = ""
         trigger_code = ""
-        for key in [
-            "partitioned_sequences",
-            "1_1_relation_not_null",
-            "1_n_relation_not_null",
-            "n_m_relation_not_null",
-            "prevent_updates_code",
-            "unique_ids_pair_code",
-            "equal_fields_code",
-            "notify",
-        ]:
-            trigger_code += cast(str, code.get(f"create_trigger_{key}", ""))
+        for key in TRIGGER_KEYS:
+            trigger_code += cast(str, code.get(key, ""))
         if errors := "\n".join(x.strip("\n ") for x in code.get("errors", [])):
             raise BadCodingException(
                 f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
@@ -1146,10 +1137,6 @@ class AddHelper:
                                 raise NotImplementedError(
                                     f"{table_name}/{field_name}: {constraint}, {value}"
                                 )
-                    case "constant":
-                        after_sql += EditHelper.handle_constant(
-                            table_name, collection_name, field_name, field_def, add=True
-                        )
                     case "required":
                         constraints_sql += Helper.get_inline_required_constraint(
                             collection_name, field_name
@@ -1166,9 +1153,6 @@ class AddHelper:
                                 value,
                             )
                     case "sequence_scope":
-                        after_sql += GenerateCodeBlocks.get_trigger_generate_partitioned_sequence(
-                            table_name, field_name, value
-                        )
                         constraints_sql += (
                             Helper.get_unique_together_constraint_definition(
                                 collection_name, [field_name, value], False
@@ -1192,9 +1176,6 @@ class AddHelper:
                         constraints_sql += Helper.get_inline_minimum_constraint(
                             collection_name, field_name, value
                         )
-                    case "maxLength":
-                        # Handled via the type handling
-                        pass
                     case "minLength":
                         if field_def["type"] == "string":
                             constraints_sql += Helper.get_inline_minlength_constraint(
@@ -1209,14 +1190,17 @@ class AddHelper:
                             collection_name, field_name, default_value
                         )
                     case "description":
-                        after_sql = (
-                            Helper.get_post_view_comment(
-                                HelperGetNames.get_table_name(table_name),
-                                field_name,
-                                value,
-                            )
-                            + after_sql
+                        after_sql += Helper.get_post_view_comment(
+                            HelperGetNames.get_table_name(table_name),
+                            field_name,
+                            value,
                         )
+                    case "maxLength":
+                        # Handled via the type handling
+                        pass
+                    case "constant":
+                        # Handled via the trigger handling
+                        pass
                     case _:
                         if constraint in FieldAttributes.skipped_in_schema:
                             continue
@@ -1227,6 +1211,13 @@ class AddHelper:
                         raise NotImplementedError(
                             f"{table_name}/{field_name}: {constraint}, {value}"
                         )
+                after_sql += "\n".join(
+                    val
+                    for val in GenerateCodeBlocks.trigger_sql[collection_name][
+                        field_name
+                    ].values()
+                    if val
+                )
             del dc_field_def[constraint]
 
         return before_sql, constraints_sql, after_sql
