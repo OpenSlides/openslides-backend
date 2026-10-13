@@ -111,13 +111,13 @@ def main() -> int:
     add = diff["add"]
     if isinstance(add, tuple):
         if has_add_data := isinstance(add_tree_dict := add[1], dict):
-            sql += handle_add_meta(add_tree_dict, diff_control["add"][1])
+            sql += AddHelper.handle_add_meta(add_tree_dict, diff_control["add"][1])
         if isinstance(add[0], dict):
             sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip(
                 "\n"
             )
         if has_add_data:
-            sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+            sql += AddHelper.handle_add_tree(add_tree_dict, diff_control["add"][1])
 
     # Things like equal fields triggers depend on renames and possibly added collections.
     sql += "\n-- EDIT SECTION --\n"
@@ -884,416 +884,484 @@ class RemoveHelper:
         return result
 
 
-def handle_add_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: dict[str, Any],
-) -> tuple[str, str, str, bool]:
-    """
-    Returns:
-    - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
-    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
-    - after_sql: Free SQL to be run after the table creation
-    - is_view_field: Whether the field actually shows up in the table.
-    """
-    collection_name = table_name[:-2]
-    field_def = CURR_MODELS[collection_name]["fields"][field_name]
-    field_is_relation = (field_type := field_def_diff.get("type", "")) in [
-        "relation",
-        "relation-list",
-        "generic-relation",
-        "generic-relation-list",
-    ]
-    is_sql_field = len(field_def.get("sql", "").strip()) > 0
-    before_sql = ""
-    if field_is_relation:
-        constraints_sql, after_sql, is_view_field = handle_add_relation_helper(
+class AddHelper:
+    @staticmethod
+    def handle_add_meta(
+        add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> str:
+        sql = ""
+        if meta_def := add_tree_dict.pop("_meta", None):
+            for idx in range(len(meta_def)):
+                fields = meta_def[idx]
+                for field_name, field_def in fields.items():
+                    match (idx, field_name):
+                        case (1, "enum_definitions"):
+                            assert isinstance(field_def, tuple)
+                            assert not field_def[1]
+                            assert isinstance(field_def[0], dict)
+                            for key, vals in field_def[0].items():
+                                sql += Helper.get_enum_type_definition(
+                                    HelperGetNames.get_enum_name(key), vals
+                                )
+                        case _:
+                            raise BadCodingException(
+                                f"Meta field {field_name} at position {idx} not implemented."
+                            )
+                    del dc_add_tree_dict["_meta"][idx][field_name]
+            remove_empty(dc_add_tree_dict, "_meta")
+        return sql
+
+    @staticmethod
+    def handle_add_tree(
+        add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> str:
+        before_sql = ""
+        sql = ""
+        after_sql = ""
+        for collection_name, collection_def in add_tree_dict.items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            for fields_idx in [0, 1]:
+                # TODO unique_together, unique_together_strict
+                fields = collection_def[1]["fields"][fields_idx]
+                dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
+                alter_table_sql = ""
+                for field_name, field_def in fields.items():
+                    if fields_idx == 0:
+                        # field added
+                        b_sql, constraints_sql, a_sql, is_view_field = (
+                            AddHelper._handle_add_field_attributes(
+                                table_name, field_name, field_def, dc_fields[field_name]
+                            )
+                        )
+                        before_sql += b_sql
+                        if not is_view_field:
+                            alter_table_sql += (
+                                AlterSchemaHelper.get_add_column_statement(
+                                    field_name, constraints_sql
+                                )
+                            )
+                        after_sql += a_sql
+                    else:
+                        # field altered
+                        sql += EditHelper.handle_edit_field_attributes(
+                            table_name, field_name, field_def[0], dc_fields[field_name]
+                        )
+                    remove_empty(
+                        dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
+                        field_name,
+                    )
+                if alter_table_sql:
+                    sql += (
+                        AlterSchemaHelper.get_alter_table_statement(
+                            table_name, alter_table_sql.rstrip(",")
+                        )
+                        + "\n"
+                    )
+            remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+            remove_empty(dc_add_tree_dict, collection_name)
+        return before_sql + sql + after_sql
+
+    @staticmethod
+    def _handle_add_field_attributes(
+        table_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: dict[str, Any],
+    ) -> tuple[str, str, str, bool]:
+        """
+        Returns:
+        - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
+        - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
+        - after_sql: Free SQL to be run after the table creation
+        - is_view_field: Whether the field actually shows up in the table.
+        """
+        collection_name = table_name[:-2]
+        field_def = CURR_MODELS[collection_name]["fields"][field_name]
+        field_is_relation = (field_type := field_def_diff.get("type", "")) in [
+            "relation",
+            "relation-list",
+            "generic-relation",
+            "generic-relation-list",
+        ]
+        is_sql_field = len(field_def.get("sql", "").strip()) > 0
+        before_sql = ""
+        if field_is_relation:
+            constraints_sql, after_sql, is_view_field = (
+                AddHelper._handle_add_relation_helper(
+                    collection_name, field_name, field_type, field_def, is_sql_field
+                )
+            )
+        else:
+            is_view_field = is_sql_field
+            before_sql, constraints_sql, after_sql = (
+                AddHelper._handle_add_non_relation_helper(
+                    table_name,
+                    collection_name,
+                    field_name,
+                    field_def_diff,
+                    dc_field_def,
+                    field_def,
+                    field_type,
+                    is_sql_field,
+                )
+            )
+        if any(sql_str.strip("\n ") for sql_str in [constraints_sql, after_sql]):
+            alter_views.add(collection_name)
+        return before_sql, constraints_sql.rstrip("\n,"), after_sql, is_view_field
+
+    @staticmethod
+    def _handle_add_relation_helper(
+        collection_name: str,
+        field_name: str,
+        field_type: str,
+        field_def: dict[str, Any],
+        is_sql_field: bool,
+    ) -> tuple[str, str, bool]:
+        """
+        Returns:
+        - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
+        - after_sql: Free SQL to be run after the table creation
+        - is_view_field: Whether the field actually shows up in the table.
+        """
+        constraints_sql = ""
+
+        code, after_sql, is_view_field = AddHelper._get_szt_for_added_relation(
             collection_name, field_name, field_type, field_def, is_sql_field
         )
-    else:
-        before_sql, constraints_sql, after_sql, is_view_field = (
-            handle_add_non_relation_helper(
-                table_name,
-                collection_name,
-                field_name,
-                field_def_diff,
-                dc_field_def,
-                field_def,
-                field_type,
-                is_sql_field,
-            )
-        )
-    if any(sql_str.strip("\n ") for sql_str in [constraints_sql, after_sql]):
-        alter_views.add(collection_name)
-    return before_sql, constraints_sql.rstrip("\n,"), after_sql, is_view_field
 
-
-def handle_add_relation_helper(
-    collection_name: str,
-    field_name: str,
-    field_type: str,
-    field_def: dict[str, Any],
-    is_view_field: bool,
-) -> tuple[str, str, bool]:
-    """
-    Returns:
-    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
-    - after_sql: Free SQL to be run after the table creation
-    - is_view_field: Whether the field actually shows up in the table.
-    """
-    constraints_sql = ""
-
-    code, after_sql, is_view_field = get_szt_for_added_relation(
-        collection_name, field_name, field_type, field_def, is_view_field
-    )
-
-    if not is_view_field:
-        table_name_code = "\n".join(
-            [
-                code.get("table", ""),
-                code.get("alter_table", ""),
-                code.get("undecided", ""),
-            ]
-        )
-        alter_table_code = code.get("alter_table_final")
-    else:
-        table_name_code = ""
-        alter_table_code = ""
-    trigger_code = ""
-    for key in [
-        "partitioned_sequences",
-        "1_1_relation_not_null",
-        "1_n_relation_not_null",
-        "n_m_relation_not_null",
-        "prevent_updates_code",
-        "unique_ids_pair_code",
-        "equal_fields_code",
-        "notify",
-    ]:
-        trigger_code += cast(str, code.get(f"create_trigger_{key}", ""))
-    # errors = code.get("errors")  # TODO: Should we raise these?
-
-    if table_code := table_name_code.lstrip("\n "):
-        if table_code.startswith(field_name):
-            table_code = " ".join(table_code.split(" ")[1:])
-        constraints_sql += f" {table_code}".rstrip()
-    for value in [alter_table_code, trigger_code]:
-        if value:
-            after_sql += value
-
-    return constraints_sql, after_sql, is_view_field
-
-
-def handle_add_non_relation_helper(
-    table_name: str,
-    collection_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: dict[str, Any],
-    field_def: dict[str, Any],
-    field_type: str,
-    is_view_field: bool,
-) -> tuple[str, str, str, bool]:
-    """
-    Function for calculating preliminary sql, the constraints,
-    later sql code and whether the field is a view field
-    for new relations.
-    """
-    initials_subst, _ = Helper.get_initials(
-        collection_name, field_name, field_type, field_def
-    )
-    before_sql = ""
-    constraints_sql = ""
-    after_sql = ""
-    if sql_type := initials_subst.get("type"):
-        constraints_sql += f" {sql_type}"
-    for constraint, value in field_def_diff.items():
-        """
-        TODO other constraints type etc
-        This is a full list of leaf types we have. (Including _meta.)
-        Some of which aren't constraints but need to be implemented/considered elsewhere.
-
-        languages
-        ballot_paper_selection
-        poll_backends
-        onehundred_percent_bases
-        type
-        restriction_mode
-        constant
-        required
-        enum
-        description
-        default
-        minimum
-        read_only
-        reference
-        collections
-        field
-        equal_fields
-        to
-        on_delete
-        sequence_scope
-        unique_together
-        constant_legacy
-        unique
-        sql
-        log_triggers
-        unique_together_strict
-        maxLength
-        maximum
-        calculated
-        minLength
-        """
         if not is_view_field:
-            match constraint:
-                case "type":
-                    match value:
-                        case "color":
-                            constraints_sql += Helper.get_inline_color_constraint(
-                                collection_name, field_name
-                            )
-                        case "timezone":
-                            constraints_sql += Helper.get_inline_timezone_constraint(
-                                table_name, field_name
-                            )
-                        case (
-                            "string"
-                            | "number"
-                            | "boolean"
-                            | "JSON"
-                            | "HTMLStrict"
-                            | "HTMLPermissive"
-                            | "float"
-                            | "decimal(6)"
-                            | "timestamp"
-                            | "string[]"
-                            | "number[]"
-                            | "text"
-                            | "text[]"
-                        ):
-                            pass
-                        case (
-                            "relation"
-                            | "relation-list"
-                            | "generic-relation"
-                            | "generic-relation-list"
-                        ):
-                            pass
-                        case _:
-                            raise NotImplementedError(
-                                f"{table_name}/{field_name}: {constraint}, {value}"
-                            )
-                case "constant":
-                    after_sql += GenerateCodeBlocks.get_trigger_prevent_updates(
-                        collection_name, field_name
-                    )
-                case "required":
-                    constraints_sql += Helper.get_inline_required_constraint(
-                        collection_name, field_name
-                    )
-                case "enum":
-                    # TODO
-                    # Function in the Helper: get_enum_types_definitions
-                    # It's got no parameters though, so going to have to look into it
-                    # The problem with enums is that they're not a constraint per se,
-                    # but instead they're types defined at the beginning of the file.
-                    # The new enum definition will have to be added.
-                    # TODO: existing field gets new enum value.
-                    if isinstance(value, list):
-                        before_sql += Helper.get_enum_type_definition(
-                            HelperGetNames.get_enum_name_for_column(
-                                collection_name, field_name
-                            ),
-                            value,
+            table_name_code = "\n".join(
+                [
+                    code.get("table", ""),
+                    code.get("alter_table", ""),
+                    code.get("undecided", ""),
+                ]
+            )
+            alter_table_code = code.get("alter_table_final")
+        else:
+            table_name_code = ""
+            alter_table_code = ""
+        trigger_code = ""
+        for key in [
+            "partitioned_sequences",
+            "1_1_relation_not_null",
+            "1_n_relation_not_null",
+            "n_m_relation_not_null",
+            "prevent_updates_code",
+            "unique_ids_pair_code",
+            "equal_fields_code",
+            "notify",
+        ]:
+            trigger_code += cast(str, code.get(f"create_trigger_{key}", ""))
+        if errors := "\n".join(x.strip("\n ") for x in code.get("errors", [])):
+            raise BadCodingException(
+                f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
+            )
+
+        if table_code := table_name_code.lstrip("\n "):
+            if table_code.startswith(field_name):
+                table_code = " ".join(table_code.split(" ")[1:])
+            constraints_sql += f" {table_code}".rstrip()
+        for value in [alter_table_code, trigger_code]:
+            if value:
+                after_sql += value
+
+        return constraints_sql, after_sql, is_view_field
+
+    @staticmethod
+    def _handle_add_non_relation_helper(
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: dict[str, Any],
+        field_def: dict[str, Any],
+        field_type: str,
+        is_view_field: bool,
+    ) -> tuple[str, str, str]:
+        """
+        Function for calculating preliminary sql, the constraints,
+        later sql code and whether the field is a view field
+        for new relations.
+        """
+        initials_subst, _ = Helper.get_initials(
+            collection_name, field_name, field_type, field_def
+        )
+        before_sql = ""
+        constraints_sql = ""
+        after_sql = ""
+        if sql_type := initials_subst.get("type"):
+            constraints_sql += f" {sql_type}"
+        for constraint, value in field_def_diff.items():
+            """
+            TODO other constraints type etc
+            This is a full list of leaf types we have. (Including _meta.)
+            Some of which aren't constraints but need to be implemented/considered elsewhere.
+
+            languages
+            ballot_paper_selection
+            poll_backends
+            onehundred_percent_bases
+            type
+            restriction_mode
+            constant
+            required
+            enum
+            description
+            default
+            minimum
+            read_only
+            reference
+            collections
+            field
+            equal_fields
+            to
+            on_delete
+            sequence_scope
+            unique_together
+            constant_legacy
+            unique
+            sql
+            log_triggers
+            unique_together_strict
+            maxLength
+            maximum
+            calculated
+            minLength
+            """
+            if is_view_field:
+                alter_views.add(collection_name)
+            else:
+                match constraint:
+                    case "type":
+                        match value:
+                            case "color":
+                                constraints_sql += Helper.get_inline_color_constraint(
+                                    collection_name, field_name
+                                )
+                            case "timezone":
+                                constraints_sql += (
+                                    Helper.get_inline_timezone_constraint(
+                                        table_name, field_name
+                                    )
+                                )
+                            case (
+                                "string"
+                                | "number"
+                                | "boolean"
+                                | "JSON"
+                                | "HTMLStrict"
+                                | "HTMLPermissive"
+                                | "float"
+                                | "decimal(6)"
+                                | "timestamp"
+                                | "string[]"
+                                | "number[]"
+                                | "text"
+                                | "text[]"
+                            ):
+                                pass
+                            case _:
+                                if "relation" in value:
+                                    raise BadCodingException(
+                                        f"{field_name}: How did this happen?!? This code should be unreachable!"
+                                    )
+                                raise NotImplementedError(
+                                    f"{table_name}/{field_name}: {constraint}, {value}"
+                                )
+                    case "constant":
+                        after_sql += EditHelper.handle_constant(
+                            table_name, collection_name, field_name, field_def, add=True
                         )
-                    else:
-                        # TODO in this case it's a meta enum I think
-                        pass
-                case "sequence_scope":
-                    after_sql += (
-                        GenerateCodeBlocks.get_trigger_generate_partitioned_sequence(
+                    case "required":
+                        constraints_sql += Helper.get_inline_required_constraint(
+                            collection_name, field_name
+                        )
+                    case "enum":
+                        # Only need to handle field enums (i.e. if it's a list)
+                        # Otherwise it's a meta enum and all that needs to happen
+                        # for the individual field is already done via the type handling.
+                        if isinstance(value, list):
+                            before_sql += Helper.get_enum_type_definition(
+                                HelperGetNames.get_enum_name_for_column(
+                                    collection_name, field_name
+                                ),
+                                value,
+                            )
+                    case "sequence_scope":
+                        after_sql += GenerateCodeBlocks.get_trigger_generate_partitioned_sequence(
                             table_name, field_name, value
                         )
-                    )
-                    constraints_sql += Helper.get_unique_together_constraint_definition(
-                        collection_name, [field_name, value], False
-                    )
-                case "unique":
-                    constraints_sql += Helper.get_inline_unique_constraint(
-                        collection_name, field_name
-                    )
-                case "unique_together_strict":
-                    constraints_sql += (
-                        GenerateCodeBlocks.get_constraint_unique_together(
-                            collection_name, value, True
+                        constraints_sql += (
+                            Helper.get_unique_together_constraint_definition(
+                                collection_name, [field_name, value], False
+                            )
                         )
-                    )
-                case "maximum":
-                    constraints_sql += Helper.get_inline_maximum_constraint(
-                        collection_name, field_name, value
-                    )
-                case "minimum":
-                    constraints_sql += Helper.get_inline_minimum_constraint(
-                        collection_name, field_name, value
-                    )
-                case "maxLength":
-                    # TODO Might be handled via varchar length in pg type def for the string fields.
-                    # Should it even be possible to set maxLength or minLength for the others?
-                    # if field_def_diff["type"] in ["string", "string[]"]:
-                    pass
-                case "minLength":
-                    constraints_sql += Helper.get_inline_minlength_constraint(
-                        collection_name, field_name, value
-                    )
-                case "default":
-                    # TODO: Make sure value is quoted if string see Helper.get_initials
-                    default_value = Helper.get_formatted_default_value(
-                        collection_name, field_name, value, field_def["type"]
-                    )
-                    constraints_sql += Helper.get_inline_default_constraint(
-                        collection_name, field_name, default_value
-                    )
-                case "to":
-                    pass
-                    # This essentially would be an integer field being turned into a real relation
-                    # Should probably be handled together with reference and type.
-                    # And in a later ALTER TABLE
-                    # TODO
-                    # Is this part done
-                    # Is the code below still necessary?
-                    is_view_field, _, write_fields = get_view_field_state_write_fields(
-                        collection_name,
-                        field_name,
-                        CURR_MODELS[collection_name]["fields"][field_name],
-                    )
-                    alter_views_conditionally(
-                        collection_name, bool(write_fields), is_view_field
-                    )
-                case "sql" | "equal_fields" | "reference":
-                    # These are all handled by the relation routine
-                    pass
-                case "description":
-                    after_sql = (
-                        Helper.get_post_view_comment(
-                            HelperGetNames.get_table_name(table_name),
-                            field_name,
-                            value,
+                    case "unique":
+                        constraints_sql += Helper.get_inline_unique_constraint(
+                            collection_name, field_name
                         )
-                        + after_sql
-                    )
-                case (
-                    "restriction_mode" | "description" | "on_delete" | "constant_legacy"
-                ):
-                    # this is irrelevant, thus omitted
-                    # on_delete is not expressed in the sql since the backend handles
-                    # all cascading.
-                    pass
-                case _:
-                    raise NotImplementedError(
-                        f"{table_name}/{field_name}: {constraint}, {value}"
-                    )
-        del dc_field_def[constraint]
+                    case "unique_together_strict":
+                        constraints_sql += (
+                            GenerateCodeBlocks.get_constraint_unique_together(
+                                collection_name, value, True
+                            )
+                        )
+                    case "maximum":
+                        constraints_sql += Helper.get_inline_maximum_constraint(
+                            collection_name, field_name, value
+                        )
+                    case "minimum":
+                        constraints_sql += Helper.get_inline_minimum_constraint(
+                            collection_name, field_name, value
+                        )
+                    case "maxLength":
+                        # Handled via the type handling
+                        pass
+                    case "minLength":
+                        if field_def["type"] == "string":
+                            constraints_sql += Helper.get_inline_minlength_constraint(
+                                collection_name, field_name, value
+                            )
+                    case "default":
+                        # TODO: Make sure value is quoted if string see Helper.get_initials
+                        default_value = Helper.get_formatted_default_value(
+                            collection_name, field_name, value, field_def["type"]
+                        )
+                        constraints_sql += Helper.get_inline_default_constraint(
+                            collection_name, field_name, default_value
+                        )
+                    case "description":
+                        after_sql = (
+                            Helper.get_post_view_comment(
+                                HelperGetNames.get_table_name(table_name),
+                                field_name,
+                                value,
+                            )
+                            + after_sql
+                        )
+                    case (
+                        "restriction_mode"
+                        | "description"
+                        | "on_delete"
+                        | "constant_legacy"
+                    ):
+                        # this is irrelevant, thus omitted
+                        # on_delete is not expressed in the sql since the backend handles
+                        # all cascading.
+                        pass
+                    case _:
+                        if constraint in ["equal_fields", "reference", "to"]:
+                            raise BadCodingException(
+                                f"{field_name}: Non-relation fields should not have attribute {constraint}."
+                            )
+                        raise NotImplementedError(
+                            f"{table_name}/{field_name}: {constraint}, {value}"
+                        )
+            del dc_field_def[constraint]
 
-    return before_sql, constraints_sql, after_sql, is_view_field
+        return before_sql, constraints_sql, after_sql
 
+    @staticmethod
+    def _delete_table_fields_from_szt_for_add(code: SchemaZoneTexts) -> None:
+        """
+        Removes certain table fields, which should not be used
+        for new list relations from a SchemaZoneTexts.
+        """
+        for field in ["table", "alter_table", "undecided"]:
+            if field in code:
+                del code[field]  # type: ignore
 
-def delete_table_fields_from_szt_for_add(code: SchemaZoneTexts) -> None:
-    """
-    Removes certain table fields, which should not be used
-    for new list relations from a SchemaZoneTexts.
-    """
-    for field in ["table", "alter_table", "undecided"]:
-        if field in code:
-            del code[field]  # type: ignore
-
-
-def get_szt_for_added_relation(
-    collection_name: str,
-    field_name: str,
-    field_type: str,
-    field_def: dict[str, Any],
-    is_view_field: bool,
-) -> tuple[SchemaZoneTexts, str, bool]:
-    """
-    Calculates the correct SchemaZoneTexts depending on the
-    type of relation.
-    Also returns the sql for the intermediate tables if it's
-    a list relation and an updated version of is_view_field based on the field type and data.
-    """
-    intermediate_sql = ""
-    own_table_field = TableFieldType(collection_name, field_name, field_def)
-    is_list = field_type.endswith("-list")
-    code: SchemaZoneTexts = {}
-    if field_type.startswith("generic-"):
-        foreign_table_fields: list[TableFieldType] = (
-            InternalHelper.get_definitions_from_foreign_list(
-                field_def.get("to"), field_def.get("reference")
+    @staticmethod
+    def _get_szt_for_added_relation(
+        collection_name: str,
+        field_name: str,
+        field_type: str,
+        field_def: dict[str, Any],
+        is_sql_field: bool,
+    ) -> tuple[SchemaZoneTexts, str, bool]:
+        """
+        Calculates the correct SchemaZoneTexts depending on the
+        type of relation.
+        Also returns the sql for the intermediate tables if it's
+        a list relation and is_view_field based on the field type and data.
+        """
+        intermediate_sql = ""
+        own_table_field = TableFieldType(collection_name, field_name, field_def)
+        is_list = field_type.endswith("-list")
+        code: SchemaZoneTexts = {}
+        if field_type.startswith("generic-"):
+            foreign_table_fields: list[TableFieldType] = (
+                InternalHelper.get_definitions_from_foreign_list(
+                    field_def.get("to"), field_def.get("reference")
+                )
             )
-        )
-        state, primary, _, error = InternalHelper.check_relation_definitions(
-            own_table_field, foreign_table_fields
-        )
-        if is_list:
-            # generic list
-            cant_generate = is_view_field or not primary
-            is_view_field = True
-            if not cant_generate:
-                code, error = GenerateCodeBlocks.get_generic_relation_list_type(
+            state, primary, _, error = InternalHelper.check_relation_definitions(
+                own_table_field, foreign_table_fields
+            )
+            if is_list:
+                # generic list
+                cant_generate = is_sql_field or not primary
+                is_view_field = True
+                if not cant_generate:
+                    code, error = GenerateCodeBlocks.get_generic_relation_list_type(
+                        collection_name, field_name, field_def, field_type
+                    )
+                    AddHelper._delete_table_fields_from_szt_for_add(code)
+                    gm_foreign_table, *_ = Helper.get_gm_table_for_gm_nm_relation_lists(
+                        own_table_field, foreign_table_fields
+                    )
+                    if intermediate := GenerateCodeBlocks.intermediate_tables.get(
+                        gm_foreign_table
+                    ):
+                        intermediate_sql += intermediate
+            else:
+                # generic
+                is_view_field = is_sql_field or state != FieldSqlErrorType.FIELD
+                if not is_view_field:
+                    code, error = GenerateCodeBlocks.get_generic_relation_type(
+                        collection_name, field_name, field_def, field_type, is_add=True
+                    )
+        else:
+            foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    field_def.get("to"),
+                    field_def.get("reference"),
+                )
+            )
+            state, primary, _, error = InternalHelper.check_relation_definitions(
+                own_table_field, [foreign_table_field]
+            )
+            if is_list:
+                # relation list
+                cant_generate = (
+                    is_sql_field or state == FieldSqlErrorType.ERROR or not primary
+                )
+                is_view_field = True
+                if not cant_generate:
+                    code, error = GenerateCodeBlocks.get_relation_list_type(
+                        collection_name, field_name, field_def, field_type
+                    )
+                    AddHelper._delete_table_fields_from_szt_for_add(code)
+                    nm_table_name, *_ = Helper.get_nm_table_for_n_m_relation_lists(
+                        own_table_field, foreign_table_field
+                    )
+                    if intermediate := CURR_CODE_BLOCKS.get("intermediate_sql", {}).get(
+                        nm_table_name
+                    ):
+                        intermediate_sql += intermediate
+            else:
+                is_view_field = is_sql_field
+                # relation
+                code, error = GenerateCodeBlocks.get_relation_type(
                     collection_name, field_name, field_def, field_type
                 )
-                delete_table_fields_from_szt_for_add(code)
-                gm_foreign_table, *_ = Helper.get_gm_table_for_gm_nm_relation_lists(
-                    own_table_field, foreign_table_fields
-                )
-                if intermediate := GenerateCodeBlocks.intermediate_tables.get(
-                    gm_foreign_table
-                ):
-                    intermediate_sql += intermediate
-        else:
-            # generic
-            is_view_field = is_view_field or state != FieldSqlErrorType.FIELD
-            if not is_view_field:
-                code, error = GenerateCodeBlocks.get_generic_relation_type(
-                    collection_name, field_name, field_def, field_type, is_add=True
-                )
-    else:
-        foreign_table_field: TableFieldType = (
-            TableFieldType.get_definitions_from_foreign(
-                field_def.get("to"),
-                field_def.get("reference"),
-            )
-        )
-        state, primary, _, error = InternalHelper.check_relation_definitions(
-            own_table_field, [foreign_table_field]
-        )
-        if is_list:
-            # relation list
-            cant_generate = (
-                is_view_field or state == FieldSqlErrorType.ERROR or not primary
-            )
-            is_view_field = True
-            if not cant_generate:
-                code, error = GenerateCodeBlocks.get_relation_list_type(
-                    collection_name, field_name, field_def, field_type
-                )
-                delete_table_fields_from_szt_for_add(code)
-                nm_table_name, *_ = Helper.get_nm_table_for_n_m_relation_lists(
-                    own_table_field, foreign_table_field
-                )
-                if intermediate := GenerateCodeBlocks.intermediate_tables.get(
-                    nm_table_name
-                ):
-                    intermediate_sql += intermediate
-        else:
-            # relation
-            code, error = GenerateCodeBlocks.get_relation_type(
-                collection_name, field_name, field_def, field_type
-            )
 
-    if error:
-        raise BadCodingException(f"{collection_name}/{field_name}: {error}")
-    return code, intermediate_sql, is_view_field
+        if error:
+            raise BadCodingException(f"{collection_name}/{field_name}: {error}")
+        return code, intermediate_sql, is_view_field
 
 
 class EditHelper:
@@ -2079,80 +2147,6 @@ class RenameHelper:
                 if error:
                     errors.append(Helper.prefix_error(error, collection_name, fname))
         return name_per_field_and_schemazonekey
-
-
-def handle_add_meta(
-    add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    sql = ""
-    if meta_def := add_tree_dict.get("_meta"):
-        for idx in range(len(meta_def)):
-            fields = meta_def[idx]
-            for field_name, field_def in fields.items():
-                match (idx, field_name):
-                    case (1, "enum_definitions"):
-                        assert isinstance(field_def, tuple)
-                        assert not field_def[1]
-                        assert isinstance(field_def[0], dict)
-                        for key, vals in field_def[0].items():
-                            sql += Helper.get_enum_type_definition(
-                                HelperGetNames.get_enum_name(key), vals
-                            )
-                    case _:
-                        raise BadCodingException(
-                            f"Meta field {field_name} at position {idx} not implemented."
-                        )
-                del dc_add_tree_dict["_meta"][idx][field_name]
-        remove_empty(dc_add_tree_dict, "_meta")
-    return sql
-
-
-def handle_add_tree(
-    add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    before_sql = ""
-    sql = ""
-    after_sql = ""
-    for collection_name, collection_def in add_tree_dict.items():
-        table_name = HelperGetNames.get_table_name(collection_name)
-        if collection_name != "_meta":
-            # fields always exists, except with _meta
-            for fields_idx in [0, 1]:
-                # TODO unique_together, unique_together_strict
-                fields = collection_def[1]["fields"][fields_idx]
-                dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
-                alter_table_sql = ""
-                for field_name, field_def in fields.items():
-                    if fields_idx == 0:
-                        # field added
-                        b_sql, constraints_sql, a_sql, is_view_field = (
-                            handle_add_field_attributes(
-                                table_name, field_name, field_def, dc_fields[field_name]
-                            )
-                        )
-                        before_sql += b_sql
-                        if not is_view_field:
-                            alter_table_sql += f"""
-    ADD COLUMN {field_name}{constraints_sql},"""
-                        after_sql += a_sql
-                    else:
-                        if field_def[1]:
-                            pass
-                        # field altered
-                        sql += EditHelper.handle_edit_field_attributes(
-                            table_name, field_name, field_def[0], dc_fields[field_name]
-                        )
-                    remove_empty(
-                        dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
-                        field_name,
-                    )
-                if alter_table_sql:
-                    sql += f"ALTER TABLE {table_name}{alter_table_sql.rstrip(',')}\n\n"
-            remove_empty(dc_add_tree_dict[collection_name][1], "fields")
-            remove_empty(dc_add_tree_dict, collection_name)
-    return before_sql + sql + after_sql
 
 
 if __name__ == "__main__":
