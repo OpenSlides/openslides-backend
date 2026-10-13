@@ -105,10 +105,7 @@ def check_renames_element(
     prev_tree: dict[str, Any],
     curr_tree: dict[str, Any],
 ) -> None:
-    if collection_name == "collection":
-        s = "s"
-    else:
-        s = ""
+    s = "s" if collection_name == "collection" else ""
     err_msg_base = f"Faulty {collection_name} yml file{s}. "
     for name_old, name_new in renames.items():
         if name_old not in prev_tree:
