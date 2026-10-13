@@ -1717,7 +1717,7 @@ class RenameHelper:
                     result,
                 )
         assert not diff_control, f"{diff_control} left after attribute check of rename."
-        for name_old, name_new in zip(enum_names_new, enum_names_old):
+        for name_old, name_new in zip(enum_names_old, enum_names_new):
             result += AlterSchemaHelper.get_rename_enum(name_old, name_new)
         for name_old, name_new in zip(constraint_names_old, constraint_names_new):
             if name_old != name_new:
