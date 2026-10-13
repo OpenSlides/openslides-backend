@@ -893,7 +893,7 @@ def handle_add_field_attributes(
     """
     Returns:
     - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
-    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning). 
+    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
     - after_sql: Free SQL to be run after the table creation
     - is_view_field: Whether the field actually shows up in the table.
     """
@@ -938,14 +938,13 @@ def handle_add_relation_helper(
 ) -> tuple[str, str, bool]:
     """
     Returns:
-    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning). 
+    - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
     - after_sql: Free SQL to be run after the table creation
     - is_view_field: Whether the field actually shows up in the table.
     """
     constraints_sql = ""
-    view_name_code: bool = True
 
-    code, after_sql = get_szt_for_added_relation(
+    code, after_sql, is_view_field = get_szt_for_added_relation(
         collection_name, field_name, field_type, field_def, is_view_field
     )
 
@@ -958,27 +957,30 @@ def handle_add_relation_helper(
             ]
         )
         alter_table_code = code.get("alter_table_final")
-        trigger_code = ""
-        for key in [
-            "partitioned_sequences",
-            "1_1_relation_not_null",
-            "1_n_relation_not_null",
-            "n_m_relation_not_null",
-            "prevent_updates_code",
-            "unique_ids_pair_code",
-            "equal_fields_code",
-            "notify",
-        ]:
-            trigger_code += cast(str, code.get(f"create_trigger_{key}", ""))
-        # errors = code.get("errors")  # TODO: Should we raise these?
+    else:
+        table_name_code = ""
+        alter_table_code = ""
+    trigger_code = ""
+    for key in [
+        "partitioned_sequences",
+        "1_1_relation_not_null",
+        "1_n_relation_not_null",
+        "n_m_relation_not_null",
+        "prevent_updates_code",
+        "unique_ids_pair_code",
+        "equal_fields_code",
+        "notify",
+    ]:
+        trigger_code += cast(str, code.get(f"create_trigger_{key}", ""))
+    # errors = code.get("errors")  # TODO: Should we raise these?
 
-        if table_code := table_name_code.lstrip("\n "):
-            if table_code.startswith(field_name):
-                table_code = " ".join(table_code.split(" ")[1:])
-            constraints_sql += f" {table_code}".rstrip()
-        for value in [alter_table_code, trigger_code]:
-            if value:
-                after_sql += value
+    if table_code := table_name_code.lstrip("\n "):
+        if table_code.startswith(field_name):
+            table_code = " ".join(table_code.split(" ")[1:])
+        constraints_sql += f" {table_code}".rstrip()
+    for value in [alter_table_code, trigger_code]:
+        if value:
+            after_sql += value
 
     return constraints_sql, after_sql, is_view_field
 
@@ -1212,12 +1214,12 @@ def get_szt_for_added_relation(
     field_type: str,
     field_def: dict[str, Any],
     is_view_field: bool,
-) -> tuple[SchemaZoneTexts, str]:
+) -> tuple[SchemaZoneTexts, str, bool]:
     """
     Calculates the correct SchemaZoneTexts depending on the
     type of relation.
     Also returns the sql for the intermediate tables if it's
-    a list relation.
+    a list relation and an updated version of is_view_field based on the field type and data.
     """
     intermediate_sql = ""
     own_table_field = TableFieldType(collection_name, field_name, field_def)
@@ -1291,7 +1293,7 @@ def get_szt_for_added_relation(
 
     if error:
         raise BadCodingException(f"{collection_name}/{field_name}: {error}")
-    return code, intermediate_sql
+    return code, intermediate_sql, is_view_field
 
 
 class EditHelper:
