@@ -974,7 +974,7 @@ class AddHelper:
         Returns:
         - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
         - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
-        - after_sql: Free SQL to be run after the table creation
+        - after_sql: Other SQL to be run after the table creation
         - is_view_field: Whether the field actually shows up in the table.
         """
         collection_name = table_name[:-2]
@@ -1022,7 +1022,7 @@ class AddHelper:
         """
         Returns:
         - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
-        - after_sql: Free SQL to be run after the table creation
+        - after_sql: Other SQL to be run after the table creation
         - is_view_field: Whether the field actually shows up in the table.
         """
         constraints_sql = ""
@@ -1032,16 +1032,16 @@ class AddHelper:
         )
 
         if not is_view_field:
-            table_name_code = "\n".join(
+            raw_table_code = "\n".join(
                 [
                     code.get("table", ""),
                     code.get("alter_table", ""),
                     code.get("undecided", ""),
                 ]
             )
-            alter_table_code = code.get("alter_table_final")
+            alter_table_code = code.get("alter_table_final", "")
         else:
-            table_name_code = ""
+            raw_table_code = ""
             alter_table_code = ""
         trigger_code = ""
         for key in [
@@ -1060,13 +1060,13 @@ class AddHelper:
                 f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
             )
 
-        if table_code := table_name_code.lstrip("\n "):
+        # remove leading column name, then add the table data.
+        if table_code := raw_table_code.lstrip("\n "):
             if table_code.startswith(field_name):
-                table_code = " ".join(table_code.split(" ")[1:])
+                table_code = table_code.split(" ", maxsplit=1)[1]
             constraints_sql += f" {table_code}".rstrip()
         for value in [alter_table_code, trigger_code]:
-            if value:
-                after_sql += value
+            after_sql += value
 
         return constraints_sql, after_sql, is_view_field
 
@@ -1086,50 +1086,25 @@ class AddHelper:
         later sql code and whether the field is a view field
         for new relations.
         """
-        initials_subst, _ = Helper.get_initials(
-            collection_name, field_name, field_type, field_def
-        )
         before_sql = ""
         constraints_sql = ""
         after_sql = ""
-        if sql_type := initials_subst.get("type"):
+        if sql_type := Helper.get_type_definition(
+            collection_name, field_name, field_type, field_def
+        ):
             constraints_sql += f" {sql_type}"
         for constraint, value in field_def_diff.items():
             """
-            TODO other constraints type etc
-            This is a full list of leaf types we have. (Including _meta.)
-            Some of which aren't constraints but need to be implemented/considered elsewhere.
+            TODO other constraints that haven't been considered yet
+            These cases should probably be considered in a later PR
 
-            languages
-            ballot_paper_selection
-            poll_backends
-            onehundred_percent_bases
-            type
-            restriction_mode
-            constant
-            required
-            enum
-            description
-            default
             minimum
-            read_only
-            reference
             collections
             field
-            equal_fields
-            to
-            on_delete
-            sequence_scope
             unique_together
-            constant_legacy
-            unique
-            sql
             log_triggers
             unique_together_strict
-            maxLength
             maximum
-            calculated
-            minLength
             """
             if is_view_field:
                 alter_views.add(collection_name)
@@ -1242,17 +1217,9 @@ class AddHelper:
                             )
                             + after_sql
                         )
-                    case (
-                        "restriction_mode"
-                        | "description"
-                        | "on_delete"
-                        | "constant_legacy"
-                    ):
-                        # this is irrelevant, thus omitted
-                        # on_delete is not expressed in the sql since the backend handles
-                        # all cascading.
-                        pass
                     case _:
+                        if constraint in FieldAttributes.skipped_in_schema:
+                            continue
                         if constraint in ["equal_fields", "reference", "to"]:
                             raise BadCodingException(
                                 f"{field_name}: Non-relation fields should not have attribute {constraint}."
@@ -1313,7 +1280,7 @@ class AddHelper:
                     gm_foreign_table, *_ = Helper.get_gm_table_for_gm_nm_relation_lists(
                         own_table_field, foreign_table_fields
                     )
-                    if intermediate := GenerateCodeBlocks.intermediate_tables.get(
+                    if intermediate := CURR_CODE_BLOCKS.get("intermediate_sql", {}).get(
                         gm_foreign_table
                     ):
                         intermediate_sql += intermediate
