@@ -1063,6 +1063,19 @@ class EditHelper:
             # TODO unique_together, unique_together_strict
             dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
             for field_name, field_def in collection_def[1]["fields"][1].items():
+                if nested_field_def_edits := field_def[1]:
+                    for field_attribute, values in nested_field_def_edits.items():
+                        if field_attribute == "items":
+                            sql += EditHelper.handle_enum_field_attribute(
+                                collection_name,
+                                field_name,
+                                field_attribute,
+                                values[0]["enum"],
+                            )
+                            del dc_fields[field_name][1][field_attribute][0]["enum"]
+                        # elif value := field_attribute.get("to"):
+                        #     # TODO
+                        remove_empty(dc_fields[field_name][1], field_attribute)
                 sql += EditHelper.handle_edit_field_attributes(
                     table_name, field_name, field_def[0], dc_fields[field_name]
                 )
@@ -1120,6 +1133,8 @@ class EditHelper:
         result = ""
         field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
         value_old = field_def_old[constraint]
+        if constraint == "items":
+            value_old = value_old["enum"]
         if isinstance(value_old, list):
             enum_name_old = HelperGetNames.get_enum_name_for_column(
                 collection_name, field_name
@@ -1185,6 +1200,11 @@ class EditHelper:
                 case "enum":
                     constraints_sql += EditHelper.handle_enum_field_attribute(
                         collection_name, field_name, constraint, value
+                    )
+                case "items":
+                    # Is always an add case treated here since nested enum can only be edit case.
+                    constraints_sql += EditHelper.handle_enum_field_attribute(
+                        collection_name, field_name, constraint, value["enum"]
                     )
                 case "sql":
                     alter_views.add(collection_name)
