@@ -1095,9 +1095,11 @@ class EditHelper:
     def get_change_enum_to_text(
         collection_name: str, field_name: str, field_def_old: dict[str, Any]
     ) -> str:
+        assert "enum" in field_def_old or "items" in field_def_old
+        target_type = "text[]" if "items" in field_def_old else "text"
         # We can't exchange the type directly as this would potentially invalidate the column.
         result = AlterSchemaHelper.generate_change_column_type_statements(
-            collection_name, field_name, "text"
+            collection_name, field_name, target_type
         )
         alter_views.add(collection_name)
         if field_def_old.get("default"):
@@ -1142,7 +1144,14 @@ class EditHelper:
             )
             if isinstance(value, list):
                 # field based enum composition got changed
-                result += EditHelper.edit_enum(value, value_old, enum_name_old)
+                result += EditHelper.edit_enum(
+                    value,
+                    value_old,
+                    enum_name_old,
+                    collection_name,
+                    field_name,
+                    field_def_old,
+                )
             else:
                 # changed from field based enum to meta enum
                 result += EditHelper.get_change_enum_to_text(
