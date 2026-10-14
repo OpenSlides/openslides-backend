@@ -27,7 +27,14 @@ class DiffMixin:
                 "poll_default_onehundred_percent_base": "varchar(256)",
             },
         ),
-        "meeting_user": ([], {"vote_delegated_to_id": "integer"}),
+        "meeting_user": (
+            [],
+            {
+                "vote_delegated_to_id": "integer",
+                "user_id": "integer",
+                "meeting_id": "integer",
+            },
+        ),
         "option": (
             ["yes", "no", "abstain", "text"],
             {
@@ -75,6 +82,7 @@ class DiffMixin:
                 "user_id": "integer",
                 "delegated_user_id": "integer",
                 "option_id": "integer",
+                "meeting_id": "integer",
             },
         ),
     }

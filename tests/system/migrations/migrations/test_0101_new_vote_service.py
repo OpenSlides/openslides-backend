@@ -1,3 +1,9 @@
+from decimal import Decimal
+from typing import Any, Literal
+
+from psycopg.types.json import Jsonb
+
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.migrations.migration_helper import MigrationState
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import FullQualifiedId
@@ -28,14 +34,14 @@ class TestMigration101(BaseMigrationTestCase):
 
     @staticmethod
     def _get_meeting_data(
-        base: int = 1, meeting_data: PartialModel = {}
+        base: int = 1, extra_data: dict[FullQualifiedId, PartialModel] = {}
     ) -> dict[FullQualifiedId, PartialModel]:
-        data: dict[FullQualifiedId, PartialModel] = {}
-        if "committee_id" not in meeting_data:
+        result: dict[FullQualifiedId, PartialModel] = {}
+        if "committee_id" not in extra_data[f"meeting/{base}"]:
             committee_id = base + 59
-            meeting_data["committee_id"] = committee_id
-            data[f"committee/{committee_id}"] = {"name": f"Committee {committee_id}"}
-        data.update(
+            extra_data[f"meeting/{base}"]["committee_id"] = committee_id
+            result[f"committee/{committee_id}"] = {"name": f"Committee {committee_id}"}
+        result.update(
             {
                 f"meeting/{base}": {
                     "default_group_id": base,
@@ -46,7 +52,6 @@ class TestMigration101(BaseMigrationTestCase):
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
                     "language": "en",
-                    **meeting_data,
                 },
                 f"projector/{base}": {
                     "meeting_id": base,
@@ -72,47 +77,226 @@ class TestMigration101(BaseMigrationTestCase):
                 },
             }
         )
-        return data
+        for fqid, data in extra_data.items():
+            if fqid in result:
+                result[fqid].update(data)
+            else:
+                result[fqid] = data
+        return result
 
-    def test_migration_manager(self) -> None:
-        origin_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data(
-            1,
+    @staticmethod
+    def _get_poll_data(
+        poll_id: int,
+        meeting_id: int,
+        pollmethod: Literal["Y", "YN", "YNA", "N"],
+        onehundred_percent_base: Literal[
+            "Y",
+            "YN",
+            "YNA",
+            "N",
+            "valid",
+            "cast",
+            "entitled",
+            "entitled_present",
+            "disabled",
+        ],
+        type_: Literal["analog", "named", "pseudoanonymous", "cryptographic"],
+        content_object_id: str,
+        state: Literal["created", "started", "finished", "published"],
+        is_pseudoanonymized: bool,
+        extra_data: PartialModel = {},
+    ) -> dict[FullQualifiedId, PartialModel]:
+        return {
+            f"poll/{poll_id}": {
+                "title": f"Poll {poll_id}",
+                "meeting_id": meeting_id,
+                "backend": "fast",
+                "pollmethod": pollmethod,
+                "onehundred_percent_base": onehundred_percent_base,
+                "type": type_,
+                "content_object_id": content_object_id,
+                "state": state,
+                "is_pseudoanonymized": is_pseudoanonymized,
+                **extra_data,
+            }
+        }
+
+    @staticmethod
+    def _get_motion_data(
+        base: int,
+        meeting_id: int,
+        motion_data: PartialModel = {},
+    ) -> dict[FullQualifiedId, PartialModel]:
+        return {
+            f"motion/{base}": {
+                "title": f"motion{base}",
+                "meeting_id": meeting_id,
+                "state_id": meeting_id,
+                **motion_data,
+            },
+            f"list_of_speakers/{base + 100}": {
+                "content_object_id": f"motion/{base}",
+                "meeting_id": meeting_id,
+            },
+        }
+
+    def _create_users_for_meeting(
+        self,
+        meeting_id: int,
+        user_ids: list[int],
+        group_ids: list[int],
+    ) -> None:
+        self.create_entries(
+            {f"user/{user_id}": {"username": f"user-{user_id}"} for user_id in user_ids}
+        )
+        self.create_entries(
             {
-                "motion_poll_projection_name_order_first": "first_name",
-                "motion_poll_projection_max_columns": 8,
-                # "assignment_poll_default_group_ids": [1],
-                # "motion_poll_default_group_ids": [3],
-                # "topic_poll_default_group_ids": [4],
-                "assignment_poll_default_method": "Y",
-                "motion_poll_default_method": "YNA",
-                "poll_default_method": "N",
-                "assignment_poll_default_type": "named",
-                "motion_poll_default_type": "open",
-                "poll_default_type": "analog",
-                "assignment_poll_default_onehundred_percent_base": "YNA",
-                "motion_poll_default_onehundred_percent_base": "valid",
-                "poll_default_onehundred_percent_base": "valid",
-                "assignment_poll_sort_poll_result_by_votes": False,
-                "assignment_poll_enable_max_votes_per_option": True,
-                "poll_sort_poll_result_by_votes": True,
-                "poll_default_live_voting_enabled": True,
+                f"meeting_user/{meeting_id * 100 + user_id}": {
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
+                }
+                for user_id in user_ids
+            },
+            {
+                "nm_group_meeting_user_ids_meeting_user_t": [
+                    {
+                        "meeting_user_id": meeting_id * 100 + user_id,
+                        "group_id": group_id,
+                    }
+                    for user_id in user_ids
+                    for group_id in group_ids
+                ]
             },
         )
-        origin_data["group/1"]["permissions"] = ["poll.can_manage"]
-        origin_data["group/2"]["permissions"] = [
-            "poll.can_manage",
-            "motion.can_manage_polls",
-        ]
-        origin_data["group/3"]["permissions"] = ["motion.can_see", "mediafile.can_see"]
-        origin_data["group/4"] = {"meeting_id": 1, "name": "group4", "permissions": []}
+
+    @staticmethod
+    def _get_option_data(
+        base: int,
+        poll_id: int,
+        meeting_id: int,
+        content_object_id: str,
+        extra_data: PartialModel = {},
+    ) -> dict[FullQualifiedId, PartialModel]:
+        return {
+            f"option/{base}": {
+                "poll_id": poll_id,
+                "meeting_id": meeting_id,
+                "content_object_id": content_object_id,
+                **extra_data,
+            }
+        }
+
+    @staticmethod
+    def _get_vote_data(
+        base: int,
+        meeting_id: int,
+        option_id: int,
+        value: Literal["Y", "N", "A"],
+        user_id: int | None = None,
+        delegated_user_id: int | None = None,
+        user_token: str | None = None,
+    ) -> dict[FullQualifiedId, PartialModel]:
+        result: dict[str, Any] = {
+            f"vote/{base}": {
+                "meeting_id": meeting_id,
+                "option_id": option_id,
+                "value": value,
+                "weight": Decimal(base),
+                "user_token": user_token or get_random_string(16),
+            }
+        }
+        for field_name, field_value in (
+            ("user_id", user_id),
+            ("delegated_user_id", delegated_user_id),
+        ):
+            if field_value:
+                result[f"vote/{base}"][field_name] = field_value
+        return result
+
+    def test_migration_manager(self) -> None:
+        meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data(
+            1,
+            {
+                "meeting/1": {
+                    "motion_poll_projection_name_order_first": "first_name",
+                    "motion_poll_projection_max_columns": 8,
+                    # "assignment_poll_default_group_ids": [1],
+                    # "motion_poll_default_group_ids": [3],
+                    # "topic_poll_default_group_ids": [4],
+                    "assignment_poll_default_method": "Y",
+                    "motion_poll_default_method": "YNA",
+                    "poll_default_method": "N",
+                    "assignment_poll_default_type": "named",
+                    "motion_poll_default_type": "open",
+                    "poll_default_type": "analog",
+                    "assignment_poll_default_onehundred_percent_base": "YNA",
+                    "motion_poll_default_onehundred_percent_base": "valid",
+                    "poll_default_onehundred_percent_base": "valid",
+                    "assignment_poll_sort_poll_result_by_votes": False,
+                    "assignment_poll_enable_max_votes_per_option": True,
+                    "poll_sort_poll_result_by_votes": True,
+                    "poll_default_live_voting_enabled": True,
+                },
+                "group/1": {"permissions": ["poll.can_manage"]},
+                "group/2": {
+                    "permissions": ["poll.can_manage", "motion.can_manage_polls"]
+                },
+                "group/3": {"permissions": ["motion.can_see", "mediafile.can_see"]},
+                "group/4": {"meeting_id": 1, "name": "group4", "permissions": []},
+            },
+        )
 
         self.set_up_organization()
-        self.create_entries(origin_data)
+        self.create_entries(meeting_data)
+        self._create_users_for_meeting(1, [1, 2], [1])
+        polls_data = {
+            **self._get_motion_data(1, 1),
+            **self._get_poll_data(
+                poll_id=1,
+                meeting_id=1,
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                type_="named",
+                content_object_id="motion/1",
+                state="published",
+                is_pseudoanonymized=False,
+                extra_data={
+                    "votescast": Decimal(2),
+                    "votesvalid": Decimal(2),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": True,
+                                "vote_delegated_to_id": 2,
+                            }
+                        ]
+                    ),
+                },
+            ),
+            **self._get_option_data(1, 1, 1, "motion/1", {"yes": 1, "no": 1}),
+            **self._get_vote_data(1, 1, 1, "Y"),
+            **self._get_vote_data(2, 1, 1, "N", 1, 2),
+        }
 
-        result = self.make_migration_request()
+        self.create_entries(polls_data)
+
+        manager = self.create_migration_manager()
+
+        intermediate_result = self.make_migration_request(manager)
+        if intermediate_result["status"] == MigrationState.MIGRATION_FAILED:
+            raise BadCodingException(
+                f"Migration failed with message: {intermediate_result['exception']}."
+            )
+        self.assertEqual(
+            intermediate_result["status"], MigrationState.MIGRATION_RUNNING
+        )
+
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        result = self.get_stats(manager)["stats"]
         if result["status"] == MigrationState.MIGRATION_FAILED:
             raise BadCodingException(
                 f"Migration failed with message: {result['exception']}."
             )
-        self.assertEqual(result["status"], MigrationState.MIGRATION_RUNNING)
-        self.wait_for_migration_thread(self.MAX_WAIT)
+        self.assert_migration_finalized()

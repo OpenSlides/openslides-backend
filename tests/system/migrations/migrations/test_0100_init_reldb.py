@@ -326,7 +326,7 @@ For more information, see
 
     def test_migration_manager(self) -> None:
         # 5) Call data_manipulation of module
-        result = self.make_migration_request()
+        result = self.make_migration_request(self.create_migration_manager())
         self.assertEqual(result["status"], MigrationState.MIGRATION_RUNNING)
         self.assertIn(
             self.EXPECTED_INTRODUCTION

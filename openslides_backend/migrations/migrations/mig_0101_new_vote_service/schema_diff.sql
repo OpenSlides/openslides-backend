@@ -272,8 +272,7 @@ ALTER TABLE meeting_t
         CONSTRAINT required_meeting_poll_projection_max_columns NOT NULL;
 
 ALTER TABLE poll_t
-    ADD COLUMN config_id varchar(100)
-        CONSTRAINT required_poll_config_id NOT NULL,
+    ADD COLUMN config_id varchar(100),
     ADD COLUMN config_id_poll_config_approval_id integer
         CONSTRAINT unique_poll_config_id_poll_config_approval_id UNIQUE
         CONSTRAINT generated_always_as_poll_config_id_poll_config_approval_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_approval' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
@@ -290,8 +289,7 @@ ALTER TABLE poll_t
         CONSTRAINT unique_poll_config_id_poll_config_stv_scottish_id UNIQUE
         CONSTRAINT generated_always_as_poll_config_id_poll_config_stv_scottish_id GENERATED ALWAYS AS (CASE WHEN split_part(config_id, '/', 1) = 'poll_config_stv_scottish' THEN cast(split_part(config_id, '/', 2) AS INTEGER) ELSE null END) STORED,
     ADD CONSTRAINT valid_poll_config_id_part1 CHECK (split_part(config_id, '/', 1) IN ('poll_config_approval','poll_config_selection','poll_config_rating_score','poll_config_rating_approval','poll_config_stv_scottish')),
-    ADD COLUMN visibility enum_poll_visibility
-        CONSTRAINT required_poll_visibility NOT NULL,
+    ADD COLUMN visibility enum_poll_visibility,
     ADD COLUMN result text,
     ADD COLUMN published boolean
         CONSTRAINT default_poll_published DEFAULT False,

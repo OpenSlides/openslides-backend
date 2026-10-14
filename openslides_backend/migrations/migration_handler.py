@@ -123,15 +123,18 @@ class MigrationHandler(BaseHandler):
         """
         for index, package_name in self.pending_migrations.items():
             try:
-                mig_class = MigrationHelper.get_migration_class(package_name)
+                mig_class = MigrationHelper.get_migration_class(package_name)()
                 self.logger.info("Executing migration: " + package_name)
 
                 # Execute user defined functions or super classes noop.
-                stash = mig_class().data_preparation(self.migration_cursor)
+                stash = mig_class.data_preparation(self.migration_cursor)
                 self.apply_schema_diff(index)
                 mig_class.data_definition(self.migration_cursor)
-                mig_class().data_manipulation(self.migration_cursor, stash)
-                mig_class().cleanup(self.migration_cursor)
+                mig_class.data_manipulation(self.migration_cursor, stash)
+                mig_class.cleanup(self.migration_cursor)
+
+                # Need to proceed initially deferred triggers before applying cleanup statements
+                self.migration_cursor.connection.commit()
                 self.apply_cleanup_statements(index)
 
                 with self.ver_conn.cursor() as ver_curs:

@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, Literal
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
+from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from openslides_backend.migrations.base import BaseMigration
 from openslides_backend.migrations.patterns import (
     ColumnDataSource,
@@ -15,7 +16,7 @@ from openslides_backend.migrations.patterns import (
     ValuesSource,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.filters import Filter, FilterOperator
 
 from .diff_mixin import DiffMixin
 
@@ -55,7 +56,7 @@ class Migration(DiffMixin, BaseMigration):
             "poll_sort_poll_result_by_votes",
             "poll_default_live_voting_enabled",
         ],
-        "meeting_user": ["vote_delegated_to_id"],
+        "meeting_user": ["vote_delegated_to_id", "user_id", "meeting_id"],
         "option": [
             "yes",
             "no",
@@ -95,6 +96,7 @@ class Migration(DiffMixin, BaseMigration):
             "option_id",
             "value",
             "weight",
+            "meeting_id",
         ],
     }
 
@@ -134,11 +136,6 @@ class Migration(DiffMixin, BaseMigration):
         #         )
         #     ],
         # )
-        self.update_from_mig_table(
-            curs,
-            "poll",
-            [ColumnDataSource("anonymized", "is_pseudoanonymized")],
-        )
         poll_type_to_visibility_map = {
             "analog": "manually",
             "named": "open",
@@ -183,25 +180,11 @@ class Migration(DiffMixin, BaseMigration):
                 "strike_out": False,
             },
         }
-        self.update_from_values_map(
-            curs,
-            "poll",
-            ValuesSource(
-                [
-                    {"type": poll_type, "visibility": poll_visibility}
-                    for poll_type, poll_visibility in poll_type_to_visibility_map.items()
-                ],
-                ["type"],
-            ),
-            join_values_to_mig_table=True,
-        )
-        self.update_matching_entries(
-            curs,
-            "poll",
-            {"state": "finished", "published": True},
-            FilterOperator("state", "=", "published"),
-        )
+
         self.create_meeting_poll_settings(
+            curs, poll_type_to_visibility_map, poll_onehundred_percent_bases_map
+        )
+        self.migrate_polls(
             curs, poll_type_to_visibility_map, poll_onehundred_percent_bases_map
         )
 
@@ -347,4 +330,245 @@ class Migration(DiffMixin, BaseMigration):
             # )
         self.update_all_entries(
             curs, "meeting_poll_setting", {"allow_live_voting": True}
+        )
+
+    def migrate_polls(
+        self,
+        curs: Cursor[DictRow],
+        poll_type_to_visibility_map: dict[str, str],
+        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+    ) -> None:
+        self.rename_column_in_mig_table(
+            curs, "poll", "onehundred_percent_base", "onehundred_percent_base_m"
+        )
+        vote_value_map = {"Y": "yes", "N": "no", "A": "abstain"}
+
+        self.update_from_values_map(
+            curs,
+            "poll",
+            ValuesSource(
+                [
+                    {"type": poll_type, "visibility": poll_visibility}
+                    for poll_type, poll_visibility in poll_type_to_visibility_map.items()
+                ],
+                ["type"],
+            ),
+            join_values_to_mig_table=True,
+        )
+        self.update_matching_entries(
+            curs,
+            "poll",
+            {"state": "finished", "published": True},
+            FilterOperator("state", "=", "published"),
+        )
+        self.update_all_entries(
+            curs,
+            "poll",
+            {"allow_invalid": False, "allow_vote_split": False},
+        )
+
+        self.migrate_motion_polls(
+            curs, poll_onehundred_percent_bases_map, vote_value_map
+        )
+
+        curs.execute(sql.SQL("""
+                INSERT INTO poll_entitled_user_t (
+                    poll_id,
+                    meeting_user_id,
+                    present
+                )
+                SELECT
+                    poll_m.id,
+                    meeting_user_t.id,
+                    (e->>'present')::boolean
+                FROM poll_m
+                CROSS JOIN LATERAL jsonb_array_elements(poll_m.entitled_users_at_stop) AS e
+                JOIN meeting_user_t
+                    ON meeting_user_t.meeting_id = poll_m.meeting_id
+                    AND meeting_user_t.user_id = (e->>'user_id')::integer
+                RETURNING id;
+                """))
+
+    def migrate_motion_polls(
+        self,
+        curs: Cursor[DictRow],
+        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+        vote_value_map: dict[str, str],
+    ) -> None:
+        filter_ = self.get_filter_poll_by_content_object("motion")
+        poll_t = TableRef("poll", False)
+        poll_m = TableRef("poll", True)
+        new_poll_configs = list(
+            self.insert_from_other_table(
+                curs,
+                "poll_config_approval",
+                copy_from_source_tables=InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            source_table=Join(poll_m, [], filter_),
+                            value_definition=[
+                                ColumnDataSource("id", "id"),
+                                ColumnDataSource(
+                                    "allow_abstain",
+                                    transformed_column_value=sql.SQL(
+                                        "({source_column} = 'YNA')"
+                                    ).format(
+                                        source_column=sql.Identifier(
+                                            poll_m.table_name, "pollmethod"
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        )
+                    ]
+                ),
+                values_source=ValuesSource(
+                    rows=[
+                        {
+                            "onehundred_percent_base_m": onehundred_percent_base_m,
+                            "onehundred_percent_base": onehundred_percent_base[
+                                "onehundred_percent_base"
+                            ],
+                        }
+                        for onehundred_percent_base_m, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
+                    ],
+                    join_on_columns=["onehundred_percent_base_m"],
+                ),
+            ).keys()
+        )
+        filter_polls = FilterOperator("id", "in", new_poll_configs)
+        self.update_from_other_table(
+            curs,
+            UpdateFromTables(
+                target_table=poll_t,
+                copy_data=[
+                    TableDataSource(
+                        Join(
+                            TableRef("poll_config_approval", False),
+                            [JoinOn("id", poll_t, "id")],
+                            filter_polls,
+                        ),
+                        [
+                            ColumnDataSource(
+                                "config_id",
+                                transformed_column_value=sql.SQL(
+                                    "'poll_config_approval/' || ({id_column})::text"
+                                ).format(
+                                    id_column=sql.Identifier(
+                                        TableRef(
+                                            "poll_config_approval", False
+                                        ).table_name,
+                                        "id",
+                                    )
+                                ),
+                            )
+                        ],
+                    )
+                ],
+            ),
+        )
+        new_ballot_ids = list(
+            self.insert_from_other_table(
+                curs,
+                "poll_ballot_user",
+                InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            Join(
+                                TableRef("option", True),
+                                [],
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                            ),
+                            [ColumnDataSource("poll_id", "poll_id")],
+                        ),
+                        TableDataSource(
+                            source_table=Join(
+                                TableRef("vote", True),
+                                [JoinOn("option_id", TableRef("option", True), "id")],
+                            ),
+                            value_definition=[ColumnDataSource("id", "id")],
+                        ),
+                        TableDataSource(
+                            Join(
+                                TableRef("meeting_user", False),
+                                [
+                                    JoinOn(
+                                        "user_id", TableRef("vote", True), "user_id"
+                                    ),
+                                    JoinOn(
+                                        "meeting_id",
+                                        TableRef("vote", True),
+                                        "meeting_id",
+                                    ),
+                                ],
+                            ),
+                            [ColumnDataSource("represented_meeting_user_id", "id")],
+                        ),
+                        TableDataSource(
+                            Join(
+                                TableRef("meeting_user", True),
+                                [
+                                    JoinOn(
+                                        "user_id",
+                                        TableRef("vote", True),
+                                        "delegated_user_id",
+                                    ),
+                                    JoinOn(
+                                        "meeting_id",
+                                        TableRef("vote", True),
+                                        "meeting_id",
+                                    ),
+                                ],
+                            ),
+                            [ColumnDataSource("acting_meeting_user_id", "id")],
+                        ),
+                    ]
+                ),
+            ).keys()
+        )
+        self.insert_from_other_table(
+            curs,
+            "poll_ballot",
+            InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        source_table=Join(
+                            TableRef("vote", True),
+                            [],
+                            FilterOperator("id", "in", new_ballot_ids),
+                        ),
+                        value_definition=[
+                            ColumnDataSource("weight", "weight"),
+                            ColumnDataSource("poll_ballot_user_id", "id"),
+                        ],
+                    ),
+                    TableDataSource(
+                        Join(
+                            TableRef("option", True),
+                            [JoinOn("id", TableRef("vote", True), "option_id")],
+                        ),
+                        [ColumnDataSource("poll_id", "poll_id")],
+                    ),
+                ]
+            ),
+        )
+
+    # -- Helpers specific for this migration --
+    @staticmethod
+    def get_filter_poll_by_content_object(
+        collection: Literal["assignment", "motion", "topic"],
+    ) -> Filter:
+        return FilterOperator("content_object_id", "%=", f"{collection}/%")
+
+    @staticmethod
+    def rename_column_in_mig_table(
+        curs: Cursor[DictRow],
+        collection: str,
+        column_name_old: str,
+        column_name_new: str,
+    ) -> None:
+        curs.execute(
+            AlterSchemaHelper.get_rename_table_column(
+                TableRef(collection, True).table_name, column_name_old, column_name_new
+            )
         )
