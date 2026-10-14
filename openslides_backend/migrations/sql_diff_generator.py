@@ -1111,9 +1111,9 @@ class EditHelper:
 
     @staticmethod
     def get_recreate_enum(enum_name: str, values: list[str]) -> str:
-        result = AlterSchemaHelper.get_drop_type_statement(enum_name)
-        result += Helper.get_enum_type_definition(enum_name, values)
-        return result
+        return AlterSchemaHelper.get_drop_type_statement(
+            enum_name
+        ) + Helper.get_enum_type_definition(enum_name, values)
 
     @staticmethod
     def get_recreate_enum_on_column(
@@ -1497,7 +1497,6 @@ class RenameHelper:
         result = ""
         collection_renames = renames[0]
         field_renames = renames[1]
-        meta_renames = field_renames.pop("_meta", {})
 
         if meta_renames := field_renames.pop("_meta", {}):
             dc_meta_renames = dc_rename_dict[1]["_meta"]
