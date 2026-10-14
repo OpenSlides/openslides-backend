@@ -184,9 +184,6 @@ class TableDataSource:
     value_definition: list[ColumnDataSource]
 
     def __post_init__(self) -> None:
-        if not self.value_definition:
-            raise BadCodingException("'source_data' can not be empty.")
-
         target_columns = [data.target_column for data in self.value_definition]
         if duplicates := [
             column for column, count in Counter(target_columns).items() if count > 1
@@ -219,7 +216,7 @@ class _CopyFromTables:
         return []
 
     @property
-    def root_source(self) -> TableRef:
+    def root_source_table(self) -> TableRef:
         """
         Re-define in the child dataclass to define the table that should
         serve as the root of the JOIN-statements.
@@ -230,7 +227,7 @@ class _CopyFromTables:
     def joined_sources(self) -> list[TableDataSource]:
         """
         Re-define in the child dataclass to define the tables that should
-        be joined to the root_source.
+        be joined to the root_source_table.
         """
         raise NotImplementedError()
 
@@ -274,7 +271,7 @@ class _CopyFromTables:
         if [
             left_table
             for join_on_data in root_table.join_on
-            if (left_table := join_on_data.left_table) != self.root_source
+            if (left_table := join_on_data.left_table) != self.root_source_table
         ]:
             if hasattr(self, "target_table"):
                 errors.append(
@@ -282,11 +279,11 @@ class _CopyFromTables:
                 )
             else:
                 errors.append(
-                    "Root table from copy_data must join to the main_source_table."
+                    "Root table from copy_data must join to the first source table."
                 )
         else:
-            seen_sources = {self.root_source}
-            for source_table in self.copy_data[1:]:
+            seen_sources = {self.root_source_table}
+            for source_table in self.joined_sources:
                 right_table = source_table.source_table.right_table
                 for join_on_data in source_table.source_table.join_on:
                     if right_table == (left_table := join_on_data.left_table):
@@ -328,7 +325,7 @@ class UpdateFromTables(_CopyFromTables):
         return []
 
     @property
-    def root_source(self) -> TableRef:
+    def root_source_table(self) -> TableRef:
         return self.target_table
 
     @property
@@ -343,51 +340,40 @@ class InsertFromTables(_CopyFromTables):
 
     'copy_data' must not be empty.
     Each target column in 'copy_data' must have a single source.
-    Source tables must form a valid join tree rooted at 'main_source_table'
-    or the first source table.
-    If main_source_table is None and len(copy_data) == 1,
-    copy_data[0].source_table.join_on will be ignored and should be defined as an empty list.
+    Source tables must form a valid join tree rooted at the first source table.
+    If copy_data[0].source_table.join_on will be ignored and should be defined
+    as an empty list.
     """
-
-    main_source_table: TableRef | None = None
-    filter_main_source_table: Filter | None = None
 
     def _extra_checks(self) -> list[str]:
         errors = []
         if len(self.copy_data) > 1:
-            if self.main_source_table is None:
-                errors.append(
-                    "'main_source_table' is required when more than one "
-                    "source table is defined."
-                )
             if empty_join_on := [
-                i
-                for i in range(len(self.copy_data[1:]))
-                if not self.copy_data[i].source_table.join_on
+                i + 1
+                for i, data in enumerate(self.copy_data[1:])
+                if not data.source_table.join_on
             ]:
                 return [
                     f"Items {empty_join_on} of 'copy_data' contain 'source_table's with empty 'join_on'."
                 ]
-        elif not self.main_source_table and (
-            join_on := self.copy_data[0].source_table.join_on
-        ):
+        elif join_on := self.copy_data[0].source_table.join_on:
             errors.append(
-                f"'join_on = {join_on}' is redundant in the 'Join' object because only 1 data source "
-                "is defined. Skip this value by setting 'join_on = []'."
+                f"'join_on = {join_on}' is redundant in the 'Join' object of the first "
+                "'copy_data' element. Skip this value by setting 'join_on = []'."
             )
         return errors
 
     @property
-    def root_source(self) -> TableRef:
-        if self.main_source_table is not None:
-            return self.main_source_table
-        return self.copy_data[0].source_table.right_table
+    def root_source(self) -> Join:
+        return self.copy_data[0].source_table
+
+    @property
+    def root_source_table(self) -> TableRef:
+        return self.root_source.right_table
 
     @property
     def joined_sources(self) -> list[TableDataSource]:
-        if self.main_source_table is None:
-            return self.copy_data[1:]
-        return self.copy_data
+        return self.copy_data[1:]
 
 
 @dataclass(frozen=True)

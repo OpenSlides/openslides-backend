@@ -449,7 +449,7 @@ class BaseMigration:
                 self._get_joined_values_data(
                     curs,
                     values_source,
-                    copy_from_source_tables.root_source,
+                    copy_from_source_tables.root_source_table,
                     arguments,
                 )
             )
@@ -458,15 +458,14 @@ class BaseMigration:
 
         filter_condition = (
             self._build_filter_query(
-                copy_from_source_tables.filter_main_source_table,
+                copy_from_source_tables.root_source.filter_right_table,
                 arguments,
-                target_collection,
-                filter_condition_table_alias=copy_from_source_tables.root_source.table_name,
+                copy_from_source_tables.root_source_table.collection,
+                filter_condition_table_alias=copy_from_source_tables.root_source_table.table_name,
             )
-            if copy_from_source_tables.filter_main_source_table
+            if copy_from_source_tables.root_source.filter_right_table
             else None
         )
-
         curs.execute(
             MigrationSqlHelper.build_insert_from_other_table_sql(
                 target_table=target_table.table_name,
@@ -474,7 +473,7 @@ class BaseMigration:
                 select_columns=self._join_select_columns(
                     curs, select_columns, target_table, target_columns
                 ),
-                source_table=copy_from_source_tables.root_source.table_name,
+                source_table=copy_from_source_tables.root_source_table.table_name,
                 joined_tables=joined_tables_parts,
                 condition=filter_condition,
                 return_fields=["id", *return_fields],

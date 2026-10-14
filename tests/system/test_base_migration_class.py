@@ -574,14 +574,17 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             copy_from_source_tables=InsertFromTables(
                 copy_data=[
                     TableDataSource(
-                        Join(TableRef("poll", True), []),
+                        Join(
+                            TableRef("poll", True),
+                            [],
+                            FilterOperator("type", "=", "analog"),
+                        ),
                         [
                             ColumnDataSource("poll_id", "id"),
                             ColumnDataSource("meeting_id", "meeting_id"),
                         ],
                     )
                 ],
-                filter_main_source_table=FilterOperator("type", "=", "analog"),
             ),
             values_source=ValuesSource(values, ["state", "pollmethod"]),
         )
@@ -635,8 +638,8 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             self.connection.cursor(),
             "poll_ballot_user",
             InsertFromTables(
-                main_source_table=TableRef("vote", False),
                 copy_data=[
+                    TableDataSource(Join(TableRef("vote", False), []), []),
                     TableDataSource(
                         Join(
                             TableRef("option", is_view=True),
@@ -674,5 +677,5 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             item.pop("id")
             assert item in expected_models
         self.connection.cursor().execute(
-            AlterSchemaHelper.get_drop_table_statement("poll_ballot_user_t", False)
+            AlterSchemaHelper.get_drop_table_statement("poll_ballot_user_t")
         )
