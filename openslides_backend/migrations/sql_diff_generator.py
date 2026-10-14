@@ -112,12 +112,20 @@ def main() -> int:
     if isinstance(add, tuple):
         if has_add_data := isinstance(add_tree_dict := add[1], dict):
             sql += AddHelper.handle_add_meta(add_tree_dict, diff_control["add"][1])
+        table_sql = ""
+        alter_table_sql = ""
         if isinstance(add[0], dict):
-            sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip(
-                "\n"
+            table_sql, alter_table_sql = generate_new_collection_sql(
+                add[0], diff_control["add"][0]
             )
+        remainder_sql = ""
         if has_add_data:
-            sql += AddHelper.handle_add_tree(add_tree_dict, diff_control["add"][1])
+            before_sql, table_sql2, remainder_sql = AddHelper.handle_add_tree(
+                add_tree_dict, diff_control["add"][1]
+            )
+            table_sql += table_sql2
+            sql += before_sql
+        sql += table_sql + alter_table_sql.lstrip("\n") + remainder_sql
 
     # Things like equal fields triggers depend on renames and possibly added collections.
     sql += "\n-- EDIT SECTION --\n"
@@ -162,31 +170,36 @@ def alter_views_conditionally(
         alter_views.add(collection_name)
 
 
-def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> str:
-    sql = ""
+def generate_new_collection_sql(
+    add: dict[str, Any], dc_add: dict[str, Any]
+) -> tuple[str, str]:
+    table_sql = ""
+    alter_table_sql = ""
     # TODO found currently serves no real purpose. It seems however its intended use
     # is to collect all related collections to update their views also.
     found = set()
     for collection_name in add:
         found.add(collection_name)
-        sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
+        table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
     for collection_name in add:
         found.add(collection_name)
         for field_def in CURR_MODELS[collection_name]["fields"].values():
             if write_fields := field_def.get("write_fields"):
-                sql += CURR_CODE_BLOCKS["intermediate_sql"][write_fields[0]]
+                table_sql += CURR_CODE_BLOCKS["intermediate_sql"][write_fields[0]]
     for collection_name in add:
         found.add(collection_name)
-        sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(collection_name, "")
+        alter_table_sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(
+            collection_name, ""
+        )
     for collection_name in add:
         found.add(collection_name)
         for triggers_dict in CURR_TRIGGER_SQL[collection_name].values():
             for triggers in triggers_dict.values():
-                sql += triggers
+                alter_table_sql += triggers
     for collection_name in found:
         del dc_add[collection_name]
         alter_views.add(collection_name)
-    return sql
+    return table_sql, alter_table_sql
 
 
 def is_allowed_constant_field(
@@ -916,7 +929,7 @@ class AddHelper:
     def handle_add_tree(
         add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
         dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    ) -> str:
+    ) -> tuple[str, str, str]:
         before_sql = ""
         sql = ""
         after_sql = ""
@@ -961,7 +974,7 @@ class AddHelper:
                     )
             remove_empty(dc_add_tree_dict[collection_name][1], "fields")
             remove_empty(dc_add_tree_dict, collection_name)
-        return before_sql + sql + after_sql
+        return before_sql, sql, after_sql
 
     @staticmethod
     def _handle_add_field_attributes(
