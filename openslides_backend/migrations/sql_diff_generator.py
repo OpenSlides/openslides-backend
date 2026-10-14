@@ -53,6 +53,12 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_equal_fields_code",
     "create_trigger_notify",
 ]
+RELATION_TYPES = [
+    "relation",
+    "relation-list",
+    "generic-relation",
+    "generic-relation-list",
+]
 
 
 def get_schema_sql_dicts() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
@@ -992,18 +998,15 @@ class AddHelper:
         """
         collection_name = table_name[:-2]
         field_def = CURR_MODELS[collection_name]["fields"][field_name]
-        field_is_relation = (field_type := field_def_diff.get("type", "")) in [
-            "relation",
-            "relation-list",
-            "generic-relation",
-            "generic-relation-list",
-        ]
-        is_sql_field = len(field_def.get("sql", "").strip()) > 0
+        field_is_relation = (
+            field_type := field_def_diff.get("type", "")
+        ) in RELATION_TYPES
+        is_sql_field = "sql" in field_def
         before_sql = ""
         if field_is_relation:
             constraints_sql, after_sql, is_view_field = (
                 AddHelper._handle_add_relation_helper(
-                    collection_name, field_name, field_type, field_def, is_sql_field
+                    collection_name, field_name, field_type, field_def
                 )
             )
         else:
@@ -1017,7 +1020,6 @@ class AddHelper:
                     dc_field_def,
                     field_def,
                     field_type,
-                    is_sql_field,
                 )
             )
         if any(sql_str.strip("\n ") for sql_str in [constraints_sql, after_sql]):
@@ -1030,7 +1032,6 @@ class AddHelper:
         field_name: str,
         field_type: str,
         field_def: dict[str, Any],
-        is_sql_field: bool,
     ) -> tuple[str, str, bool]:
         """
         Returns:
@@ -1041,7 +1042,7 @@ class AddHelper:
         constraints_sql = ""
 
         code, after_sql, is_view_field = AddHelper._get_szt_for_added_relation(
-            collection_name, field_name, field_type, field_def, is_sql_field
+            collection_name, field_name, field_type, field_def
         )
 
         if not is_view_field:
@@ -1069,8 +1070,7 @@ class AddHelper:
             if table_code.startswith(field_name):
                 table_code = table_code.split(" ", maxsplit=1)[1]
             constraints_sql += f" {table_code}".rstrip()
-        for value in [alter_table_code, trigger_code]:
-            after_sql += value
+        after_sql += alter_table_code + trigger_code
 
         return constraints_sql, after_sql, is_view_field
 
@@ -1083,7 +1083,6 @@ class AddHelper:
         dc_field_def: dict[str, Any],
         field_def: dict[str, Any],
         field_type: str,
-        is_view_field: bool,
     ) -> tuple[str, str, str]:
         """
         Function for calculating preliminary sql, the constraints,
@@ -1105,12 +1104,10 @@ class AddHelper:
             minimum
             collections
             field
-            unique_together
             log_triggers
-            unique_together_strict
             maximum
             """
-            if is_view_field:
+            if "sql" in field_def:
                 alter_views.add(collection_name)
             else:
                 match constraint:
@@ -1175,12 +1172,13 @@ class AddHelper:
                         constraints_sql += Helper.get_inline_unique_constraint(
                             collection_name, field_name
                         )
-                    case "unique_together_strict":
-                        constraints_sql += (
-                            GenerateCodeBlocks.get_constraint_unique_together(
-                                collection_name, value, True
-                            )
-                        )
+                    # TODO: Move this somewhere where it'll be called
+                    # case "unique_together_strict":
+                    #     constraints_sql += (
+                    #         GenerateCodeBlocks.get_constraint_unique_together(
+                    #             collection_name, value, True
+                    #         )
+                    #     )
                     case "maximum":
                         constraints_sql += Helper.get_inline_maximum_constraint(
                             collection_name, field_name, value
@@ -1195,7 +1193,6 @@ class AddHelper:
                                 collection_name, field_name, value
                             )
                     case "default":
-                        # TODO: Make sure value is quoted if string see Helper.get_initials
                         default_value = Helper.get_formatted_default_value(
                             collection_name, field_name, value, field_def["type"]
                         )
@@ -1226,9 +1223,7 @@ class AddHelper:
                         )
                 after_sql += "\n".join(
                     val
-                    for val in GenerateCodeBlocks.trigger_sql[collection_name][
-                        field_name
-                    ].values()
+                    for val in CURR_TRIGGER_SQL[collection_name][field_name].values()
                     if val
                 )
             del dc_field_def[constraint]
@@ -1251,7 +1246,6 @@ class AddHelper:
         field_name: str,
         field_type: str,
         field_def: dict[str, Any],
-        is_sql_field: bool,
     ) -> tuple[SchemaZoneTexts, str, bool]:
         """
         Calculates the correct SchemaZoneTexts depending on the
@@ -1263,6 +1257,7 @@ class AddHelper:
         own_table_field = TableFieldType(collection_name, field_name, field_def)
         is_list = field_type.endswith("-list")
         code: SchemaZoneTexts = {}
+        is_sql_field = "sql" in field_def
         if field_type.startswith("generic-"):
             foreign_table_fields: list[TableFieldType] = (
                 InternalHelper.get_definitions_from_foreign_list(
