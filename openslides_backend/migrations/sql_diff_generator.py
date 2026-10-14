@@ -1123,11 +1123,9 @@ class EditHelper:
         values: list[str],
         field_def_old: dict[str, Any],
     ) -> str:
-        result = EditHelper.get_change_enum_to_text(
+        return EditHelper.get_change_enum_to_text(
             collection_name, field_name, field_def_old
-        )
-        result += EditHelper.get_recreate_enum(enum_name, values)
-        return result
+        ) + EditHelper.get_recreate_enum(enum_name, values)
 
     @staticmethod
     def handle_enum_field_attribute(
@@ -1156,8 +1154,7 @@ class EditHelper:
                 # changed from field based enum to meta enum
                 result += EditHelper.get_change_enum_to_text(
                     collection_name, field_name, field_def_old
-                )
-                result += AlterSchemaHelper.get_drop_type_statement(enum_name_old)
+                ) + AlterSchemaHelper.get_drop_type_statement(enum_name_old)
         else:
             # Previously referencing meta enum.
             if isinstance(value, list):
@@ -1502,7 +1499,7 @@ class RenameHelper:
         field_renames = renames[1]
         meta_renames = field_renames.pop("_meta", {})
 
-        if meta_renames:
+        if meta_renames := field_renames.pop("_meta", {}):
             dc_meta_renames = dc_rename_dict[1]["_meta"]
             for key, meta_def_part in meta_renames.items():
                 match key:
