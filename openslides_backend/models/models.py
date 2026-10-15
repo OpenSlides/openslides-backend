@@ -2187,7 +2187,7 @@ class Organization(Model):
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
     privacy_policy = fields.TextField()
-    login_text = fields.TextField()
+    login_text = fields.HTMLStrictField()
     reset_password_verbose_errors = fields.BooleanField()
     gender_ids = fields.RelationListField(
         to={"gender": "organization_id"}, is_view_field=True, is_primary=True

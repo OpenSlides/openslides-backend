@@ -48,7 +48,7 @@ class IDPUserMixin(Action):
         if self._idp_organization_id != "":
             return self._idp_organization_id
 
-        # Fetch key from organization file
+        # Fetch key from organization id file
         try:
             with open(self.organization_id_path) as file:
                 self._idp_organization_id = file.read().replace("\n", "")

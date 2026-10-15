@@ -1,11 +1,18 @@
+import os
 from typing import Any
 
 import jwt
+import requests
 from argon2 import PasswordHasher
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 
 from ...shared.env import Environment
 from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
+from ..database.commands import GetManyRequest
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import AuthenticationService
 
@@ -22,17 +29,68 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     OIDC authentication service
     """
 
+    admin_token_path = "/zitadel/bootstrap/admin.pat"
+    project_id_path = "/zitadel/bootstrap/project-id"
+    client_id_path = "/zitadel/bootstrap/client-id"
+
     password_hasher = PasswordHasher()
     ANONYMOUS_USER = 0
     blocked_session_ids = []
 
-    client_id_path = "/zitadel/bootstrap/client-id"
+    external_host = os.getenv("IDP_EXTERNAL_HOST", "localhost:8800")
+    idp_route = os.getenv("IDP_URL_INTERNAL", "http://zitadel-api:8080")
+
+    _idp_admin_access_token = ""
+    _idp_project_id = ""
     _idp_client_id = ""
 
     def __init__(self, env: Environment, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.env = env
         self.issuer_url = self.env.IDP_URL_EXTERNAL
+
+        # Set backchannel logout uri
+        self._set_backchannel_logout_uri(
+            "http://backend:9002/system/action/backchannel_logout"
+        )
+        with get_new_os_conn() as conn:
+            self.datastore = ExtendedDatabase(conn, logging, env)
+            # Fetch blocked sessions from db
+            try:
+
+                result = self.datastore.get_all(
+                    "blocked_sessions",
+                    ["session_id", "timestamp"],
+                    lock_result=False
+                )
+            except Exception as e:
+                raise AuthenticationException(
+                    f"Error reading blocked sessions table from datastore: {e}"
+                )
+
+    def _get_admin_key(self) -> str:
+        if self._idp_admin_access_token != "":
+            return self._idp_admin_access_token
+
+        # Fetch key from admin file
+        try:
+            with open(self.admin_token_path) as file:
+                self._idp_admin_access_token = file.read().replace("\n", "")
+                return self._idp_admin_access_token
+        except Exception as e:
+            raise AuthenticationException(f"Error reading admin pat file: {e}")
+
+    def _get_project_id(self) -> str:
+        if self._idp_project_id != "":
+            return self._idp_project_id
+
+        # Fetch key from project id file
+        try:
+            with open(self.project_id_path) as file:
+                self._idp_project_id = file.read().replace("\n", "")
+                return self._idp_project_id
+        except Exception as e:
+            raise AuthenticationException(f"Error reading project id file: {e}")
 
     def _get_client_id(self) -> str:
         if self._idp_client_id != "":
@@ -45,6 +103,36 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
                 return self._idp_client_id
         except Exception as e:
             raise AuthenticationException(f"Error reading client id file: {e}")
+
+    def _set_backchannel_logout_uri(self, uri: str) -> None:
+        # Sets backchannel logout uri in the idp service
+        idp_admin_access_token = self._get_admin_key()
+        idp_project_id = self._get_project_id()
+
+        try:
+            # Update URI
+            response = requests.post(
+                f"{self.idp_route}/zitadel.application.v2.ApplicationService/UpdateApplication",
+                headers={
+                    "Authorization": f"Bearer {idp_admin_access_token}",
+                    "Host": f"{self.external_host}",
+                },
+                json={
+                    "applicationId": "OpenSlides",
+                    "projectId": f"{idp_project_id}",
+                    "oidcConfiguration": {"backChannelLogoutUri": f"{uri}"},
+                },
+            )
+
+            if response.status_code != 200:
+                if "COMMAND-1m88i" in response.text:
+                    self.logger.warning(
+                        "Tried to set backchannel logout URI, but the given URI is already configured in Zitadel"
+                    )
+                    return
+                raise AuthenticationException(f"{response.status_code}: {response.text}")
+        except Exception as e:
+            raise AuthenticationException(f"Error setting backchannel logout URI: {e}")
 
     def authenticate(self) -> tuple[int, str | None]:
         self.logger.debug("Authentication request received")
