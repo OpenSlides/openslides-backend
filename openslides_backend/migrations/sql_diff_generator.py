@@ -20,6 +20,7 @@ from meta.dev.src.generate_sql_schema import (
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
 from meta.dev.src.typing import SchemaZoneKey, SchemaZoneTexts, TriggerSqlDict
+from meta.dev.src.validate import RELATION_TYPES
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
@@ -27,6 +28,7 @@ from openslides_backend.migrations.migration_helper import (
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
+    AddDiff,
     CollectionsRemoveTuple,
     EnumTypesRemoveDict,
     FieldAttributes,
@@ -52,12 +54,6 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_unique_ids_pair_code",
     "create_trigger_equal_fields_code",
     "create_trigger_notify",
-]
-RELATION_TYPES = [
-    "relation",
-    "relation-list",
-    "generic-relation",
-    "generic-relation-list",
 ]
 
 
@@ -114,24 +110,8 @@ def main() -> int:
 
     # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
-    add = diff["add"]
-    if isinstance(add, tuple):
-        if has_add_data := isinstance(add_tree_dict := add[1], dict):
-            sql += AddHelper.handle_add_meta(add_tree_dict, diff_control["add"][1])
-        table_sql = ""
-        alter_table_sql = ""
-        if isinstance(add[0], dict):
-            table_sql, alter_table_sql = generate_new_collection_sql(
-                add[0], diff_control["add"][0]
-            )
-        remainder_sql = ""
-        if has_add_data:
-            before_sql, table_sql2, remainder_sql = AddHelper.handle_add_tree(
-                add_tree_dict, diff_control["add"][1]
-            )
-            table_sql += table_sql2
-            sql += before_sql
-        sql += table_sql + alter_table_sql.lstrip("\n") + remainder_sql
+    if isinstance(add := diff["add"], tuple):
+        sql += AddHelper.generate_add_sql(add, diff_control["add"])
 
     # Things like equal fields triggers depend on renames and possibly added collections.
     sql += "\n-- EDIT SECTION --\n"
@@ -175,38 +155,6 @@ def alter_views_conditionally(
 ) -> None:
     if has_write_fields or is_view_field:
         alter_views.add(collection_name)
-
-
-def generate_new_collection_sql(
-    add: dict[str, Any], dc_add: dict[str, Any]
-) -> tuple[str, str]:
-    table_sql = ""
-    alter_table_sql = ""
-    # TODO found currently serves no real purpose. It seems however its intended use
-    # is to collect all related collections to update their views also.
-    found = set()
-    for collection_name in add:
-        found.add(collection_name)
-        table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
-    for collection_name in add:
-        found.add(collection_name)
-        for field_def in CURR_MODELS[collection_name]["fields"].values():
-            if write_fields := field_def.get("write_fields"):
-                table_sql += CURR_CODE_BLOCKS["intermediate_sql"][write_fields[0]]
-    for collection_name in add:
-        found.add(collection_name)
-        alter_table_sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(
-            collection_name, ""
-        )
-    for collection_name in add:
-        found.add(collection_name)
-        for triggers_dict in CURR_TRIGGER_SQL[collection_name].values():
-            for triggers in triggers_dict.values():
-                alter_table_sql += triggers
-    for collection_name in found:
-        del dc_add[collection_name]
-        alter_views.add(collection_name)
-    return table_sql, alter_table_sql
 
 
 def is_allowed_constant_field(
@@ -911,6 +859,23 @@ class RemoveHelper:
 
 class AddHelper:
     @staticmethod
+    def generate_add_sql(add: AddDiff, add_diff_control: AddDiff) -> str:
+        sql = ""
+        add_sql_parts: list[tuple[str, str]] = []
+        if isinstance(add[0], dict):
+            add_sql_parts.append(
+                AddHelper.generate_new_collection_sql(add[0], add_diff_control[0])
+            )
+        if isinstance(add_tree_dict := add[1], dict):
+            sql = AddHelper.handle_add_meta(add_tree_dict, add_diff_control[1])
+            add_sql_parts.append(
+                AddHelper.handle_add_tree(add_tree_dict, add_diff_control[1])
+            )
+        for new_coll_sql, old_coll_sql in zip(*add_sql_parts):
+            sql += new_coll_sql + old_coll_sql
+        return sql
+
+    @staticmethod
     def handle_add_meta(
         add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
         dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
@@ -938,11 +903,38 @@ class AddHelper:
         return sql
 
     @staticmethod
+    def generate_new_collection_sql(
+        add: dict[str, Any], dc_add: dict[str, Any]
+    ) -> tuple[str, str]:
+        table_sql = ""
+        intermediate_sql = ""
+        alter_table_sql = ""
+        # TODO found currently serves no real purpose. It seems however its intended use
+        # is to collect all related collections to update their views also.
+        found = set()
+        for collection_name in add:
+            found.add(collection_name)
+            table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
+            for field_def in CURR_MODELS[collection_name]["fields"].values():
+                if write_fields := field_def.get("write_fields"):
+                    intermediate_sql += CURR_CODE_BLOCKS["intermediate_sql"][
+                        write_fields[0]
+                    ]
+            alter_table_sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(
+                collection_name, ""
+            )
+            for triggers_dict in CURR_TRIGGER_SQL[collection_name].values():
+                for triggers in triggers_dict.values():
+                    alter_table_sql += triggers
+            del dc_add[collection_name]
+            alter_views.add(collection_name)
+        return table_sql + intermediate_sql, alter_table_sql.lstrip("\n")
+
+    @staticmethod
     def handle_add_tree(
         add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
         dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    ) -> tuple[str, str, str]:
-        before_sql = ""
+    ) -> tuple[str, str]:
         sql = ""
         after_sql = ""
         for collection_name, collection_def in add_tree_dict.items():
@@ -952,6 +944,7 @@ class AddHelper:
                 fields = collection_def[1]["fields"][fields_idx]
                 dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
                 alter_table_sql = ""
+                before_sql = ""
                 for field_name, field_def in fields.items():
                     if fields_idx == 0:
                         # field added
@@ -977,6 +970,7 @@ class AddHelper:
                         dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
                         field_name,
                     )
+                sql += before_sql
                 if alter_table_sql:
                     sql += (
                         AlterSchemaHelper.get_alter_table_statement(
@@ -986,7 +980,7 @@ class AddHelper:
                     )
             remove_empty(dc_add_tree_dict[collection_name][1], "fields")
             remove_empty(dc_add_tree_dict, collection_name)
-        return before_sql, sql, after_sql
+        return sql, after_sql
 
     @staticmethod
     def _handle_add_field_attributes(
