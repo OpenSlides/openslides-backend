@@ -48,7 +48,6 @@ class DiffMixin:
                 "global_yes",
                 "global_no",
                 "global_abstain",
-                "is_pseudoanonymized",
                 "min_votes_amount",
                 "max_votes_amount",
                 "max_votes_per_option",

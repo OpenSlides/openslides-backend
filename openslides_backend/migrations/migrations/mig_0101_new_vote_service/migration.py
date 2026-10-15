@@ -29,7 +29,6 @@ class Migration(DiffMixin, BaseMigration):
                 "used_as_default_projector_for_poll_in_meeting_id": "used_as_default_projector_for_topic_poll_in_meeting_id"
             },
             "meeting": {
-                "default_projector_poll_ids": "default_projector_topic_poll_ids",
                 "motion_poll_projection_name_order_first": "poll_projection_name_order_first",
                 "motion_poll_projection_max_columns": "poll_projection_max_columns",
             },
@@ -77,7 +76,6 @@ class Migration(DiffMixin, BaseMigration):
             "max_votes_per_option",
             "meeting_id",
             "onehundred_percent_base",
-            "is_pseudoanonymized",
             "pollmethod",
             "state",
             "type",
