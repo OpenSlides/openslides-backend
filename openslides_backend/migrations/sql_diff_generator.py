@@ -861,13 +861,10 @@ class AddHelper:
     @staticmethod
     def generate_add_sql(add: AddDiff, add_diff_control: AddDiff) -> str:
         sql = AddHelper.handle_add_meta(add_tree_dict := add[1], add_diff_control[1])
-        add_sql_parts = [
-            AddHelper.generate_new_collection_sql(add[0], add_diff_control[0])
-        ]
-        add_sql_parts.append(
-            AddHelper.handle_add_tree(add_tree_dict, add_diff_control[1])
-        )
-        for new_coll_sql, old_coll_sql in zip(*add_sql_parts):
+        for new_coll_sql, old_coll_sql in zip(
+            AddHelper.generate_new_collection_sql(add[0], add_diff_control[0]),
+            AddHelper.handle_add_tree(add_tree_dict, add_diff_control[1]),
+        ):
             sql += new_coll_sql + old_coll_sql
         return sql
 
