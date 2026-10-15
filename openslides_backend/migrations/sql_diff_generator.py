@@ -111,7 +111,7 @@ def main() -> int:
     # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
     if isinstance(add := diff["add"], tuple):
-        sql += AddHelper.generate_add_sql(add, diff_control["add"])
+        sql += AddHelper.handle_add(add, diff_control["add"])
 
     # Things like equal fields triggers depend on renames and possibly added collections.
     sql += "\n-- EDIT SECTION --\n"
@@ -859,7 +859,7 @@ class RemoveHelper:
 
 class AddHelper:
     @staticmethod
-    def generate_add_sql(add: AddDiff, add_diff_control: AddDiff) -> str:
+    def handle_add(add: AddDiff, add_diff_control: AddDiff) -> str:
         sql = AddHelper.handle_add_meta(add_tree_dict := add[1], add_diff_control[1])
         for new_coll_sql, old_coll_sql in zip(
             AddHelper.generate_new_collection_sql(add[0], add_diff_control[0]),
@@ -902,8 +902,6 @@ class AddHelper:
         table_sql = ""
         intermediate_sql = ""
         alter_table_sql = ""
-        # TODO found currently serves no real purpose. It seems however its intended use
-        # is to collect all related collections to update their views also.
         for collection_name in add:
             for field_name, field_def in CURR_MODELS[collection_name]["fields"].items():
                 table_sql += AddHelper._get_field_enum_sql(
