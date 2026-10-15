@@ -911,15 +911,16 @@ class AddHelper:
         alter_table_sql = ""
         # TODO found currently serves no real purpose. It seems however its intended use
         # is to collect all related collections to update their views also.
-        found = set()
         for collection_name in add:
-            found.add(collection_name)
-            table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
-            for field_def in CURR_MODELS[collection_name]["fields"].values():
+            for field_name, field_def in CURR_MODELS[collection_name]["fields"].items():
+                table_sql += AddHelper._get_field_enum_sql(
+                    collection_name, field_name, field_def.get("enum")
+                )
                 if write_fields := field_def.get("write_fields"):
                     intermediate_sql += CURR_CODE_BLOCKS["intermediate_sql"][
                         write_fields[0]
                     ]
+            table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
             alter_table_sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(
                 collection_name, ""
             )
@@ -1155,13 +1156,9 @@ class AddHelper:
                         # Only need to handle field enums (i.e. if it's a list)
                         # Otherwise it's a meta enum and all that needs to happen
                         # for the individual field is already done via the type handling.
-                        if isinstance(value, list):
-                            before_sql += Helper.get_enum_type_definition(
-                                HelperGetNames.get_enum_name_for_column(
-                                    collection_name, field_name
-                                ),
-                                value,
-                            )
+                        before_sql += AddHelper._get_field_enum_sql(
+                            collection_name, field_name, value
+                        )
                     case "sequence_scope":
                         constraints_sql += (
                             Helper.get_unique_together_constraint_definition(
@@ -1229,6 +1226,17 @@ class AddHelper:
             del dc_field_def[constraint]
 
         return before_sql, constraints_sql, after_sql
+
+    @staticmethod
+    def _get_field_enum_sql(
+        collection_name: str, field_name: str, enum: list[str] | str | None
+    ) -> str:
+        if isinstance(enum, list):
+            return Helper.get_enum_type_definition(
+                HelperGetNames.get_enum_name_for_column(collection_name, field_name),
+                enum,
+            )
+        return ""
 
     @staticmethod
     def _delete_table_fields_from_szt_for_add(code: SchemaZoneTexts) -> None:
