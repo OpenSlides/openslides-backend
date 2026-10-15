@@ -147,18 +147,9 @@ class ColumnDataSource:
     transformed_column_value: sql.Composed | None = None
 
     def __post_init__(self) -> None:
-        value_settings = [
-            self.source_column is not None,
-            self.transformed_column_value is not None,
-        ]
-
-        if all(value_settings):
+        if self.source_column is not None and self.transformed_column_value is not None:
             raise BadCodingException(
                 "Only one out of 'source_column' and 'transformed_column_value' can be defined."
-            )
-        elif not any(value_settings):
-            raise BadCodingException(
-                "One out of 'source_column' and 'transformed_column_value' must be defined."
             )
 
     def value(self, source_table: TableRef | None = None) -> ColumnRef | sql.Composed:
@@ -177,11 +168,13 @@ class TableDataSource:
     """
     Describes how data from a joined table is mapped to target columns:
         * source_table - defines the source and how it is joined
-        * source_data - maps the target columns to their corresponding source values
+        * source_data - maps the target columns to their corresponding source values.
+          If skipped, joined table will be used as intermediate join or filter
+          instead of data source.
     """
 
     source_table: Join
-    value_definition: list[ColumnDataSource]
+    value_definition: list[ColumnDataSource] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         target_columns = [data.target_column for data in self.value_definition]
@@ -320,7 +313,7 @@ class UpdateFromTables(_CopyFromTables):
             if not self.copy_data[i].source_table.join_on
         ]:
             return [
-                f"Items {empty_join_on} of 'copy_data' contain 'source_table's with empty 'join_on'."
+                f"Item(s) {empty_join_on} of 'copy_data' contain 'source_table's with empty 'join_on'."
             ]
         return []
 
@@ -350,11 +343,11 @@ class InsertFromTables(_CopyFromTables):
         if len(self.copy_data) > 1:
             if empty_join_on := [
                 i + 1
-                for i, data in enumerate(self.copy_data[1:])
+                for i, data in enumerate(self.joined_sources)
                 if not data.source_table.join_on
             ]:
                 return [
-                    f"Items {empty_join_on} of 'copy_data' contain 'source_table's with empty 'join_on'."
+                    f"Item(s) {empty_join_on} of 'copy_data' contain 'source_table's with empty 'join_on'."
                 ]
         elif join_on := self.copy_data[0].source_table.join_on:
             errors.append(
