@@ -140,15 +140,36 @@ class TestMigration101(BaseMigrationTestCase):
             },
         }
 
+    @staticmethod
+    def _get_assignment_data(
+        base: int,
+        meeting_id: int,
+        assignment_data: PartialModel = {},
+    ) -> dict[FullQualifiedId, PartialModel]:
+        return {
+            f"assignment/{base}": {
+                "title": f"assignment {base}",
+                "meeting_id": meeting_id,
+                **assignment_data,
+            },
+            f"list_of_speakers/{base + 200}": {
+                "content_object_id": f"assignment/{base}",
+                "meeting_id": meeting_id,
+            },
+        }
+
+    def _create_users(self, user_ids: list[int]) -> None:
+        self.create_entries(
+            {f"user/{user_id}": {"username": f"user-{user_id}"} for user_id in user_ids}
+        )
+
     def _create_users_for_meeting(
         self,
         meeting_id: int,
         user_ids: list[int],
         group_ids: list[int],
     ) -> None:
-        self.create_entries(
-            {f"user/{user_id}": {"username": f"user-{user_id}"} for user_id in user_ids}
-        )
+        self._create_users(user_ids)
         self.create_entries(
             {
                 f"meeting_user/{meeting_id * 100 + user_id}": {
@@ -249,6 +270,7 @@ class TestMigration101(BaseMigrationTestCase):
         self.set_up_organization()
         self.create_entries(meeting_data)
         self._create_users_for_meeting(1, [1, 2], [1])
+        self._create_users([21, 22])
         polls_data = {
             **self._get_motion_data(1, 1),
             **self._get_poll_data(
@@ -278,6 +300,57 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_option_data(1, 1, 1, "motion/1", {"yes": 1, "no": 1}),
             **self._get_vote_data(1, 1, 1, "Y"),
             **self._get_vote_data(2, 1, 1, "N", 1, 2),
+            #
+            **self._get_assignment_data(1, 1),
+            **self._get_poll_data(
+                poll_id=2,
+                meeting_id=1,
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                type_="named",
+                content_object_id="assignment/1",
+                state="published",
+                is_pseudoanonymized=True,
+                extra_data={
+                    "votescast": Decimal(2),
+                    "votesvalid": Decimal(2),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": False,
+                                "vote_delegated_to_id": 2,
+                            },
+                            {
+                                "user_id": 2,
+                                "voted": False,
+                                "present": False,
+                            },
+                        ]
+                    ),
+                },
+            ),
+            "poll_candidate_list/1": {"meeting_id": 1},
+            "poll_candidate/1": {
+                "id": 1,
+                "weight": 1,
+                "user_id": 21,
+                "meeting_id": 1,
+                "poll_candidate_list_id": 1,
+            },
+            "poll_candidate/2": {
+                "id": 2,
+                "weight": 2,
+                "user_id": 22,
+                "meeting_id": 1,
+                "poll_candidate_list_id": 1,
+            },
+            **self._get_option_data(
+                2, 2, 1, "poll_candidate_list/1", {"yes": 1, "no": 1}
+            ),
+            **self._get_vote_data(3, 1, 2, "Y"),
+            **self._get_vote_data(4, 1, 2, "N", 1, 2),
         }
 
         self.create_entries(polls_data)
