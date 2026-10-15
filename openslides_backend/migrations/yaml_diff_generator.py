@@ -32,6 +32,8 @@ MetaAttributesRemoveTuple = tuple[list[str], dict[str, Any]]
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
+AddDiffDict = dict[str, Any]
+AddDiff = tuple[AddDiffDict, AddDiffDict]
 
 
 class RemoveDiffDict(TypedDict):
@@ -288,7 +290,7 @@ def create_add_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]] | None:
+) -> AddDiff | None:
     """
     Returns the additional entries on pos 0 and the sub trees on pos 1.
     """
