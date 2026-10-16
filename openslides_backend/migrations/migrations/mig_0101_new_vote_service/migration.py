@@ -1138,7 +1138,7 @@ class Migration(DiffMixin, BaseMigration):
                 SUM(o.yes + o.no) FILTER (
                     WHERE o.used_as_global_option_in_poll_id = o.poll_id
                 ) AS nota_votes,
-                jsonb_object_agg(
+                json_object_agg(
                     o.text,
                     CASE WHEN pm.pollmethod = 'N' THEN o.no::text ELSE o.yes::text END
                 ) AS options_json
@@ -1164,9 +1164,19 @@ class Migration(DiffMixin, BaseMigration):
                         value_definition=[
                             ColumnDataSource(
                                 "result",
-                                transformed_column_value=sql.SQL(
-                                    "poll_result_source_m.options_json || jsonb_strip_nulls(jsonb_object(ARRAY[{columns}], ARRAY[{values}]))"
-                                ).format(
+                                transformed_column_value=sql.SQL("""
+                                    LEFT(options_json::text, -1)
+                                    ||
+                                    CASE WHEN options_json::text = '{{}}' THEN '' ELSE ',' END
+                                    ||
+                                    trim(
+                                        BOTH '{{}}' FROM
+                                        json_strip_nulls(
+                                            json_object(ARRAY[{columns}], ARRAY[{values}])
+                                        )::text
+                                    )
+                                    || '}}'
+                                    """).format(
                                     columns=sql.SQL(",").join(
                                         [
                                             "nota",
