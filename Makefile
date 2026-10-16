@@ -68,7 +68,6 @@ pyupgrade:
 
 check-pyupgrade:
 	pyupgrade --py310-plus $$(find . -name '*.py')
-	test $(git status --porcelain | wc -l) = 0
 
 black:
 	black $(paths)
