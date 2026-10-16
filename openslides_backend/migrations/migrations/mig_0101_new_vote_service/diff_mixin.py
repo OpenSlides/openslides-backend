@@ -36,10 +36,11 @@ class DiffMixin:
             },
         ),
         "option": (
-            ["yes", "no", "abstain", "text"],
+            ["yes", "no", "abstain", "text", "weight"],
             {
                 "content_object_id": "varchar(256)",
                 "poll_id": "integer",
+                "used_as_global_option_in_poll_id": "integer",
                 "vote_ids": "integer[]",
             },
         ),

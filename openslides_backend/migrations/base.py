@@ -627,7 +627,7 @@ class BaseMigration:
     @staticmethod
     def _join_select_columns(
         curs: Cursor[DictRow],
-        select_columns: list[ColumnRef | sql.Composed],
+        select_columns: list[ColumnRef | sql.Composable],
         target_table: TableRef,
         target_columns: list[Column],
     ) -> sql.Composed:
@@ -640,7 +640,7 @@ class BaseMigration:
     @staticmethod
     def _normalize_select_columns(
         curs: Cursor[DictRow],
-        select_columns: list[ColumnRef | sql.Composed],
+        select_columns: list[ColumnRef | sql.Composable],
         target_table: TableRef,
         target_columns: list[Column],
     ) -> list[sql.Composable]:

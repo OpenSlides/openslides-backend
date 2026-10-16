@@ -144,7 +144,7 @@ class ColumnDataSource:
 
     target_column: Column
     source_column: Column | None = None
-    transformed_column_value: sql.Composed | None = None
+    transformed_column_value: sql.Composable | None = None
 
     def __post_init__(self) -> None:
         if self.source_column is not None and self.transformed_column_value is not None:
@@ -152,7 +152,7 @@ class ColumnDataSource:
                 "Only one out of 'source_column' and 'transformed_column_value' can be defined."
             )
 
-    def value(self, source_table: TableRef | None = None) -> ColumnRef | sql.Composed:
+    def value(self, source_table: TableRef | None = None) -> ColumnRef | sql.Composable:
         if self.source_column is not None:
             if source_table is None:
                 raise BadCodingException(
@@ -186,7 +186,7 @@ class TableDataSource:
             )
 
     @property
-    def values_map(self) -> dict[Column, ColumnRef | sql.Composed]:
+    def values_map(self) -> dict[Column, ColumnRef | sql.Composable]:
         return {
             data.target_column: data.value(self.source_table.right_table)
             for data in self.value_definition
@@ -233,7 +233,7 @@ class _CopyFromTables:
         ]
 
     @property
-    def select_columns(self) -> list[ColumnRef | sql.Composed]:
+    def select_columns(self) -> list[ColumnRef | sql.Composable]:
         return [
             target_data.value(data_source.source_table.right_table)
             for data_source in self.copy_data

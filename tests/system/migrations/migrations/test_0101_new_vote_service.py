@@ -129,7 +129,7 @@ class TestMigration101(BaseMigrationTestCase):
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
             f"motion/{base}": {
-                "title": f"motion{base}",
+                "title": f"Motion {base}",
                 "meeting_id": meeting_id,
                 "state_id": meeting_id,
                 **motion_data,
@@ -148,12 +148,34 @@ class TestMigration101(BaseMigrationTestCase):
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
             f"assignment/{base}": {
-                "title": f"assignment {base}",
+                "title": f"Assignment {base}",
                 "meeting_id": meeting_id,
                 **assignment_data,
             },
             f"list_of_speakers/{base + 200}": {
                 "content_object_id": f"assignment/{base}",
+                "meeting_id": meeting_id,
+            },
+        }
+
+    @staticmethod
+    def _get_topic_data(
+        base: int,
+        meeting_id: int,
+        topic_data: PartialModel = {},
+    ) -> dict[FullQualifiedId, PartialModel]:
+        return {
+            f"topic/{base}": {
+                "title": f"Topic {base}",
+                "meeting_id": meeting_id,
+                **topic_data,
+            },
+            f"agenda_item/{base}": {
+                "meeting_id": meeting_id,
+                "content_object_id": f"topic/{base}",
+            },
+            f"list_of_speakers/{base + 300}": {
+                "content_object_id": f"topic/{base}",
                 "meeting_id": meeting_id,
             },
         }
@@ -195,7 +217,8 @@ class TestMigration101(BaseMigrationTestCase):
         base: int,
         poll_id: int,
         meeting_id: int,
-        content_object_id: str,
+        content_object_id: str | None = None,
+        text: str | None = None,
         extra_data: PartialModel = {},
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
@@ -203,6 +226,7 @@ class TestMigration101(BaseMigrationTestCase):
                 "poll_id": poll_id,
                 "meeting_id": meeting_id,
                 "content_object_id": content_object_id,
+                "text": text,
                 **extra_data,
             }
         }
@@ -212,7 +236,7 @@ class TestMigration101(BaseMigrationTestCase):
         base: int,
         meeting_id: int,
         option_id: int,
-        value: Literal["Y", "N", "A"],
+        value: Literal["Y", "N", "A"] | dict,
         user_id: int | None = None,
         delegated_user_id: int | None = None,
         user_token: str | None = None,
@@ -221,7 +245,7 @@ class TestMigration101(BaseMigrationTestCase):
             f"vote/{base}": {
                 "meeting_id": meeting_id,
                 "option_id": option_id,
-                "value": value,
+                "value": Jsonb(value) if isinstance(value, dict) else value,
                 "weight": Decimal(base),
                 "user_token": user_token or get_random_string(16),
             }
@@ -272,6 +296,7 @@ class TestMigration101(BaseMigrationTestCase):
         self._create_users_for_meeting(1, [1, 2], [1])
         self._create_users([21, 22])
         polls_data = {
+            # Motion
             **self._get_motion_data(1, 1),
             **self._get_poll_data(
                 poll_id=1,
@@ -297,16 +322,18 @@ class TestMigration101(BaseMigrationTestCase):
                     ),
                 },
             ),
-            **self._get_option_data(1, 1, 1, "motion/1", {"yes": 1, "no": 1}),
+            **self._get_option_data(
+                1, 1, 1, "motion/1", extra_data={"yes": 1, "no": 1}
+            ),
             **self._get_vote_data(1, 1, 1, "Y"),
             **self._get_vote_data(2, 1, 1, "N", 1, 2),
-            #
+            # Assignment with poll_candidate_list
             **self._get_assignment_data(1, 1),
             **self._get_poll_data(
                 poll_id=2,
                 meeting_id=1,
-                pollmethod="YNA",
-                onehundred_percent_base="YNA",
+                pollmethod="YN",
+                onehundred_percent_base="YN",
                 type_="named",
                 content_object_id="assignment/1",
                 state="published",
@@ -347,10 +374,54 @@ class TestMigration101(BaseMigrationTestCase):
                 "poll_candidate_list_id": 1,
             },
             **self._get_option_data(
-                2, 2, 1, "poll_candidate_list/1", {"yes": 1, "no": 1}
+                2, 2, 1, "poll_candidate_list/1", extra_data={"yes": 1, "no": 1}
             ),
             **self._get_vote_data(3, 1, 2, "Y"),
             **self._get_vote_data(4, 1, 2, "N", 1, 2),
+            # Topic
+            **self._get_topic_data(1, 1),
+            **self._get_poll_data(
+                poll_id=3,
+                meeting_id=1,
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                type_="named",
+                content_object_id="topic/1",
+                state="published",
+                is_pseudoanonymized=False,
+                extra_data={
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 3,
+                    "votescast": Decimal(3),
+                    "votesvalid": Decimal(3),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": False,
+                                "vote_delegated_to_id": 2,
+                            },
+                            {
+                                "user_id": 2,
+                                "voted": False,
+                                "present": False,
+                            },
+                        ]
+                    ),
+                },
+            ),
+            **self._get_option_data(
+                3, 3, 1, text="Option 3/1", extra_data={"yes": 0, "no": 1, "abstain": 1}
+            ),
+            **self._get_option_data(
+                4, 3, 1, text="Option 3/2", extra_data={"yes": 0, "no": 0, "abstain": 2}
+            ),
+            **self._get_option_data(
+                5, 3, 1, text="Option 3/3", extra_data={"yes": 1, "no": 1, "abstain": 0}
+            ),
+            **self._get_vote_data(5, 1, 3, {"3": "N", "4": "A", "5": "Y"}, 2, 2),
+            **self._get_vote_data(6, 1, 3, {"3": "A", "4": "A", "5": "N"}, 1, 1),
         }
 
         self.create_entries(polls_data)
