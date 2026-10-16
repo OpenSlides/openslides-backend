@@ -379,9 +379,7 @@ class MeetingImport(
                 del self.user_id_to_gender[user_id]
         genders = self.datastore.get_all("gender", ["id", "name"], lock_result=True)
         gender_dict = {gender.get("name", ""): gender for gender in genders.values()}
-        new_genders = list(
-            {value for value in self.user_id_to_gender.values()}.difference(gender_dict)
-        )
+        new_genders = list({*self.user_id_to_gender.values()}.difference(gender_dict))
         if new_genders:
             new_genders.sort()  # fix order for tests
             new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))

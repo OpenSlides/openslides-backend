@@ -259,8 +259,8 @@ class PollUpdateAction(
         new_main_user_id_to_entry: dict[int, dict[str, Any]] = {
             date["user_id"]: date for date in instance[field]
         }
-        original_ids = {user_id for user_id in original_main_user_id_to_entry}
-        new_ids = {user_id for user_id in new_main_user_id_to_entry}
+        original_ids = {*original_main_user_id_to_entry}
+        new_ids = {*new_main_user_id_to_entry}
         if (len(original_ids) != len(new_ids)) or len(original_ids.difference(new_ids)):
             raise ActionException(
                 "Can not change essential 'entitled_users_at_stop' data via poll.update"
