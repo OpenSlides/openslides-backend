@@ -401,7 +401,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             "SET {set_part}"
             "{from_part}"
             "{joined_tables}"
-            "{where}"
+            "{where};"
         ).format(
             target_table=sql.Identifier(
                 HelperGetNames.get_table_name(collection_or_table_name)
@@ -435,7 +435,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             "FROM {source_table}"
             "{joined_tables}"
             "{where}"
-            "{returning}"
+            "{returning};"
         ).format(
             target_table=sql.Identifier(target_table),
             target_columns=target_columns,
