@@ -135,7 +135,7 @@ jobs:
     - name: Check pyupgrade
       if: always()
       run: make pyupgrade
-        run: test $(git status --porcelain | wc -l) = 0
+      run: test $(git status --porcelain | wc -l) = 0
 
   check-models-all:
     name: Check from models.yml up to permissions and jsons
