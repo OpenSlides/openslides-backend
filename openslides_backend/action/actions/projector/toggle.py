@@ -69,7 +69,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
                     )
                 result = self.datastore.filter("projection", filter_, ["id"])
                 if result:
-                    projection_ids = [id_ for id_ in result]
+                    projection_ids = [*result]
                     if stable:
                         self.execute_other_action(
                             ProjectionDelete, [{"id": id_} for id_ in projection_ids]

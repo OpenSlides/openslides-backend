@@ -204,7 +204,7 @@ class ExtendedDatabase(Database):
                     field for field in mapped_fields if field not in changed_model_copy
                 ]
             else:
-                missing_fields = [field for field in changed_model_copy.keys()]
+                missing_fields = list(changed_model_copy)
             if not missing_fields:
                 # nothing to do, we've got the full model
                 return changed_model_copy

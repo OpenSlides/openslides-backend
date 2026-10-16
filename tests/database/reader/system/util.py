@@ -277,7 +277,7 @@ def setup_data(connection: Connection, data: dict[str, dict[int, Any]]) -> None:
                 strip_reserved_fields(model_data)
                 cursor.execute(
                     f"INSERT INTO {collection}_t ({', '.join(key for key in model_data.keys())}) VALUES ({', '.join('%s' for i in range(len(model_data)))})",
-                    [val for val in model_data.values()],
+                    [*model_data.values()],
                 )
     connection.commit()
 
