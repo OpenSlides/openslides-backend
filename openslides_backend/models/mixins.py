@@ -107,6 +107,7 @@ class PollModelMixin:
     CONFIG_TYPE_RATING_STV_SCOTTISH = "poll_config_stv_scottish"
 
     ONEHUNDRED_PERCENT_BASE_NO_GENERAL = "no_general"
+    ONEHUNDRED_PERCENT_BASE_YES_NO_ABSTAIN = "yes_no_abstain"
     ONEHUNDRED_PERCENT_BASE_YES_NO = "yes_no"
     ONEHUNDRED_PERCENT_BASE_VALID = "valid"
     ONEHUNDRED_PERCENT_BASE_CAST = "cast"

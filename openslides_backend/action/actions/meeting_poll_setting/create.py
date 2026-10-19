@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ....models.models import MeetingPollSetting
+from ....models.models import MeetingPollSetting, Poll
 from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 from ...util.action_type import ActionType
@@ -106,3 +106,20 @@ class MeetingPollSettingCreate(CreateAction):
             raise ActionException(
                 f"'{poll_type_field_name}' already exists in meeting/{meeting_id}."
             )
+
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
+        is_motion_poll_setting = (
+            instance.get("used_as_motion_poll_config_in_meeting_id") is not None
+        )
+        if not instance.get("method"):
+            instance["method"] = (
+                Poll.METHOD_APPROVAL_YNA
+                if is_motion_poll_setting
+                else Poll.METHOD_SELECTION_Y
+            )
+        if not instance.get("onehundred_percent_base") and is_motion_poll_setting:
+            instance["onehundred_percent_base"] = (
+                Poll.ONEHUNDRED_PERCENT_BASE_YES_NO_ABSTAIN
+            )
+        instance = super().set_defaults(instance)
+        return instance
