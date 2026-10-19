@@ -86,6 +86,7 @@ class Migration(DiffMixin, BaseMigration):
             "option_ids",
             "votescast",
             "votesinvalid",
+            "is_pseudoanonymized",
         ],
         "poll_candidate": ["poll_candidate_list_id", "user_id", "weight"],
         "poll_candidate_list": ["option_id", "poll_candidate_ids"],
@@ -341,12 +342,19 @@ class Migration(DiffMixin, BaseMigration):
         self.rename_column_in_mig_table(
             curs, "poll", "onehundred_percent_base", "onehundred_percent_base_m"
         )
-        self.rename_column_in_mig_table(curs, "vote", "value", "value_m")
-        curs.execute("ALTER TABLE vote_m ADD COLUMN poll_id integer;")
         curs.execute(
-            "UPDATE vote_m SET poll_id = option_m.poll_id FROM option_m WHERE option_m.id = vote_m.option_id;"
+            sql.SQL("""
+            UPDATE vote_m vm
+            SET value = v.target_value
+            FROM (
+                VALUES
+                    ('Y', 'yes'),
+                    ('N', 'no'),
+                    ('A', 'abstain')
+            ) AS v(origin_value, target_value)
+            WHERE v.origin_value = vm.value;
+            """),
         )
-        vote_value_map = {"Y": "yes", "N": "no", "A": "abstain"}
 
         self.update_from_values_map(
             curs,
@@ -372,15 +380,43 @@ class Migration(DiffMixin, BaseMigration):
             {"allow_invalid": False, "allow_vote_split": False},
         )
 
-        self.migrate_motion_polls(
-            curs, poll_onehundred_percent_bases_map, vote_value_map
-        )
+        curs.execute("ALTER TABLE poll_m ADD COLUMN generate_ballots boolean;")
+        curs.execute("""
+            UPDATE poll_m pm
+            SET generate_ballots = (
+                (pt.visibility <> 'manually') AND (pt.state = 'finished')
+            )
+            FROM poll_t pt
+            WHERE pm.id = pt.id;
+            """)
+        curs.execute("ALTER TABLE vote_m ADD COLUMN poll_id integer;")
+        curs.execute("""
+            ALTER TABLE vote_m
+                ADD COLUMN generate_ballot boolean,
+                ADD COLUMN link_user_to_ballot boolean;
+        """)
+        curs.execute("""
+            UPDATE vote_m v
+            SET poll_id = option_m.poll_id
+            FROM option_m
+            WHERE option_m.id = v.option_id;
+            """)
+        curs.execute("""
+            UPDATE vote_m v
+            SET
+                generate_ballot = p.generate_ballots,
+                link_user_to_ballot = (
+                    p.generate_ballots = TRUE AND p.is_pseudoanonymized <> TRUE
+                )
+            FROM poll_m p
+            WHERE v.poll_id = p.id;
+            """)
+
+        self.migrate_motion_polls(curs, poll_onehundred_percent_bases_map)
         self.migrate_assignment_polls_with_candidate_list(
-            curs, poll_onehundred_percent_bases_map, vote_value_map
+            curs, poll_onehundred_percent_bases_map
         )
-        self.migrate_topic_polls(
-            curs, poll_onehundred_percent_bases_map, vote_value_map
-        )
+        self.migrate_topic_polls(curs, poll_onehundred_percent_bases_map)
 
         curs.execute(sql.SQL("""
                 INSERT INTO poll_entitled_user_t (
@@ -404,7 +440,6 @@ class Migration(DiffMixin, BaseMigration):
         self,
         curs: Cursor[DictRow],
         poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-        vote_value_map: dict[str, str],
     ) -> None:
         filter_ = self.get_filter_by_content_object_collection("motion")
         poll_t = TableRef("poll", False)
@@ -559,12 +594,11 @@ class Migration(DiffMixin, BaseMigration):
                     copy_data=[
                         TableDataSource(
                             Join(
-                                poll_t,
+                                poll_m,
                                 [],
                                 And(
                                     FilterOperator("id", "in", new_poll_configs),
-                                    FilterOperator("visibility", "!=", "manually"),
-                                    FilterOperator("state", "=", "finished"),
+                                    FilterOperator("generate_ballots", "=", True),
                                 ),
                             ),
                             [],
@@ -572,7 +606,7 @@ class Migration(DiffMixin, BaseMigration):
                         TableDataSource(
                             source_table=Join(
                                 vote_m,
-                                [JoinOn("poll_id", poll_t, "id")],
+                                [JoinOn("poll_id", poll_m, "id")],
                             ),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
@@ -614,29 +648,19 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 vote_m,
                                 [],
-                                FilterOperator("id", "in", new_ballot_user_ids),
+                                And(
+                                    FilterOperator("id", "in", new_ballot_user_ids),
+                                    FilterOperator("link_user_to_ballot", "=", True),
+                                ),
                             ),
                             value_definition=[
                                 ColumnDataSource("weight", "weight"),
                                 ColumnDataSource("poll_id", "poll_id"),
+                                ColumnDataSource("value", "value"),
                                 ColumnDataSource("poll_ballot_user_id", "id"),
                             ],
                         ),
-                        TableDataSource(
-                            Join(
-                                poll_t,
-                                [JoinOn("id", vote_m, "poll_id")],
-                                FilterOperator("anonymized", "!=", True),
-                            ),
-                        ),
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {"value_m": value_m, "value": value}
-                        for value_m, value in vote_value_map.items()
-                    ],
-                    join_on_columns=["value_m"],
                 ),
                 return_fields=["poll_ballot_user_id"],
             ).values()
@@ -650,28 +674,19 @@ class Migration(DiffMixin, BaseMigration):
                         source_table=Join(
                             vote_m,
                             [],
-                            Not(FilterOperator("id", "in", public_ballot_ids)),
+                            And(
+                                FilterOperator("generate_ballot", "=", True),
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                                Not(FilterOperator("id", "in", public_ballot_ids)),
+                            ),
                         ),
                         value_definition=[
                             ColumnDataSource("weight", "weight"),
                             ColumnDataSource("poll_id", "poll_id"),
+                            ColumnDataSource("value", "value"),
                         ],
                     ),
-                    TableDataSource(
-                        source_table=Join(
-                            poll_t,
-                            [JoinOn("id", vote_m, "poll_id")],
-                            FilterOperator("id", "in", new_poll_configs),
-                        ),
-                    ),
                 ]
-            ),
-            values_source=ValuesSource(
-                rows=[
-                    {"value_m": value_m, "value": value}
-                    for value_m, value in vote_value_map.items()
-                ],
-                join_on_columns=["value_m"],
             ),
         )
 
@@ -679,7 +694,6 @@ class Migration(DiffMixin, BaseMigration):
         self,
         curs: Cursor[DictRow],
         poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-        vote_value_map: dict[str, str],
     ) -> None:
         filter_ = self.get_filter_by_content_object_collection("assignment")
         poll_t = TableRef("poll", False)
@@ -843,12 +857,11 @@ class Migration(DiffMixin, BaseMigration):
                     copy_data=[
                         TableDataSource(
                             Join(
-                                poll_t,
+                                poll_m,
                                 [],
                                 And(
                                     FilterOperator("id", "in", new_poll_configs),
-                                    FilterOperator("visibility", "!=", "manually"),
-                                    FilterOperator("state", "=", "finished"),
+                                    FilterOperator("generate_ballots", "=", True),
                                 ),
                             ),
                             [],
@@ -856,7 +869,7 @@ class Migration(DiffMixin, BaseMigration):
                         TableDataSource(
                             source_table=Join(
                                 vote_m,
-                                [JoinOn("poll_id", poll_t, "id")],
+                                [JoinOn("poll_id", poll_m, "id")],
                             ),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
@@ -898,31 +911,20 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 vote_m,
                                 [],
-                                FilterOperator("id", "in", new_ballot_user_ids),
+                                And(
+                                    FilterOperator("id", "in", new_ballot_user_ids),
+                                    FilterOperator("link_user_to_ballot", "=", True),
+                                ),
                             ),
                             value_definition=[
                                 ColumnDataSource("weight", "weight"),
                                 ColumnDataSource("poll_id", "poll_id"),
+                                ColumnDataSource("value", "value"),
                                 ColumnDataSource("poll_ballot_user_id", "id"),
                             ],
                         ),
-                        TableDataSource(
-                            Join(
-                                poll_t,
-                                [JoinOn("id", vote_m, "poll_id")],
-                                FilterOperator("anonymized", "!=", True),
-                            ),
-                        ),
                     ]
                 ),
-                values_source=ValuesSource(
-                    rows=[
-                        {"value_m": value_m, "value": value}
-                        for value_m, value in vote_value_map.items()
-                    ],
-                    join_on_columns=["value_m"],
-                ),
-                return_fields=["poll_ballot_user_id"],
             ).values()
         ]
         self.insert_from_other_table(
@@ -934,28 +936,19 @@ class Migration(DiffMixin, BaseMigration):
                         source_table=Join(
                             vote_m,
                             [],
-                            Not(FilterOperator("id", "in", public_ballot_ids)),
+                            And(
+                                FilterOperator("generate_ballot", "=", True),
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                                Not(FilterOperator("id", "in", public_ballot_ids)),
+                            ),
                         ),
                         value_definition=[
                             ColumnDataSource("weight", "weight"),
                             ColumnDataSource("poll_id", "poll_id"),
+                            ColumnDataSource("value", "value"),
                         ],
                     ),
-                    TableDataSource(
-                        source_table=Join(
-                            poll_t,
-                            [JoinOn("id", vote_m, "poll_id")],
-                            FilterOperator("id", "in", new_poll_configs),
-                        ),
-                    ),
                 ]
-            ),
-            values_source=ValuesSource(
-                rows=[
-                    {"value_m": value_m, "value": value}
-                    for value_m, value in vote_value_map.items()
-                ],
-                join_on_columns=["value_m"],
             ),
         )
         poll_candidate_m = TableRef("poll_candidate", True)
@@ -1013,7 +1006,6 @@ class Migration(DiffMixin, BaseMigration):
         self,
         curs: Cursor[DictRow],
         poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-        vote_value_map: dict[str, str],
     ) -> None:
         filter_ = self.get_filter_by_content_object_collection("topic")
         poll_t = TableRef("poll", False)
@@ -1037,7 +1029,7 @@ class Migration(DiffMixin, BaseMigration):
                                 ColumnDataSource(
                                     "allow_nota",
                                     transformed_column_value=sql.SQL(
-                                        "({source_column} <> NULL)"
+                                        "({source_column} IS NOT NULL)"
                                     ).format(
                                         source_column=sql.Identifier(
                                             poll_m.table_name, "global_option_id"
@@ -1056,7 +1048,7 @@ class Migration(DiffMixin, BaseMigration):
                                 ),
                                 ColumnDataSource(
                                     "display_chart",
-                                    transformed_column_value=sql.Literal(True),
+                                    transformed_column_value=sql.Literal("pie"),
                                 ),
                                 ColumnDataSource(
                                     "onehundred_percent_base",
@@ -1109,7 +1101,12 @@ class Migration(DiffMixin, BaseMigration):
                         source_table=Join(
                             option_m,
                             [],
-                            FilterOperator("id", "in", new_poll_configs),
+                            And(
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                                FilterOperator(
+                                    "used_as_global_option_in_poll_id", "=", None
+                                ),
+                            ),
                         ),
                         value_definition=[
                             ColumnDataSource(field, field)
@@ -1127,20 +1124,22 @@ class Migration(DiffMixin, BaseMigration):
 
         curs.execute(
             sql.SQL("""
-            CREATE TEMP TABLE poll_result_source_m AS
+            CREATE TEMP TABLE poll_result_source_topic_m AS
             SELECT
-                poll_id,
-                SUM(o.abstain) AS abstain_votes,
-                SUM(o.yes + o.no) FILTER (
+                o.poll_id,
+                COALESCE(SUM(o.abstain), 0) AS abstain_votes,
+                SUM(COALESCE(o.yes, 0) + COALESCE(o.no, 0)) FILTER (
                     WHERE o.used_as_global_option_in_poll_id = o.poll_id
                 ) AS nota_votes,
-                json_object_agg(
+                jsonb_object_agg(
                     o.text,
-                    CASE WHEN pm.pollmethod = 'N' THEN o.no::text ELSE o.yes::text END
+                    CASE WHEN p.pollmethod = 'N' THEN o.no::text ELSE o.yes::text END
+                ) FILTER (
+                    WHERE o.used_as_global_option_in_poll_id IS NULL
                 ) AS options_json
             FROM option_m o
-            JOIN poll_m pm ON pm.id = o.poll_id
-            WHERE poll_id = ANY(%s)
+            JOIN poll_m p ON p.id = o.poll_id
+            WHERE o.poll_id = ANY(%s)
             GROUP BY poll_id;
             """),
             [new_poll_configs],
@@ -1154,7 +1153,7 @@ class Migration(DiffMixin, BaseMigration):
                     TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
                     TableDataSource(
                         Join(
-                            TableRef("poll_result_source", True),
+                            TableRef("poll_result_source_topic", True),
                             [JoinOn("poll_id", poll_m, "id")],
                         ),
                         value_definition=[
@@ -1187,14 +1186,15 @@ class Migration(DiffMixin, BaseMigration):
                                                 "NULLIF({source_column}::text, '0')"
                                             ).format(
                                                 source_column=sql.Identifier(
-                                                    "poll_result_source_m", "nota_votes"
+                                                    "poll_result_source_topic_m",
+                                                    "nota_votes",
                                                 )
                                             ),
                                             sql.SQL(
                                                 "NULLIF({source_column}::text, '0')"
                                             ).format(
                                                 source_column=sql.Identifier(
-                                                    "poll_result_source_m",
+                                                    "poll_result_source_topic_m",
                                                     "abstain_votes",
                                                 )
                                             ),
@@ -1220,7 +1220,36 @@ class Migration(DiffMixin, BaseMigration):
             ),
             filter_target_table=filter_polls,
         )
-        vote_m = TableRef("vote", True)
+        curs.execute(
+            sql.SQL("""
+            CREATE TEMP TABLE aggregated_votes_topic_m AS
+            SELECT
+                MIN(v.id) AS id,
+                MIN(v.poll_id) AS poll_id,
+                BOOL_AND(v.link_user_to_ballot) AS link_user_to_ballot,
+                BOOL_AND(v.generate_ballot) AS generate_ballot,
+                MIN(v.weight) AS weight,
+                MIN(mur.id) AS represented_meeting_user_id,
+                MIN(mua.id) AS acting_meeting_user_id,
+                CASE
+                    WHEN BOOL_OR(o.used_as_global_option_in_poll_id = v.poll_id)
+                        THEN 'nota'
+                    ELSE array_agg(v.option_id)::text
+                END AS value
+            FROM vote_m v
+            JOIN option_m o ON o.id = v.option_id
+            JOIN poll_m p ON p.id = v.poll_id
+            LEFT JOIN meeting_user mur
+                ON mur.meeting_id = p.meeting_id
+                AND mur.user_id = v.user_id
+            LEFT JOIN meeting_user mua
+                ON mua.meeting_id = p.meeting_id
+                AND mua.user_id = v.delegated_user_id
+            WHERE v.poll_id = ANY(%s)
+            GROUP BY v.user_token;
+            """),
+            [new_poll_configs],
+        )
         new_ballot_user_ids = list(
             self.insert_from_other_table(
                 curs,
@@ -1229,45 +1258,29 @@ class Migration(DiffMixin, BaseMigration):
                     copy_data=[
                         TableDataSource(
                             Join(
-                                poll_t,
+                                poll_m,
                                 [],
                                 And(
                                     FilterOperator("id", "in", new_poll_configs),
-                                    FilterOperator("visibility", "!=", "manually"),
-                                    FilterOperator("state", "=", "finished"),
+                                    FilterOperator("generate_ballots", "=", True),
                                 ),
                             ),
                             [],
                         ),
                         TableDataSource(
                             source_table=Join(
-                                vote_m,
-                                [JoinOn("poll_id", poll_t, "id")],
+                                TableRef("aggregated_votes_topic", True),
+                                [JoinOn("poll_id", poll_m, "id")],
                             ),
                             value_definition=[
-                                ColumnDataSource("id", "id"),
-                                ColumnDataSource("poll_id", "poll_id"),
+                                ColumnDataSource(field, field)
+                                for field in [
+                                    "id",
+                                    "poll_id",
+                                    "acting_meeting_user_id",
+                                    "represented_meeting_user_id",
+                                ]
                             ],
-                        ),
-                        TableDataSource(
-                            Join(
-                                TableRef("meeting_user", False),
-                                [
-                                    JoinOn("user_id", vote_m, "user_id"),
-                                    JoinOn("meeting_id", vote_m, "meeting_id"),
-                                ],
-                            ),
-                            [ColumnDataSource("represented_meeting_user_id", "id")],
-                        ),
-                        TableDataSource(
-                            Join(
-                                TableRef("meeting_user", True),
-                                [
-                                    JoinOn("user_id", vote_m, "delegated_user_id"),
-                                    JoinOn("meeting_id", vote_m, "meeting_id"),
-                                ],
-                            ),
-                            [ColumnDataSource("acting_meeting_user_id", "id")],
                         ),
                     ]
                 ),
@@ -1282,23 +1295,19 @@ class Migration(DiffMixin, BaseMigration):
                     copy_data=[
                         TableDataSource(
                             source_table=Join(
-                                vote_m,
+                                TableRef("aggregated_votes_topic", True),
                                 [],
-                                FilterOperator("id", "in", new_ballot_user_ids),
+                                And(
+                                    FilterOperator("id", "in", new_ballot_user_ids),
+                                    FilterOperator("link_user_to_ballot", "=", True),
+                                ),
                             ),
                             value_definition=[
                                 ColumnDataSource("weight", "weight"),
                                 ColumnDataSource("poll_id", "poll_id"),
-                                ColumnDataSource("value", "value_m"),
+                                ColumnDataSource("value", "value"),
                                 ColumnDataSource("poll_ballot_user_id", "id"),
                             ],
-                        ),
-                        TableDataSource(
-                            Join(
-                                poll_t,
-                                [JoinOn("id", vote_m, "poll_id")],
-                                FilterOperator("anonymized", "!=", True),
-                            ),
                         ),
                     ]
                 ),
@@ -1312,22 +1321,19 @@ class Migration(DiffMixin, BaseMigration):
                 copy_data=[
                     TableDataSource(
                         source_table=Join(
-                            vote_m,
+                            TableRef("aggregated_votes_topic", True),
                             [],
-                            Not(FilterOperator("id", "in", public_ballot_ids)),
+                            And(
+                                FilterOperator("generate_ballot", "=", True),
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                                Not(FilterOperator("id", "in", public_ballot_ids)),
+                            ),
                         ),
                         value_definition=[
                             ColumnDataSource("weight", "weight"),
                             ColumnDataSource("poll_id", "poll_id"),
-                            ColumnDataSource("value", "value_m"),
+                            ColumnDataSource("value", "value"),
                         ],
-                    ),
-                    TableDataSource(
-                        source_table=Join(
-                            poll_t,
-                            [JoinOn("id", vote_m, "poll_id")],
-                            FilterOperator("id", "in", new_poll_configs),
-                        ),
                     ),
                 ]
             ),
