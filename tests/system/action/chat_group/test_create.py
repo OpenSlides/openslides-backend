@@ -206,7 +206,6 @@ class ChatGroupCreate(BaseActionTestCase):
             response.json["message"],
         )
 
-
     def test_create_anonymous_exists_none_write_groups(self) -> None:
         """The setup of this test makes no practical sense but aims at checking the forbid anonymous group mixin."""
         self.create_meeting()
