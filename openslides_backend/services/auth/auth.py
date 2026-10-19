@@ -38,6 +38,8 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
     external_host = os.getenv("IDP_EXTERNAL_HOST", "localhost:8800")
     idp_route = os.getenv("IDP_URL_INTERNAL", "http://zitadel-api:8080")
+    zitadel_enabled = os.getenv("IDP_ENABLE_ZITADEL", "true")
+    manual_client_id = os.getenv("IDP_MANUAL_CLIENT_ID", "")
 
     _idp_admin_access_token = ""
     _idp_project_id = ""
@@ -56,6 +58,9 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             self.datastore = ExtendedDatabase(conn, logging, env)
 
     def _get_admin_key(self) -> str:
+        if not self.zitadel_enabled:
+            return ""
+
         if self._idp_admin_access_token != "":
             return self._idp_admin_access_token
 
@@ -68,6 +73,9 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             raise AuthenticationException(f"Error reading admin pat file: {e}")
 
     def _get_project_id(self) -> str:
+        if not self.zitadel_enabled:
+            return ""
+
         if self._idp_project_id != "":
             return self._idp_project_id
 
@@ -80,6 +88,9 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             raise AuthenticationException(f"Error reading project id file: {e}")
 
     def _get_client_id(self) -> str:
+        if self.manual_client_id is not "":
+            return self.manual_client_id
+
         if self._idp_client_id != "":
             return self._idp_client_id
 
@@ -92,6 +103,10 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             raise AuthenticationException(f"Error reading client id file: {e}")
 
     def _set_backchannel_logout_uri(self, uri: str) -> None:
+        if not self.zitadel_enabled:
+            self.logger.info("Zitadel is not enabled. Skip setting backchannel logout URI")
+            return
+
         # Sets backchannel logout uri in the idp service
         idp_admin_access_token = self._get_admin_key()
         idp_project_id = self._get_project_id()
@@ -144,7 +159,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
     def decode_logout_token(self, encoded_logout_token: str) -> str:
         # Extract session ID
-        claims = self._extract_claims(logout_token)
+        claims = self._extract_claims(encoded_logout_token)
 
         # Required per OIDC backchannel logout: events must include the backchannel logout event
         backchannel_event_key = "http://schemas.openid.net/event/backchannel-logout"

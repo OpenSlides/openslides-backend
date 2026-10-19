@@ -26,6 +26,7 @@ class IDPMixin(Action):
     external_host = os.getenv("IDP_EXTERNAL_HOST", "localhost:8800")
 
     idp_route = os.getenv("IDP_URL_INTERNAL", "http://zitadel-api:8080")
+    zitadel_enabled = os.getenv("IDP_ENABLE_ZITADEL", "true")
 
     idp_admin_route = f"{idp_route}/v2/"
 
@@ -33,6 +34,9 @@ class IDPMixin(Action):
     _idp_organization_id = ""
 
     def _get_admin_key(self) -> str:
+        if not self.zitadel_enabled:
+            return ""
+
         if self._idp_admin_access_token != "":
             return self._idp_admin_access_token
 
@@ -45,6 +49,9 @@ class IDPMixin(Action):
             raise ActionException(f"Error reading admin pat file: {e}")
 
     def _get_organization_id(self) -> str:
+        if not self.zitadel_enabled:
+            return ""
+
         if self._idp_organization_id != "":
             return self._idp_organization_id
 
