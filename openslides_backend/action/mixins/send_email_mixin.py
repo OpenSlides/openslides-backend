@@ -16,7 +16,7 @@ from ...shared.exceptions import ActionException
 from ...shared.html import get_text_from_html
 from ..action import Action
 from ..util.typing import ActionData
-from .idp_user_mixin import IDPUserMixin
+from .idp_mixin import IDPMixin
 
 SendErrors = dict[str, tuple[int, bytes]]
 
@@ -185,7 +185,7 @@ class EmailUtils:
         return False, {}
 
 
-class EmailCheckMixin(IDPUserMixin):
+class EmailCheckMixin(IDPMixin):
     check_email_field: str
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

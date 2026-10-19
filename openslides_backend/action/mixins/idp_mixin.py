@@ -15,7 +15,7 @@ from ..action import Action
 logger = logging.getLogger(__name__)
 
 
-class IDPUserMixin(Action):
+class IDPMixin(Action):
     """
     Provides a mixin for an external Identity Provider concerning user integration
     """

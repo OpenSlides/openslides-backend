@@ -29,7 +29,7 @@ class UserBlockSessionID(
             return
 
         # Validate logout token and extract session id
-        session_id = self.auth.backchannel_logout(encoded_logout_token)
+        session_id = self.auth.decode_logout_token(encoded_logout_token)
 
         # Emit session id block via database signal
         if not session_id:

@@ -22,12 +22,10 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Authentication data must be set beforehand via set_authentication.
         """
 
-    def backchannel_logout(self, encoded_logout_token: str) -> str:
+    def decode_logout_token(self, encoded_logout_token: str) -> str:
         """
-        A request to logout and block an active session id. Takes an encoded JWT token containing a
+        Decodes a request to logout and block an active session id. Takes an encoded JWT token containing a
         logout token as a parameter
-
-        Used to signal a backchannel logout originating from an IDP to all OS services.
 
         Throws an exception, if the request is invalid
         """
@@ -51,25 +49,8 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Checks if the given user is anonymous or not.
         """
 
-    def block_session_id(self, session_id: str) -> None:
-        """
-        Blocks session_id, invalidating their authentication requests
-        """
-
     def is_session_id_blocked(self, session_id: str) -> bool:
         """
         Checks if session_id is blocked and thereby invalid
         """
 
-    def clear_all_sessions(self) -> None:
-        """
-        Clears all sessions of the requesting user.
-
-        Authentication data must be set beforehand via set_authentication.
-        """
-
-    def clear_sessions_by_user_id(self, user_id: int) -> None:
-        """
-        Clears all sessions of the given user.
-        Use with caution as the auth-service uses its internal route for this.
-        """

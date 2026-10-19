@@ -35,7 +35,6 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
     password_hasher = PasswordHasher()
     ANONYMOUS_USER = 0
-    blocked_session_ids = []
 
     external_host = os.getenv("IDP_EXTERNAL_HOST", "localhost:8800")
     idp_route = os.getenv("IDP_URL_INTERNAL", "http://zitadel-api:8080")
@@ -55,18 +54,6 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         )
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, logging, env)
-            # Fetch blocked sessions from db
-            try:
-
-                result = self.datastore.get_all(
-                    "blocked_sessions",
-                    ["session_id", "timestamp"],
-                    lock_result=False
-                )
-            except Exception as e:
-                raise AuthenticationException(
-                    f"Error reading blocked sessions table from datastore: {e}"
-                )
 
     def _get_admin_key(self) -> str:
         if self._idp_admin_access_token != "":
@@ -155,22 +142,8 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
         return (int(payload.os_id), header_value)
 
-    def backchannel_logout(self, encoded_logout_token: str) -> str:
-        # Extract Logout Token
-        self.logger.debug("Backchannel logout triggered")
-
+    def decode_logout_token(self, encoded_logout_token: str) -> str:
         # Extract session ID
-        try:
-            session_id = self._fetch_session_id(encoded_logout_token)
-
-            # Block session ID
-            self.block_session_id(session_id)
-        except Exception as e:
-            raise AuthenticationException(f"Fetching session ID from logout token: {e}")
-
-        return session_id
-
-    def _fetch_session_id(self, logout_token: str) -> str:
         claims = self._extract_claims(logout_token)
 
         # Required per OIDC backchannel logout: events must include the backchannel logout event
@@ -219,14 +192,3 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == self.ANONYMOUS_USER
 
-    def block_session_id(self, session_id: str) -> None:
-        self.blocked_session_ids.append(session_id)
-
-    def is_session_id_blocked(self, session_id: str) -> bool:
-        return session_id in self.blocked_session_ids
-
-    def clear_all_sessions(self) -> None:
-        self.auth_handler.clear_all_sessions(self.access_token)
-
-    def clear_sessions_by_user_id(self, user_id: int) -> None:
-        self.auth_handler.clear_sessions_by_user_id(user_id)

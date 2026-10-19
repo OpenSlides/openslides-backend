@@ -5,13 +5,13 @@ from ....models.models import User
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
-from ...mixins.idp_user_mixin import IDPUserMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("user.set_password_self")
-class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin, IDPUserMixin):
+class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin, IDPMixin):
     """
     Action to update the own password.
     """

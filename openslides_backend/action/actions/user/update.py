@@ -16,7 +16,7 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
-from ...mixins.idp_user_mixin import IDPUserMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
@@ -52,7 +52,7 @@ class UserUpdate(
     ConditionalSpeakerCascadeMixin,
     AdminIntegrityCheckMixin,
     CheckLockOutPermissionMixin,
-    IDPUserMixin,
+    IDPMixin,
 ):
     """
     Action to update a user.

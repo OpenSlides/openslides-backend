@@ -6,14 +6,14 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permissions import Permissions
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
-from ...mixins.idp_user_mixin import IDPUserMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("user.set_password")
 class UserSetPasswordAction(
-    IDPUserMixin,
+    IDPMixin,
     UserScopeMixin,
     CheckForArchivedMeetingMixin,
     UpdateAction,
