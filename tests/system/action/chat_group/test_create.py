@@ -205,3 +205,29 @@ class ChatGroupCreate(BaseActionTestCase):
             "Anonymous group is not allowed in write_group_ids.",
             response.json["message"],
         )
+
+
+    def test_create_anonymous_exists_none_write_groups(self) -> None:
+        """The setup of this test makes no practical sense but aims at checking the forbid anonymous group mixin."""
+        self.create_meeting()
+        self.set_models({ONE_ORGANIZATION_FQID: {"enable_chat": True}})
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "chat_group.create",
+            {
+                "name": "redekreis1",
+                "meeting_id": 1,
+                "read_group_ids": [1, 2],
+                "write_group_ids": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "chat_group/1",
+            {
+                "name": "redekreis1",
+                "meeting_id": 1,
+                "read_group_ids": [1, 2],
+                "write_group_ids": None,
+            },
+        )
