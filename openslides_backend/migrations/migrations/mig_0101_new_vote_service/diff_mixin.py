@@ -55,6 +55,7 @@ class DiffMixin:
                 "entitled_users_at_stop",
                 "votescast",
                 "votesinvalid",
+                "is_pseudoanonymized",
             ],
             {
                 "type": "varchar(256)",
