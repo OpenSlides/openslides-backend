@@ -27,7 +27,7 @@ class MeetingPollSettingCreateActionTest(BaseActionTestCase):
                 "enable_live_voting": False,
                 "enable_max_options_limit": False,
                 "enable_max_yes_votes": False,
-                "method": None,
+                "method": Poll.METHOD_SELECTION_Y,
                 "required_majority": "no_majority",
             },
         )
@@ -47,7 +47,7 @@ class MeetingPollSettingCreateActionTest(BaseActionTestCase):
                 "meeting_id": 17,
                 "used_as_motion_poll_config_in_meeting_id": 17,
                 "sort_result_by_votes": True,
-                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YES_NO_ABSTAIN,
                 "visibility": Poll.VISIBILITY_SECRET,
                 "group_ids": None,
                 "enable_cumulative_voting": False,
@@ -55,7 +55,7 @@ class MeetingPollSettingCreateActionTest(BaseActionTestCase):
                 "enable_live_voting": False,
                 "enable_max_options_limit": False,
                 "enable_max_yes_votes": False,
-                "method": None,
+                "method": Poll.METHOD_APPROVAL_YNA,
                 "required_majority": "no_majority",
             },
         )
@@ -83,7 +83,7 @@ class MeetingPollSettingCreateActionTest(BaseActionTestCase):
                 "enable_live_voting": False,
                 "enable_max_options_limit": False,
                 "enable_max_yes_votes": False,
-                "method": None,
+                "method": Poll.METHOD_SELECTION_Y,
                 "required_majority": "no_majority",
             },
         )
