@@ -210,7 +210,7 @@ class ChatGroupCreate(BaseActionTestCase):
         """The setup of this test makes no practical sense but aims at checking the forbid anonymous group mixin."""
         self.create_meeting()
         self.set_models({ONE_ORGANIZATION_FQID: {"enable_chat": True}})
-        anonymous_group = self.set_anonymous()
+        self.set_anonymous()
         response = self.request(
             "chat_group.create",
             {
