@@ -12,6 +12,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from ...shared.env import Environment
 from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
+from ...shared.filters import FilterOperator
 from ..database.commands import GetManyRequest
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import AuthenticationService
@@ -151,9 +152,13 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         if not payload.sub or not payload.os_id:
             return (0, "")
 
-        if self.is_session_id_blocked(payload.sid):
-            self.logger.warning(f"Session ID {payload.sid} is blocked by blocklist")
+        if len(self.datastore.filter(
+            collection="blocked_sessions",
+            filter_=FilterOperator("session_id", "=", payload.sub),
+            mapped_fields=["id"]
+        )) > 0:
             return (0, "")
+
 
         return (int(payload.os_id), header_value)
 
