@@ -294,7 +294,7 @@ class TestMigration101(BaseMigrationTestCase):
         self.set_up_organization()
         self.create_entries(meeting_data)
         self._create_users_for_meeting(1, [1, 2, 3], [1])
-        self._create_users([21, 22])
+        self._create_users([21, 22, 23])
         polls_data = {
             # Motion
             **self._get_motion_data(1, 1),
@@ -409,6 +409,7 @@ class TestMigration101(BaseMigrationTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 3,
                     "global_option_id": 6,
+                    "global_yes": True,
                     "votescast": Decimal(4),
                     "votesvalid": Decimal(3),
                     "votesinvalid": Decimal(1),
@@ -437,11 +438,57 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_option_data(3, 3, 1, text="Option 3/1", extra_data={"no": 1}),
             **self._get_option_data(4, 3, 1, text="Option 3/2", extra_data={"no": 0}),
             **self._get_option_data(5, 3, 1, text="Option 3/3", extra_data={"no": 2}),
-            **self._get_option_data(6, 3, 1, text="Nota-Option", extra_data={"no": 1}),
+            **self._get_option_data(6, 3, 1, text="Nota-Option", extra_data={"yes": 1}),
             **self._get_vote_data(5, 1, 3, "N", 2, 1),
             **self._get_vote_data(6, 1, 5, "N", 2, 1),
             **self._get_vote_data(7, 1, 5, "N", 1, 1),
-            **self._get_vote_data(8, 1, 6, "N", 3, 3),
+            **self._get_vote_data(8, 1, 6, "Y", 3, 3),
+            # assignment with max_votes_per_option > 1
+            **self._get_assignment_data(2, 1),
+            **self._get_poll_data(
+                poll_id=4,
+                meeting_id=1,
+                pollmethod="Y",
+                onehundred_percent_base="Y",
+                type_="named",
+                content_object_id="assignment/2",
+                state="published",
+                is_pseudoanonymized=False,
+                extra_data={
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 4,
+                    "max_votes_per_option": 2,
+                    "votescast": Decimal(2),
+                    "votesvalid": Decimal(2),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": False,
+                                "vote_delegated_to_id": 2,
+                            },
+                            {
+                                "user_id": 2,
+                                "voted": True,
+                                "present": False,
+                            },
+                            {
+                                "user_id": 3,
+                                "voted": False,
+                                "present": False,
+                            },
+                        ]
+                    ),
+                },
+            ),
+            **self._get_option_data(7, 4, 1, "user/21", extra_data={"yes": 1}),
+            **self._get_option_data(8, 4, 1, "user/22", extra_data={"yes": 3}),
+            **self._get_option_data(9, 4, 1, "user/23", extra_data={"yes": 4}),
+            **self._get_vote_data(9, 1, 7, "Y", 2, 2),
+            **self._get_vote_data(10, 1, 8, "Y", 2, 2),
+            **self._get_vote_data(11, 1, 9, "Y", 2, 2, 4),
+            **self._get_vote_data(12, 1, 8, "Y", 1, 1, 2),
         }
 
         self.create_entries(polls_data)
