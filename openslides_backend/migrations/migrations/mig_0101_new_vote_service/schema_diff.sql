@@ -74,7 +74,7 @@ CREATE TYPE enum_approval_onehundred_percent_bases AS ENUM ('yes_no', 'yes_no_ab
 
 CREATE TYPE enum_rating_approval_onehundred_percent_bases AS ENUM ('yes_no', 'yes_no_abstain', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
-CREATE TYPE enum_rating_score_onehundred_percent_bases AS ENUM ('yes_no', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
+CREATE TYPE enum_rating_score_onehundred_percent_bases AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
 CREATE TYPE enum_selection_onehundred_percent_bases AS ENUM ('no_general', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled');
 
