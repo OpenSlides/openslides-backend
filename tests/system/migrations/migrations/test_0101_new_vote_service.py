@@ -295,6 +295,7 @@ class TestMigration101(BaseMigrationTestCase):
         self.create_entries(meeting_data)
         self._create_users_for_meeting(1, [1, 2, 3], [1])
         self._create_users([21, 22, 23])
+        self.update_entries({"meeting_user/102": {"vote_delegated_to_id": 101}})
         polls_data = {
             # Motion
             **self._get_motion_data(1, 1),

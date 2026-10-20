@@ -324,31 +324,33 @@ class BaseMigrationTestCase(TestCase):
         assert tables_data, "data can not be empty"
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                for fqid, collection_data in tables_data.items():
-                    assert collection_data, "data can not contain empty dictionaries"
+                for fqid, data in tables_data.items():
+                    assert data, "data can not contain empty dictionaries"
                     collection, id_ = collection_and_id_from_fqid(fqid)
                     table_name = HelperGetNames.get_table_name(collection)
                     if len(tables_data) == 1:
                         set_part = sql.SQL("{column} = {placeholder}").format(
-                            column=sql.Identifier(list(tables_data.keys())[0]),
+                            column=sql.Identifier(list(data.keys())[0]),
                             placeholder=sql.Placeholder(),
                         )
                     else:
                         set_part = sql.SQL("({columns}) = ({placeholders})").format(
                             columns=sql.SQL(", ").join(
-                                sql.Identifier(column) for column in tables_data.keys()
+                                sql.Identifier(column) for column in data.keys()
                             ),
                             placeholders=sql.SQL(", ").join(
-                                sql.Placeholder() for _ in tables_data
+                                sql.Placeholder() for _ in data
                             ),
                         )
                     curs.execute(
-                        sql.SQL("UPDATE {table_name} {set_part} WHERE id={id}").format(
+                        sql.SQL(
+                            "UPDATE {table_name} SET {set_part} WHERE id={id};"
+                        ).format(
                             table_name=sql.Identifier(table_name),
                             set_part=set_part,
                             id=sql.Placeholder(),
                         ),
-                        [*tables_data.values(), id_],
+                        [*data.values(), id_],
                     )
                 if intermediate_tables_data:
                     self.write_into_intermediate_table(curs, intermediate_tables_data)
