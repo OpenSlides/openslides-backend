@@ -489,6 +489,54 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(10, 1, 8, "Y", 2, 2),
             **self._get_vote_data(11, 1, 9, "Y", 2, 2, 4),
             **self._get_vote_data(12, 1, 8, "Y", 1, 1, 2),
+            # assignment with global options
+            **self._get_assignment_data(3, 1),
+            **self._get_poll_data(
+                poll_id=5,
+                meeting_id=1,
+                pollmethod="Y",
+                onehundred_percent_base="Y",
+                type_="named",
+                content_object_id="assignment/3",
+                state="published",
+                is_pseudoanonymized=False,
+                extra_data={
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 4,
+                    "max_votes_per_option": 1,
+                    "global_option_id": 12,
+                    "global_no": True,
+                    "votescast": Decimal(3),
+                    "votesvalid": Decimal(3),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": False,
+                                "vote_delegated_to_id": 2,
+                            },
+                            {
+                                "user_id": 2,
+                                "voted": False,
+                                "present": False,
+                            },
+                            {
+                                "user_id": 3,
+                                "voted": True,
+                                "present": False,
+                            },
+                        ]
+                    ),
+                },
+            ),
+            **self._get_option_data(10, 5, 1, "user/21", extra_data={"yes": 1}),
+            **self._get_option_data(11, 5, 1, "user/22", extra_data={"yes": 2}),
+            **self._get_option_data(12, 5, 1, "user/23", extra_data={"no": 1}),
+            **self._get_vote_data(13, 1, 10, "Y", 2, 2),
+            **self._get_vote_data(14, 1, 11, "Y", 2, 2),
+            **self._get_vote_data(15, 1, 11, "Y", 1, 1),
+            **self._get_vote_data(16, 1, 12, "N", 3, 3),
         }
 
         self.create_entries(polls_data)
