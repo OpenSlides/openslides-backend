@@ -313,34 +313,44 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                 ),
             )
-            # self.update_from_other_table(
-            #     curs,
-            #     UpdateFromTables(
-            #         target_table=TableRef("meeting_poll_setting", False),
-            #         copy_data=[
-            #             TableDataSource(
-            #                 Join(
-            #                     TableRef("meeting", True),
-            #                     [
-            #                         JoinOn(
-            #                             "id",
-            #                             TableRef("meeting_poll_setting", False),
-            #                             "meeting_id",
-            #                         )
-            #                     ],
-            #                     filter_new_meeting_poll_settings,
-            #                 ),
-            #                 [
-            #                     ColumnDataSource(
-            #                         "group_ids",
-            #                         f"{poll_type}_poll_default_group_ids",
-            #                     )
-            #                 ],
-            #             )
-            #         ],
-            #     ),
-            #     filter_target_table=FilterOperator("id", "in", new_ids),
-            # )
+            meeting_poll_setting_t = TableRef("meeting_poll_setting", False)
+            group_ids_field = fields_map["group_ids"]
+            self.insert_from_other_table(
+                curs,
+                "nm_group_uimpdi_meeting_poll_setting_t",
+                InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            Join(
+                                meeting_poll_setting_t,
+                                [],
+                                filter_new_meeting_poll_settings,
+                            ),
+                            [ColumnDataSource("meeting_poll_setting_id", "id")],
+                        ),
+                        TableDataSource(
+                            Join(
+                                TableRef("meeting", True),
+                                [JoinOn("id", meeting_poll_setting_t, "meeting_id")],
+                                FilterOperator(group_ids_field, "!=", None),
+                            ),
+                            [
+                                ColumnDataSource(
+                                    "group_id",
+                                    transformed_column_value=sql.SQL(
+                                        "unnest({group_ids_column})"
+                                    ).format(
+                                        group_ids_column=sql.Identifier(
+                                            "meeting_m", group_ids_field
+                                        )
+                                    ),
+                                )
+                            ],
+                        ),
+                    ],
+                ),
+                return_fields=["group_id", "meeting_poll_setting_id"],
+            )
         self.update_all_entries(
             curs, "meeting_poll_setting", {"allow_live_voting": True}
         )

@@ -265,14 +265,11 @@ class TestMigration101(BaseMigrationTestCase):
                 "meeting/1": {
                     "motion_poll_projection_name_order_first": "first_name",
                     "motion_poll_projection_max_columns": 8,
-                    # "assignment_poll_default_group_ids": [1],
-                    # "motion_poll_default_group_ids": [3],
-                    # "topic_poll_default_group_ids": [4],
                     "assignment_poll_default_method": "Y",
                     "motion_poll_default_method": "YNA",
                     "poll_default_method": "N",
                     "assignment_poll_default_type": "named",
-                    "motion_poll_default_type": "open",
+                    "motion_poll_default_type": "named",
                     "poll_default_type": "analog",
                     "assignment_poll_default_onehundred_percent_base": "YNA",
                     "motion_poll_default_onehundred_percent_base": "valid",
@@ -282,11 +279,18 @@ class TestMigration101(BaseMigrationTestCase):
                     "poll_sort_poll_result_by_votes": True,
                     "poll_default_live_voting_enabled": True,
                 },
-                "group/1": {"permissions": ["poll.can_manage"]},
+                "group/1": {
+                    "permissions": ["poll.can_manage"],
+                    "used_as_assignment_poll_default_id": 1,
+                },
                 "group/2": {
                     "permissions": ["poll.can_manage", "motion.can_manage_polls"]
                 },
-                "group/3": {"permissions": ["motion.can_see", "mediafile.can_see"]},
+                "group/3": {
+                    "permissions": ["motion.can_see", "mediafile.can_see"],
+                    "used_as_assignment_poll_default_id": 1,
+                    "used_as_motion_poll_default_id": 1,
+                },
                 "group/4": {"meeting_id": 1, "name": "group4", "permissions": []},
             },
         )
