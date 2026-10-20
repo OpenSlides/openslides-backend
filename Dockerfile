@@ -15,7 +15,6 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     *)      echo "libc-dev" ;; esac) && \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
-    cron \
     curl \
     git \
     libmagic1 \
@@ -56,10 +55,6 @@ EXPOSE 9003
 COPY scripts scripts
 COPY data data
 COPY meta meta
-
-# Block list pruning cron job
-RUN echo "*/1 * * * * root /app/scripts/prune-blocked-sessions.sh" > /etc/cron.d/prune-blocked-sessions \
-    && chmod 0644 /etc/cron.d/prune-blocked-sessions
 
 ## Command
 COPY ./dev/command.sh ./

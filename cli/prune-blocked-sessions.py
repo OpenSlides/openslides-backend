@@ -13,7 +13,6 @@ from openslides_backend.shared.exceptions import DatabaseException
 
 def main() -> None:
     connection: Connection[rows.DictRow]
-    logging.warning("Pruning blocked sessions data")
     try:
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     except DatabaseException:
@@ -21,11 +20,9 @@ def main() -> None:
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     with connection:
         with connection.cursor() as cursor:
-            logging.warning("Running SQL")
             cursor.execute(
-                sql.SQL("DELETE FROM blocked_sessions_t WHERE \"timestamp\" < now() - interval '1 minutes';")
+                sql.SQL("DELETE FROM blocked_sessions_t WHERE \"timestamp\" < now() - interval '3 days';")
             )
-            logging.warning("Done")
 
 
 if __name__ == "__main__":
