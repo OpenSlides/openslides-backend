@@ -418,8 +418,8 @@ class BaseMigration:
         target_collection: Collection,
         copy_from_source_tables: InsertFromTables,
         values_source: ValuesSource | None = None,
-        return_fields: list[str] = [],
-    ) -> dict[int, dict[str, Any]]:
+        return_fields: list[str] | None = [],
+    ) -> list[dict[str, Any]]:
         """
         Inserts rows into table defined by 'target_collection' using values
         selected from the joined tables defined by 'copy_from_source_tables'.
@@ -466,7 +466,16 @@ class BaseMigration:
             if copy_from_source_tables.root_source.filter_right_table
             else None
         )
-        curs.execute(
+        is_intermediate_table = any(
+            target_collection.startswith(prefix) for prefix in ["gm_", "nm_"]
+        )
+        if (
+            isinstance(return_fields, list)
+            and not is_intermediate_table
+            and "id" not in return_fields
+        ):
+            return_fields.append("id")
+        return curs.execute(
             MigrationSqlHelper.build_insert_from_other_table_sql(
                 target_table=target_table.table_name,
                 target_columns=MigrationSqlHelper.join_columns(target_columns),
@@ -476,11 +485,10 @@ class BaseMigration:
                 source_table=copy_from_source_tables.root_source_table.table_name,
                 joined_tables=joined_tables_parts,
                 condition=filter_condition,
-                return_fields=["id", *return_fields],
+                return_fields=return_fields,
             ),
             arguments,
-        )
-        return {item["id"]: item for item in curs.fetchall()}
+        ).fetchall()
 
     def update_array(
         self,

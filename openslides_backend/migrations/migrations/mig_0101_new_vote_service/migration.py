@@ -126,17 +126,28 @@ class Migration(DiffMixin, BaseMigration):
         self, curs: Cursor[DictRow], stash: dict[str, Any] | None
     ) -> None:
         self.validate_data_compatibility(curs)
-        # TODO: update intermediate table
-        # self.update_from_mig_table(
-        #     curs,
-        #     "meeting_user",
-        #     ["vote_delegated_to_ids"],
-        #     [
-        #         sql.SQL("ARRAY[{source_column}]").format(
-        #             source_column=sql.Identifier("vote_delegated_to_id")
-        #         )
-        #     ],
-        # )
+        self.insert_from_other_table(
+            curs,
+            "nm_meeting_user_vote_delegated_to_ids_meeting_user_t",
+            InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        Join(
+                            TableRef("meeting_user", True),
+                            [],
+                            FilterOperator("vote_delegated_to_id", "!=", None),
+                        ),
+                        [
+                            ColumnDataSource(
+                                "vote_delegated_to_id", "vote_delegated_to_id"
+                            ),
+                            ColumnDataSource("vote_delegations_from_id", "id"),
+                        ],
+                    )
+                ],
+            ),
+            return_fields=["vote_delegations_from_id", "vote_delegations_from_id"],
+        )
         poll_type_to_visibility_map = {
             "analog": "manually",
             "named": "open",
@@ -220,8 +231,9 @@ class Migration(DiffMixin, BaseMigration):
         }
 
         for poll_type, fields_map in fields_maps_by_poll_type.items():
-            new_ids = list(
-                self.insert_from_other_table(
+            new_ids = [
+                entry["id"]
+                for entry in self.insert_from_other_table(
                     curs,
                     "meeting_poll_setting",
                     copy_from_source_tables=InsertFromTables(
@@ -276,8 +288,8 @@ class Migration(DiffMixin, BaseMigration):
                             fields_map["method"],
                         ],
                     ),
-                ).keys()
-            )
+                )
+            ]
             filter_new_meeting_poll_settings = FilterOperator("id", "in", new_ids)
             self.update_from_other_table(
                 curs,
@@ -448,8 +460,9 @@ class Migration(DiffMixin, BaseMigration):
         filter_ = self.get_filter_by_content_object_collection("motion")
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-        new_poll_configs = list(
-            self.insert_from_other_table(
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_config_approval",
                 copy_from_source_tables=InsertFromTables(
@@ -484,8 +497,8 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                     join_on_columns=["onehundred_percent_base_m"],
                 ),
-            ).keys()
-        )
+            )
+        ]
         filter_polls = FilterOperator("id", "in", new_poll_configs)
         self.update_from_other_table(
             curs,
@@ -590,8 +603,9 @@ class Migration(DiffMixin, BaseMigration):
             filter_target_table=filter_polls,
         )
         vote_m = TableRef("vote", True)
-        new_ballot_user_ids = list(
-            self.insert_from_other_table(
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_ballot_user",
                 InsertFromTables(
@@ -639,8 +653,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         public_ballot_ids = [
             ballot["poll_ballot_user_id"]
             for ballot in self.insert_from_other_table(
@@ -667,7 +681,7 @@ class Migration(DiffMixin, BaseMigration):
                     ]
                 ),
                 return_fields=["poll_ballot_user_id"],
-            ).values()
+            )
         ]
         self.insert_from_other_table(
             curs,
@@ -702,8 +716,9 @@ class Migration(DiffMixin, BaseMigration):
         filter_ = self.get_filter_by_content_object_collection("assignment")
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-        new_poll_configs = list(
-            self.insert_from_other_table(
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_config_approval",
                 copy_from_source_tables=InsertFromTables(
@@ -747,8 +762,8 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                     join_on_columns=["onehundred_percent_base_m"],
                 ),
-            ).keys()
-        )
+            )
+        ]
         filter_polls = FilterOperator("id", "in", new_poll_configs)
         self.update_from_other_table(
             curs,
@@ -853,8 +868,9 @@ class Migration(DiffMixin, BaseMigration):
             filter_target_table=filter_polls,
         )
         vote_m = TableRef("vote", True)
-        new_ballot_user_ids = list(
-            self.insert_from_other_table(
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_ballot_user",
                 InsertFromTables(
@@ -902,8 +918,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         public_ballot_ids = [
             ballot["poll_ballot_user_id"]
             for ballot in self.insert_from_other_table(
@@ -929,7 +945,7 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).values()
+            )
         ]
         self.insert_from_other_table(
             curs,
@@ -1014,8 +1030,9 @@ class Migration(DiffMixin, BaseMigration):
         filter_ = self.get_filter_by_content_object_collection("topic")
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-        new_poll_configs = list(
-            self.insert_from_other_table(
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_config_selection",
                 copy_from_source_tables=InsertFromTables(
@@ -1062,8 +1079,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         filter_polls = FilterOperator("id", "in", new_poll_configs)
         self.update_from_other_table(
             curs,
@@ -1254,8 +1271,9 @@ class Migration(DiffMixin, BaseMigration):
             """),
             [new_poll_configs],
         )
-        new_ballot_user_ids = list(
-            self.insert_from_other_table(
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_ballot_user",
                 InsertFromTables(
@@ -1288,8 +1306,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         public_ballot_ids = [
             ballot["poll_ballot_user_id"]
             for ballot in self.insert_from_other_table(
@@ -1316,7 +1334,7 @@ class Migration(DiffMixin, BaseMigration):
                     ]
                 ),
                 return_fields=["poll_ballot_user_id"],
-            ).values()
+            )
         ]
         self.insert_from_other_table(
             curs,
@@ -1354,8 +1372,9 @@ class Migration(DiffMixin, BaseMigration):
         )
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-        new_poll_configs = list(
-            self.insert_from_other_table(
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_config_rating_score",
                 copy_from_source_tables=InsertFromTables(
@@ -1385,8 +1404,8 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                     join_on_columns=["onehundred_percent_base_m"],
                 ),
-            ).keys()
-        )
+            )
+        ]
         filter_polls = FilterOperator("id", "in", new_poll_configs)
         self.update_from_other_table(
             curs,
@@ -1579,8 +1598,9 @@ class Migration(DiffMixin, BaseMigration):
             """),
             [new_poll_configs],
         )
-        new_ballot_user_ids = list(
-            self.insert_from_other_table(
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_ballot_user",
                 InsertFromTables(
@@ -1613,8 +1633,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         public_ballot_ids = [
             ballot["poll_ballot_user_id"]
             for ballot in self.insert_from_other_table(
@@ -1641,7 +1661,7 @@ class Migration(DiffMixin, BaseMigration):
                     ]
                 ),
                 return_fields=["poll_ballot_user_id"],
-            ).values()
+            )
         ]
         self.insert_from_other_table(
             curs,
@@ -1684,8 +1704,9 @@ class Migration(DiffMixin, BaseMigration):
         )
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-        new_poll_configs = list(
-            self.insert_from_other_table(
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_config_selection",
                 copy_from_source_tables=InsertFromTables(
@@ -1730,8 +1751,8 @@ class Migration(DiffMixin, BaseMigration):
                     ],
                     join_on_columns=["onehundred_percent_base_m"],
                 ),
-            ).keys()
-        )
+            )
+        ]
         filter_polls = FilterOperator("id", "in", new_poll_configs)
         self.update_from_other_table(
             curs,
@@ -1921,8 +1942,9 @@ class Migration(DiffMixin, BaseMigration):
             """),
             [new_poll_configs],
         )
-        new_ballot_user_ids = list(
-            self.insert_from_other_table(
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
                 curs,
                 "poll_ballot_user",
                 InsertFromTables(
@@ -1955,8 +1977,8 @@ class Migration(DiffMixin, BaseMigration):
                         ),
                     ]
                 ),
-            ).keys()
-        )
+            )
+        ]
         public_ballot_ids = [
             ballot["poll_ballot_user_id"]
             for ballot in self.insert_from_other_table(
@@ -1983,7 +2005,7 @@ class Migration(DiffMixin, BaseMigration):
                     ]
                 ),
                 return_fields=["poll_ballot_user_id"],
-            ).values()
+            )
         ]
         self.insert_from_other_table(
             curs,
