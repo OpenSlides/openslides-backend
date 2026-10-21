@@ -542,6 +542,61 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(14, 1, 11, "Y", 2, 2),
             **self._get_vote_data(15, 1, 11, "Y", 1, 1),
             **self._get_vote_data(16, 1, 12, "N", 3, 3),
+            # assignment - other
+            **self._get_assignment_data(4, 1),
+            **self._get_poll_data(
+                poll_id=6,
+                meeting_id=1,
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                type_="named",
+                content_object_id="assignment/4",
+                state="published",
+                is_pseudoanonymized=False,
+                extra_data={
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 4,
+                    "votescast": Decimal(3),
+                    "votesvalid": Decimal(3),
+                    "entitled_users_at_stop": Jsonb(
+                        [
+                            {
+                                "user_id": 1,
+                                "voted": True,
+                                "present": False,
+                                "vote_delegated_to_id": 2,
+                            },
+                            {
+                                "user_id": 2,
+                                "voted": False,
+                                "present": False,
+                            },
+                            {
+                                "user_id": 3,
+                                "voted": True,
+                                "present": False,
+                            },
+                        ]
+                    ),
+                },
+            ),
+            **self._get_option_data(
+                13, 6, 1, "user/21", extra_data={"yes": 2, "no": 1, "abstain": 0}
+            ),
+            **self._get_option_data(
+                14, 6, 1, "user/22", extra_data={"yes": 0, "no": 2, "abstain": 1}
+            ),
+            **self._get_option_data(
+                15, 6, 1, "user/23", extra_data={"yes": 0, "no": 0, "abstain": 2}
+            ),
+            **self._get_vote_data(17, 1, 13, "Y", 2, 1),
+            **self._get_vote_data(18, 1, 14, "N", 2, 1),
+            **self._get_vote_data(19, 1, 15, "A", 2, 1),
+            **self._get_vote_data(20, 1, 13, "Y", 1, 1),
+            **self._get_vote_data(21, 1, 14, "A", 1, 1),
+            **self._get_vote_data(22, 1, 15, "A", 1, 1),
+            **self._get_vote_data(23, 1, 13, "N", 3, 3),
+            **self._get_vote_data(24, 1, 14, "N", 3, 3),
         }
 
         self.create_entries(polls_data)
