@@ -136,7 +136,7 @@ class BaseMigration:
     @staticmethod
     def _base_update_entries(
         curs: Cursor[DictRow],
-        collection: Collection,
+        target_table: TableRef,
         new_values: dict[Column, Any],
         filter_target_table: Filter | None = None,
         filter_migration_table: Filter | None = None,
@@ -151,20 +151,21 @@ class BaseMigration:
                 BaseMigration._build_filter_query(
                     filter_condition=filter_target_table,
                     arguments=arguments,
-                    target_collection=collection,
+                    target_collection=target_table.collection,
                 )
             )
         if filter_migration_table:
+            assert not target_table.migration
             conditions.append(
                 BaseMigration._build_filter_query(
                     filter_condition=filter_migration_table,
                     arguments=arguments,
                     filter_other_table=Join(
-                        right_table=TableRef(collection, True),
+                        right_table=TableRef(target_table.collection, True),
                         join_on=[
                             JoinOn(
                                 right_column="id",
-                                left_table=TableRef(collection, False),
+                                left_table=target_table,
                                 left_column="id",
                             )
                         ],
@@ -186,7 +187,7 @@ class BaseMigration:
                 )
         curs.execute(
             MigrationSqlHelper.build_update_entries_sql(
-                collection_or_table_name=collection,
+                table_name=target_table.table_name,
                 set_part=set_part,
                 filter_condition=conditions or None,
             ),
@@ -196,7 +197,7 @@ class BaseMigration:
     def update_all_entries(
         self,
         curs: Cursor[DictRow],
-        collection: Collection,
+        target_table: TableRef,
         new_values: dict[Column, Any],
     ) -> None:
         """
@@ -204,14 +205,14 @@ class BaseMigration:
         """
         self._base_update_entries(
             curs,
-            collection=collection,
+            target_table=target_table,
             new_values=new_values,
         )
 
     def update_matching_entries(
         self,
         curs: Cursor[DictRow],
-        collection: Collection,
+        target_table: TableRef,
         new_values: dict[Column, Any],
         filter_target_table: Filter | None = None,
         filter_migration_table: Filter | None = None,
@@ -221,7 +222,8 @@ class BaseMigration:
         Builds and executes mass update statement for entries that match the lookup conditions.
         At least one filtering option must be provided:
             * filter_target_table - applies the filter to the target table (collection_t).
-            * filter_migration_table - applies the filter to the migration table (collection_m).
+            * filter_migration_table - applies the filter to the related migration table (collection_m).
+              Can be used only if target_table is a regular table (collection_t).
             * filter_with_joined_tables - applies filters to related tables through the specified
                 joins. The target entry is updated if at least one matching row exists in the joined table.
         """
@@ -231,9 +233,13 @@ class BaseMigration:
             raise BadCodingException(
                 "One out of 'filter_target_table', 'filter_migration_table' or 'joined_tables' must be defined."
             )
+        if filter_migration_table and target_table.migration:
+            raise BadCodingException(
+                "'filter_target_table' must be used insted of 'filter_migration_table' when target_table is a migration table."
+            )
         self._base_update_entries(
             curs,
-            collection=collection,
+            target_table=target_table,
             new_values=new_values,
             filter_target_table=filter_target_table,
             filter_migration_table=filter_migration_table,
@@ -243,7 +249,7 @@ class BaseMigration:
     def update_empty_cells(
         self,
         curs: Cursor[DictRow],
-        collection: Collection,
+        target_table: TableRef,
         column: Column,
         new_value: Any,
     ) -> None:
@@ -254,7 +260,7 @@ class BaseMigration:
         arguments: SqlArguments = []
         curs.execute(
             MigrationSqlHelper.build_update_entries_sql(
-                collection_or_table_name=collection,
+                table_name=target_table.table_name,
                 set_part=MigrationSqlHelper.get_set_columns_part(
                     {column: new_value}, arguments
                 ),
@@ -268,7 +274,7 @@ class BaseMigration:
     def update_from_values_map(
         self,
         curs: Cursor[DictRow],
-        target_collection: Collection,
+        target_table: TableRef,
         values_source: ValuesSource,
         filter_target_table: Filter | None = None,
         join_values_to_mig_table: bool = False,
@@ -285,7 +291,7 @@ class BaseMigration:
         `join_values_to_mig_table` allows to join the 'values_source' to the
         columns of the related migration table instead of the target table.
         """
-        target_table = TableRef(target_collection, False)
+        target_collection = target_table.collection
         arguments: SqlArguments = []
         filter_conditions: list[sql.Composable] = []
         join_conditions: list[sql.Composable]
@@ -321,15 +327,16 @@ class BaseMigration:
         )
         curs.execute(
             MigrationSqlHelper.build_update_entries_sql(
-                collection_or_table_name=target_collection,
+                table_name=target_table.table_name,
                 set_part=sql.SQL(", ").join(
                     MigrationSqlHelper.get_column_assignment(
                         curs=curs,
-                        target_column=column,
+                        target_column=values_source.column_alias(column),
                         source_table=values_source.alias,
+                        source_column=column,
                         type_source_table=target_table.table_name,
                     )
-                    for column in values_source.target_columns
+                    for column in values_source.data_source_columns
                 ),
                 source_table=from_part,
                 joined_tables=joined_tables_parts,
@@ -392,7 +399,7 @@ class BaseMigration:
         assert isinstance(source_table, str)
         curs.execute(
             MigrationSqlHelper.build_update_entries_sql(
-                collection_or_table_name=copy_from_source_tables.target_table.table_name,
+                table_name=copy_from_source_tables.target_table.table_name,
                 set_part=sql.SQL(", ").join(
                     MigrationSqlHelper.get_value_assignment(target_column, value)
                     for target_column, value in zip(
@@ -493,7 +500,7 @@ class BaseMigration:
     def update_array(
         self,
         curs: Cursor[DictRow],
-        collection: str,
+        target_table: TableRef,
         column: Column,
         diff: ArrayDiff,
         filter_target_table: Filter | None = None,
@@ -504,10 +511,12 @@ class BaseMigration:
         """
         filter_arguments: SqlArguments = []
         values_arguments: ExtendedSqlArguments = []
-        array_type = MigrationSqlHelper.get_array_type(collection, column, curs)
+        array_type = MigrationSqlHelper.get_array_type(
+            target_table.collection, column, curs
+        )
 
         query = MigrationSqlHelper.build_update_entries_sql(
-            collection_or_table_name=collection,
+            table_name=target_table.table_name,
             set_part=MigrationSqlHelper.build_array_update_part(
                 column=column,
                 array_type=array_type,
@@ -523,7 +532,7 @@ class BaseMigration:
             ),
             filter_condition=(
                 self._build_filter_query(
-                    filter_target_table, filter_arguments, collection
+                    filter_target_table, filter_arguments, target_table.collection
                 )
                 if filter_target_table is not None
                 else None
@@ -587,7 +596,7 @@ class BaseMigration:
             curs,
             values_source.alias,
             [
-                JoinOn(column, left_table, column)
+                JoinOn(column, left_table, values_source.column_alias(column))
                 for column in values_source.join_on_columns
             ],
         )
@@ -656,8 +665,8 @@ class BaseMigration:
             curs,
             target_table.table_name,
             [
-                (select_column, target_columns[i])
-                for i, select_column in enumerate(select_columns)
+                (select_column, target_column)
+                for select_column, target_column in zip(select_columns, target_columns)
                 if isinstance(select_column, ColumnRef)
             ],
         )
