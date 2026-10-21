@@ -150,6 +150,30 @@ def remove_empty(dictionary: dict[str, Any], key: str) -> None:
         del dictionary[key]
 
 
+def check_changed_view_primary(collection_name: str, field_name: str) -> None:
+    """Prints a warning if the field became a view or changed in primary side."""
+    curr_field_def = CURR_MODELS[collection_name]["fields"][field_name]
+    prev_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+    is_view, is_primary, _ = get_view_field_state_write_fields(
+        collection_name, field_name, curr_field_def
+    )
+    with prev_models_context():
+        was_view, was_primary, _ = get_view_field_state_write_fields(
+            collection_name, field_name, prev_field_def
+        )
+
+    for label, previous, current in (
+        ("view", was_view, is_view),
+        ("primary", was_primary, is_primary),
+    ):
+        if previous != current:
+            print(
+                f"WARNING: The {label} state of {collection_name}/{field_name} "
+                f"changed from {previous} to {current}; "
+                f"ensure everything gets properly dropped and recreated."
+            )
+
+
 def alter_views_conditionally(
     collection_name: str, has_write_fields: bool, is_view_field: bool
 ) -> None:
@@ -645,6 +669,7 @@ class RemoveHelper:
         for field_name in remove_list:
             field_def = PREV_MODELS[collection_name]["fields"][field_name]
             if field_def.get("calculated"):
+                dc_remove_list.remove(field_name)
                 continue
 
             drop_column = True
@@ -669,26 +694,6 @@ class RemoveHelper:
                 result += AlterSchemaHelper.get_drop_column_statement(
                     collection_name, field_name, PREV_CODE_BLOCKS["view_sql"]
                 )
-                type_ = field_def["type"]
-                if "relation" in type_ and not type_.startswith("generic"):
-                    with prev_models_context():
-                        foreign_table_field: TableFieldType = (
-                            TableFieldType.get_definitions_from_foreign(
-                                field_def.get("to"), field_def.get("reference")
-                            )
-                        )
-                    fk, idx = HelperGetNames.get_fk_and_index_name(
-                        HelperGetNames.get_table_name(collection_name),
-                        field_name,
-                        HelperGetNames.get_table_name(foreign_table_field.table),
-                        foreign_table_field.ref_column,
-                    )
-                    result += AlterSchemaHelper.get_drop_table_constraint_statement(
-                        collection_name, fk
-                    )
-                    result += AlterSchemaHelper.get_drop_index_statement(
-                        collection_name, idx
-                    )
                 if isinstance(field_def.get("enum"), list):
                     # enum exists and is field based
                     result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
@@ -766,6 +771,10 @@ class RemoveHelper:
                         raise BadCodingException(
                             f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
                         )
+                    case "reference":
+                        # Doesn't need handling since it should be done by to.
+                        # Changes should only be effective for 1:1 relations if the writing side flips.
+                        check_changed_view_primary(collection_name, field_name)
                     case _:
                         # Skipped as not likely to be removed in the foreseeable future:
                         # "to" and "reference": can only be removed if type changes to not relational field

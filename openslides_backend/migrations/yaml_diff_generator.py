@@ -12,6 +12,7 @@ from typing_extensions import NotRequired
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
 from meta.dev.src.helper_get_names import InternalHelper, build_models_yaml_content
+from meta.dev.src.validate import RELATION_TYPES
 from openslides_backend.migrations.migration_helper import MigrationHelper
 
 """
@@ -264,8 +265,7 @@ def create_remove_recursive(
             elif curr_models:
                 if not len(path) == 3 or not (
                     isinstance(prev_value, dict)
-                    and "type" in prev_value
-                    and prev_value.get("to")
+                    and prev_value.get("type") in RELATION_TYPES
                     and was_view_field(path[0], key, prev_value)
                 ):
                     missing_entries.append(key)
