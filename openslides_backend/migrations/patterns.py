@@ -447,10 +447,13 @@ class ValuesSource:
         * columns from 'join_on_columns' - to match source rows with rows
           in the target table
         * columns with tartget values to be written to the target table.
+
+    'column_alias_map' allows to match column aliases with the actual column names.
     """
 
-    rows: list[dict[Column, Any]]
-    join_on_columns: list[Column]
+    rows: list[dict[str, Any]]
+    join_on_columns: list[str]
+    column_alias_map: dict[str, Column] = field(default_factory=dict)
     alias: str = "v"
 
     def __post_init__(self) -> None:
@@ -486,12 +489,21 @@ class ValuesSource:
         if errors:
             raise BadCodingException("\n".join(errors))
 
+    def column_alias(self, column_name: str) -> Column:
+        """
+        Name of VALUES column with the source data for the given
+        target table column.
+        """
+        return self.column_alias_map.get(column_name, column_name)
+
     @property
     def values_columns(self) -> list[Column]:
+        """All columns of VALUES."""
         return list(self.rows[0].keys())
 
     @property
-    def target_columns(self) -> list[Column]:
+    def data_source_columns(self) -> list[Column]:
+        """Columns of VALUES used for building columns assignments."""
         return [
             column
             for column in self.values_columns
@@ -499,5 +511,11 @@ class ValuesSource:
         ]
 
     @property
+    def target_columns(self) -> list[Column]:
+        """Columns of target table to be set."""
+        return [self.column_alias(column) for column in self.data_source_columns]
+
+    @property
     def select_columns(self) -> list[ColumnRef]:
-        return [ColumnRef(column, self.alias) for column in self.target_columns]
+        """Columns of VALUES used as data sources."""
+        return [ColumnRef(column, self.alias) for column in self.data_source_columns]

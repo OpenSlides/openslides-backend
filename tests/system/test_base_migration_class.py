@@ -65,6 +65,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         new_value: Any
         lookup_filter: Filter
         test_filter: Filter
+        poll_t = TableRef("poll", False)
 
         # -- Update all --
         new_value = "this is migrated"
@@ -72,7 +73,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.get_all("poll", [], False)
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_all_entries(self.connection.cursor(), "poll", {"title": new_value})
+        self.update_all_entries(self.connection.cursor(), poll_t, {"title": new_value})
         assert (
             matching_ids.keys()
             == self.datastore.filter("poll", test_filter, ["id"]).keys()
@@ -87,7 +88,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.get_all("poll", [], False)
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_all_entries(self.connection.cursor(), "poll", new_values)
+        self.update_all_entries(self.connection.cursor(), poll_t, new_values)
         assert (
             matching_ids.keys()
             == self.datastore.filter("poll", test_filter, ["id"]).keys()
@@ -103,7 +104,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
         self.update_empty_cells(
-            self.connection.cursor(), "poll", "votesvalid", new_value
+            self.connection.cursor(), poll_t, "votesvalid", new_value
         )
         assert len(self.datastore.filter("poll", test_filter, ["id"])) != 0
         assert (
@@ -119,7 +120,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
         self.update_matching_entries(
-            self.connection.cursor(), "poll", {"description": new_value}, lookup_filter
+            self.connection.cursor(), poll_t, {"description": new_value}, lookup_filter
         )
         assert len(self.datastore.filter("poll", test_filter, ["id"])) != 0
         assert (
@@ -137,7 +138,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         assert len(self.datastore.filter("vote", test_filter, ["id"])) == 0
         self.update_matching_entries(
-            self.connection.cursor(), "vote", new_values, lookup_filter
+            self.connection.cursor(), TableRef("vote", False), new_values, lookup_filter
         )
         assert len(self.datastore.filter("vote", test_filter, ["id"])) != 0
         assert (
@@ -148,7 +149,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         # -- Update from map --
         self.update_from_values_map(
             self.connection.cursor(),
-            "poll",
+            poll_t,
             ValuesSource(
                 [
                     {"type": "analog", "title": "manually"},
@@ -220,7 +221,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         self.update_from_values_map(
             self.connection.cursor(),
-            "motion_state",
+            TableRef("motion_state", False),
             ValuesSource(replace_map, ["name"]),
         )
 
@@ -307,7 +308,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         # -- Update matching entries with joins --
         self.update_matching_entries(
             self.connection.cursor(),
-            "option",
+            TableRef("option", False),
             {"yes": Decimal("5.6"), "text": "Updated with joined table"},
             filter_with_joined_tables=[
                 Join(
@@ -363,7 +364,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"b"}),
         )
@@ -384,7 +385,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"a", "b"}),
         )
@@ -405,7 +406,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(remove={"b"}),
         )
@@ -424,7 +425,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(remove={"a", "b"}),
         )
@@ -443,7 +444,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(replace={"b": "c"}),
         )
@@ -468,7 +469,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(replace={"b": "c", "a": "e"}),
         )
@@ -487,7 +488,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         self.setup_history_entries()
         self.update_array(
             self.connection.cursor(),
-            "history_entry",
+            TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"a"}, remove={"b"}, replace={"c": "d"}),
             FilterOperator("id", "<", 10),

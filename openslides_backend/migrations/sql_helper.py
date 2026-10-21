@@ -388,7 +388,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
 
     @staticmethod
     def build_update_entries_sql(
-        collection_or_table_name: str,
+        table_name: str,
         set_part: sql.Composable,
         source_table: sql.Composable | None = None,
         joined_tables: (
@@ -403,9 +403,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             "{joined_tables}"
             "{where};"
         ).format(
-            target_table=sql.Identifier(
-                HelperGetNames.get_table_name(collection_or_table_name)
-            ),
+            target_table=sql.Identifier(table_name),
             set_part=set_part,
             from_part=MigrationSqlHelper.normalize_from(source_table),
             joined_tables=MigrationSqlHelper.join_table_parts(joined_tables),
