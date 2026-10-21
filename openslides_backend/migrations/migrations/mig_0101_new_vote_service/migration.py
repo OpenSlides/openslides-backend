@@ -443,6 +443,9 @@ class Migration(DiffMixin, BaseMigration):
             curs, poll_onehundred_percent_bases_map
         )
         self.migrate_assignment_selection_polls(curs, poll_onehundred_percent_bases_map)
+        self.migrate_assignment_rating_approval_polls(
+            curs, poll_onehundred_percent_bases_map
+        )
 
         curs.execute(sql.SQL("""
                 INSERT INTO poll_entitled_user_t (
@@ -2025,6 +2028,324 @@ class Migration(DiffMixin, BaseMigration):
                     TableDataSource(
                         source_table=Join(
                             TableRef("aggregated_votes_assignment_selection", True),
+                            [],
+                            And(
+                                FilterOperator("generate_ballot", "=", True),
+                                FilterOperator("poll_id", "in", new_poll_configs),
+                                Not(FilterOperator("id", "in", public_ballot_ids)),
+                            ),
+                        ),
+                        value_definition=[
+                            ColumnDataSource("weight", "weight"),
+                            ColumnDataSource("poll_id", "poll_id"),
+                            ColumnDataSource("value", "value"),
+                        ],
+                    ),
+                ]
+            ),
+        )
+
+    def migrate_assignment_rating_approval_polls(
+        self,
+        curs: Cursor[DictRow],
+        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+    ) -> None:
+        poll_t = TableRef("poll", False)
+        poll_m = TableRef("poll", True)
+        new_poll_configs = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
+                curs,
+                "poll_config_rating_approval",
+                copy_from_source_tables=InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            source_table=Join(poll_m, []),
+                            value_definition=[
+                                ColumnDataSource("id", "id"),
+                                ColumnDataSource(
+                                    "min_options_amount", "min_votes_amount"
+                                ),
+                                ColumnDataSource(
+                                    "max_options_amount", "max_votes_amount"
+                                ),
+                                ColumnDataSource(
+                                    "allow_abstain",
+                                    transformed_column_value=sql.SQL(
+                                        "({source_column} = 'YNA')"
+                                    ).format(
+                                        source_column=sql.Identifier(
+                                            poll_m.table_name, "pollmethod"
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                        TableDataSource(
+                            source_table=Join(
+                                poll_t,
+                                [JoinOn("id", poll_m, "id")],
+                                FilterOperator("config_id", "=", None),
+                            ),
+                        ),
+                    ]
+                ),
+                values_source=ValuesSource(
+                    rows=[
+                        {
+                            "onehundred_percent_base_m": onehundred_percent_base_m,
+                            "onehundred_percent_base": onehundred_percent_base[
+                                "onehundred_percent_base"
+                            ],
+                        }
+                        for onehundred_percent_base_m, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
+                    ],
+                    join_on_columns=["onehundred_percent_base_m"],
+                ),
+            )
+        ]
+        filter_polls = FilterOperator("id", "in", new_poll_configs)
+        self.update_from_other_table(
+            curs,
+            UpdateFromTables(
+                target_table=poll_t,
+                copy_data=[
+                    TableDataSource(
+                        Join(
+                            TableRef("poll_config_rating_approval", False),
+                            [JoinOn("id", poll_t, "id")],
+                            filter_polls,
+                        ),
+                        [
+                            ColumnDataSource(
+                                "config_id",
+                                transformed_column_value=sql.SQL(
+                                    "'poll_config_rating_approval/' || ({id_column})::text"
+                                ).format(
+                                    id_column=sql.Identifier(
+                                        TableRef(
+                                            "poll_config_rating_approval", False
+                                        ).table_name,
+                                        "id",
+                                    )
+                                ),
+                            )
+                        ],
+                    )
+                ],
+            ),
+        )
+        option_m = TableRef("option", True)
+        self.insert_from_other_table(
+            curs,
+            "poll_option",
+            InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        source_table=Join(
+                            option_m,
+                            [],
+                            FilterOperator("poll_id", "in", new_poll_configs),
+                        ),
+                        value_definition=[
+                            ColumnDataSource(field, field)
+                            for field in [
+                                "id",
+                                "poll_id",
+                                "content_object_id",
+                                "weight",
+                            ]
+                        ],
+                    ),
+                ]
+            ),
+        )
+        curs.execute(
+            sql.SQL("""
+            CREATE TEMP TABLE poll_result_source_assignment_rating_approval_m AS
+            SELECT
+                o.poll_id,
+                jsonb_object_agg(
+                    o.id::text,
+                    json_strip_nulls(
+                        json_object(
+                            'yes': NULLIF(o.yes, 0),
+                            'no': NULLIF(o.no, 0),
+                            'abstain': NULLIF(o.abstain, 0)
+                        )
+                    )
+                ) AS options_json
+            FROM option_m o
+            JOIN poll_m p ON p.id = o.poll_id
+            WHERE o.poll_id = ANY(%s)
+            GROUP BY poll_id;
+            """),
+            [new_poll_configs],
+        )
+        option_m = TableRef("option", True)
+        self.update_from_other_table(
+            curs,
+            copy_from_source_tables=UpdateFromTables(
+                target_table=poll_t,
+                copy_data=[
+                    TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
+                    TableDataSource(
+                        Join(
+                            TableRef(
+                                "poll_result_source_assignment_rating_approval", True
+                            ),
+                            [JoinOn("poll_id", poll_m, "id")],
+                        ),
+                        value_definition=[
+                            ColumnDataSource(
+                                "result",
+                                transformed_column_value=sql.SQL("""
+                                    LEFT(options_json::text, -1)
+                                    ||
+                                    CASE WHEN options_json::text = '{{}}' THEN '' ELSE ',' END
+                                    ||
+                                    trim(
+                                        BOTH '{{}}' FROM
+                                        json_strip_nulls(
+                                            json_object(ARRAY[{columns}], ARRAY[{values}])
+                                        )::text
+                                    )
+                                    || '}}'
+                                    """).format(
+                                    columns=sql.SQL(",").join(
+                                        ["invalid", "total_ballots"]
+                                    ),
+                                    values=sql.SQL(", ").join(
+                                        [
+                                            sql.SQL(
+                                                "(CASE "
+                                                "WHEN poll_t.visibility = 'manually' "
+                                                "THEN NULLIF(TRUNC({source_column})::text, '0') "
+                                                "ELSE NULL "
+                                                "END)"
+                                            ).format(
+                                                source_column=sql.Identifier(
+                                                    poll_m.table_name, "votesinvalid"
+                                                ),
+                                            ),
+                                            sql.SQL("TRUNC(poll_m.votescast)::text"),
+                                        ]
+                                    ),
+                                ),
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            filter_target_table=filter_polls,
+        )
+        curs.execute(
+            sql.SQL("""
+            CREATE TEMP TABLE aggregated_votes_assignment_rating_approval_m AS
+            SELECT
+                MIN(v.id) AS id,
+                MIN(v.poll_id) AS poll_id,
+                BOOL_AND(v.link_user_to_ballot) AS link_user_to_ballot,
+                BOOL_AND(v.generate_ballot) AS generate_ballot,
+                MIN(v.weight) AS weight,
+                MIN(mur.id) AS represented_meeting_user_id,
+                MIN(mua.id) AS acting_meeting_user_id,
+                jsonb_object_agg(
+                    v.option_id::text,
+                    v.value
+                ) AS value
+            FROM vote_m v
+            JOIN poll_m p ON p.id = v.poll_id
+            LEFT JOIN meeting_user mur
+                ON mur.meeting_id = p.meeting_id
+                AND mur.user_id = v.user_id
+            LEFT JOIN meeting_user mua
+                ON mua.meeting_id = p.meeting_id
+                AND mua.user_id = v.delegated_user_id
+            WHERE v.poll_id = ANY(%s)
+            GROUP BY v.user_token;
+            """),
+            [new_poll_configs],
+        )
+        new_ballot_user_ids = [
+            entry["id"]
+            for entry in self.insert_from_other_table(
+                curs,
+                "poll_ballot_user",
+                InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            Join(
+                                poll_m,
+                                [],
+                                And(
+                                    FilterOperator("id", "in", new_poll_configs),
+                                    FilterOperator("generate_ballots", "=", True),
+                                ),
+                            ),
+                            [],
+                        ),
+                        TableDataSource(
+                            source_table=Join(
+                                TableRef(
+                                    "aggregated_votes_assignment_rating_approval", True
+                                ),
+                                [JoinOn("poll_id", poll_m, "id")],
+                            ),
+                            value_definition=[
+                                ColumnDataSource(field, field)
+                                for field in [
+                                    "id",
+                                    "poll_id",
+                                    "acting_meeting_user_id",
+                                    "represented_meeting_user_id",
+                                ]
+                            ],
+                        ),
+                    ]
+                ),
+            )
+        ]
+        public_ballot_ids = [
+            ballot["poll_ballot_user_id"]
+            for ballot in self.insert_from_other_table(
+                curs,
+                "poll_ballot",
+                InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            source_table=Join(
+                                TableRef(
+                                    "aggregated_votes_assignment_rating_approval", True
+                                ),
+                                [],
+                                And(
+                                    FilterOperator("id", "in", new_ballot_user_ids),
+                                    FilterOperator("link_user_to_ballot", "=", True),
+                                ),
+                            ),
+                            value_definition=[
+                                ColumnDataSource("weight", "weight"),
+                                ColumnDataSource("poll_id", "poll_id"),
+                                ColumnDataSource("value", "value"),
+                                ColumnDataSource("poll_ballot_user_id", "id"),
+                            ],
+                        ),
+                    ]
+                ),
+                return_fields=["poll_ballot_user_id"],
+            )
+        ]
+        self.insert_from_other_table(
+            curs,
+            "poll_ballot",
+            InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        source_table=Join(
+                            TableRef(
+                                "aggregated_votes_assignment_rating_approval", True
+                            ),
                             [],
                             And(
                                 FilterOperator("generate_ballot", "=", True),
