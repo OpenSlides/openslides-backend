@@ -112,7 +112,7 @@ class IDPMixin(Action):
         try:
             ## Upload OS user to IDP
             response = requests.post(
-                f"{self.idp_scim_route}{idp_org_id}Users",
+                f"{self.idp_scim_route}{idp_org_id}/Users",
                 json={
                     "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
                     "externalId": str(os_id),
