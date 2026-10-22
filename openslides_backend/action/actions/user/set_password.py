@@ -36,7 +36,6 @@ class UserSetPasswordAction(
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        # TODO: Encrypt password
 
-        self.update_password(instance, instance["password"], False)
+        self.update_password(instance, instance["password"])
         return instance

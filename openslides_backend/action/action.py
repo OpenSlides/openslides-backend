@@ -87,6 +87,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     """
     Base class for an action.
     """
+    on_success: list[Callable[[], None]]
 
     name: str
     model: Model
@@ -128,6 +129,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.logger = logging.getLogger(__name__)
         self.env = env
+        self.on_success = []
         if skip_archived_meeting_check is not None:
             self.skip_archived_meeting_check = skip_archived_meeting_check
         if use_meeting_ids_for_archived_meeting_check is not None:
@@ -708,6 +710,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
+        exec_on_success: bool = False,
     ) -> ActionResults | None:
         """
         Executes the given action class as a dependent action with the given action
@@ -740,6 +743,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     merge_history_informations(
                         self.cascaded_actions_history, write_request.information
                     )
+            on_success_fn = action.get_on_success(action_data)
+            if on_success_fn is not None and exec_on_success:
+                self.on_success.append(on_success_fn)
             return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:

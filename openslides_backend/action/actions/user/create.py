@@ -110,10 +110,12 @@ class UserCreate(
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
             try:
-                # Create IDP account
-                self.create_user(action_data[0], self.auth.hash(get_random_password()), False)
+                # Create IDP account(s)
+                self.create_user(action_data[0], get_random_password())
             except Exception as e:
-                self.logger.error(f"Couldn't create IDP user after OS user was created: {e}")
+                self.logger.error(
+                    f"Couldn't create IDP user after OS user was created: {e}"
+                )
 
         return on_success
 
