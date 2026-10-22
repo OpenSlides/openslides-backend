@@ -28,10 +28,6 @@ class DiffMixinHelper:
               migration table as is
         [1] - dictionary of fields and their new types -> for saving data
               from fields with dependencies (intermediate tables or enum types):
-              - relation               ->  number
-              - relation-list          ->  number[]
-              - generic-relation       ->  string
-              - generic-relation-list  ->  string[]
               - enum                   ->  string
               - enum[]                 ->  string[]
         """
@@ -41,24 +37,14 @@ class DiffMixinHelper:
             changed_fields: dict[Field, str] = {}
             for field in fields:
                 fdata = PREV_MODELS[collection]["fields"][field]
-                normalized_type = None
-                if fdata.get("to"):
-                    normalized_type = (
-                        "string" if "generic" in fdata["type"] else "number"
+                if any(fdata.get(attr) for attr in FieldAttributes.enum_definitions):
+                    pg_type = PG_TYPES[fdata["type"]]
+                    assert isinstance(pg_type, Template)
+                    changed_fields[field] = pg_type.substitute(
+                        {
+                            "maxLength": Helper.get_varchar_max_length(fdata),
+                        }
                     )
-                    if "list" in fdata["type"]:
-                        normalized_type += "[]"
-                elif any(fdata.get(attr) for attr in FieldAttributes.enum_definitions):
-                    normalized_type = fdata["type"]
-
-                if normalized_type:
-                    if isinstance((pg_type := PG_TYPES[normalized_type]), Template):
-                        pg_type = pg_type.substitute(
-                            {
-                                "maxLength": Helper.get_varchar_max_length(fdata),
-                            }
-                        )
-                    changed_fields[field] = pg_type
                 else:
                     unchanged_fields.append(field)
             typed_migration_tables[collection] = (unchanged_fields, changed_fields)
