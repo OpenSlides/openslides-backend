@@ -68,12 +68,7 @@ class IDPMixin(Action):
         try:
             idp_org_id = self._get_organisation_id()
             response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(user["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(user["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -82,9 +77,7 @@ class IDPMixin(Action):
             )
 
             if response.status_code != 200:
-                raise ActionException(
-                    "An IDP error occured. Please contact your administrator"
-                )
+                raise self.idp_error(response)
 
             json_response = response.json()
 
@@ -113,14 +106,13 @@ class IDPMixin(Action):
         familyname = user.get("last_name") or username
         idp_org_id = self._get_organisation_id()
 
-        # No IDP ID set. This OS User likely has no IDP Account yet
         # Check if there is already a IDP User with the identifying keys and delete those accounts
         self.find_and_remove_similar_idp_users(user)
 
         try:
             ## Upload OS user to IDP
             response = requests.post(
-                self.idp_scim_route + idp_org_id + "/Users",
+                f"{self.idp_scim_route}{idp_org_id}Users",
                 json={
                     "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
                     "externalId": str(os_id),
@@ -149,8 +141,73 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error creating user: {e}") from e
 
+    def create_user_bulk(self, users: list[dict[str, Any]]) -> None:
+        idp_admin_access_token = self._get_admin_key()
+        idp_org_id = self._get_organisation_id()
+
+        operations = []
+        for ndx, user in enumerate(users):
+            self.find_and_remove_similar_idp_users(user)
+            external_id = user.get("id")
+            username = user.get("username")
+            email = user.get("email") or f"{username}@openslides.local"
+            givenname = user.get("first_name") or username
+            familyname = user.get("last_name") or username
+            password = user.get("default_password")
+            item = {
+                "method": "POST",
+                "path": "/Users",
+                "bulkId": f"user-{ndx}",
+                "data": {
+                    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+                    "externalId": str(external_id),
+                    **({"password": password} if password else {}),
+                    "username": username,
+                    "name": {
+                        "givenName": givenname,
+                        "familyName": familyname,
+                    },
+                    "emails": [
+                        {
+                            "value": email,
+                        }
+                    ],
+                },
+            }
+            operations.append(item)
+
+        operation_bulks = self.chunk_operations(operations)
+        for bulk in operation_bulks:
+            try:
+                ## Upload OS user to IDP
+                response = requests.post(
+                    f"{self.idp_scim_route}{idp_org_id}/Bulk",
+                    json={
+                        "schemas": [
+                            "urn:ietf:params:scim:api:messages:2.0:BulkRequest"
+                        ],
+                        "failOnErrors": 1,
+                        **({"Operations": bulk}),
+                    },
+                    headers={
+                        "Authorization": f"Bearer {idp_admin_access_token}",
+                        "Host": f"{self.external_host}",
+                    },
+                    timeout=30,
+                )
+                if response.status_code >= 400:
+                    raise ActionException(
+                        f"Error creating User in IDP: {response.json()['detail']}"
+                    )
+            except Exception as e:
+                raise ActionException(f"Error creating user: {e}") from e
+
+    def chunk_operations(
+        self, operations: list[dict[str, Any]]
+    ) -> list[list[dict[str, Any]]]:
+        return [operations[i : i + 100] for i in range(0, len(operations), 100)]
+
     # Deletes the OIDC user belonging to the given os user.
-    # Warning: This will not remove the idp_id from the os user in the database!
     def delete_user(self, instance: dict[str, Any]) -> None:
         idp_admin_access_token = self._get_admin_key()
         idp_org_id = self._get_organisation_id()
@@ -158,12 +215,7 @@ class IDPMixin(Action):
         try:
             # Request the users id from idp to have the correct id to build the SCIM delete url
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -187,6 +239,53 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}") from e
 
+            # Logs user out and thereby revokes any active session of user
+
+    def revoke_all_sessions_of_user(self, instance: dict[str, Any]) -> None:
+        idp_admin_access_token = self._get_admin_key()
+        self.logger.warning(f"Revoke sessions for {instance["id"]}")
+        try:
+            response = requests.post(
+                f"{self.idp_admin_route}sessions/search",
+                json={
+                    "query": {"offset": 0, "limit": 100, "asc": True},
+                    "queries": [
+                        {"userIdQuery": {"id": f"{instance["id"]}"}},
+                    ],
+                },
+                headers={
+                    "Authorization": f"Bearer {idp_admin_access_token}",
+                    "Host": f"{self.external_host}",
+                },
+                timeout=3,
+            )
+            if response.status_code != 200:
+                self.idp_error(response)
+
+            json_response = response.json()
+
+            if not "sessions" in json_response:
+                self.logger.warning("No session has been found")
+                return
+
+            for session in json_response["sessions"]:
+                self.logger.warning(f"Removing Session: {session['id']}")
+                response = requests.delete(
+                    self.idp_admin_route + "sessions/" + session["id"],
+                    json={},
+                    headers={
+                        "Authorization": f"Bearer {idp_admin_access_token}",
+                        "Host": f"{self.external_host}",
+                    },
+                    timeout=3,
+                )
+
+                if response.status_code != 200:
+                    self.idp_error(response)
+
+        except Exception as e:
+            raise ActionException(f"Error logout of user: {e}") from e
+
     # Enables or disables login access in IDP for the user
     def set_user_enable_status(self, instance: dict, enabled: bool) -> None:
         idp_org_id = self._get_organisation_id()
@@ -194,12 +293,7 @@ class IDPMixin(Action):
 
         try:
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -210,7 +304,7 @@ class IDPMixin(Action):
 
             ## Change enable status of IDP user
             response = requests.patch(
-                self.idp_scim_route + idp_org_id + "/Users/" + idp_id,
+                f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
                     "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
                     "Operations": [
@@ -242,12 +336,7 @@ class IDPMixin(Action):
         idp_admin_access_token = self._get_admin_key()
 
         filter_response = requests.get(
-            self.idp_scim_route
-            + idp_org_id
-            + "/Users"
-            + '?filter=externalId eq "'
-            + str(instance["id"])
-            + '"',
+            f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
             headers={
                 "Authorization": f"Bearer {idp_admin_access_token}",
                 "Host": f"{self.external_host}",
@@ -258,7 +347,7 @@ class IDPMixin(Action):
 
         try:
             response = requests.post(
-                self.idp_admin_route + "users/" + idp_id + "/password_reset",
+                f"{self.idp_admin_route}users/{idp_id}/password_reset",
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -281,12 +370,7 @@ class IDPMixin(Action):
 
         try:
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -297,7 +381,7 @@ class IDPMixin(Action):
 
             ## Change enable status of IDP user
             response = requests.patch(
-                self.idp_scim_route + idp_org_id + "/Users/" + idp_id,
+                f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
                     "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
                     "Operations": [
@@ -330,12 +414,7 @@ class IDPMixin(Action):
 
         try:
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -346,7 +425,7 @@ class IDPMixin(Action):
 
             ## Change enable status of IDP user
             response = requests.patch(
-                self.idp_scim_route + idp_org_id + "/Users/" + idp_id,
+                f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
                     "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
                     "Operations": [
@@ -378,12 +457,7 @@ class IDPMixin(Action):
 
         try:
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -394,7 +468,7 @@ class IDPMixin(Action):
 
             ## Change enable status of IDP user
             response = requests.patch(
-                self.idp_scim_route + idp_org_id + "/Users/" + idp_id,
+                f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
                     "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
                     "Operations": [
@@ -420,7 +494,6 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error updating password: {e}") from e
 
-    # TODO: Should this be done here? maybe we should replace this with idp magic and not do it in backend code.
     def user_changes_password(
         self, instance: dict[str, Any], new_password: str, old_password: str
     ) -> None:
@@ -429,12 +502,7 @@ class IDPMixin(Action):
 
         try:
             filter_response = requests.get(
-                self.idp_scim_route
-                + idp_org_id
-                + "/Users"
-                + '?filter=externalId eq "'
-                + str(instance["id"])
-                + '"',
+                f'{self.idp_scim_route}{idp_org_id}/Users?filter=externalId eq "{str(instance["id"])}"',
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -445,7 +513,7 @@ class IDPMixin(Action):
 
             ## Change password of IDP user
             response = requests.patch(
-                self.idp_admin_route + "users/" + idp_id,
+                f"{self.idp_admin_route}users/{idp_id}",
                 json={
                     "human": {
                         "password": {
