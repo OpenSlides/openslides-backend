@@ -1,5 +1,6 @@
 from typing import Any, cast
 
+from collections.abc import Callable
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
     CreateUpdatePermissionsFailingFields,
@@ -11,13 +12,19 @@ from ...util.typing import ActionResults
 from .create import UserCreate
 from .update import UserUpdate
 
+from ...util.typing import ActionData
+from ...mixins.idp_mixin import IDPMixin
 
-class BaseUserImport(BaseImportAction):
+from ...util.crypto import get_random_password
+
+
+class BaseUserImport(BaseImportAction, IDPMixin):
     """
     Action to import a result from the action_worker.
     """
 
     skip_archived_meeting_check = True
+    users_to_create = []
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
@@ -63,6 +70,18 @@ class BaseUserImport(BaseImportAction):
         Function for creating all non-user models that need to be created as part of the
         import. Should be overwritten by subclasses if it is required.
         """
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        def on_success() -> None:
+            try:
+                # Create IDP account(s)
+                self.create_user_bulk(self.users_to_create)
+            except Exception as e:
+                self.logger.error(
+                    f"Couldn't create IDP user after OS user was created: {e}"
+                )
+
+        return on_success
 
     def handle_remove_and_group_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
         for field in ("groups", "structure_level"):
@@ -133,12 +152,13 @@ class BaseUserImport(BaseImportAction):
         create_results: ActionResults | None = []
         update_results: ActionResults | None = []
         if create_action_payload:
+            self.users_to_create = create_action_payload
             create_results = self.execute_other_action(
                 UserCreate, create_action_payload
             )
         if update_action_payload:
             update_results = self.execute_other_action(
-                UserUpdate, update_action_payload
+                UserUpdate, update_action_payload, exec_on_success=True
             )
         ids: list[int | None] = []
         for is_create in index_to_is_create:

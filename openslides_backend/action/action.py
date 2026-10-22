@@ -710,6 +710,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
+        exec_on_success: bool = False,
     ) -> ActionResults | None:
         """
         Executes the given action class as a dependent action with the given action
@@ -742,7 +743,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     merge_history_informations(
                         self.cascaded_actions_history, write_request.information
                     )
-            self.on_success.append(action.get_on_success(action_data))
+            on_success_fn = action.get_on_success(action_data)
+            if on_success_fn is not None and exec_on_success:
+                self.on_success.append(on_success_fn)
             return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
