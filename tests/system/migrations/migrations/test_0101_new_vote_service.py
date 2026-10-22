@@ -406,7 +406,7 @@ class TestMigration101(BaseMigrationTestCase):
                 meeting_id=1,
                 pollmethod="N",
                 onehundred_percent_base="N",
-                type_="analog",
+                type_="named",
                 content_object_id="topic/1",
                 state="published",
                 is_pseudoanonymized=False,
