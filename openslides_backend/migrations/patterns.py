@@ -275,8 +275,8 @@ class _CopyFromTables:
                     "Root table from copy_data must join to the first source table."
                 )
         else:
-            seen_sources = {self.root_source_table}
-            for source_table in self.joined_sources:
+            seen_sources = {root_table.right_table}
+            for source_table in self.copy_data[1:]:
                 right_table = source_table.source_table.right_table
                 for join_on_data in source_table.source_table.join_on:
                     if right_table == (left_table := join_on_data.left_table):

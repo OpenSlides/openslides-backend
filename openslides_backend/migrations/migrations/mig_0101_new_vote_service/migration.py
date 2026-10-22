@@ -149,43 +149,16 @@ class Migration(DiffMixin, BaseMigration):
             "pseudoanonymous": "secret",
             "cryptographic": "secret",
         }
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]] = {
-            "Y": {
-                "onehundred_percent_base": "no_general",
-                "strike_out": False,
-            },
-            "N": {
-                "onehundred_percent_base": "no_general",
-                "strike_out": True,
-            },
-            "YN": {
-                "onehundred_percent_base": "yes_no",
-                "strike_out": False,
-            },
-            "YNA": {
-                "onehundred_percent_base": "yes_no_abstain",
-                "strike_out": False,
-            },
-            "valid": {
-                "onehundred_percent_base": "valid",
-                "strike_out": False,
-            },
-            "cast": {
-                "onehundred_percent_base": "cast",
-                "strike_out": False,
-            },
-            "entitled": {
-                "onehundred_percent_base": "entitled",
-                "strike_out": False,
-            },
-            "entitled_present": {
-                "onehundred_percent_base": "entitled_present",
-                "strike_out": False,
-            },
-            "disabled": {
-                "onehundred_percent_base": "disabled",
-                "strike_out": False,
-            },
+        poll_onehundred_percent_bases_map = {
+            "Y": "no_general",
+            "N": "no_general",
+            "YN": "yes_no",
+            "YNA": "yes_no_abstain",
+            "valid": "valid",
+            "cast": "cast",
+            "entitled": "entitled",
+            "entitled_present": "entitled_present",
+            "disabled": "disabled",
         }
 
         self.create_meeting_poll_settings(
@@ -199,7 +172,7 @@ class Migration(DiffMixin, BaseMigration):
         self,
         curs: Cursor[DictRow],
         poll_type_to_visibility_map: dict[str, str],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+        poll_onehundred_percent_bases_map: dict[str, str],
     ) -> None:
         fields_maps_by_poll_type = {
             "assignment": {
@@ -279,16 +252,14 @@ class Migration(DiffMixin, BaseMigration):
                     values_source=ValuesSource(
                         rows=[
                             {
-                                fields_map["onehundred_percent_base"]: source_ohp_base,
-                                "onehundred_percent_base": target_ohp_base_values[
-                                    "onehundred_percent_base"
-                                ],
+                                fields_map["onehundred_percent_base"]: source_base,
+                                "onehundred_percent_base": target_base,
                                 fields_map["visibility"]: type_,
                                 "visibility": visibility,
                                 fields_map["method"]: source_method,
                                 "method": target_method,
                             }
-                            for source_ohp_base, target_ohp_base_values in poll_onehundred_percent_bases_map.items()
+                            for source_base, target_base in poll_onehundred_percent_bases_map.items()
                             for type_, visibility in poll_type_to_visibility_map.items()
                             for source_method, target_method in {
                                 "Y": "selection.yes",
@@ -374,7 +345,7 @@ class Migration(DiffMixin, BaseMigration):
         self,
         curs: Cursor[DictRow],
         poll_type_to_visibility_map: dict[str, str],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+        poll_onehundred_percent_bases_map: dict[str, str],
     ) -> None:
         self.update_from_values_map(
             curs,
@@ -391,6 +362,7 @@ class Migration(DiffMixin, BaseMigration):
         )
 
         poll_t = TableRef("poll", False)
+        poll_m = TableRef("poll", True)
         self.update_from_values_map(
             curs,
             poll_t,
@@ -402,6 +374,21 @@ class Migration(DiffMixin, BaseMigration):
                 ["type"],
             ),
             join_values_to_mig_table=True,
+        )
+        self.update_from_values_map(
+            curs,
+            poll_m,
+            ValuesSource(
+                [
+                    {"source_base": source_base, "target_base": target_base}
+                    for source_base, target_base in poll_onehundred_percent_bases_map.items()
+                ],
+                ["source_base"],
+                {
+                    "source_base": "onehundred_percent_base",
+                    "target_base": "onehundred_percent_base",
+                },
+            ),
         )
         self.update_matching_entries(
             curs,
@@ -469,18 +456,12 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-        self.migrate_motion_polls(curs, poll_onehundred_percent_bases_map)
-        self.migrate_assignment_polls_with_candidate_list(
-            curs, poll_onehundred_percent_bases_map
-        )
-        self.migrate_topic_polls(curs, poll_onehundred_percent_bases_map)
-        self.migrate_cummulative_assignment_polls(
-            curs, poll_onehundred_percent_bases_map
-        )
-        self.migrate_assignment_selection_polls(curs, poll_onehundred_percent_bases_map)
-        self.migrate_assignment_rating_approval_polls(
-            curs, poll_onehundred_percent_bases_map
-        )
+        self.migrate_motion_polls(curs)
+        self.migrate_assignment_polls_with_candidate_list(curs)
+        self.migrate_topic_polls(curs)
+        self.migrate_cummulative_assignment_polls(curs)
+        self.migrate_assignment_selection_polls(curs)
+        self.migrate_assignment_rating_approval_polls(curs)
 
         curs.execute(sql.SQL("""
                 INSERT INTO poll_entitled_user_t (
@@ -500,11 +481,7 @@ class Migration(DiffMixin, BaseMigration):
                 RETURNING id;
                 """))
 
-    def migrate_motion_polls(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-    ) -> None:
+    def migrate_motion_polls(self, curs: Cursor[DictRow]) -> None:
         filter_ = self.get_filter_by_content_object_collection("motion")
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
@@ -520,6 +497,9 @@ class Migration(DiffMixin, BaseMigration):
                             value_definition=[
                                 ColumnDataSource("id", "id"),
                                 ColumnDataSource(
+                                    "onehundred_percent_base", "onehundred_percent_base"
+                                ),
+                                ColumnDataSource(
                                     "allow_abstain",
                                     transformed_column_value=sql.SQL(
                                         "({source_column} = 'YNA')"
@@ -532,21 +512,6 @@ class Migration(DiffMixin, BaseMigration):
                             ],
                         )
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {
-                            "source_onehundred_percent_base": source_onehundred_percent_base,
-                            "onehundred_percent_base": onehundred_percent_base[
-                                "onehundred_percent_base"
-                            ],
-                        }
-                        for source_onehundred_percent_base, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
-                    ],
-                    join_on_columns=["source_onehundred_percent_base"],
-                    column_alias_map={
-                        "source_onehundred_percent_base": "onehundred_percent_base"
-                    },
                 ),
             )
         ]
@@ -651,7 +616,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         vote_m = TableRef("vote", True)
         new_ballot_user_ids = [
@@ -760,9 +728,7 @@ class Migration(DiffMixin, BaseMigration):
         )
 
     def migrate_assignment_polls_with_candidate_list(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
+        self, curs: Cursor[DictRow]
     ) -> None:
         filter_ = self.get_filter_by_content_object_collection("assignment")
         poll_t = TableRef("poll", False)
@@ -778,6 +744,9 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(poll_m, [], filter_),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
+                                ColumnDataSource(
+                                    "onehundred_percent_base", "onehundred_percent_base"
+                                ),
                                 ColumnDataSource(
                                     "allow_abstain",
                                     transformed_column_value=sql.SQL(
@@ -800,21 +769,6 @@ class Migration(DiffMixin, BaseMigration):
                             )
                         ),
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {
-                            "source_onehundred_percent_base": source_onehundred_percent_base,
-                            "onehundred_percent_base": onehundred_percent_base[
-                                "onehundred_percent_base"
-                            ],
-                        }
-                        for source_onehundred_percent_base, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
-                    ],
-                    join_on_columns=["source_onehundred_percent_base"],
-                    column_alias_map={
-                        "source_onehundred_percent_base": "onehundred_percent_base"
-                    },
                 ),
             )
         ]
@@ -919,7 +873,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         vote_m = TableRef("vote", True)
         new_ballot_user_ids = [
@@ -1076,11 +1033,7 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-    def migrate_topic_polls(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-    ) -> None:
+    def migrate_topic_polls(self, curs: Cursor[DictRow]) -> None:
         filter_ = self.get_filter_by_content_object_collection("topic")
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
@@ -1293,7 +1246,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         curs.execute(
             sql.SQL("""
@@ -1415,11 +1371,7 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-    def migrate_cummulative_assignment_polls(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-    ) -> None:
+    def migrate_cummulative_assignment_polls(self, curs: Cursor[DictRow]) -> None:
         filter_ = And(
             self.get_filter_by_content_object_collection("assignment"),
             FilterOperator("max_votes_per_option", ">", 1),
@@ -1438,6 +1390,9 @@ class Migration(DiffMixin, BaseMigration):
                             value_definition=[
                                 ColumnDataSource("id", "id"),
                                 ColumnDataSource(
+                                    "onehundred_percent_base", "onehundred_percent_base"
+                                ),
+                                ColumnDataSource(
                                     "max_votes_per_option", "max_votes_per_option"
                                 ),
                                 ColumnDataSource("max_vote_sum", "min_votes_amount"),
@@ -1445,21 +1400,6 @@ class Migration(DiffMixin, BaseMigration):
                             ],
                         ),
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {
-                            "source_onehundred_percent_base": source_onehundred_percent_base,
-                            "onehundred_percent_base": onehundred_percent_base[
-                                "onehundred_percent_base"
-                            ],
-                        }
-                        for source_onehundred_percent_base, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
-                    ],
-                    join_on_columns=["source_onehundred_percent_base"],
-                    column_alias_map={
-                        "source_onehundred_percent_base": "onehundred_percent_base"
-                    },
                 ),
             )
         ]
@@ -1620,7 +1560,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         curs.execute(
             sql.SQL("""
@@ -1745,11 +1688,7 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-    def migrate_assignment_selection_polls(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-    ) -> None:
+    def migrate_assignment_selection_polls(self, curs: Cursor[DictRow]) -> None:
         filter_ = And(
             self.get_filter_by_content_object_collection("assignment"),
             FilterOperator("max_votes_per_option", "<=", 1),
@@ -1773,6 +1712,9 @@ class Migration(DiffMixin, BaseMigration):
                             value_definition=[
                                 ColumnDataSource("id", "id"),
                                 ColumnDataSource(
+                                    "onehundred_percent_base", "onehundred_percent_base"
+                                ),
+                                ColumnDataSource(
                                     "min_options_amount", "min_votes_amount"
                                 ),
                                 ColumnDataSource(
@@ -1795,21 +1737,6 @@ class Migration(DiffMixin, BaseMigration):
                             ],
                         ),
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {
-                            "source_onehundred_percent_base": source_onehundred_percent_base,
-                            "onehundred_percent_base": onehundred_percent_base[
-                                "onehundred_percent_base"
-                            ],
-                        }
-                        for source_onehundred_percent_base, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
-                    ],
-                    join_on_columns=["source_onehundred_percent_base"],
-                    column_alias_map={
-                        "source_onehundred_percent_base": "onehundred_percent_base"
-                    },
                 ),
             )
         ]
@@ -1970,7 +1897,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         curs.execute(
             sql.SQL("""
@@ -2092,11 +2022,7 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-    def migrate_assignment_rating_approval_polls(
-        self,
-        curs: Cursor[DictRow],
-        poll_onehundred_percent_bases_map: dict[str, dict[str, str | bool]],
-    ) -> None:
+    def migrate_assignment_rating_approval_polls(self, curs: Cursor[DictRow]) -> None:
         poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
         new_poll_configs = [
@@ -2110,6 +2036,9 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(poll_m, []),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
+                                ColumnDataSource(
+                                    "onehundred_percent_base", "onehundred_percent_base"
+                                ),
                                 ColumnDataSource(
                                     "min_options_amount", "min_votes_amount"
                                 ),
@@ -2136,21 +2065,6 @@ class Migration(DiffMixin, BaseMigration):
                             ),
                         ),
                     ]
-                ),
-                values_source=ValuesSource(
-                    rows=[
-                        {
-                            "source_onehundred_percent_base": source_onehundred_percent_base,
-                            "onehundred_percent_base": onehundred_percent_base[
-                                "onehundred_percent_base"
-                            ],
-                        }
-                        for source_onehundred_percent_base, onehundred_percent_base in poll_onehundred_percent_bases_map.items()
-                    ],
-                    join_on_columns=["source_onehundred_percent_base"],
-                    column_alias_map={
-                        "source_onehundred_percent_base": "onehundred_percent_base"
-                    },
                 ),
             )
         ]
@@ -2287,7 +2201,10 @@ class Migration(DiffMixin, BaseMigration):
                     ),
                 ],
             ),
-            filter_target_table=filter_polls,
+            filter_target_table=And(
+                filter_polls,
+                FilterOperator("state", "=", "finished"),
+            ),
         )
         curs.execute(
             sql.SQL("""
