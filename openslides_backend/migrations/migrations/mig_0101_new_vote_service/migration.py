@@ -488,8 +488,10 @@ class Migration(DiffMixin, BaseMigration):
         poll_content_object_collection: str,
         filter_polls_with_joined_tables: list[TableDataSource] = [],
     ) -> list[int]:
-        poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
+        option_m = TableRef("option", True)
+        vote_m = TableRef("vote", True)
+
         migrated_polls = [
             entry["id"]
             for entry in self.insert_from_other_table(
@@ -501,7 +503,7 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 poll_m,
                                 [],
-                                self.get_filter_by_content_object_collection(
+                                self._get_filter_by_content_object_collection(
                                     poll_content_object_collection
                                 ),
                             ),
@@ -527,113 +529,13 @@ class Migration(DiffMixin, BaseMigration):
                 ),
             )
         ]
-        filter_polls = FilterOperator("id", "in", migrated_polls)
-        self.update_from_other_table(
+        self._assign_configs_to_polls(curs, "poll_config_approval", migrated_polls)
+        self._generate_poll_result(
             curs,
-            UpdateFromTables(
-                target_table=poll_t,
-                copy_data=[
-                    TableDataSource(
-                        Join(
-                            TableRef("poll_config_approval", False),
-                            [JoinOn("id", poll_t, "id")],
-                            filter_polls,
-                        ),
-                        [
-                            ColumnDataSource(
-                                "config_id",
-                                transformed_column_value=sql.SQL(
-                                    "'poll_config_approval/' || ({id_column})::text"
-                                ).format(
-                                    id_column=sql.Identifier(
-                                        TableRef(
-                                            "poll_config_approval", False
-                                        ).table_name,
-                                        "id",
-                                    )
-                                ),
-                            )
-                        ],
-                    )
-                ],
-            ),
+            option_m,
+            migrated_polls,
+            self._get_aggregated_poll_result_part("option_m", ["yes", "no"]),
         )
-        option_m = TableRef("option", True)
-        self.update_from_other_table(
-            curs,
-            copy_from_source_tables=UpdateFromTables(
-                target_table=poll_t,
-                copy_data=[
-                    TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
-                    TableDataSource(
-                        source_table=Join(
-                            option_m,
-                            [JoinOn("poll_id", poll_m, "id")],
-                        ),
-                        value_definition=[
-                            ColumnDataSource(
-                                "result",
-                                transformed_column_value=sql.SQL(
-                                    "jsonb_strip_nulls(jsonb_object(ARRAY[{columns}], ARRAY[{values}]))"
-                                ).format(
-                                    columns=sql.SQL(",").join(
-                                        [
-                                            "yes",
-                                            "no",
-                                            "abstain",
-                                            "invalid",
-                                            "total_ballots",
-                                        ]
-                                    ),
-                                    values=sql.SQL(", ").join(
-                                        [
-                                            sql.SQL(
-                                                "NULLIF({source_column}::text, '0')"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    option_m.table_name, "yes"
-                                                )
-                                            ),
-                                            sql.SQL(
-                                                "NULLIF({source_column}::text, '0')"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    option_m.table_name, "no"
-                                                )
-                                            ),
-                                            sql.SQL(
-                                                "NULLIF({source_column}::text, '0')"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    option_m.table_name, "abstain"
-                                                )
-                                            ),
-                                            sql.SQL(
-                                                "CASE "
-                                                "WHEN poll_t.visibility = 'manually' "
-                                                "THEN NULLIF(TRUNC({source_column})::text, '0') "
-                                                "ELSE NULL "
-                                                "END"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    poll_m.table_name, "votesinvalid"
-                                                ),
-                                            ),
-                                            sql.SQL("TRUNC(poll_m.votescast)::text"),
-                                        ]
-                                    ),
-                                ),
-                            )
-                        ],
-                    ),
-                ],
-            ),
-            filter_target_table=And(
-                filter_polls,
-                FilterOperator("state", "=", "finished"),
-            ),
-        )
-        vote_m = TableRef("vote", True)
         new_ballot_user_ids = [
             entry["id"]
             for entry in self.insert_from_other_table(
@@ -686,58 +588,7 @@ class Migration(DiffMixin, BaseMigration):
                 ),
             )
         ]
-        public_ballot_ids = [
-            ballot["poll_ballot_user_id"]
-            for ballot in self.insert_from_other_table(
-                curs,
-                "poll_ballot",
-                InsertFromTables(
-                    copy_data=[
-                        TableDataSource(
-                            source_table=Join(
-                                vote_m,
-                                [],
-                                And(
-                                    FilterOperator("id", "in", new_ballot_user_ids),
-                                    FilterOperator("link_user_to_ballot", "=", True),
-                                ),
-                            ),
-                            value_definition=[
-                                ColumnDataSource("weight", "weight"),
-                                ColumnDataSource("poll_id", "poll_id"),
-                                ColumnDataSource("value", "value"),
-                                ColumnDataSource("poll_ballot_user_id", "id"),
-                            ],
-                        ),
-                    ]
-                ),
-                return_fields=["poll_ballot_user_id"],
-            )
-        ]
-        self.insert_from_other_table(
-            curs,
-            "poll_ballot",
-            InsertFromTables(
-                copy_data=[
-                    TableDataSource(
-                        source_table=Join(
-                            vote_m,
-                            [],
-                            And(
-                                FilterOperator("generate_ballot", "=", True),
-                                FilterOperator("poll_id", "in", migrated_polls),
-                                Not(FilterOperator("id", "in", public_ballot_ids)),
-                            ),
-                        ),
-                        value_definition=[
-                            ColumnDataSource("weight", "weight"),
-                            ColumnDataSource("poll_id", "poll_id"),
-                            ColumnDataSource("value", "value"),
-                        ],
-                    ),
-                ]
-            ),
-        )
+        self._create_poll_ballots(curs, vote_m, migrated_polls, new_ballot_user_ids)
         return migrated_polls
 
     def migrate_motion_polls(self, curs: Cursor[DictRow]) -> None:
@@ -754,7 +605,7 @@ class Migration(DiffMixin, BaseMigration):
                     Join(
                         TableRef("option", True),
                         [JoinOn("poll_id", TableRef("poll", True), "id")],
-                        self.get_filter_by_content_object_collection(
+                        self._get_filter_by_content_object_collection(
                             "poll_candidate_list"
                         ),
                     )
@@ -799,13 +650,10 @@ class Migration(DiffMixin, BaseMigration):
                             ColumnDataSource("weight", "weight"),
                             ColumnDataSource(
                                 "content_object_id",
-                                transformed_column_value=sql.SQL(
-                                    "'user/' || ({id_column})::text"
-                                ).format(
-                                    id_column=sql.Identifier(
-                                        poll_candidate_m.table_name,
-                                        "user_id",
-                                    )
+                                transformed_column_value=self._build_fqid_from_id_column(
+                                    "user",
+                                    poll_candidate_m.table_name,
+                                    "user_id",
                                 ),
                             ),
                         ],
@@ -815,8 +663,9 @@ class Migration(DiffMixin, BaseMigration):
         )
 
     def migrate_polls_with_multiple_options(self, curs: Cursor[DictRow]) -> None:
-        poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
+        option_m = TableRef("option", True)
+        option_m = TableRef("option", True)
 
         topic_polls = self.migrate_topic_polls(curs)
         assignment_selection_polls = self.migrate_assignment_selection_polls(curs)
@@ -837,40 +686,7 @@ class Migration(DiffMixin, BaseMigration):
             ("poll_config_rating_score", assignment_rating_score_polls),
             ("poll_config_rating_approval", assignment_rating_approval_polls),
         ):
-            self.update_from_other_table(
-                curs,
-                UpdateFromTables(
-                    target_table=poll_t,
-                    copy_data=[
-                        TableDataSource(
-                            Join(
-                                TableRef(poll_config_collection, False),
-                                [JoinOn("id", poll_t, "id")],
-                                FilterOperator("id", "in", poll_ids),
-                            ),
-                            [
-                                ColumnDataSource(
-                                    "config_id",
-                                    transformed_column_value=sql.SQL(
-                                        "{poll_config_collection} || '/' || ({id_column})::text"
-                                    ).format(
-                                        poll_config_collection=sql.Literal(
-                                            poll_config_collection
-                                        ),
-                                        id_column=sql.Identifier(
-                                            TableRef(
-                                                poll_config_collection, False
-                                            ).table_name,
-                                            "id",
-                                        ),
-                                    ),
-                                )
-                            ],
-                        )
-                    ],
-                ),
-            )
-        option_m = TableRef("option", True)
+            self._assign_configs_to_polls(curs, poll_config_collection, poll_ids)
         for option_content_field, poll_ids, exclude_global_option in (
             ("text", topic_polls, False),
             (
@@ -921,10 +737,10 @@ class Migration(DiffMixin, BaseMigration):
                 CREATE TEMP TABLE poll_result_source_m AS
                 SELECT
                     o.poll_id,
-                    SUM(COALESCE(o.abstain, 0)) AS abstain_votes,
+                    SUM(COALESCE(o.abstain, 0)) AS abstain,
                     SUM(COALESCE(o.yes, 0) + COALESCE(o.no, 0)) FILTER (
                         WHERE o.used_as_global_option_in_poll_id = o.poll_id
-                    ) AS nota_votes,
+                    ) AS nota,
                     jsonb_object_agg(
                         CASE
                             WHEN p.content_object_id LIKE 'topic/%%'
@@ -958,11 +774,11 @@ class Migration(DiffMixin, BaseMigration):
                         o.id::text,
                         jsonb_strip_nulls(
                             jsonb_build_object(
-                                'yes', NULLIF(o.yes, 0),
-                                'no', NULLIF(o.no, 0),
-                                'abstain', NULLIF(o.abstain, 0)
+                                'yes', NULLIF(o.yes, 0)::text,
+                                'no', NULLIF(o.no, 0)::text,
+                                'abstain', NULLIF(o.abstain, 0)::text
                             )
-                        )::text
+                        )
                     ) AS options_json
                 FROM option_m o
                 WHERE o.poll_id = ANY(%s)
@@ -970,83 +786,15 @@ class Migration(DiffMixin, BaseMigration):
             """),
             [assignment_rating_approval_polls],
         )
-        option_m = TableRef("option", True)
-        self.update_from_other_table(
+        poll_result_source_m = TableRef("poll_result_source", True)
+        self._generate_poll_result(
             curs,
-            copy_from_source_tables=UpdateFromTables(
-                target_table=poll_t,
-                copy_data=[
-                    TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
-                    TableDataSource(
-                        Join(
-                            TableRef("poll_result_source", True),
-                            [JoinOn("poll_id", poll_m, "id")],
-                        ),
-                        value_definition=[
-                            ColumnDataSource(
-                                "result",
-                                transformed_column_value=sql.SQL("""
-                                    LEFT(options_json::text, -1)
-                                    ||
-                                    CASE WHEN options_json::text = '{{}}' THEN '' ELSE ',' END
-                                    ||
-                                    trim(
-                                        BOTH '{{}}' FROM
-                                        json_strip_nulls(
-                                            json_object(ARRAY[{columns}], ARRAY[{values}])
-                                        )::text
-                                    )
-                                    || '}}'
-                                    """).format(
-                                    columns=sql.SQL(",").join(
-                                        [
-                                            "nota",
-                                            "abstain",
-                                            "invalid",
-                                            "total_ballots",
-                                        ]
-                                    ),
-                                    values=sql.SQL(", ").join(
-                                        [
-                                            sql.SQL(
-                                                "NULLIF({source_column}::text, '0')"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    "poll_result_source_m",
-                                                    "nota_votes",
-                                                )
-                                            ),
-                                            sql.SQL(
-                                                "NULLIF({source_column}::text, '0')"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    "poll_result_source_m",
-                                                    "abstain_votes",
-                                                )
-                                            ),
-                                            sql.SQL(
-                                                "(CASE "
-                                                "WHEN poll_t.visibility = 'manually' "
-                                                "THEN NULLIF(TRUNC({source_column})::text, '0') "
-                                                "ELSE NULL "
-                                                "END)"
-                                            ).format(
-                                                source_column=sql.Identifier(
-                                                    poll_m.table_name, "votesinvalid"
-                                                ),
-                                            ),
-                                            sql.SQL("TRUNC(poll_m.votescast)::text"),
-                                        ]
-                                    ),
-                                ),
-                            )
-                        ],
-                    ),
-                ],
-            ),
-            filter_target_table=And(
-                FilterOperator("id", "in", all_polls),
-                FilterOperator("state", "=", "finished"),
+            poll_result_source_m,
+            all_polls,
+            sql.SQL("options_json || {poll_json}").format(
+                poll_json=self._get_aggregated_poll_result_part(
+                    poll_result_source_m.table_name, ["nota"]
+                )
             ),
         )
         curs.execute(
@@ -1126,61 +874,12 @@ class Migration(DiffMixin, BaseMigration):
                 ),
             )
         ]
-        public_ballot_ids = [
-            ballot["poll_ballot_user_id"]
-            for ballot in self.insert_from_other_table(
-                curs,
-                "poll_ballot",
-                InsertFromTables(
-                    copy_data=[
-                        TableDataSource(
-                            source_table=Join(
-                                TableRef("aggregated_votes", True),
-                                [],
-                                And(
-                                    FilterOperator("id", "in", new_ballot_user_ids),
-                                    FilterOperator("link_user_to_ballot", "=", True),
-                                ),
-                            ),
-                            value_definition=[
-                                ColumnDataSource("weight", "weight"),
-                                ColumnDataSource("poll_id", "poll_id"),
-                                ColumnDataSource("value", "value"),
-                                ColumnDataSource("poll_ballot_user_id", "id"),
-                            ],
-                        ),
-                    ]
-                ),
-                return_fields=["poll_ballot_user_id"],
-            )
-        ]
-        self.insert_from_other_table(
-            curs,
-            "poll_ballot",
-            InsertFromTables(
-                copy_data=[
-                    TableDataSource(
-                        source_table=Join(
-                            TableRef("aggregated_votes", True),
-                            [],
-                            And(
-                                FilterOperator("generate_ballot", "=", True),
-                                FilterOperator("poll_id", "in", all_polls),
-                                Not(FilterOperator("id", "in", public_ballot_ids)),
-                            ),
-                        ),
-                        value_definition=[
-                            ColumnDataSource("weight", "weight"),
-                            ColumnDataSource("poll_id", "poll_id"),
-                            ColumnDataSource("value", "value"),
-                        ],
-                    ),
-                ]
-            ),
+        self._create_poll_ballots(
+            curs, TableRef("aggregated_votes", True), all_polls, new_ballot_user_ids
         )
 
     def migrate_topic_polls(self, curs: Cursor[DictRow]) -> list[int]:
-        filter_ = self.get_filter_by_content_object_collection("topic")
+        filter_ = self._get_filter_by_content_object_collection("topic")
         poll_m = TableRef("poll", True)
         return [
             entry["id"]
@@ -1236,7 +935,7 @@ class Migration(DiffMixin, BaseMigration):
 
     def migrate_assignment_rating_score_polls(self, curs: Cursor[DictRow]) -> list[int]:
         filter_ = And(
-            self.get_filter_by_content_object_collection("assignment"),
+            self._get_filter_by_content_object_collection("assignment"),
             FilterOperator("max_votes_per_option", ">", 1),
         )
         poll_m = TableRef("poll", True)
@@ -1268,7 +967,7 @@ class Migration(DiffMixin, BaseMigration):
 
     def migrate_assignment_selection_polls(self, curs: Cursor[DictRow]) -> list[int]:
         filter_ = And(
-            self.get_filter_by_content_object_collection("assignment"),
+            self._get_filter_by_content_object_collection("assignment"),
             FilterOperator("max_votes_per_option", "<=", 1),
             Or(
                 FilterOperator("global_yes", "=", True),
@@ -1328,7 +1027,7 @@ class Migration(DiffMixin, BaseMigration):
             poll_m,
             {"is_rating_approval": True},
             filter_target_table=And(
-                self.get_filter_by_content_object_collection("assignment"),
+                self._get_filter_by_content_object_collection("assignment"),
                 FilterOperator("max_votes_per_option", "<=", 1),
                 And(
                     FilterOperator("global_yes", "!=", True),
@@ -1385,8 +1084,171 @@ class Migration(DiffMixin, BaseMigration):
         ]
 
     # -- Helpers specific for this migration --
+    def _assign_configs_to_polls(
+        self, curs: Cursor[DictRow], poll_config_collection: str, poll_ids: list[int]
+    ) -> None:
+        poll_t = TableRef("poll", False)
+        poll_config_collection_t = TableRef(poll_config_collection, False)
+        self.update_from_other_table(
+            curs,
+            UpdateFromTables(
+                target_table=poll_t,
+                copy_data=[
+                    TableDataSource(
+                        Join(
+                            poll_config_collection_t,
+                            [JoinOn("id", poll_t, "id")],
+                            FilterOperator("id", "in", poll_ids),
+                        ),
+                        [
+                            ColumnDataSource(
+                                "config_id",
+                                transformed_column_value=self._build_fqid_from_id_column(
+                                    poll_config_collection,
+                                    poll_config_collection_t.table_name,
+                                    "id",
+                                ),
+                            )
+                        ],
+                    )
+                ],
+            ),
+        )
+
     @staticmethod
-    def get_filter_by_content_object_collection(
+    def _get_aggregated_poll_result_part(
+        source_table: str, extra_source_columns: list[str]
+    ) -> sql.Composed:
+        json_source = {
+            **{
+                column: sql.SQL("NULLIF({source_column}::text, '0')").format(
+                    source_column=sql.Identifier(source_table, column)
+                )
+                for column in [*extra_source_columns, "abstain"]
+            },
+            "invalid": sql.SQL(
+                "CASE "
+                "WHEN poll_t.visibility = 'manually' "
+                "THEN NULLIF(TRUNC(poll_m.votesinvalid)::integer, 0) "
+                "ELSE NULL "
+                "END"
+            ),
+            "total_ballots": sql.SQL("TRUNC(poll_m.votescast)::integer"),
+        }
+        return sql.SQL("jsonb_strip_nulls(jsonb_build_object({json_source}))").format(
+            json_source=sql.SQL(",").join(
+                sql.SQL(",").join([k, v]) for k, v in json_source.items()
+            ),
+        )
+
+    def _generate_poll_result(
+        self,
+        curs: Cursor[DictRow],
+        source_table: TableRef,
+        poll_ids: list[int],
+        value: sql.Composed,
+    ) -> None:
+        poll_t = TableRef("poll", False)
+        poll_m = TableRef("poll", True)
+        self.update_from_other_table(
+            curs,
+            copy_from_source_tables=UpdateFromTables(
+                target_table=poll_t,
+                copy_data=[
+                    TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
+                    TableDataSource(
+                        Join(
+                            source_table,
+                            [JoinOn("poll_id", poll_m, "id")],
+                        ),
+                        value_definition=[
+                            ColumnDataSource(
+                                "result",
+                                transformed_column_value=value,
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            filter_target_table=And(
+                FilterOperator("id", "in", poll_ids),
+                FilterOperator("state", "=", "finished"),
+            ),
+        )
+
+    def _create_poll_ballots(
+        self,
+        curs: Cursor[DictRow],
+        source_table: TableRef,
+        poll_ids: list[int],
+        ballot_user_ids: list[int],
+    ) -> None:
+        public_ballot_ids = [
+            ballot["poll_ballot_user_id"]
+            for ballot in self.insert_from_other_table(
+                curs,
+                "poll_ballot",
+                InsertFromTables(
+                    copy_data=[
+                        TableDataSource(
+                            source_table=Join(
+                                source_table,
+                                [],
+                                And(
+                                    FilterOperator("id", "in", ballot_user_ids),
+                                    FilterOperator("link_user_to_ballot", "=", True),
+                                ),
+                            ),
+                            value_definition=[
+                                ColumnDataSource("weight", "weight"),
+                                ColumnDataSource("poll_id", "poll_id"),
+                                ColumnDataSource("value", "value"),
+                                ColumnDataSource("poll_ballot_user_id", "id"),
+                            ],
+                        ),
+                    ]
+                ),
+                return_fields=["poll_ballot_user_id"],
+            )
+        ]
+        self.insert_from_other_table(
+            curs,
+            "poll_ballot",
+            InsertFromTables(
+                copy_data=[
+                    TableDataSource(
+                        source_table=Join(
+                            source_table,
+                            [],
+                            And(
+                                FilterOperator("generate_ballot", "=", True),
+                                FilterOperator("poll_id", "in", poll_ids),
+                                Not(FilterOperator("id", "in", public_ballot_ids)),
+                            ),
+                        ),
+                        value_definition=[
+                            ColumnDataSource("weight", "weight"),
+                            ColumnDataSource("poll_id", "poll_id"),
+                            ColumnDataSource("value", "value"),
+                        ],
+                    ),
+                ]
+            ),
+        )
+
+    @staticmethod
+    def _get_filter_by_content_object_collection(
         collection: str,
     ) -> Filter:
         return FilterOperator("content_object_id", "%=", f"{collection}/%")
+
+    @staticmethod
+    def _build_fqid_from_id_column(
+        collection: str,
+        id_table_table: str,
+        id_column_name: str,
+    ) -> sql.Composed:
+        return sql.SQL("{collection} || '/' || ({id_column})::text").format(
+            collection=sql.Literal(collection),
+            id_column=sql.Identifier(id_table_table, id_column_name),
+        )
