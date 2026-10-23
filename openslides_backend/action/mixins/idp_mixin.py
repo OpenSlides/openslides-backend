@@ -11,11 +11,12 @@ from openslides_backend.shared.exceptions import ActionException
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ..action import Action
+from .magic_link_mixin import IDPMagicLinkMixin
 
 logger = logging.getLogger(__name__)
 
 
-class IDPMixin(Action):
+class IDPMixin(IDPMagicLinkMixin):
     """
     Provides a mixin for an external Identity Provider concerning user integration
     """
@@ -258,6 +259,9 @@ class IDPMixin(Action):
                     "TODO: Causes initial import issues as user table does not exist yet"
                 )
                 raise ActionException(f"Error writing IPD ID in datastore: {e}")
+
+        # Debug: Send magic link
+        self.create_magic_link(idp_id)
 
     # Deletes the OIDC user belonging to the given os user.
     # Warning: This will not remove the idp_id from the os user in the database!

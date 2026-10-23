@@ -89,7 +89,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             raise AuthenticationException(f"Error reading project id file: {e}")
 
     def _get_client_id(self) -> str:
-        if self.manual_client_id is not "":
+        if self.manual_client_id != "":
             return self.manual_client_id
 
         if self._idp_client_id != "":
@@ -129,7 +129,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
 
             if response.status_code != 200:
                 if "COMMAND-1m88i" in response.text:
-                    self.logger.warning(
+                    self.logger.debug(
                         "Tried to set backchannel logout URI, but the given URI is already configured in Zitadel"
                     )
                     return

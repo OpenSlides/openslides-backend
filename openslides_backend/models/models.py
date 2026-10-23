@@ -184,6 +184,7 @@ class BlockedSessions(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     session_id = fields.CharField(required=True, constant=True)
+    timestamp = fields.TimestampField(required=True)
 
 
 class ChatGroup(Model):
@@ -622,6 +623,16 @@ class ListOfSpeakers(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_ids"}, required=True, constant=True
     )
+
+
+class MagicLinks(Model):
+    collection = "magic_links"
+    verbose_name = "magic links"
+
+    id = fields.IntegerField(required=True, constant=True)
+    token_hash = fields.CharField(required=True, constant=True)
+    idp_id = fields.CharField(required=True, constant=True)
+    timestamp = fields.TimestampField(required=True)
 
 
 class Mediafile(Model):

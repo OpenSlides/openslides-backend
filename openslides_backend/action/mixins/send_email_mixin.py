@@ -17,6 +17,7 @@ from ...shared.html import get_text_from_html
 from ..action import Action
 from ..util.typing import ActionData
 from .idp_mixin import IDPMixin
+from .qr_code_mixin import QRCodeMixin
 
 SendErrors = dict[str, tuple[int, bytes]]
 
@@ -206,6 +207,11 @@ class EmailCheckMixin(IDPMixin):
 
         return on_success
 
+class EmailMagicLinkMixin(QRCodeMixin):
+    def send_magic_link_to(magicLink: str, email: str):
+        qrCode = self.render_qr_png(magicLink, "png", 8, 2)
+
+        send_email(smtplib.SMTP, "openslides@openslides.com", email, "Invite", magicLink + "\n" + qrCode)
 
 class EmailSenderCheckMixin(Action):
     check_email_sender_field = "users_email_sender"

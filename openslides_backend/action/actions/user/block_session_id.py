@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from ....models.models import User
 from ....shared.interfaces.event import Event, EventType
 from ....shared.interfaces.write_request import WriteRequest
@@ -45,7 +47,11 @@ class UserBlockSessionID(
                     Event(
                         type=EventType.Create,
                         collection="blocked_sessions",
-                        fields={"session_id": str(session_id)},
+                        fields={
+                            "session_id": str(session_id),
+                            "timestamp": datetime.now(timezone.utc)
+                            },
+
                     )
                 ]
             )
