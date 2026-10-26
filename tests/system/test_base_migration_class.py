@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
+import pytest
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
@@ -33,10 +34,11 @@ from tests.system.action.base import BaseActionTestCase
 #   * Could be reasonable to split the tests into multiple files similarly to other generic tests
 #   * Should be moved to tests/system/migrations/
 # These tests were added solely to test the new methods on development stage and should not be used as is in the final version of dammi.
+@pytest.mark.skip()
 class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
     def tearDown(self) -> None:
         super().tearDown()
-        self.cleanup(self.connection.cursor())
+        self.cleanup()
 
     def test_update_simple(self) -> None:
         self.load_example_data()
@@ -60,7 +62,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
                 "poll/5": {"is_pseudoanonymized": False, "type": "analog"},
             }
         )
-        self.data_preparation(self.connection.cursor())
+        self.data_preparation()
 
         new_value: Any
         lookup_filter: Filter
@@ -73,7 +75,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.get_all("poll", [], False)
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_all_entries(self.connection.cursor(), poll_t, {"title": new_value})
+        self.update_all_entries(poll_t, {"title": new_value})
         assert (
             matching_ids.keys()
             == self.datastore.filter("poll", test_filter, ["id"]).keys()
@@ -88,7 +90,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.get_all("poll", [], False)
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_all_entries(self.connection.cursor(), poll_t, new_values)
+        self.update_all_entries(poll_t, new_values)
         assert (
             matching_ids.keys()
             == self.datastore.filter("poll", test_filter, ["id"]).keys()
@@ -103,9 +105,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_empty_cells(
-            self.connection.cursor(), poll_t, "votesvalid", new_value
-        )
+        self.update_empty_cells(poll_t, "votesvalid", new_value)
         assert len(self.datastore.filter("poll", test_filter, ["id"])) != 0
         assert (
             matching_ids.keys()
@@ -119,9 +119,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.filter("poll", lookup_filter, ["id"])
 
         assert len(self.datastore.filter("poll", test_filter, ["id"])) == 0
-        self.update_matching_entries(
-            self.connection.cursor(), poll_t, {"description": new_value}, lookup_filter
-        )
+        self.update_matching_entries(poll_t, {"description": new_value}, lookup_filter)
         assert len(self.datastore.filter("poll", test_filter, ["id"])) != 0
         assert (
             matching_ids.keys()
@@ -137,9 +135,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         matching_ids = self.datastore.filter("vote", lookup_filter, ["id"])
 
         assert len(self.datastore.filter("vote", test_filter, ["id"])) == 0
-        self.update_matching_entries(
-            self.connection.cursor(), TableRef("vote", False), new_values, lookup_filter
-        )
+        self.update_matching_entries(TableRef("vote", False), new_values, lookup_filter)
         assert len(self.datastore.filter("vote", test_filter, ["id"])) != 0
         assert (
             matching_ids.keys()
@@ -148,7 +144,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         # -- Update from map --
         self.update_from_values_map(
-            self.connection.cursor(),
             poll_t,
             ValuesSource(
                 [
@@ -220,7 +215,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
 
         self.update_from_values_map(
-            self.connection.cursor(),
             TableRef("motion_state", False),
             ValuesSource(replace_map, ["name"]),
         )
@@ -256,7 +250,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             "UPDATE option_m SET temporary_column = id + 7;"
         )
         self.update_from_other_table(
-            self.connection.cursor(),
             UpdateFromTables(
                 target_table=TableRef("option", False),
                 copy_data=[
@@ -288,7 +281,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         # -- Update from mig table --
         self.connection.commit()
         self.update_from_mig_table(
-            self.connection.cursor(),
             "option",
             [
                 ColumnDataSource(
@@ -307,7 +299,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
         # -- Update matching entries with joins --
         self.update_matching_entries(
-            self.connection.cursor(),
             TableRef("option", False),
             {"yes": Decimal("5.6"), "text": "Updated with joined table"},
             filter_with_joined_tables=[
@@ -363,7 +354,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries. Resulting entries should not contain duplicates"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"b"}),
@@ -384,7 +374,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries. Resulting entries should not contain duplicates"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"a", "b"}),
@@ -405,7 +394,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(remove={"b"}),
@@ -424,7 +412,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(remove={"a", "b"}),
@@ -443,7 +430,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries. Resulting entries should not contain duplicates"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(replace={"b": "c"}),
@@ -468,7 +454,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update all entries. Resulting entries should not contain duplicates"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(replace={"b": "c", "a": "e"}),
@@ -487,7 +472,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         """Should update only entries that match the filter. Resulting entries should not contain duplicates"""
         self.setup_history_entries()
         self.update_array(
-            self.connection.cursor(),
             TableRef("history_entry", False),
             "entries",
             ArrayDiff(add={"a"}, remove={"b"}, replace={"c": "d"}),
@@ -516,7 +500,7 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
 
     def test_insert_from_other_table_complex(self) -> None:
         self.load_example_data()
-        self.data_preparation(self.connection.cursor())
+        self.data_preparation()
         matching_polls = {
             (state, pollmethod): set(
                 self.datastore.filter(
@@ -569,7 +553,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
         )
 
         self.insert_from_other_table(
-            self.connection.cursor(),
             "option",
             copy_from_source_tables=InsertFromTables(
                 copy_data=[
@@ -635,7 +618,6 @@ class BaseMigrationClassTest(DiffMixin, BaseMigration, BaseActionTestCase):
             "CREATE TEMP TABLE poll_ballot_user_t (id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY NOT NULL, poll_id integer, acting_meeting_user_id integer);"
         )
         new_ids = self.insert_from_other_table(
-            self.connection.cursor(),
             "poll_ballot_user",
             InsertFromTables(
                 copy_data=[

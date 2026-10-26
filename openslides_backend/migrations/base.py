@@ -10,7 +10,6 @@ from openslides_backend.migrations.patterns import (
     Column,
     ColumnDataSource,
     ColumnRef,
-    ExtendedSqlArguments,
     InsertFromTables,
     Join,
     JoinOn,
@@ -24,6 +23,7 @@ from openslides_backend.migrations.patterns import (
 from openslides_backend.migrations.sql_helper import MigrationSqlHelper
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.filters import Filter, SqlArguments
+from openslides_backend.shared.interfaces.logging import Logger
 from openslides_backend.shared.patterns import Collection, Field
 
 
@@ -67,59 +67,59 @@ class BaseMigration:
     #   * cleanup: as the final step
     cleanup_statements: str
 
-    @staticmethod
-    def check_prerequisites(curs: Cursor[DictRow]) -> str:
+    def __init__(
+        self, migration_cursor: Cursor[DictRow], logger: Logger, verbose: bool
+    ) -> None:
+        self.cursor = migration_cursor
+        self.logger = logger
+        self.verbose = verbose
+
+    def check_prerequisites(self) -> str:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Checks all prerequisites for the migration.
-        Input:
-            cursor
         Returns:
             All errors collected. Empty string otherwise.
         """
         return ""
 
-    def data_preparation(self, curs: Cursor[DictRow]) -> dict[str, Any] | None:
+    def data_preparation(self) -> dict[str, Any] | None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Save data in helper tables or return it in a dict.
-        Input:
-            cursor
         """
         # TODO: after implementing switched_writing_side extend `migration_tables`
         # with collections and old writing side fields from `switched_writing_side``
         if getattr(self, "typed_migration_tables", None):
-            self.copied_tables = MigrationHelper.copy_tables(
-                curs, self.typed_migration_tables
+            self.log_debug_message("Creating migration tables.")
+            copy_tables_queries = MigrationHelper.get_copy_tables_queries(
+                self.typed_migration_tables
             )
+            for query in copy_tables_queries.values():
+                self.execute_query(query)
+            self.copied_tables = list(copy_tables_queries.keys())
         return None
 
-    @staticmethod
-    def data_definition(curs: Cursor[DictRow]) -> None:
+    def data_definition(self) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Applies all manual SQL DDL changes necessary.
             (Triggers and views are automatically recreated by the framework.)
-        Input:
-            cursor
         """
 
-    def data_manipulation(
-        self, curs: Cursor[DictRow], stash: dict[str, Any] | None
-    ) -> None:
+    def data_manipulation(self, stash: dict[str, Any] | None) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Writes all data changes necessary after the DDL changes.
         Input:
-            cursor
             stash: data that was previously stashed by data_preparation.
         """
 
-    def cleanup(self, curs: Cursor[DictRow]) -> None:
+    def cleanup(self) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
@@ -128,14 +128,36 @@ class BaseMigration:
             cursor
         """
         for table in getattr(self, "copied_tables", []):
-            curs.execute(AlterSchemaHelper.get_drop_table_statement(table, True))
+            self.execute_query(AlterSchemaHelper.get_drop_table_statement(table, True))
         if getattr(self, "cleanup_statements", None):
-            curs.execute(self.cleanup_statements)
+            self.execute_query(self.cleanup_statements)
+
+    def execute_query(
+        self,
+        query: sql.Composed | sql.SQL | str,
+        arguments: list[Any] | None = None,
+        log: bool = True,
+    ) -> None:
+        if self.verbose and log:
+            query_string = (
+                query if isinstance(query, str) else query.as_string(self.cursor)
+            )
+            self.logger.debug(
+                f"Executing migration query: {query_string}\n"
+                f"With arguments: {arguments}"
+            )
+        self.cursor.execute(query, arguments)
+
+    def log_debug_message(self, message: str) -> None:
+        """
+        Writes message with level debug to the log if migration is in verbose mode.
+        """
+        if self.verbose:
+            self.logger.debug(message)
 
     # -- Helpers for data_manipulation --
-    @staticmethod
     def _base_update_entries(
-        curs: Cursor[DictRow],
+        self,
         target_table: TableRef,
         new_values: dict[Column, Any],
         filter_target_table: Filter | None = None,
@@ -148,7 +170,7 @@ class BaseMigration:
         set_part = MigrationSqlHelper.get_set_columns_part(new_values, arguments)
         if filter_target_table:
             conditions.append(
-                BaseMigration._build_filter_query(
+                self._build_filter_query(
                     filter_condition=filter_target_table,
                     arguments=arguments,
                     target_collection=target_table.collection,
@@ -157,7 +179,7 @@ class BaseMigration:
         if filter_migration_table:
             assert not target_table.migration
             conditions.append(
-                BaseMigration._build_filter_query(
+                self._build_filter_query(
                     filter_condition=filter_migration_table,
                     arguments=arguments,
                     filter_other_table=Join(
@@ -170,22 +192,20 @@ class BaseMigration:
                             )
                         ],
                     ),
-                    curs=curs,
                 )
             )
         if joined_tables:
             for join in joined_tables:
                 assert join.filter_right_table is not None
                 conditions.append(
-                    BaseMigration._build_filter_query(
+                    self._build_filter_query(
                         filter_condition=join.filter_right_table,
                         arguments=arguments,
                         filter_other_table=join,
                         filter_condition_table_alias=join.right_table.table_name,
-                        curs=curs,
                     )
                 )
-        curs.execute(
+        self.execute_query(
             MigrationSqlHelper.build_update_entries_sql(
                 table_name=target_table.table_name,
                 set_part=set_part,
@@ -196,22 +216,16 @@ class BaseMigration:
 
     def update_all_entries(
         self,
-        curs: Cursor[DictRow],
         target_table: TableRef,
         new_values: dict[Column, Any],
     ) -> None:
         """
         Sets the given simple values into the corresponding columns for all the collection entries.
         """
-        self._base_update_entries(
-            curs,
-            target_table=target_table,
-            new_values=new_values,
-        )
+        self._base_update_entries(target_table=target_table, new_values=new_values)
 
     def update_matching_entries(
         self,
-        curs: Cursor[DictRow],
         target_table: TableRef,
         new_values: dict[Column, Any],
         filter_target_table: Filter | None = None,
@@ -238,7 +252,6 @@ class BaseMigration:
                 "'filter_target_table' must be used insted of 'filter_migration_table' when target_table is a migration table."
             )
         self._base_update_entries(
-            curs,
             target_table=target_table,
             new_values=new_values,
             filter_target_table=filter_target_table,
@@ -248,7 +261,6 @@ class BaseMigration:
 
     def update_empty_cells(
         self,
-        curs: Cursor[DictRow],
         target_table: TableRef,
         column: Column,
         new_value: Any,
@@ -258,7 +270,7 @@ class BaseMigration:
         without the value in this column.
         """
         arguments: SqlArguments = []
-        curs.execute(
+        self.execute_query(
             MigrationSqlHelper.build_update_entries_sql(
                 table_name=target_table.table_name,
                 set_part=MigrationSqlHelper.get_set_columns_part(
@@ -273,7 +285,6 @@ class BaseMigration:
 
     def update_from_values_map(
         self,
-        curs: Cursor[DictRow],
         target_table: TableRef,
         values_source: ValuesSource,
         filter_target_table: Filter | None = None,
@@ -304,17 +315,17 @@ class BaseMigration:
             mig_table = TableRef(target_collection, True)
             from_part = sql.Identifier(mig_table.table_name)
             joined_tables_parts = [
-                self._get_joined_values_data(curs, values_source, mig_table, arguments)
+                self._get_joined_values_data(values_source, mig_table, arguments)
             ]
             join_conditions = MigrationSqlHelper.get_conditions_for_join(
-                curs,
+                self.cursor,
                 mig_table.table_name,
                 [JoinOn("id", target_table, "id")],
             )
         else:
             from_part = MigrationSqlHelper.build_values_table(values_source, arguments)
             join_conditions = self._get_join_conditions_for_values(
-                curs, values_source, target_table
+                values_source, target_table
             )
         filter_conditions = (
             [
@@ -325,12 +336,12 @@ class BaseMigration:
             if filter_target_table is not None
             else []
         )
-        curs.execute(
+        self.execute_query(
             MigrationSqlHelper.build_update_entries_sql(
                 table_name=target_table.table_name,
                 set_part=sql.SQL(", ").join(
                     MigrationSqlHelper.get_column_assignment(
-                        curs=curs,
+                        curs=self.cursor,
                         target_column=values_source.column_alias(column),
                         source_table=values_source.alias,
                         source_column=column,
@@ -347,13 +358,11 @@ class BaseMigration:
 
     def update_from_mig_table(
         self,
-        curs: Cursor[DictRow],
         collection: Collection,
         copy_from_source_table: list[ColumnDataSource],
         filter_target_table: Filter | None = None,
     ) -> None:
         self.update_from_other_table(
-            curs,
             UpdateFromTables(
                 target_table=TableRef(collection, False),
                 copy_data=[
@@ -371,14 +380,13 @@ class BaseMigration:
 
     def update_from_other_table(
         self,
-        curs: Cursor[DictRow],
         copy_from_source_tables: UpdateFromTables,
         filter_target_table: Filter | None = None,
     ) -> None:
         arguments: SqlArguments = []
         joined_tables_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] = (
             self._get_joined_tables_data(
-                curs, copy_from_source_tables.joined_sources, arguments
+                copy_from_source_tables.joined_sources, arguments
             )
         )
 
@@ -397,7 +405,7 @@ class BaseMigration:
             )
 
         assert isinstance(source_table, str)
-        curs.execute(
+        self.execute_query(
             MigrationSqlHelper.build_update_entries_sql(
                 table_name=copy_from_source_tables.target_table.table_name,
                 set_part=sql.SQL(", ").join(
@@ -405,7 +413,6 @@ class BaseMigration:
                     for target_column, value in zip(
                         copy_from_source_tables.target_columns,
                         self._normalize_select_columns(
-                            curs,
                             copy_from_source_tables.select_columns,
                             copy_from_source_tables.target_table,
                             copy_from_source_tables.target_columns,
@@ -421,7 +428,6 @@ class BaseMigration:
 
     def insert_from_other_table(
         self,
-        curs: Cursor[DictRow],
         target_collection: Collection,
         copy_from_source_tables: InsertFromTables,
         values_source: ValuesSource | None = None,
@@ -444,7 +450,7 @@ class BaseMigration:
         target_columns = copy_from_source_tables.target_columns.copy()
         select_columns = copy_from_source_tables.select_columns.copy()
         joined_tables_parts = self._get_joined_tables_data(
-            curs, copy_from_source_tables.joined_sources, arguments
+            copy_from_source_tables.joined_sources, arguments
         )
 
         if values_source is not None:
@@ -454,7 +460,6 @@ class BaseMigration:
                 )
             joined_tables_parts.append(
                 self._get_joined_values_data(
-                    curs,
                     values_source,
                     copy_from_source_tables.root_source_table,
                     arguments,
@@ -482,12 +487,12 @@ class BaseMigration:
             and "id" not in return_fields
         ):
             return_fields.append("id")
-        return curs.execute(
+        self.execute_query(
             MigrationSqlHelper.build_insert_from_other_table_sql(
                 target_table=target_table.table_name,
                 target_columns=MigrationSqlHelper.join_columns(target_columns),
                 select_columns=self._join_select_columns(
-                    curs, select_columns, target_table, target_columns
+                    select_columns, target_table, target_columns
                 ),
                 source_table=copy_from_source_tables.root_source_table.table_name,
                 joined_tables=joined_tables_parts,
@@ -495,11 +500,11 @@ class BaseMigration:
                 return_fields=return_fields,
             ),
             arguments,
-        ).fetchall()
+        )
+        return self.cursor.fetchall()
 
     def update_array(
         self,
-        curs: Cursor[DictRow],
         target_table: TableRef,
         column: Column,
         diff: ArrayDiff,
@@ -510,9 +515,9 @@ class BaseMigration:
         The resulting array contains unique values sorted in ascending order.
         """
         filter_arguments: SqlArguments = []
-        values_arguments: ExtendedSqlArguments = []
+        values_arguments: list[SqlArguments] = []
         array_type = MigrationSqlHelper.get_array_type(
-            target_table.collection, column, curs
+            target_table.collection, column, self.cursor
         )
 
         query = MigrationSqlHelper.build_update_entries_sql(
@@ -538,17 +543,16 @@ class BaseMigration:
                 else None
             ),
         )
-        curs.execute(query, [*values_arguments, *filter_arguments])
+        self.execute_query(query, [*values_arguments, *filter_arguments])
 
     # -- Helpers for intermediate data generation --
-    @staticmethod
     def _build_filter_query(
+        self,
         filter_condition: Filter,
         arguments: SqlArguments,
         target_collection: Collection | None = None,
         filter_other_table: Join | None = None,
         filter_condition_table_alias: str | None = None,
-        curs: Cursor[DictRow] | None = None,
     ) -> sql.Composable:
         """
         Builds lookup part of the SQL query. Also updates arguments.
@@ -573,12 +577,8 @@ class BaseMigration:
                 filter_condition_table_alias or "",
             )
         else:
-            if curs is None:
-                raise BadCodingException(
-                    "'curs' needs to be passed when 'filter_other_table' is used."
-                )
             return MigrationSqlHelper.get_lookup_part_from_other_table(
-                curs,
+                self.cursor,
                 filter_other_table,
                 MigrationSqlHelper.build_filter_str(
                     filter_condition,
@@ -588,12 +588,11 @@ class BaseMigration:
                 ),
             )
 
-    @staticmethod
     def _get_join_conditions_for_values(
-        curs: Cursor[DictRow], values_source: ValuesSource, left_table: TableRef
+        self, values_source: ValuesSource, left_table: TableRef
     ) -> list[sql.Composable]:
         return MigrationSqlHelper.get_conditions_for_join(
-            curs,
+            self.cursor,
             values_source.alias,
             [
                 JoinOn(column, left_table, values_source.column_alias(column))
@@ -601,9 +600,8 @@ class BaseMigration:
             ],
         )
 
-    @staticmethod
     def _get_joined_tables_data(
-        curs: Cursor[DictRow],
+        self,
         join_tables: list[TableDataSource],
         arguments: SqlArguments,
     ) -> list[tuple[str | sql.Composed, list[sql.Composable]]]:
@@ -612,12 +610,14 @@ class BaseMigration:
             source_table = data_source.source_table
             conditions: list[sql.Composable] = (
                 MigrationSqlHelper.get_conditions_for_join(
-                    curs, source_table.right_table.table_name, source_table.join_on
+                    self.cursor,
+                    source_table.right_table.table_name,
+                    source_table.join_on,
                 )
             )
             if source_table.filter_right_table is not None:
                 conditions.append(
-                    BaseMigration._build_filter_query(
+                    self._build_filter_query(
                         source_table.filter_right_table,
                         arguments,
                         source_table.right_table.collection,
@@ -627,42 +627,35 @@ class BaseMigration:
             result.append((source_table.right_table.table_name, conditions))
         return result
 
-    @staticmethod
     def _get_joined_values_data(
-        curs: Cursor[DictRow],
+        self,
         values_source: ValuesSource,
         left_table: TableRef,
         arguments: SqlArguments,
     ) -> tuple[sql.Composed, list[sql.Composable]]:
         return (
             MigrationSqlHelper.build_values_table(values_source, arguments),
-            BaseMigration._get_join_conditions_for_values(
-                curs, values_source, left_table
-            ),
+            self._get_join_conditions_for_values(values_source, left_table),
         )
 
-    @staticmethod
     def _join_select_columns(
-        curs: Cursor[DictRow],
+        self,
         select_columns: list[ColumnRef | sql.Composable],
         target_table: TableRef,
         target_columns: list[Column],
     ) -> sql.Composed:
         return sql.SQL(", ").join(
-            BaseMigration._normalize_select_columns(
-                curs, select_columns, target_table, target_columns
-            )
+            self._normalize_select_columns(select_columns, target_table, target_columns)
         )
 
-    @staticmethod
     def _normalize_select_columns(
-        curs: Cursor[DictRow],
+        self,
         select_columns: list[ColumnRef | sql.Composable],
         target_table: TableRef,
         target_columns: list[Column],
     ) -> list[sql.Composable]:
         MigrationSqlHelper.add_type_to_column_refs(
-            curs,
+            self.cursor,
             target_table.table_name,
             [
                 (select_column, target_column)

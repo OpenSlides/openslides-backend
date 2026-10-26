@@ -419,10 +419,9 @@ class MigrationHelper:
         }
 
     @staticmethod
-    def copy_tables(
-        curs: Cursor[DictRow],
+    def get_copy_tables_queries(
         migration_tables: dict[Collection, tuple[list[Field], dict[Field, str]]],
-    ) -> list[Table]:
+    ) -> dict[Table, sql.Composed]:
         """
         Copies the given fields of each collection into the new migration table:
             * Copies the data without changing for migration_tables[0]
@@ -431,7 +430,7 @@ class MigrationHelper:
         Returns the list of the created migration tables.
         For use in data_preparation step of migration.
         """
-        copied_tables = []
+        copy_tables = {}
         for collection, fields_data in migration_tables.items():
             query_fields = [
                 sql.Identifier("id"),
@@ -448,14 +447,11 @@ class MigrationHelper:
             ]
 
             target_table = HelperGetNames.get_table_name(collection, migration=True)
-            curs.execute(
-                sql.SQL(
-                    "CREATE TABLE {target_table} AS SELECT {columns} FROM {view};"
-                ).format(
-                    target_table=sql.Identifier(target_table),
-                    columns=sql.SQL(", ").join(query_fields),
-                    view=sql.Identifier(collection),
-                )
+            copy_tables[target_table] = sql.SQL(
+                "CREATE TABLE {target_table} AS SELECT {columns} FROM {view};"
+            ).format(
+                target_table=sql.Identifier(target_table),
+                columns=sql.SQL(", ").join(query_fields),
+                view=sql.Identifier(collection),
             )
-            copied_tables.append(target_table)
-        return copied_tables
+        return copy_tables

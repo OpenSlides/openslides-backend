@@ -233,7 +233,12 @@ class MigrationManager:
                 with get_new_os_conn() as conn:
                     with conn.cursor() as curs:
                         self.handler = MigrationHandler(
-                            curs, self.env, self.services, self.logging, version_conn
+                            curs,
+                            self.env,
+                            self.services,
+                            self.logging,
+                            version_conn,
+                            verbose,
                         )
                         return self.handler.execute_command(command)
         except MigrationSetupException as e:

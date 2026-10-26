@@ -35,10 +35,12 @@ class MigrationHandler(BaseHandler):
         services: Services,
         logging: LoggingModule,
         version_connection: Any,
+        verbose: bool = False,
     ) -> None:
         super().__init__(env, services, logging)
         self.migration_cursor = curs
         self.ver_conn = version_connection
+        self.verbose = verbose
         with version_connection.cursor() as ver_curs:
             database_m_idx = MigrationHelper.get_database_migration_index(ver_curs)
         self.pending_migrations = {
@@ -123,17 +125,19 @@ class MigrationHandler(BaseHandler):
         """
         for index, package_name in self.pending_migrations.items():
             try:
-                mig_class = MigrationHelper.get_migration_class(package_name)()
                 self.logger.info("Executing migration: " + package_name)
+                mig_class = MigrationHelper.get_migration_class(package_name)(
+                    self.migration_cursor, self.logger, self.verbose
+                )
 
                 # Execute user defined functions or super classes noop.
-                stash = mig_class.data_preparation(self.migration_cursor)
+                stash = mig_class.data_preparation()
                 self.apply_schema_diff(index)
-                mig_class.data_definition(self.migration_cursor)
-                mig_class.data_manipulation(self.migration_cursor, stash)
-                mig_class.cleanup(self.migration_cursor)
+                mig_class.data_definition()
+                mig_class.data_manipulation(stash)
+                mig_class.cleanup()
 
-                # Need to proceed initially deferred triggers before applying cleanup statements
+                # Proceed initially deferred triggers before applying cleanup statements
                 self.migration_cursor.connection.commit()
                 self.apply_cleanup_statements(index)
 
@@ -188,9 +192,9 @@ class MigrationHandler(BaseHandler):
                         mig_class = MigrationHelper.get_migration_class(package_name)
                         mig_name = package_name[4:]
                         self.logger.info("Pre check: " + mig_name + " ...")
-                        if errors := mig_class.check_prerequisites(
-                            self.migration_cursor
-                        ):
+                        if errors := mig_class(
+                            self.migration_cursor, self.logger, self.verbose
+                        ).check_prerequisites():
                             if minimum_required_index:
                                 MigrationHelper.set_database_migration_info(
                                     ver_cursor,

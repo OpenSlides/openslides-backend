@@ -17,7 +17,6 @@ Table = Union[str, _Table]
 View = Union[str, _View]
 Column = Union[str, _Column]
 Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
-ExtendedSqlArguments = list[str | int | list[str | int]]
 
 
 @dataclass(frozen=True)

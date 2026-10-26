@@ -228,8 +228,7 @@ class Migration(BaseMigration):
         "history_entry",
     ]
 
-    @staticmethod
-    def check_prerequisites(curs: Cursor[DictRow]) -> str:
+    def check_prerequisites(self) -> str:
         errors = ""
         MigrationHelper.write_line(
             "This is migration 100, part of the OpenSlides 4.3.0 release."
@@ -258,9 +257,8 @@ class Migration(BaseMigration):
 
         if not is_truthy(i_read_docs):
             errors += f"{i_read_docs} is no acceptable value for MIG0100_I_READ_DOCS"
-        pg_time_zones = [
-            tz["name"] for tz in curs.execute("SELECT name FROM pg_timezone_names;")
-        ]
+        self.execute_query("SELECT name FROM pg_timezone_names;", log=False)
+        pg_time_zones = [tz["name"] for tz in self.cursor.fetchall()]
         if time_zone not in (pg_time_zones):
             errors += f"{time_zone} is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
         if errors:
@@ -276,14 +274,12 @@ class Migration(BaseMigration):
             )
         return ""
 
-    def data_manipulation(
-        self, curs: Cursor[DictRow], stash: dict[str, Any] | None
-    ) -> None:
+    def data_manipulation(self, stash: dict[str, Any] | None) -> None:
         """
         Purpose:
             Iterates over chunks of the DB table models and writes the data into the respective DB tables
         """
-        Sql_helper.cursor = curs
+        Sql_helper.cursor = self.cursor
 
         data_chunk: list[dict[str, Any]]
         collection: str
@@ -354,7 +350,7 @@ class Migration(BaseMigration):
                             sql_placeholder += ", %s"
                             sql_values.append(value)
                 # END LOOP data.keys()
-                curs.execute(
+                self.execute_query(
                     f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
                     sql_values,
                 )
@@ -366,9 +362,9 @@ class Migration(BaseMigration):
 
         # 4) INSERT intermediate tables
         for command, values in insert_intermediate_t_commands:
-            curs.execute(command, values)
+            self.execute_query(command, values)
 
-    def cleanup(self, curs: Cursor[DictRow]) -> None:
+    def cleanup(self) -> None:
         """
         Purpose:
             Deletes the old tables
@@ -385,6 +381,6 @@ class Migration(BaseMigration):
                 MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
 
         for table_name in OLD_TABLES:
-            curs.execute(f"DROP TABLE {table_name} CASCADE;")
+            self.execute_query(f"DROP TABLE {table_name} CASCADE;", log=False)
 
     # END OF FUNCTION

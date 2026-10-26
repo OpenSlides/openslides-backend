@@ -7,7 +7,6 @@ from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.patterns import (
     Column,
     ColumnRef,
-    ExtendedSqlArguments,
     Join,
     JoinOn,
     Table,
@@ -192,7 +191,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
     def build_array_source_expression(
         column: Column,
         replace: dict[Any, Any] | None,
-        arguments: ExtendedSqlArguments,
+        arguments: list[SqlArguments],
         array_type: sql.Composable,
     ) -> sql.Composed:
         expression = sql.SQL("COALESCE({column}, ARRAY[]{array_type})").format(
@@ -213,7 +212,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
     @staticmethod
     def build_array_remove_expression(
         remove: set[Any] | None,
-        arguments: ExtendedSqlArguments,
+        arguments: list[SqlArguments],
         array_type: sql.Composable,
     ) -> sql.Composable:
         if not remove:
@@ -226,7 +225,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
     @staticmethod
     def build_array_add_expression(
         add: set[Any] | None,
-        arguments: ExtendedSqlArguments,
+        arguments: list[SqlArguments],
         array_type: sql.Composable,
     ) -> sql.Composable:
         if not add:
