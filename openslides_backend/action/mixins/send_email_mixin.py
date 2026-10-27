@@ -21,7 +21,6 @@ from .qr_code_mixin import QRCodeMixin
 
 SendErrors = dict[str, tuple[int, bytes]]
 
-
 class ConnectionSecurity:
     """constants for email connection ssl/tls"""
 
@@ -208,10 +207,37 @@ class EmailCheckMixin(IDPMixin):
         return on_success
 
 class EmailMagicLinkMixin(QRCodeMixin):
-    def send_magic_link_to(magicLink: str, email: str):
-        qrCode = self.render_qr_png(magicLink, "png", 8, 2)
+    def send_magic_link_to(self, magicLink: str, email: str, username: str):
+        qrCode = "here there be QR" #self.render_qr_png(magicLink, "png", 8, 2)
 
-        send_email(smtplib.SMTP, "openslides@openslides.com", email, "Invite", magicLink + "\n" + qrCode)
+        body_format = {
+            "magic_link": magicLink,
+            "expiry": "72 hours",
+            "qrCode": qrCode
+        }
+
+        emailBody = """You are receiving this email because you have been invited to OpenSlides for a one time sessions.
+
+Please open the following link:
+{magic_link}
+
+{qrCode}
+
+The link will be valid for {expiry}.""".format_map(body_format)
+
+        # Send it to users email
+        with EmailUtils.get_mail_connection() as mail_client:
+            ok, errors = EmailUtils.send_email_safe(
+                mail_client,
+                self.logger,
+                EmailSettings.default_from_email,
+                email,
+                f"OpenSlides Invite : {username}",
+                emailBody,
+                html=False,
+            )
+            if not ok:
+                raise ActionException(f"Error sending magic link email: {errors}")
 
 class EmailSenderCheckMixin(Action):
     check_email_sender_field = "users_email_sender"

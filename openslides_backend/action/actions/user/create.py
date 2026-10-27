@@ -14,7 +14,8 @@ from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.idp_mixin import IDPMixin
 from ...mixins.meeting_user_helper import get_meeting_user
-from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.send_email_mixin import EmailCheckMixin, EmailMagicLinkMixin
+from ...mixins.magic_link_mixin import IDPMagicLinkMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,12 +28,14 @@ from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gende
 class UserCreate(
     UserMixin,
     EmailCheckMixin,
+    EmailMagicLinkMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
     IDPMixin,
+    IDPMagicLinkMixin,
 ):
     """
     Action to create a user.
@@ -111,9 +114,14 @@ class UserCreate(
         def on_success() -> None:
             try:
                 # Create IDP account
-                self.create_user(
+                idp_id = self.create_user(
                     action_data[0], self.auth.hash(get_random_password()), False
                 )
+                # Debug: Create magic link
+                magicLinkURL = self.create_magic_link(idp_id)
+
+                # Debug: Send magic link
+                self.send_magic_link_to(magicLinkURL, action_data[0].get("email"), action_data[0].get("username"))
             except Exception as e:
                 self.logger.error(
                     f"Couldn't create IDP user after OS user was created: {e}"

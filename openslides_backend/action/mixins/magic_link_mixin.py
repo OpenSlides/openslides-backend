@@ -58,7 +58,7 @@ class IDPMagicLinkMixin(Action):
             if response.status_code != 200 and response.status_code != 409:
                 raise Exception(f"{response.status_code} {response.text}")
         except Exception as e:
-            raise Exception(f"Error creating one time session: {e}")
+            raise Exception(f"Error allowing otp email: {e}")
 
     def create_magic_link(self, idp_id: str) -> str:
         self.allow_otp_email(idp_id)
@@ -86,9 +86,6 @@ class IDPMagicLinkMixin(Action):
             )
         except Exception as e:
             raise Exception(f"Error writing magic link token to database: {e}")
-
-        self.logger.warning("Create new magic link:")
-        self.logger.warning(url)
 
         return url
 
