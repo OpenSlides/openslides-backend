@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any, cast
+from typing import Any
 
 import simplejson as json
 from sqlfluff import fix
@@ -1071,9 +1071,6 @@ class AddHelper:
         else:
             raw_table_code = ""
             alter_table_code = ""
-        trigger_code = ""
-        for key in TRIGGER_KEYS:
-            trigger_code += cast(str, code.get(key, ""))
         if errors := "\n".join(x.strip("\n ") for x in code.get("errors", [])):
             raise BadCodingException(
                 f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
@@ -1084,7 +1081,10 @@ class AddHelper:
             if table_code.startswith(field_name):
                 table_code = table_code.split(" ", maxsplit=1)[1]
             constraints_sql += f" {table_code}".rstrip()
-        after_sql += alter_table_code + trigger_code
+        after_sql += alter_table_code
+        after_sql += "\n".join(
+            val for val in CURR_TRIGGER_SQL[collection_name][field_name].values() if val
+        )
 
         return constraints_sql, after_sql, is_view_field
 
