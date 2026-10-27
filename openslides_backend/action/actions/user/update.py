@@ -1,6 +1,6 @@
 import re
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -16,9 +16,9 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.idp_mixin import IDPMixin
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
-from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.base_delete import MeetingUserBaseDelete
@@ -204,13 +204,17 @@ class UserUpdate(
                     self.update_username(action_data[0], action_data[0].get("username"))
 
                 if "is_active" in action_data[0]:
-                    self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
+                    self.set_user_enable_status(
+                        action_data[0], action_data[0].get("is_active")
+                    )
                     self.revoke_all_sessions_of_user(action_data[0])
 
                 if "email" in action_data[0]:
                     self.update_email(action_data[0], action_data[0].get("email"))
             except Exception as e:
-                self.logger.error(f"Couldn't update IDP user fields after OS user was updated: {e}")
+                self.logger.error(
+                    f"Couldn't update IDP user fields after OS user was updated: {e}"
+                )
 
         return on_success
 

@@ -68,11 +68,7 @@ class Client(WerkzeugClient):
             ), f"Auth Service: {response.status_code} {response.reason} {response.content.decode()}"
             break
         # save access token and refresh id for subsequent requests
-        self.update_auth_data(
-            {
-                "access_token": response.headers.get("Authorization")
-            }
-        )
+        self.update_auth_data({"access_token": response.headers.get("Authorization")})
 
     def update_auth_data(self, auth_data: AuthData) -> None:
         """
@@ -98,7 +94,5 @@ class Client(WerkzeugClient):
             headers["Authorization"] = self.auth_data["access_token"]
         response = cast(Response, super().post(*args, headers=headers, **kwargs))
         if "Authorization" in response.headers:
-            self.update_auth_data(
-                {"access_token": response.headers["Authorization"]}
-            )
+            self.update_auth_data({"access_token": response.headers["Authorization"]})
         return response

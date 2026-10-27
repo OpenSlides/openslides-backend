@@ -243,7 +243,6 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
 
 
 class UserUpdateSamlAccount(UserBaseSamlAccount):
-
     def test_update_saml_account_correct(self) -> None:
         self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
         response = self.request(

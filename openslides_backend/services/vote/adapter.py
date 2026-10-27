@@ -45,7 +45,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
                 headers={
                     "Content-Type": "application/json",
                     **self.get_auth_header(),
-                }
+                },
             )
         except requests.exceptions.ConnectionError as e:
             self.logger.error(

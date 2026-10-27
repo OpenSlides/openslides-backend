@@ -33,7 +33,6 @@ class GetForwardingCommittees(BasePresenter):
     schema = get_forwarding_committees_schema
 
     def get_result(self) -> Any:
-
         # check permission
         if not has_perm(
             self.datastore,

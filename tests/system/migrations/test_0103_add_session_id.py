@@ -1,48 +1,15 @@
 # BUILTIN IMPORTS
-import json
 import os
-from collections.abc import Callable
 from datetime import datetime, timedelta
 from importlib import import_module
-from io import StringIO
-from threading import Lock
 from time import sleep
 from typing import Any
-from unittest.mock import DEFAULT as mockdefault
-from unittest.mock import Mock, patch
-from zoneinfo import ZoneInfo
 
-from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
-from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
-from openslides_backend.migrations.migration_handler import MigrationHandler
-from openslides_backend.migrations.migration_helper import (
-    MIN_NON_REL_MIGRATION,
-    MigrationHelper,
-    MigrationState,
-)
-from openslides_backend.migrations.migration_manager import MigrationManager
-from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.postgresql.create_schema import (
-    create_db,
-    create_schema,
-    drop_db,
-)
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-    get_unpooled_db_connection,
-    os_conn_pool,
-)
-from openslides_backend.shared.env import DEV_PASSWORD
-from tests.conftest import OLD_TABLES, get_rel_db_table_names
-from tests.conftest_helper import (
-    deactivate_notify_triggers,
-    generate_sql_for_test_initiation,
-)
-from tests.system.action.util import get_internal_auth_header
+from openslides_backend.migrations.migration_helper import MigrationState
+from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
-from tests.system.util import create_action_test_application, get_route_path
-from tests.util import AuthData, Client, Response
+from tests.system.util import get_route_path
 
 migration_module = import_module(
     "openslides_backend.migrations.migrations.0100_init_reldb"
@@ -117,7 +84,7 @@ class TestMigration103(BaseMigrationTestCase):
             with conn.cursor() as cur:
                 # 1.1) Session ID table exists
                 assert_content_not_none(
-                    "SELECT * FROM session_id;",
+                    "SELECT * FROM blocked_sessions;",
                     None,
                     "Session ID table exists.",
                 )

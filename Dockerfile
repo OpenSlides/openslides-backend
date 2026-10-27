@@ -16,7 +16,7 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
-    git \ 
+    git \
     libmagic1 \
     media-types \
     ncat \
@@ -51,9 +51,13 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 EXPOSE 9002
 EXPOSE 9003
 
+# Copy dev and prod relevant folders
+COPY scripts scripts
+COPY data data
+COPY meta meta
+
 ## Command
 COPY ./dev/command.sh ./
-RUN chmod +x command.sh
 CMD ["./command.sh"]
 
 HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ || curl --fail http://localhost:9003/system/presenter/health/ || exit 1
@@ -76,10 +80,7 @@ COPY dev/cleanup.sh .
 COPY dev/run-lint.sh ./dev/
 
 # Copy files which are mounted to make the full stack work
-COPY scripts scripts
 COPY cli cli
-COPY data data
-COPY meta meta
 
 COPY Makefile .
 COPY setup.cfg .
@@ -101,13 +102,11 @@ FROM base AS prod
 # This disables root access for the enduser, which could pose a security risk
 RUN adduser --system --no-create-home appuser
 
-COPY scripts scripts
 COPY cli/create_schema.py cli/create_schema.py
 COPY cli/get_everything.py cli/get_everything.py
+COPY cli/prune-blocked-sessions.py cli/prune-blocked-sessions.py
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
-COPY data data
-COPY meta meta
 
 RUN chown appuser ./scripts/ && \
  chown appuser ./entrypoint.sh && \

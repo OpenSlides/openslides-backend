@@ -206,10 +206,12 @@ class Attribute(Node):
         else:
             self.type = value.get("type", "")
             if self.type in RELATION_FIELD_CLASSES.keys():
-                self.is_view_field, self.is_primary, self.write_fields = (
-                    self.get_view_field_state_write_fields(
-                        collection_name, field_name, value
-                    )
+                (
+                    self.is_view_field,
+                    self.is_primary,
+                    self.write_fields,
+                ) = self.get_view_field_state_write_fields(
+                    collection_name, field_name, value
                 )
                 self.to = To(value.pop("to"))
                 self.on_delete = value.pop("on_delete", None)

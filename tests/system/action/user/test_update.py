@@ -10,7 +10,6 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserUpdateActionTest(BaseActionTestCase):
-
     def permission_setup(self) -> None:
         """
         Sets up all necessary models for a permission test.

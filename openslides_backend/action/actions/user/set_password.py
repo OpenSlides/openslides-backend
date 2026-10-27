@@ -6,9 +6,9 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permissions import Permissions
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...mixins.idp_mixin import IDPMixin
 
 
 @register_action("user.set_password")

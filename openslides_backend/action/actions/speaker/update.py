@@ -20,7 +20,6 @@ from .speech_state import SpeechState
 class SpeakerUpdate(
     UpdateAction, CheckSpeechState, StructureLevelMixin, PointOfOrderPermissionMixin
 ):
-
     internal_fields = ["weight", "structure_level_list_of_speakers_id"]
 
     model = Speaker()

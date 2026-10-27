@@ -194,18 +194,20 @@ class GetMediafileContext(BasePresenter):
         meeting_mediafiles = data.get("meeting_mediafile", {})
         if children := data.get("mediafile", {}):
             for i, child in enumerate(children.values()):
-                child_number_of_children, child_meeting_data = (
-                    self.get_children_amount_and_meeting_data(
-                        child, meeting_mediafiles if i == 0 else {}
-                    )
+                (
+                    child_number_of_children,
+                    child_meeting_data,
+                ) = self.get_children_amount_and_meeting_data(
+                    child, meeting_mediafiles if i == 0 else {}
                 )
                 self.merge_meeting_data(child_meeting_data, meeting_data)
                 number_of_children += child_number_of_children
         elif meeting_mediafiles:
-            child_number_of_children, child_meeting_data = (
-                self.get_children_amount_and_meeting_data(
-                    meeting_mediafiles=meeting_mediafiles
-                )
+            (
+                child_number_of_children,
+                child_meeting_data,
+            ) = self.get_children_amount_and_meeting_data(
+                meeting_mediafiles=meeting_mediafiles
             )
             self.merge_meeting_data(child_meeting_data, meeting_data)
             number_of_children += child_number_of_children

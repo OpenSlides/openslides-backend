@@ -1,19 +1,19 @@
-import psycopg
+import base64
 import logging
 import os
+
+import psycopg
 import requests
-import json
-import base64
 
 logger = logging.getLogger(__name__)
+
 
 def get_config(key, default=""):
     return os.getenv(key, default)
 
-admin_username="admin"
-admin_password="admin"
 
 admin_token_path = "/zitadel/bootstrap/admin.pat"
+organization_id_path = "/zitadel/bootstrap/org-id"
 
 db_host = get_config("DATABASE_HOST")
 db_port = get_config("DATABASE_PORT")
@@ -24,9 +24,9 @@ db_password = get_config("DATABASE_PASSWORD")
 external_host = get_config("IDP_EXTERNAL_HOST", "localhost:8800")
 
 idp_route = get_config("IDP_URL_INTERNAL", "http://zitadel-api:8080")
-idp_realm = get_config("IDP_OS_REALM", "openslides")
 
 idp_admin_route = f"{idp_route}/v2/"
+
 
 def create_connection():
     try:
@@ -38,250 +38,187 @@ def create_connection():
             password=db_password,
         )
     except psycopg.Error as e:
-        logger.error(f"Error during connect to the database: " f"{repr(e)}")
-        pass
+        raise Exception(f"Error during connect to the database: {e}")
+
+
+def create_session(token: str) -> requests.Session:
+    session = requests.Session()
+    session.headers.update(
+        {
+            "Authorization": f"Bearer {token}",
+            "Host": external_host,
+        }
+    )
+    return session
+
 
 # Returns access token of the REST API admin
 def get_admin_key() -> str:
     # Fetch key from admin file
     try:
         with open(admin_token_path) as file:
-            idp_admin_access_token = file.read().replace("\n","")
+            idp_admin_access_token = file.read().replace("\n", "")
             return idp_admin_access_token
     except Exception as e:
-        logger.error(f"Error reading admin pat file: {e}")
-    return ""
+        raise Exception(f"Error reading admin pat file: {e}")
+
+
+def get_organization_id() -> str:
+    # Fetch key from organization file
+    try:
+        with open(organization_id_path) as file:
+            idp_organization_id = file.read().replace("\n", "")
+            return idp_organization_id
+    except Exception as e:
+        raise Exception(f"Error reading organization id file: {e}")
+
 
 # Returns IDP user data
-def get_name_of_idp_user(idp_admin_access_token, idp_id) -> str:
+def get_name_of_idp_user(session, idp_id) -> str:
     try:
-        response = requests.get(idp_admin_route + "users/" + idp_id,
-            headers={
-                'Authorization': f'Bearer {idp_admin_access_token}',
-                'Host': f'{external_host}'
-            }
-        )
+        response = session.get(idp_admin_route + "users/" + idp_id)
+
+        if response.status_code == 404:
+            return ""
+        elif response.status_code != 200:
+            raise Exception(f"{response.status_code} {response.json()}")
 
         json_response = response.json()
 
-        if response.status_code == 404:
-            return None
-        elif response.status_code != 200:
-            raise Exception(f"{response.status_code} {json_response}")
-
-        return json_response['user']['username']
+        return json_response["user"]["username"]
     except Exception as e:
-        logger.error(f"Error getting idp user: {e}")
-    return None
+        raise Exception(f"Error getting idp user: {e}")
+
 
 # Creates an IDP user for given OS user. Returns idp id of newly created user.
-# Returns existing idp users id, if a idp user of given username already exists
-def migrate_and_create_user(idp_admin_access_token, username, os_id, email, password) -> int:
+# Throws error, if an idp user of given username already exists
+def migrate_and_create_user(
+    requestSession, organization_id, username, os_id, email, password
+) -> str:
+    idp_id = ""
+    human = {
+        "profile": {"givenName": username, "familyName": username},
+        "email": {"email": email, "isVerified": True},
+    }
+    # Skip if password is empty
+    if password:
+        human["hashedPassword"] = {"hash": password}
     try:
-        response = requests.post(idp_admin_route + "organizations/_search",
-            headers={
-                'Authorization': f'Bearer {idp_admin_access_token}',
-                'Content-Type': 'application/json',
-                'Host': 'localhost:8080'
-            },
-            json={},
-            timeout=20,
-        )
-
-        organisationId = response.json()["result"][0]["id"]
-
-        ## Upload OS user to IDP
-        response = requests.post(idp_admin_route + "users/new",
+        # Upload OS user to IDP
+        response = requestSession.post(
+            idp_admin_route + "users/new",
             json={
-                'username': username,
-                'organizationId': organisationId,
-                'human': {
-                    'hashedPassword': {
-                        'hash': password
-                    },
-                    'profile': {
-                        'givenName': username,
-                        'familyName': username,
-                    },
-                    'email': {
-                        'email': email,
-                        'isVerified': True
-                    }
-                },
-                'metadata': [
+                "username": username,
+                "organizationId": organization_id,
+                "human": human,
+                "metadata": [
                     {
-                        'key': 'os_id',
-                        'value': base64.b64encode(str(os_id).encode("utf-8")).decode("ascii")
+                        "key": "os_id",
+                        "value": base64.b64encode(str(os_id).encode("utf-8")).decode(
+                            "ascii"
+                        ),
                     },
-                ]
+                ],
             },
-            headers={
-                'Authorization': f'Bearer {idp_admin_access_token}',
-                'Host': f'{external_host}'
-            }
         )
 
         if response.status_code == 200:
-            return response.json()["id"]
+            idp_id = response.json()["id"]
         elif response.status_code == 409:
-            logger.error(f"A user named {username} already exists in IDP.")
+            raise Exception(f"A user named {username} already exists in IDP.")
         else:
-            logger.error(f"Response: {response.status_code} {response.json()}")
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
-
-    return ""
-
-# This adds '=' for argon2 padding at the end of a password or salt. It needs to pad until the length of the string is divisible by 4
-def hash_padding(to_pad):
-    return to_pad + '=' * (-len(to_pad) % 4)
-
-# Exports password to idp user
-def migrate_password(idp_admin_key, idp_id, password):
-    if len(password) == 152:
-        # This password is likely SHA512 encoded. The user must therefore reset their password
-        logger.warning(f"{idp_id} has a deprecated SHA512-encrypted password. They must reset their password on next visit")
-        try:
-            response = requests.put(idp_admin_route + "users/" + idp_id + "/execute-actions-email",
-                json=[
-                        'UPDATE_PASSWORD'
-                    ]
-                ,
-                headers={
-                    'Authorization': f'Bearer {idp_admin_key}',
-                }
+            raise Exception(
+                f"ID returned by IDP is empty. Unexpected response: {response.text}"
             )
-
-            if response.status_code != 204:
-                raise Exception(f"{response.status_code}, {response.json()}")
-        except Exception as e:
-            logger.error(f"Error sending password reset email to user: {e}")
-    else:
-        try:
-            # argon2 password
-            response = requests.put(idp_admin_route + "users/" + idp_id,
-                json={
-                    'credentials' : [{
-                        'type': 'password',
-                        'credentialData': json.dumps({
-                            'algorithm': 'argon2',
-                            'hashIterations': 3,
-                            'additionalParameters': {
-                                'type': ['id'],
-                                'version': ['1.3'],
-                                'hashLength': ['32'],
-                                'memory': ['65536'],
-                                'parallelism': ['4'],
-                            }
-                        }),
-                        'secretData': json.dumps({
-                            'value': hash_padding(password.split('$')[5]),
-                            'salt': hash_padding(password.split('$')[4]),
-                        }),
-                    }]
-                },
-                headers={
-                    'Authorization': f'Bearer {idp_admin_key}',
-                }
-            )
-
-            if response.status_code != 204:
-                raise Exception(f"{response.status_code} {response.json()}")
-        except Exception as e:
-            logger.error(f"Error migrating password for idp user {idp_id}: {e}")
-
-# Exports email to idp user
-def migrate_email(idp_admin_key, idp_id, email):
-    try:
-        response = requests.put(idp_admin_route + "users/" + idp_id,
-            json={
-                'email': email,
-            },
-            headers={
-                'Authorization': f'Bearer {idp_admin_key}',
-            }
-        )
-
-        if response.status_code != 204:
-            raise Exception(f"{response.status_code} {response.json()}")
     except Exception as e:
-        logger.error(f"Error migrating password for idp user {idp_id}: {e}")
-    return
+        raise Exception(f"Error creating user: {e}")
+
+    return idp_id
+
 
 def user_stress_test(users_to_add) -> None:
+    # Get Admin Key
+    idp_admin_access_token = get_admin_key()
+    organization_id = get_organization_id()
+
+    session = create_session(idp_admin_access_token)
+
     for i in range(users_to_add):
         username = "user-" + str(i)
-        password = "fsafasf"
+        password = "$argon2id$v=19$m=65536,t=3,p=4$OXRxaWhTU2JnNkFvdnBDRg$Hqd6Us8drdCsBo3gpYth0Q"
         email = "user-" + str(i) + "@email.com"
-        existing_idp_id = ""
         os_id = i
 
-        idp_user_id = migrate_and_create_user(idp_admin_key, username, os_id, email, password)
+        migrate_and_create_user(
+            session, organization_id, username, os_id, email, password
+        )
 
-        if idp_user_id == None:
-            raise Exception(f"Error migrating or finding user {username}")
 
 def main() -> None:
-    conn = create_connection()
+    with create_connection() as conn:
+        # Get Admin Key
+        idp_admin_access_token = get_admin_key()
+        organization_id = get_organization_id()
 
-    ## Get Admin Key
-    idp_admin_access_token = get_admin_key()
+        session = create_session(idp_admin_access_token)
 
-    user_idp_map = {}
-    ## Iterate all OS Users
-    with conn.cursor() as cursor:
-
-        cursor.execute("SELECT username, password, email, idp_id, id FROM user_t;")
-
-        for user in cursor:
-            username = user[0]
-            password = user[1]
-            email = user[2]
-            existing_idp_id = user[3]
-            os_id = user[4]
-
-            if email == None:
-                email = f"{username}@missing-email.com"
-
-            if existing_idp_id is None or existing_idp_id == "":
-                # No IDP ID set. This OS User likely has no IDP Account yet
-                logger.warning(f"Create new user {username}")
-
-                ## Upload OS user to IDP
-                idp_user_id = migrate_and_create_user(idp_admin_access_token, username, os_id, email, password)
-
-                logger.warning(f"ID: {idp_user_id}")
-                if idp_user_id == None:
-                    raise Exception(f"Error migrating or finding user {username}. No ID")
-            else:
-                logger.warning(f"Update existing user {username} with id {existing_idp_id}")
-                # A IDP ID already exists. Check if it points to the correct OS User
-                idp_username = get_name_of_idp_user(idp_admin_access_token, existing_idp_id)
-
-                if idp_username is None or idp_username == "None":
-                    # No user with that id exists at all, create new one
-                    idp_user_id = migrate_and_create_user(idp_admin_access_token, username, os_id, email, password)
-
-                    logger.warning(f"ID: {idp_user_id}")
-                    if idp_user_id == None:
-                        raise Exception(f"Error migrating or finding user {username}")
-                elif idp_username != username:
-                    # IDP User exists, but is different from OS User
-                    raise Exception(f"Error: {username} already has a idp id in the database. However, that IDP ID points to {idp_username}")
-                else:
-                    # IDP User exists and is the same as OS User
-                    idp_user_id = existing_idp_id
-
-            ## Link username with idp id for later use
-            user_idp_map[username] = idp_user_id
-
-    ## Record IDP ID to OS User
-    for username, idp_user_id in user_idp_map.items():
+        user_idp_map = {}
+        # Iterate all OS Users
         with conn.cursor() as cursor:
-            cursor.execute("UPDATE user_t SET idp_id = %s WHERE username = %s", (idp_user_id, username))
+            cursor.execute("SELECT username, password, email, idp_id, id FROM user_t;")
 
-    ## Commit user changes
-    conn.commit()
+            for user in cursor:
+                username = user[0]
+                password = user[1]
+                email = user[2]
+                existing_idp_id = user[3]
+                os_id = user[4]
+
+                if not email:
+                    email = f"{username}@openslides.local"
+
+                if not existing_idp_id:
+                    # No IDP ID set. This OS User likely has no IDP Account yet
+                    logger.warning(f"Create new user {username}")
+
+                    # Upload OS user to IDP
+                    idp_user_id = migrate_and_create_user(
+                        session, organization_id, username, os_id, email, password
+                    )
+                else:
+                    logger.warning(
+                        f"User {username} already exists with id {existing_idp_id}"
+                    )
+                    # An IDP ID already exists. Check if it points to the correct OS User
+                    idp_username = get_name_of_idp_user(session, existing_idp_id)
+
+                    if idp_username == "":
+                        # No user with that id exists at all, create new one
+                        idp_user_id = migrate_and_create_user(
+                            session, organization_id, username, os_id, email, password
+                        )
+                    elif idp_username != username:
+                        # IDP User exists, but is different from OS User
+                        raise Exception(
+                            f"Error: {username} already has an idp id in the database. However, that IDP ID points to {idp_username}"
+                        )
+                    else:
+                        # IDP User exists and is the same as OS User
+                        idp_user_id = existing_idp_id
+
+                # Link username with idp id for later use
+                user_idp_map[username] = idp_user_id
+
+        # Record IDP ID to OS User
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                "UPDATE user_t SET idp_id = %s WHERE username = %s",
+                [(idp_id, username) for username, idp_id in user_idp_map.items()],
+            )
+
+        # Commit user changes
+        conn.commit()
+
 
 if __name__ == "__main__":
     main()

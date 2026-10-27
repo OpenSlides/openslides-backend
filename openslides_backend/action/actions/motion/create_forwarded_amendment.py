@@ -61,12 +61,13 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         if hasattr(self, "meeting_mediafile_replace_map"):
-            self.forwarded_attachments, self.meeting_mediafile_replace_map = (
-                self.duplicate_mediafiles(
-                    action_data,
-                    self.forwarded_attachments,
-                    self.meeting_mediafile_replace_map,
-                )
+            (
+                self.forwarded_attachments,
+                self.meeting_mediafile_replace_map,
+            ) = self.duplicate_mediafiles(
+                action_data,
+                self.forwarded_attachments,
+                self.meeting_mediafile_replace_map,
             )
         return action_data
 
