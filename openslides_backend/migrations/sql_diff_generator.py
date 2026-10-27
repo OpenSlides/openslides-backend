@@ -236,6 +236,19 @@ class EqualFieldsHelper:
             equal_fiels_diff = cls.add_equal_fields_diff
 
         own_field_def = relevant_models[collection_name]["fields"][field_name]
+        foreign_fields = InternalHelper.get_foreign_definitions_from_field_def(
+            own_field_def
+        )
+        if len(foreign_fields) == 1:
+            foreign_field = foreign_fields[0]
+            if foreign_field.field_def["type"].startswith("generic-") or (
+                own_field_def["type"].endswith("-list")
+                and not foreign_field.field_def["type"].endswith("-list")
+            ):
+                collection_name = foreign_field.table
+                field_name = foreign_field.column
+                own_field_def = relevant_models[collection_name]["fields"][field_name]
+
         type_ = own_field_def["type"]
         if not (is_writing_side := type_.startswith("generic")):
             if is_previous:
