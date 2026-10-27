@@ -44,24 +44,7 @@ class IDPMagicLinkMixin(Action):
         except Exception as e:
             raise Exception(f"Error reading admin pat file: {e}")
 
-    def allow_otp_email(self, idp_id: str) -> None:
-        idp_admin_access_token = self._get_admin_key()
-        try:
-            response = requests.post(
-                f"{self.idp_route}/v2/users/{idp_id}/otp_email",
-                headers={
-                    "Authorization": f"Bearer {idp_admin_access_token}",
-                    "Host": f"{self.external_host}",
-                },
-                json={},
-            )
-            if response.status_code != 200 and response.status_code != 409:
-                raise Exception(f"{response.status_code} {response.text}")
-        except Exception as e:
-            raise Exception(f"Error allowing otp email: {e}")
-
     def create_magic_link(self, idp_id: str) -> str:
-        self.allow_otp_email(idp_id)
         token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 

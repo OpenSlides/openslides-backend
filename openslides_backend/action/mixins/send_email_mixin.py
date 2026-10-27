@@ -8,6 +8,7 @@ from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Any
+from html import escape
 
 from openslides_backend.shared.interfaces.logging import Logger
 
@@ -119,6 +120,7 @@ class EmailUtils:
         contentplain: str = "",
         reply_to: str = "",
         html: bool = True,
+        inline_images: dict[str, bytes] | None = None,
     ) -> SendErrors:
         """
         Construct and send the email on the given connect
@@ -128,6 +130,7 @@ class EmailUtils:
         If 'contentplain' is an empty string, the method will build a
         plaintext-content from 'content'. If 'contentplain' is
         a None, the client will send a html-only mail.
+        Inline images may be added to the email in byte format
 
         With 'html' set to False, 'content' will be used as plaintext.
 
@@ -147,6 +150,8 @@ class EmailUtils:
             if contentplain:
                 message.set_content(contentplain)
             message.add_alternative(content, subtype="html")
+            for cid, png in (inline_images or {}).items():
+                message.get_payload()[-1].add_related(png, "image", "png", cid=cid)
         else:
             (
                 message.set_content(content)
@@ -175,10 +180,11 @@ class EmailUtils:
         contentplain: str = "",
         reply_to: str = "",
         html: bool = True,
+        inline_images: dict[str, bytes] | None = None,
     ) -> tuple[bool, SendErrors]:
         try:
             return True, EmailUtils.send_email(
-                client, from_, to, subject, content, contentplain, reply_to, html
+                client, from_, to, subject, content, contentplain, reply_to, html, inline_images
             )
         except smtplib.SMTPException as e:
             logger.error(f"{type(e).__name__}: {str(e)}")
@@ -207,23 +213,23 @@ class EmailCheckMixin(IDPMixin):
         return on_success
 
 class EmailMagicLinkMixin(QRCodeMixin):
-    def send_magic_link_to(self, magicLink: str, email: str, username: str):
-        qrCode = "here there be QR" #self.render_qr_png(magicLink, "png", 8, 2)
+    def send_magic_link_to(self, magic_link: str, email: str, username: str):
+        expiry = os.environ.get("MAGIC_LINK_EXPIRY_TIME", "72 hours")
 
-        body_format = {
-            "magic_link": magicLink,
-            "expiry": "72 hours",
-            "qrCode": qrCode
-        }
+        qr_code = self.render_qr_png(magic_link, "png", 8, 2)
+        qr_cid = make_msgid(domain=EmailSettings.host)
 
-        emailBody = """You are receiving this email because you have been invited to OpenSlides for a one time sessions.
+        html_body = f"""\
+<p>You are receiving this email because you have been invited to OpenSlides for a one time session.</p>
+<p><a href="{escape(magic_link)}">Sign in to OpenSlides</a></p>
+<p>Alternatively scan this QR Code on your phone:</p>
+<p><img src="cid:{qr_cid[1:-1]}" width="200" height="200" alt="QR code"></p>
+<p>The link is valid for {escape(expiry)}.</p>"""
 
-Please open the following link:
-{magic_link}
-
-{qrCode}
-
-The link will be valid for {expiry}.""".format_map(body_format)
+        plain_body = (
+            "You are receiving this email because you have been invited to OpenSlides for a one time session.\n\n"
+            f"Please open the following link:\n{magic_link}\n\n"
+        )
 
         # Send it to users email
         with EmailUtils.get_mail_connection() as mail_client:
@@ -233,8 +239,10 @@ The link will be valid for {expiry}.""".format_map(body_format)
                 EmailSettings.default_from_email,
                 email,
                 f"OpenSlides Invite : {username}",
-                emailBody,
-                html=False,
+                html_body,
+                html=True,
+                contentplain=plain_body,
+                inline_images={qr_cid: qr_code},
             )
             if not ok:
                 raise ActionException(f"Error sending magic link email: {errors}")

@@ -9,13 +9,14 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .user_mixins import UserMixin
 from ...mixins.magic_link_mixin import IDPMagicLinkMixin
-from ...mixins.send_email_mixin import EmailUtils
+from ...mixins.send_email_mixin import EmailMagicLinkMixin
 
 
 @register_action("user.magic_link")
 class SendMagicLink(
     UserMixin,
-    IDPMagicLinkMixin
+    IDPMagicLinkMixin,
+    EmailMagicLinkMixin
 ):
     """
     Action to create a magic link for a one time session
@@ -23,7 +24,13 @@ class SendMagicLink(
     """
 
     model = User()
-    schema = DefaultSchema(User()).get_create_schema(optional_properties=[])
+    schema = DefaultSchema(User()).get_update_schema(
+        optional_properties=[
+            "username",
+            "idp_id",
+            "email",
+        ],
+    )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.logger.warning("Send magic link action called")
@@ -32,27 +39,7 @@ class SendMagicLink(
         magicLink = self.create_magic_link(instance["idp_id"])
 
         # Send it to users email
-        with EmailUtils.get_mail_connection() as mail_client:
-            username = user["username"]
-            ok, errors = EmailUtils.send_email_safe(
-                mail_client,
-                self.logger,
-                EmailSettings.default_from_email,
-                user["email"],
-                self.PW_FORGET_EMAIL_SUBJECT + f": {username}",
-                self.get_email_body(
-                    user["id"],
-                    self.get_token(user["id"], user["email"]),
-                    user["username"],
-                    url,
-                ),
-                html=False,
-            )
-            if ok:
-                yield {
-                    "id": user["id"],
-                    "last_email_sent": datetime.now(ZoneInfo("UTC")),
-                }
+        self.send_magic_link_to(magicLinkURL, instance["email"], instance["username"])
 
         write_request = self.build_write_request()
         return (write_request, self.results)
