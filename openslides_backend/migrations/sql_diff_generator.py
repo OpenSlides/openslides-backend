@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any, cast
+from typing import Any
 
 import simplejson as json
 from sqlfluff import fix
@@ -236,9 +236,18 @@ class EqualFieldsHelper:
             equal_fiels_diff = cls.add_equal_fields_diff
 
         own_field_def = relevant_models[collection_name]["fields"][field_name]
+
         type_ = own_field_def["type"]
         if not (is_writing_side := type_.startswith("generic")):
-            if is_previous:
+            foreign_fields = InternalHelper.get_foreign_definitions_from_field_def(
+                own_field_def
+            )
+            if foreign_fields[0].field_def["type"].startswith("generic-") or (
+                own_field_def["type"].endswith("-list")
+                and not foreign_fields[0].field_def["type"].endswith("-list")
+            ):
+                is_writing_side = False
+            elif is_previous:
                 is_writing_side = was_primary_side(
                     collection_name, field_name, own_field_def
                 )
@@ -1058,9 +1067,6 @@ class AddHelper:
         else:
             raw_table_code = ""
             alter_table_code = ""
-        trigger_code = ""
-        for key in TRIGGER_KEYS:
-            trigger_code += cast(str, code.get(key, ""))
         if errors := "\n".join(x.strip("\n ") for x in code.get("errors", [])):
             raise BadCodingException(
                 f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
@@ -1071,7 +1077,10 @@ class AddHelper:
             if table_code.startswith(field_name):
                 table_code = table_code.split(" ", maxsplit=1)[1]
             constraints_sql += f" {table_code}".rstrip()
-        after_sql += alter_table_code + trigger_code
+        after_sql += alter_table_code
+        after_sql += "\n".join(
+            val for val in CURR_TRIGGER_SQL[collection_name][field_name].values() if val
+        )
 
         return constraints_sql, after_sql, is_view_field
 
