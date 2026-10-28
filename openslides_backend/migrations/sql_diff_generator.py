@@ -939,47 +939,61 @@ class AddHelper:
         sql = ""
         after_sql = ""
         for collection_name, collection_def in add_tree_dict.items():
+            alter_table_sql = ""
+            before_sql = ""
             table_name = HelperGetNames.get_table_name(collection_name)
-            for fields_idx in [0, 1]:
-                # TODO unique_together, unique_together_strict
-                fields = collection_def[1]["fields"][fields_idx]
-                dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
-                alter_table_sql = ""
-                before_sql = ""
-                for field_name, field_def in fields.items():
-                    if fields_idx == 0:
-                        # field added
-                        b_sql, constraints_sql, a_sql, is_view_field = (
-                            AddHelper._handle_add_field_attributes(
-                                table_name, field_name, field_def, dc_fields[field_name]
-                            )
+            for unique_label in ("unique_together", "unique_together_strict"):
+                if unique_together := collection_def[0].get(unique_label):
+                    alter_table_sql += "ADD" + (
+                        GenerateCodeBlocks.get_constraint_unique_together(
+                            collection_name,
+                            unique_together,
+                            unique_label == "unique_together_strict",
                         )
-                        before_sql += b_sql
-                        if not is_view_field:
-                            alter_table_sql += (
-                                AlterSchemaHelper.get_add_column_statement(
-                                    field_name, constraints_sql
+                    )
+                    del dc_add_tree_dict[collection_name][0][unique_label]
+            for fields_idx in [0, 1]:
+                if fields := collection_def[1].get("fields", [{}, {}])[fields_idx]:
+                    dc_fields = dc_add_tree_dict[collection_name][1].get(
+                        "fields", [{}, {}]
+                    )[fields_idx]
+                    for field_name, field_def in fields.items():
+                        if fields_idx == 0:
+                            # field added
+                            b_sql, constraints_sql, a_sql, is_view_field = (
+                                AddHelper._handle_add_field_attributes(
+                                    table_name,
+                                    field_name,
+                                    field_def,
+                                    dc_fields[field_name],
                                 )
                             )
-                        after_sql += a_sql
-                    else:
-                        # field altered
-                        sql += EditHelper.handle_edit_field_attributes(
-                            table_name, field_name, field_def[0], dc_fields[field_name]
-                        )
-                    remove_empty(
-                        dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
-                        field_name,
+                            before_sql += b_sql
+                            if not is_view_field:
+                                alter_table_sql += (
+                                    AlterSchemaHelper.get_add_column_statement(
+                                        field_name, constraints_sql
+                                    )
+                                )
+                            after_sql += a_sql
+                        else:
+                            # field altered
+                            sql += EditHelper.handle_edit_field_attributes(
+                                table_name,
+                                field_name,
+                                field_def[0],
+                                dc_fields[field_name],
+                            )
+                        remove_empty(dc_fields, field_name)
+                    remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+            sql += before_sql
+            if alter_table_sql:
+                sql += (
+                    AlterSchemaHelper.get_alter_table_statement(
+                        table_name, alter_table_sql.rstrip(",\n")
                     )
-                sql += before_sql
-                if alter_table_sql:
-                    sql += (
-                        AlterSchemaHelper.get_alter_table_statement(
-                            table_name, alter_table_sql.rstrip(",")
-                        )
-                        + "\n"
-                    )
-            remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+                    + "\n"
+                )
             remove_empty(dc_add_tree_dict, collection_name)
         return sql, after_sql
 
@@ -1010,6 +1024,7 @@ class AddHelper:
                     collection_name, field_name, field_type, field_def
                 )
             )
+            dc_field_def.clear()
         else:
             is_view_field = is_sql_field
             before_sql, constraints_sql, after_sql = (
@@ -1169,13 +1184,6 @@ class AddHelper:
                         constraints_sql += Helper.get_inline_unique_constraint(
                             collection_name, field_name
                         )
-                    # TODO: Move this somewhere where it'll be called
-                    # case "unique_together_strict":
-                    #     constraints_sql += (
-                    #         GenerateCodeBlocks.get_constraint_unique_together(
-                    #             collection_name, value, True
-                    #         )
-                    #     )
                     case "maximum":
                         constraints_sql += Helper.get_inline_maximum_constraint(
                             collection_name, field_name, value
@@ -1208,9 +1216,9 @@ class AddHelper:
                     case "constant":
                         # Handled via the trigger handling
                         pass
+                    case v if v in FieldAttributes.skipped_in_schema:
+                        pass
                     case _:
-                        if constraint in FieldAttributes.skipped_in_schema:
-                            continue
                         if constraint in ["equal_fields", "reference", "to"]:
                             raise BadCodingException(
                                 f"{field_name}: Non-relation fields should not have attribute {constraint}."
@@ -1743,10 +1751,10 @@ class EditHelper:
                     #     not_found_streak = False
                     rename_attributes.update(concurrent_mismatches)
                 elif idx_old < expected_idx:
-                    # Add inbetween of new entries.
+                    # Add in between of new entries.
                     add_attributes.extend(v for v in concurrent_mismatches.values())
                 elif idx_old > expected_idx:
-                    # Add inbetween of old entries means remove in new.
+                    # Add in between of old entries means remove in new.
                     # We can't delete but can tolerate it being unused. So nothing to do here.
                     # TODO decide whether to do nothing,
                     recreate_enum = True
