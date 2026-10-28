@@ -1441,7 +1441,7 @@ class EditHelper:
     ) -> str:
         result = ""
         field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
-        value_old = field_def_old[constraint]
+        value_old = field_def_old.get(constraint)
         if constraint == "items":
             value_old = value_old["enum"]
         if isinstance(value_old, list):
@@ -1464,7 +1464,7 @@ class EditHelper:
                     collection_name, field_name, field_def_old
                 ) + AlterSchemaHelper.get_drop_type_statement(enum_name_old)
         else:
-            # Previously referencing meta enum.
+            # Previously referencing meta enum or no enum at all.
             if isinstance(value, list):
                 # changed from meta enum to field based enum
                 result += Helper.get_enum_type_definition(
@@ -1473,9 +1473,11 @@ class EditHelper:
                     ),
                     value,
                 )
-            result += EditHelper.get_change_enum_to_text(
-                collection_name, field_name, field_def_old
-            )
+            if value_old is not None:
+                # Previously referencing meta enum.
+                result += EditHelper.get_change_enum_to_text(
+                    collection_name, field_name, field_def_old
+                )
         return result
 
     @staticmethod
