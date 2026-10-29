@@ -151,11 +151,6 @@ class Migration(DiffMixin, BaseMigration):
             "N": "no_general",
             "YN": "yes_no",
             "YNA": "yes_no_abstain",
-            "valid": "valid",
-            "cast": "cast",
-            "entitled": "entitled",
-            "entitled_present": "entitled_present",
-            "disabled": "disabled",
         }
 
         self.create_meeting_poll_settings(
@@ -193,26 +188,59 @@ class Migration(DiffMixin, BaseMigration):
                 "onehundred_percent_base": "motion_poll_default_onehundred_percent_base",
             },
         }
-        for poll_type, map_ in {
-            "assignment": {
-                "method": "selection.yes",
-                "onehundred_percent_base": "valid",
-            },
-            "topic": {
-                "method": "selection.yes",
-                "onehundred_percent_base": "valid",
-            },
-            "motion": {
-                "method": "approval.yes_no_abstain",
-                "onehundred_percent_base": "yes_no_abstain",
-            },
-        }.items():
-            for field_name, default_value in map_.items():
-                self.update_empty_cells(
-                    TableRef("meeting", True),
-                    fields_maps_by_poll_type[poll_type][field_name],
-                    default_value,
-                )
+        meeting_m = TableRef("meeting", True)
+        base_values_source = [
+            {"origin": origin, "target": target}
+            for origin, target in poll_onehundred_percent_bases_map.items()
+        ]
+        for poll_type, default_base in (
+            ("assignment", "valid"),
+            ("topic", "valid"),
+            ("motion", "yes_no_abstain"),
+        ):
+            field_name = fields_maps_by_poll_type[poll_type]["onehundred_percent_base"]
+            self.update_from_values_map(
+                meeting_m,
+                ValuesSource(
+                    [*base_values_source, {"origin": None, "target": default_base}],
+                    ["origin"],
+                    {"origin": field_name, "target": field_name},
+                ),
+            )
+        for poll_type, methods_map in (
+            (
+                "assignment",
+                (
+                    ("Y", "selection.yes"),
+                    ("N", "selection.no"),
+                    ("YN", "rating_approval.yes_no"),
+                    ("YNA", "rating_approval.yes_no_abstain"),
+                    (None, "selection.yes"),
+                ),
+            ),
+            (
+                "motion",
+                (
+                    ("YN", "approval.yes_no"),
+                    ("YNA", "approval.yes_no_abstain"),
+                    (None, "approval.yes_no_abstain"),
+                ),
+            ),
+        ):
+            field_name = fields_maps_by_poll_type[poll_type]["method"]
+            self.update_from_values_map(
+                meeting_m,
+                ValuesSource(
+                    [
+                        {"origin": origin, "target": target}
+                        for origin, target in methods_map
+                    ],
+                    ["origin"],
+                    {"origin": field_name, "target": field_name},
+                ),
+            )
+        self.update_all_entries(meeting_m, {"poll_default_method": "selection.yes"})
+
         for poll_type, fields_map in fields_maps_by_poll_type.items():
             new_ids = [
                 entry["id"]
@@ -224,6 +252,11 @@ class Migration(DiffMixin, BaseMigration):
                                 Join(TableRef("meeting", True), []),
                                 [
                                     ColumnDataSource("meeting_id", "id"),
+                                    ColumnDataSource("method", fields_map["method"]),
+                                    ColumnDataSource(
+                                        "onehundred_percent_base",
+                                        fields_map["onehundred_percent_base"],
+                                    ),
                                     ColumnDataSource(
                                         "enable_live_voting",
                                         "poll_default_live_voting_enabled",
@@ -246,27 +279,12 @@ class Migration(DiffMixin, BaseMigration):
                     values_source=ValuesSource(
                         rows=[
                             {
-                                fields_map["onehundred_percent_base"]: source_base,
-                                "onehundred_percent_base": target_base,
                                 fields_map["visibility"]: type_,
                                 "visibility": visibility,
-                                fields_map["method"]: source_method,
-                                "method": target_method,
                             }
-                            for source_base, target_base in poll_onehundred_percent_bases_map.items()
                             for type_, visibility in poll_type_to_visibility_map.items()
-                            for source_method, target_method in {
-                                "Y": "selection.yes",
-                                "N": "selection.no",
-                                "YN": "rating_approval.yes_no",
-                                "YNA": "rating_approval.yes_no_abstain",
-                            }.items()
                         ],
-                        join_on_columns=[
-                            fields_map["onehundred_percent_base"],
-                            fields_map["visibility"],
-                            fields_map["method"],
-                        ],
+                        join_on_columns=[fields_map["visibility"]],
                     ),
                 )
             ]
