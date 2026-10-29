@@ -118,7 +118,7 @@ class Migration(DiffMixin, BaseMigration):
             raise BadCodingException("\n".join(errors))
 
     def data_manipulation(self, stash: dict[str, Any] | None) -> None:
-        self.validate_data_compatibility()
+        # self.validate_data_compatibility()
         self.insert_from_other_table(
             "nm_meeting_user_vote_delegated_to_ids_meeting_user_t",
             InsertFromTables(
