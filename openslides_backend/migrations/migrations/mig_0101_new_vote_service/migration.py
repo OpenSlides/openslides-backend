@@ -295,7 +295,7 @@ class Migration(DiffMixin, BaseMigration):
             meeting_poll_setting_t = TableRef("meeting_poll_setting", False)
             group_ids_field = fields_map["group_ids"]
             self.insert_from_other_table(
-                "nm_group_uimpdi_meeting_poll_setting_t",
+                "nm_group_uimpsi_meeting_poll_setting_t",
                 InsertFromTables(
                     copy_data=[
                         TableDataSource(
