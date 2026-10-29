@@ -2470,7 +2470,7 @@ class PollConfigRatingScore(Model):
         required=True,
         constraints={
             "enum": [
-                "yes_no",
+                "no_general",
                 "valid",
                 "cast",
                 "entitled",
