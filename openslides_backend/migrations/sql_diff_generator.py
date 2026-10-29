@@ -1368,7 +1368,8 @@ class EditHelper:
                 case _:
                     raise NotImplementedError(f"meta-collection.yml changed in {key}.")
             remove_empty(dc_edit_tree_dict["_meta"][1], key)
-        remove_empty(dc_edit_tree_dict, "_meta")
+        if any(meta):
+            remove_empty(dc_edit_tree_dict, "_meta")
 
         for collection_name, collection_def in edit_tree_dict.items():
             if collection_name == "history_entry":
@@ -2059,9 +2060,10 @@ class RenameHelper:
         ) -> str:
             table_redefinitions = ""
             if "relation" in field_def_old["type"]:
-                _, _, write_fields_old = get_view_field_state_write_fields(
-                    collection_name_old, field_name_old, field_def_old
-                )
+                with prev_models_context():
+                    _, _, write_fields_old = get_view_field_state_write_fields(
+                        collection_name_old, field_name_old, field_def_old
+                    )
                 _, _, write_fields_new = get_view_field_state_write_fields(
                     collection_name_new,
                     field_name_new,
@@ -2162,16 +2164,29 @@ class RenameHelper:
         ):
             field_def = models_lookup[collection_name]["fields"][field_name]
             for attr in sorted(field_def):
-                RenameHelper.handle_attribute(
-                    collection_name,
-                    field_name,
-                    field_def,
-                    attr,
-                    diff_control,
-                    names_list,
-                    enum_names,
-                    result,
-                )
+                if models_lookup == PREV_MODELS:
+                    with prev_models_context():
+                        RenameHelper.handle_attribute(
+                            collection_name,
+                            field_name,
+                            field_def,
+                            attr,
+                            diff_control,
+                            names_list,
+                            enum_names,
+                            result,
+                        )
+                else:
+                    RenameHelper.handle_attribute(
+                        collection_name,
+                        field_name,
+                        field_def,
+                        attr,
+                        diff_control,
+                        names_list,
+                        enum_names,
+                        result,
+                    )
         assert not diff_control, f"{diff_control} left after attribute check of rename."
         for name_old, name_new in zip(enum_names_old, enum_names_new):
             result += AlterSchemaHelper.get_rename_enum(name_old, name_new)
