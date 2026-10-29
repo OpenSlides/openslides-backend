@@ -1,5 +1,3 @@
--- EDIT SECTION --
-
 -- REMOVE SECTION --
 DROP TABLE option_t CASCADE;
 DROP TABLE poll_candidate_t CASCADE;
@@ -9,7 +7,6 @@ ALTER TABLE group_t DROP COLUMN used_as_motion_poll_default_id CASCADE;
 ALTER TABLE group_t DROP COLUMN used_as_assignment_poll_default_id CASCADE;
 ALTER TABLE group_t DROP COLUMN used_as_topic_poll_default_id CASCADE;
 ALTER TABLE group_t DROP COLUMN used_as_poll_default_id CASCADE;
-ALTER TABLE history_entry_t DROP CONSTRAINT valid_history_entry_model_id_part1;
 ALTER TABLE meeting_t DROP COLUMN motion_poll_ballot_paper_selection CASCADE;
 ALTER TABLE meeting_t DROP COLUMN motion_poll_ballot_paper_number CASCADE;
 ALTER TABLE meeting_t DROP COLUMN motion_poll_default_type CASCADE;
@@ -35,8 +32,10 @@ ALTER TABLE meeting_t DROP COLUMN poll_default_live_voting_enabled CASCADE;
 ALTER TABLE meeting_user_t DROP COLUMN vote_delegated_to_id CASCADE;
 ALTER TABLE poll_t DROP COLUMN description CASCADE;
 ALTER TABLE poll_t DROP COLUMN type CASCADE;
+DROP TYPE enum_poll_type;
 ALTER TABLE poll_t DROP COLUMN backend CASCADE;
 ALTER TABLE poll_t DROP COLUMN pollmethod CASCADE;
+DROP TYPE enum_poll_pollmethod;
 ALTER TABLE poll_t DROP COLUMN min_votes_amount CASCADE;
 ALTER TABLE poll_t DROP COLUMN max_votes_amount CASCADE;
 ALTER TABLE poll_t DROP COLUMN max_votes_per_option CASCADE;
@@ -52,22 +51,19 @@ ALTER TABLE poll_t DROP COLUMN global_option_id CASCADE;
 DROP TABLE nm_poll_voted_ids_user_t CASCADE;
 DROP TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids ON meeting_user_t;
 DROP TRIGGER equal_meeting_id_on_motion_t_option_ids ON motion_t;
+DROP TRIGGER equal_meeting_id_on_poll_t_option_ids ON poll_t;
 DROP TYPE enum_ballot_paper_selection;
 DROP TYPE enum_poll_backends;
-
-ALTER TABLE projector_t DROP CONSTRAINT fk_projector_t_used_as_default_projector_for_poll_in_mee417a148;
-DROP INDEX idx_projector_t_used_as_default_projector_for_poll_in_me446bdba;
-DROP TRIGGER tr_i_not_null_meeting_default_projector_poll_ids ON meeting_t;
-DROP TRIGGER tr_ud_not_null_meeting_default_projector_poll_ids ON projector_t;
-DROP TRIGGER tr_log_projector_t_used_as_default_projector_for_poll_inf6f7d63 ON projector_t;
+DROP TYPE enum_onehundred_percent_bases;
 
 -- RENAME SECTION --
 ALTER TYPE enum_group_permissions RENAME VALUE 'poll.can_manage' TO 'agenda_item.can_manage_polls';
 ALTER TYPE enum_meeting_motion_poll_projection_name_order_first RENAME TO enum_meeting_poll_projection_name_order_first;
-ALTER TABLE meeting_t RENAME COLUMN motion_poll_projection_max_columns TO poll_projection_max_columns;
 ALTER TABLE meeting_t RENAME COLUMN motion_poll_projection_name_order_first TO poll_projection_name_order_first;
+ALTER TABLE meeting_t RENAME COLUMN motion_poll_projection_max_columns TO poll_projection_max_columns;
 ALTER TABLE poll_t RENAME COLUMN is_pseudoanonymized TO anonymized;
--- ALTER TABLE projector_t RENAME COLUMN used_as_default_projector_for_poll_in_meeting_id TO used_as_default_projector_for_topic_poll_in_meeting_id;
+DROP VIEW "projector";
+ALTER TABLE projector_t RENAME COLUMN used_as_default_projector_for_poll_in_meeting_id TO used_as_default_projector_for_topic_poll_in_meeting_id;
 
 -- ADD SECTION --
 CREATE TYPE enum_required_majority AS ENUM ('no_majority', 'two_third_majority', 'absolute_majority');
@@ -254,13 +250,6 @@ CREATE TABLE poll_option_t (
 
 
 
-ALTER TABLE history_entry_t
-    ADD COLUMN model_id_topic_id integer
-        CONSTRAINT generated_always_as_history_entry_model_id_topic_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'topic' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
-    ADD CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','topic','user'));
-
-
-
 ALTER TABLE meeting_t
     ADD COLUMN users_vote_delegations_max_amount integer
         CONSTRAINT default_meeting_users_vote_delegations_max_amount DEFAULT 1,
@@ -303,44 +292,22 @@ ALTER TABLE poll_t
 ALTER TABLE meeting_poll_setting_t ADD CONSTRAINT fk_meeting_poll_setting_t_meeting_id_meeting_t_id FOREIGN KEY(meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_poll_setting_t_meeting_id ON meeting_poll_setting_t (meeting_id);
 
-ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_ballot_t_poll_id ON poll_ballot_t (poll_id);
-ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_ballot_user_id_poll_ballot_user_t_id FOREIGN KEY(poll_ballot_user_id) REFERENCES poll_ballot_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_ballot_t_poll_ballot_user_id ON poll_ballot_t (poll_ballot_user_id);
-
-ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_ballot_user_t_poll_id ON poll_ballot_user_t (poll_id);
-ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_acting_meeting_user_id_meeting_user_t_id FOREIGN KEY(acting_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_ballot_user_t_acting_meeting_user_id ON poll_ballot_user_t (acting_meeting_user_id);
-ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_represented_meeting_user_id_meetin7f0c82a FOREIGN KEY(represented_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_ballot_user_t_represented_meeting_user_id ON poll_ballot_user_t (represented_meeting_user_id);
-
-ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_entitled_user_t_poll_id ON poll_entitled_user_t (poll_id);
-ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_meeting_user_id_meeting_user_t_id FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_entitled_user_t_meeting_user_id ON poll_entitled_user_t (meeting_user_id);
-
-ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_option_t_poll_id ON poll_option_t (poll_id);
-ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_meeting_user_id_meeti29ea351 FOREIGN KEY(content_object_id_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_option_t_content_object_id_meeting_user_id ON poll_option_t (content_object_id_meeting_user_id);
-ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_user_id_user_t_id FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
-CREATE INDEX idx_poll_option_t_content_object_id_user_id ON poll_option_t (content_object_id_user_id);
-
 
 -- definition trigger prevent_updates for meeting_poll_setting.meeting_id
 CREATE TRIGGER tr_constant_meeting_poll_setting_meeting_id BEFORE UPDATE OF meeting_id ON meeting_poll_setting_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('meeting_poll_setting', 'meeting_id');
-
--- notify trigger for meeting_poll_setting
+CREATE TRIGGER tr_log_meeting_poll_setting_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_setting_ids');
+-- notify triggers for meeting_poll_setting_t fields
 CREATE TRIGGER tr_log_meeting_poll_setting AFTER INSERT OR UPDATE OR DELETE ON meeting_poll_setting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('meeting_poll_setting');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON meeting_poll_setting_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for meeting_poll_setting fields
-CREATE TRIGGER tr_log_meeting_poll_setting_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_poll_setting_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_setting_ids');
+ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_t_poll_id ON poll_ballot_t (poll_id);
+ALTER TABLE poll_ballot_t ADD CONSTRAINT fk_poll_ballot_t_poll_ballot_user_id_poll_ballot_user_t_id FOREIGN KEY(poll_ballot_user_id) REFERENCES poll_ballot_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_t_poll_ballot_user_id ON poll_ballot_t (poll_ballot_user_id);
 
 
 -- definition trigger prevent_updates for poll_ballot.weight
@@ -350,44 +317,44 @@ FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'weight');
 -- definition trigger prevent_updates for poll_ballot.poll_id
 CREATE TRIGGER tr_constant_poll_ballot_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'poll_id');
-
+CREATE TRIGGER tr_log_poll_ballot_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_ids');
 
 CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id ON poll_ballot_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', FALSE);
 CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_user_t_poll_ballot_id AFTER INSERT ON poll_ballot_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', TRUE);
 
-
--- notify trigger for poll_ballot
+CREATE TRIGGER tr_log_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id OR DELETE ON poll_ballot_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_ballot_user', 'poll_ballot_user_id', 'poll_ballot_id');
+-- notify triggers for poll_ballot_t fields
 CREATE TRIGGER tr_log_poll_ballot AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_ballot');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for poll_ballot fields
-CREATE TRIGGER tr_log_poll_ballot_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_ids');
-CREATE TRIGGER tr_log_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id OR DELETE ON poll_ballot_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_ballot_user', 'poll_ballot_user_id', 'poll_ballot_id');
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_poll_id ON poll_ballot_user_t (poll_id);
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_acting_meeting_user_id_meeting_user_t_id FOREIGN KEY(acting_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_acting_meeting_user_id ON poll_ballot_user_t (acting_meeting_user_id);
+ALTER TABLE poll_ballot_user_t ADD CONSTRAINT fk_poll_ballot_user_t_represented_meeting_user_id_meetin7f0c82a FOREIGN KEY(represented_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_ballot_user_t_represented_meeting_user_id ON poll_ballot_user_t (represented_meeting_user_id);
 
 
 -- definition trigger prevent_updates for poll_ballot_user.poll_id
 CREATE TRIGGER tr_constant_poll_ballot_user_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot_user', 'poll_id');
-
--- notify trigger for poll_ballot_user
-CREATE TRIGGER tr_log_poll_ballot_user AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_ballot_user');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
-DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
-
--- notify triggers for poll_ballot_user fields
 CREATE TRIGGER tr_log_poll_ballot_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_user_ids');
 CREATE TRIGGER tr_log_poll_ballot_user_t_acting_meeting_user_id AFTER INSERT OR UPDATE OF acting_meeting_user_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'acting_meeting_user_id', 'acting_ballot_ids');
 CREATE TRIGGER tr_log_poll_ballot_user_t_represented_meeting_user_id AFTER INSERT OR UPDATE OF represented_meeting_user_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'represented_meeting_user_id', 'represented_ballot_ids');
+-- notify triggers for poll_ballot_user_t fields
+CREATE TRIGGER tr_log_poll_ballot_user AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_ballot_user');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
 
 -- definition trigger not null for poll_config_approval.poll_id against poll.config_id_poll_config_approval_id
@@ -396,8 +363,7 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_approval', 'po
 
 CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_approval_poll_id AFTER UPDATE OF config_id_poll_config_approval_id OR DELETE ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_approval', 'poll_id', 'poll', 'config_id_poll_config_approval_id');
-
--- notify trigger for poll_config_approval
+-- notify triggers for poll_config_approval_t fields
 CREATE TRIGGER tr_log_poll_config_approval AFTER INSERT OR UPDATE OR DELETE ON poll_config_approval_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_approval');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_approval_t
@@ -410,8 +376,7 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_approva
 
 CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_rating_approval_poll_id AFTER UPDATE OF config_id_poll_config_rating_approval_id OR DELETE ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_approval', 'poll_id', 'poll', 'config_id_poll_config_rating_approval_id');
-
--- notify trigger for poll_config_rating_approval
+-- notify triggers for poll_config_rating_approval_t fields
 CREATE TRIGGER tr_log_poll_config_rating_approval AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_approval_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_rating_approval');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_approval_t
@@ -424,8 +389,7 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_score',
 
 CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_rating_score_poll_id AFTER UPDATE OF config_id_poll_config_rating_score_id OR DELETE ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_rating_score', 'poll_id', 'poll', 'config_id_poll_config_rating_score_id');
-
--- notify trigger for poll_config_rating_score
+-- notify triggers for poll_config_rating_score_t fields
 CREATE TRIGGER tr_log_poll_config_rating_score AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_score_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_rating_score');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_rating_score_t
@@ -438,8 +402,7 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_selection', 'p
 
 CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_selection_poll_id AFTER UPDATE OF config_id_poll_config_selection_id OR DELETE ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_selection', 'poll_id', 'poll', 'config_id_poll_config_selection_id');
-
--- notify trigger for poll_config_selection
+-- notify triggers for poll_config_selection_t fields
 CREATE TRIGGER tr_log_poll_config_selection AFTER INSERT OR UPDATE OR DELETE ON poll_config_selection_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_selection');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_selection_t
@@ -452,32 +415,34 @@ FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_stv_scottish',
 
 CREATE CONSTRAINT TRIGGER tr_ud_not_null_poll_config_stv_scottish_poll_id AFTER UPDATE OF config_id_poll_config_stv_scottish_id OR DELETE ON poll_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_not_null_for_1_1('poll_config_stv_scottish', 'poll_id', 'poll', 'config_id_poll_config_stv_scottish_id');
-
--- notify trigger for poll_config_stv_scottish
+-- notify triggers for poll_config_stv_scottish_t fields
 CREATE TRIGGER tr_log_poll_config_stv_scottish AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_config_stv_scottish');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_config_stv_scottish_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify trigger for poll_entitled_user
+ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_entitled_user_t_poll_id ON poll_entitled_user_t (poll_id);
+ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_meeting_user_id_meeting_user_t_id FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_entitled_user_t_meeting_user_id ON poll_entitled_user_t (meeting_user_id);
+
+CREATE TRIGGER tr_log_poll_entitled_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_entitled_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'entitled_user_ids');
+CREATE TRIGGER tr_log_poll_entitled_user_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_entitled_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'poll_entitled_user_ids');
+-- notify triggers for poll_entitled_user_t fields
 CREATE TRIGGER tr_log_poll_entitled_user AFTER INSERT OR UPDATE OR DELETE ON poll_entitled_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_entitled_user');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_entitled_user_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
--- notify triggers for poll_entitled_user fields
-CREATE TRIGGER tr_log_poll_entitled_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_entitled_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'entitled_user_ids');
-CREATE TRIGGER tr_log_poll_entitled_user_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_entitled_user_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'poll_entitled_user_ids');
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_poll_id_poll_t_id FOREIGN KEY(poll_id) REFERENCES poll_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_poll_id ON poll_option_t (poll_id);
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_meeting_user_id_meeti29ea351 FOREIGN KEY(content_object_id_meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_content_object_id_meeting_user_id ON poll_option_t (content_object_id_meeting_user_id);
+ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_user_id_user_t_id FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_poll_option_t_content_object_id_user_id ON poll_option_t (content_object_id_user_id);
 
--- notify trigger for poll_option
-CREATE TRIGGER tr_log_poll_option AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
-FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_option');
-CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
-DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
-
--- notify triggers for poll_option fields
 CREATE TRIGGER tr_log_poll_option_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'option_ids');
 
@@ -486,6 +451,12 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','conten
 
 CREATE TRIGGER tr_log_user_content_object_id_user_id AFTER INSERT OR UPDATE OF content_object_id_user_id OR DELETE ON poll_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','content_object_id_user_id','poll_option_ids');
+-- notify triggers for poll_option_t fields
+CREATE TRIGGER tr_log_poll_option AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_models('poll_option');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON poll_option_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
+
 
 CREATE TABLE nm_group_uimpsi_meeting_poll_setting_t (
     group_id integer
@@ -502,6 +473,21 @@ CREATE TABLE nm_group_uimpsi_meeting_poll_setting_t (
 );
 CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_group_id ON nm_group_uimpsi_meeting_poll_setting_t (group_id);
 CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_meeting_poll_f22a8ca ON nm_group_uimpsi_meeting_poll_setting_t (meeting_poll_setting_id);
+
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_poll_setting_t_group_ids AFTER INSERT ON meeting_poll_setting_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'meeting_poll_setting_id', 'meeting_poll_setting', 'group_id', 'group', 'meeting_id', 'group_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting07fe571 AFTER INSERT ON nm_group_uimpsi_meeting_poll_setting_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
+
+
+
+-- notify triggers for group.used_in_meeting_poll_setting_ids and meeting_poll_setting.group_ids
+CREATE TRIGGER tr_log_nm_group_uimpsi_meeting_poll_setting_t AFTER INSERT OR UPDATE OR DELETE ON nm_group_uimpsi_meeting_poll_setting_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('group','group_id','used_in_meeting_poll_setting_ids','meeting_poll_setting','meeting_poll_setting_id','group_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_group_uimpsi_meeting_poll_setting_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_assignment_poll_config_id_meeting_poll_sett903ddfc FOREIGN KEY(assignment_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_assignment_poll_config_id ON meeting_t (assignment_poll_config_id);
 CREATE TRIGGER tr_log_meeting_t_assignment_poll_config_id AFTER INSERT OR UPDATE OF assignment_poll_config_id OR DELETE ON meeting_t
@@ -530,6 +516,21 @@ CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
 );
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_tee86852 ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegations_from_id);
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_t54a80eb ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegated_to_id);
+
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegated_to_id', 'meeting_user', 'vote_delegations_from_id', 'meeting_user', 'meeting_id', 'vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids68aada4 AFTER INSERT ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
+
+
+
+-- notify triggers for meeting_user.vote_delegated_to_ids and meeting_user.vote_delegations_from_ids
+CREATE TRIGGER tr_log_nm_meeting_user_vote_delegated_to_ids_meeting_user_t AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user','vote_delegations_from_id','vote_delegated_to_ids','meeting_user','vote_delegated_to_id','vote_delegations_from_ids');
+CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_approval_id_poll_config_f74c82e FOREIGN KEY(config_id_poll_config_approval_id) REFERENCES poll_config_approval_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_t_config_id_poll_config_approval_id ON poll_t (config_id_poll_config_approval_id);
 ALTER TABLE poll_t ADD CONSTRAINT fk_poll_t_config_id_poll_config_selection_id_poll_config65f401f FOREIGN KEY(config_id_poll_config_selection_id) REFERENCES poll_config_selection_t(id) INITIALLY DEFERRED;
@@ -557,13 +558,31 @@ CREATE TRIGGER tr_log_poll_config_stv_scottish_config_id_poll_config_st0701463 A
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_config_stv_scottish','config_id_poll_config_stv_scottish_id','poll_id');
 comment on column poll_t.result is 'Calculated result. The format depends on the value in poll/method. Can be manually set when visibility is set to manually.';
 comment on column poll_t.published is 'If true, users can see the result.';
-comment on column poll_t.anonymized is 'Set to true, after finished was called with anonymize.';
+comment on column poll_t.allow_empty is 'If true, the vote service accepts empty ballots.';
 comment on column poll_t.allow_invalid is 'If true, the vote service does not validate. This is always the case for secret polls.';
 comment on column poll_t.allow_vote_split is 'If true, users can split there vote.';
 -- ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_for_topic_poll_b2f5888 FOREIGN KEY(used_as_default_projector_for_topic_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 -- CREATE INDEX idx_projector_t_used_as_default_projector_for_topic_pollb4f5002 ON projector_t (used_as_default_projector_for_topic_poll_in_meeting_id);
 -- CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_topic_p9aaf88b AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_poll_in_meeting_id OR DELETE ON projector_t
 -- FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_topic_poll_in_meeting_id', 'default_projector_topic_poll_ids');
+
+-- EDIT SECTION --
+ALTER TABLE history_entry_t DROP CONSTRAINT valid_history_entry_model_id_part1;
+ALTER TABLE history_entry_t
+    ADD COLUMN model_id_topic_id integer
+        CONSTRAINT generated_always_as_history_entry_model_id_topic_id GENERATED ALWAYS AS (CASE WHEN split_part(model_id, '/', 1) = 'topic' THEN cast(split_part(model_id, '/', 2) AS INTEGER) ELSE null END) STORED,
+    ADD CONSTRAINT valid_history_entry_model_id_part1 CHECK (split_part(model_id, '/', 1) IN ('assignment','motion','topic','user'));
+ALTER TABLE history_entry_t ADD CONSTRAINT fk_history_entry_t_model_id_topic_id_topic_t_id FOREIGN KEY(model_id_topic_id) REFERENCES topic_t(id) INITIALLY DEFERRED;
+CREATE INDEX idx_history_entry_t_model_id_topic_id ON history_entry_t (model_id_topic_id);
+
+CREATE TRIGGER tr_log_topic_model_id_topic_id AFTER INSERT OR UPDATE OF model_id_topic_id OR DELETE ON history_entry_t
+FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('topic','model_id_topic_id','history_entry_ids');
+
+ALTER TABLE poll_t ALTER COLUMN state TYPE text;
+ALTER TABLE poll_t ALTER COLUMN state DROP DEFAULT;
+DROP TYPE enum_poll_state;
+CREATE TYPE enum_poll_state AS ENUM ('created', 'started', 'finished');
+
 
 -- VIEWS UPDATE SECTION --
 CREATE OR REPLACE VIEW "group" AS SELECT *,
