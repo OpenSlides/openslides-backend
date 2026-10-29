@@ -353,6 +353,12 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
 
     # -- Methods for building the queries --
     @staticmethod
+    def normalize_cte(common_table_expression: sql.Composable | None) -> sql.Composable:
+        if common_table_expression is None:
+            return sql.SQL("")
+        return sql.SQL("{cte}\n").format(cte=common_table_expression)
+
+    @staticmethod
     def normalize_from(from_part: sql.Composable | None) -> sql.Composable:
         if from_part is None:
             return sql.SQL("")
@@ -402,14 +408,18 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             list[tuple[str | sql.Composed, list[sql.Composable]]] | None
         ) = None,
         filter_condition: sql.Composable | list[sql.Composable] | None = None,
+        common_table_expression: sql.Composable | None = None,
     ) -> sql.Composed:
         return sql.SQL(
-            "UPDATE {target_table} "
+            "{common_table_expression}UPDATE {target_table} "
             "SET {set_part}"
             "{from_part}"
             "{joined_tables}"
             "{where};"
         ).format(
+            common_table_expression=MigrationSqlHelper.normalize_cte(
+                common_table_expression
+            ),
             target_table=sql.Identifier(table_name),
             set_part=set_part,
             from_part=MigrationSqlHelper.normalize_from(source_table),

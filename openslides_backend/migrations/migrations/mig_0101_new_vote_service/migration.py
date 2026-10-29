@@ -462,10 +462,6 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-        self.migrate_motion_polls()
-        self.migrate_assignment_polls_with_candidate_list()
-        self.migrate_polls_with_multiple_options()
-
         self.execute_query(sql.SQL("""
             INSERT INTO poll_entitled_user_t (
                 poll_id,
@@ -483,6 +479,10 @@ class Migration(DiffMixin, BaseMigration):
                 AND meeting_user_t.user_id = (e->>'user_id')::integer
             RETURNING id;
         """))
+
+        self.migrate_motion_polls()
+        self.migrate_assignment_polls_with_candidate_list()
+        self.migrate_polls_with_multiple_options()
 
     def migrate_polls_with_approval(
         self,
@@ -1123,6 +1123,8 @@ class Migration(DiffMixin, BaseMigration):
                 )
                 for column in [*extra_source_columns, "abstain"]
             },
+            "entitled_users": sql.Identifier("cte_entitled_users", "all"),
+            "entitled_users_present": sql.Identifier("cte_entitled_users", "present"),
             "invalid": sql.SQL(
                 "CASE "
                 "WHEN poll_t.visibility = 'manually' "
@@ -1153,6 +1155,12 @@ class Migration(DiffMixin, BaseMigration):
                     TableDataSource(Join(poll_m, [JoinOn("id", poll_t, "id")])),
                     TableDataSource(
                         Join(
+                            TableRef("cte_entitled_users", is_view=True),
+                            [JoinOn("poll_id", poll_m, "id")],
+                        )
+                    ),
+                    TableDataSource(
+                        Join(
                             source_table,
                             [JoinOn("poll_id", poll_m, "id")],
                         ),
@@ -1169,6 +1177,16 @@ class Migration(DiffMixin, BaseMigration):
                 FilterOperator("id", "in", poll_ids),
                 FilterOperator("state", "=", "finished"),
             ),
+            common_table_expression=sql.SQL("""
+                WITH cte_entitled_users AS (
+                    SELECT
+                        poll_id,
+                        COUNT(*) AS all,
+                        COUNT(*) FILTER(WHERE present = TRUE) AS present
+                    FROM poll_entitled_user_t
+                    GROUP BY poll_id
+                )
+            """),
         )
 
     def _create_poll_ballots(

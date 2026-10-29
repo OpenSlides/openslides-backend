@@ -383,6 +383,7 @@ class BaseMigration:
         self,
         copy_from_source_tables: UpdateFromTables,
         filter_target_table: Filter | None = None,
+        common_table_expression: sql.SQL | None = None,
     ) -> None:
         arguments: SqlArguments = []
         joined_tables_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] = (
@@ -423,6 +424,7 @@ class BaseMigration:
                 source_table=sql.Identifier(source_table),
                 joined_tables=joined_tables,
                 filter_condition=filters,
+                common_table_expression=common_table_expression,
             ),
             arguments,
         )
