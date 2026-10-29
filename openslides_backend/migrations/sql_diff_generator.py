@@ -1386,8 +1386,14 @@ class EditHelper:
                                 values[0]["enum"],
                             )
                             del dc_fields[field_name][1][field_attribute][0]["enum"]
-                        # elif value := field_attribute.get("to"):
-                        #     # TODO
+                        elif field_attribute == "to":
+                            sql += EditHelper.handle_to_field_attribute(
+                                collection_name,
+                                field_name,
+                            )
+                            dc_edit_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][1][field_attribute] = ({}, {})
                         remove_empty(dc_fields[field_name][1], field_attribute)
                 sql += EditHelper.handle_edit_field_attributes(
                     table_name, field_name, field_def[0], dc_fields[field_name]
@@ -1437,12 +1443,158 @@ class EditHelper:
         ) + EditHelper.get_recreate_enum(enum_name, values)
 
     @staticmethod
+    def handle_to_field_attribute(
+        collection_name: str,
+        field_name: str,
+    ) -> str:
+        """
+        Handles changes to the 'to' attribute.
+        """
+        result = ""
+        field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
+        field_def_new = CURR_MODELS[collection_name]["fields"][field_name]
+        old_foreign = InternalHelper.get_foreign_definitions_from_field_def(
+            field_def_old
+        )
+        old_collection_to_fields: dict[str, str] = {
+            ff.table: ff.column for ff in old_foreign
+        }
+        new_foreign = InternalHelper.get_foreign_definitions_from_field_def(
+            field_def_new
+        )
+        new_collections: list[str] = [ff.table for ff in new_foreign]
+        if (new_type := field_def_new["type"]) == field_def_old["type"]:
+            if new_type == "generic-relation":
+                recreate_triggers = False
+                if removed := set(old_collection_to_fields).difference(new_collections):
+                    # Probably going to have to move the construction of the
+                    # generic field constraint to a later step in the migration
+                    # for foreign relation removals
+                    raise NotImplementedError(
+                        f"{collection_name}/{field_name}: Removing 'to' fields not implemented: removed {removed}"
+                    )
+                alter_lines = ""
+                after_lines = ""
+                for foreign_field in new_foreign:
+                    if foreign_field.table not in old_collection_to_fields:
+                        generic_plain_field_name = (
+                            HelperGetNames.get_generic_plain_field_name(
+                                field_name,
+                                foreign_field.table,
+                                foreign_field.ref_column,
+                            )
+                        )
+                        alter_lines += Helper.get_generic_combined_fields(
+                            collection_name,
+                            generic_plain_field_name,
+                            field_name,
+                            foreign_field,
+                            True,
+                        )
+                        after_lines += AlterSchemaHelper.get_foreign_key_table_constraint_as_alter_table(
+                            collection_name,
+                            foreign_field.table,
+                            generic_plain_field_name,
+                            foreign_field.ref_column,
+                        )
+                        alter_views.add(foreign_field.table)
+                        recreate_triggers = True
+                    elif (
+                        foreign_field.column
+                        != old_collection_to_fields[foreign_field.table]
+                    ):
+                        alter_views.add(foreign_field.table)
+                        recreate_triggers = True
+                triggers = ""
+                table_name = HelperGetNames.get_table_name(collection_name)
+                old_trigger_name_to_trigger: dict[str, str] = {}
+                if recreate_triggers:
+                    for key, trigger_sql in (
+                        PREV_TRIGGER_SQL[collection_name].get(field_name, {}).items()
+                    ):
+                        if (
+                            CURR_TRIGGER_SQL[collection_name]
+                            .get(field_name, {})
+                            .get(key)
+                            != trigger_sql
+                        ):
+                            trigger_parts = trigger_sql.split(";")[:-1]
+                            old_trigger_name_to_trigger = {
+                                trigger_part_parts[1].split(" ")[
+                                    0
+                                ]: f"{trigger_part};".strip("\n ")
+                                for trigger_part in trigger_parts
+                                if len(
+                                    trigger_part_parts := trigger_part.split("TRIGGER ")
+                                )
+                                > 1
+                            }
+                            for (
+                                trigger_name,
+                                trigger,
+                            ) in old_trigger_name_to_trigger.items():
+                                if trigger not in CURR_TRIGGER_SQL[collection_name].get(
+                                    field_name, {}
+                                ).get(key, ""):
+                                    result += (
+                                        AlterSchemaHelper.get_drop_trigger_statement(
+                                            table_name, trigger_name
+                                        )
+                                    )
+                if alter_lines:
+                    result += (
+                        AlterSchemaHelper.get_drop_table_constraint_statement(
+                            table_name,
+                            HelperGetNames.get_generic_valid_constraint_name(
+                                collection_name, field_name
+                            ),
+                        )
+                        + AlterSchemaHelper.get_alter_table_statement(
+                            table_name,
+                            f"\n{alter_lines}"
+                            + Helper.get_generic_field_constraint(
+                                collection_name, field_name, new_collections, True
+                            ).rstrip("\n,"),
+                        )
+                        + after_lines
+                    )
+                if recreate_triggers:
+                    for key, triggers in (
+                        CURR_TRIGGER_SQL[collection_name].get(field_name, {}).items()
+                    ):
+                        if (
+                            PREV_TRIGGER_SQL[collection_name]
+                            .get(field_name, {})
+                            .get(key)
+                            != triggers
+                        ):
+                            result += ";".join(
+                                [
+                                    new_trigger
+                                    for new_trigger in triggers.split(";")
+                                    if not any(
+                                        trigger in f"{new_trigger};"
+                                        for trigger in old_trigger_name_to_trigger.values()
+                                    )
+                                ]
+                            )
+            else:
+                raise NotImplementedError(
+                    f"{collection_name}/{field_name}: 'to' for {new_type}"
+                )
+        else:
+            raise NotImplementedError(
+                f"{collection_name}/{field_name}: 'to' for changed field type"
+            )
+        return result + "\n"
+
+    @staticmethod
     def handle_enum_field_attribute(
         collection_name: str, field_name: str, constraint: str, value: list[str] | str
     ) -> str:
         result = ""
         field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
-        value_old = field_def_old[constraint]
+        value_old = field_def_old.get(constraint)
         if constraint == "items":
             value_old = value_old["enum"]
         if isinstance(value_old, list):
@@ -1465,7 +1617,7 @@ class EditHelper:
                     collection_name, field_name, field_def_old
                 ) + AlterSchemaHelper.get_drop_type_statement(enum_name_old)
         else:
-            # Previously referencing meta enum.
+            # Previously referencing meta enum or no enum at all.
             if isinstance(value, list):
                 # changed from meta enum to field based enum
                 result += Helper.get_enum_type_definition(
@@ -1474,9 +1626,11 @@ class EditHelper:
                     ),
                     value,
                 )
-            result += EditHelper.get_change_enum_to_text(
-                collection_name, field_name, field_def_old
-            )
+            if value_old is not None:
+                # Previously referencing meta enum.
+                result += EditHelper.get_change_enum_to_text(
+                    collection_name, field_name, field_def_old
+                )
         return result
 
     @staticmethod
