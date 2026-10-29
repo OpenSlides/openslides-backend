@@ -1372,8 +1372,6 @@ class EditHelper:
             remove_empty(dc_edit_tree_dict, "_meta")
 
         for collection_name, collection_def in edit_tree_dict.items():
-            if collection_name == "history_entry":
-                pass
             table_name = HelperGetNames.get_table_name(collection_name)
             # TODO unique_together, unique_together_strict
             dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
@@ -1509,6 +1507,7 @@ class EditHelper:
                         recreate_triggers = True
                 triggers = ""
                 table_name = HelperGetNames.get_table_name(collection_name)
+                old_trigger_name_to_trigger: dict[str, str] = {}
                 if recreate_triggers:
                     for key, trigger_sql in (
                         PREV_TRIGGER_SQL[collection_name].get(field_name, {}).items()
@@ -1519,21 +1518,30 @@ class EditHelper:
                             .get(key)
                             != trigger_sql
                         ):
-                            trigger_parts = trigger_sql.split("CREATE ")[1:]
-                            trigger_names = [
-                                trigger_part_parts[1].split(" ")[0]
+                            trigger_parts = trigger_sql.split(";")[:-1]
+                            old_trigger_name_to_trigger = {
+                                trigger_part_parts[1].split(" ")[
+                                    0
+                                ]: f"{trigger_part};".strip("\n ")
                                 for trigger_part in trigger_parts
                                 if len(
                                     trigger_part_parts := trigger_part.split("TRIGGER ")
                                 )
                                 > 1
-                            ]
-                            for trigger_name in trigger_names:
-                                result += AlterSchemaHelper.get_drop_trigger_statement(
-                                    table_name, trigger_name
-                                )
+                            }
+                            for (
+                                trigger_name,
+                                trigger,
+                            ) in old_trigger_name_to_trigger.items():
+                                if trigger not in CURR_TRIGGER_SQL[collection_name].get(
+                                    field_name, {}
+                                ).get(key, ""):
+                                    result += (
+                                        AlterSchemaHelper.get_drop_trigger_statement(
+                                            table_name, trigger_name
+                                        )
+                                    )
                 if alter_lines:
-                    # TODO: Use appropriate helper functions instead of f-strings
                     result += (
                         AlterSchemaHelper.get_drop_table_constraint_statement(
                             table_name,
@@ -1560,7 +1568,16 @@ class EditHelper:
                             .get(key)
                             != triggers
                         ):
-                            result += triggers
+                            result += ";".join(
+                                [
+                                    new_trigger
+                                    for new_trigger in triggers.split(";")
+                                    if not any(
+                                        trigger in f"{new_trigger};"
+                                        for trigger in old_trigger_name_to_trigger.values()
+                                    )
+                                ]
+                            )
             else:
                 raise NotImplementedError(
                     f"{collection_name}/{field_name}: 'to' for {new_type}"
