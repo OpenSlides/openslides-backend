@@ -1392,6 +1392,9 @@ class EditHelper:
                                 collection_name,
                                 field_name,
                             )
+                            dc_edit_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][1][field_attribute] = ({}, {})
                         remove_empty(dc_fields[field_name][1], field_attribute)
                 sql += EditHelper.handle_edit_field_attributes(
                     table_name, field_name, field_def[0], dc_fields[field_name]
@@ -1445,6 +1448,9 @@ class EditHelper:
         collection_name: str,
         field_name: str,
     ) -> str:
+        """
+        Handles changes to the 'to' attribute.
+        """
         result = ""
         field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
         field_def_new = CURR_MODELS[collection_name]["fields"][field_name]
@@ -1522,18 +1528,25 @@ class EditHelper:
                                 > 1
                             ]
                             for trigger_name in trigger_names:
-                                result += (
-                                    f"DROP TRIGGER {trigger_name} ON {table_name};\n"
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    table_name, trigger_name
                                 )
                 if alter_lines:
                     # TODO: Use appropriate helper functions instead of f-strings
                     result += (
-                        f"ALTER TABLE {table_name} DROP CONSTRAINT {HelperGetNames.get_generic_valid_constraint_name(collection_name, field_name)};\n"
-                        + f"ALTER TABLE {table_name}\n{alter_lines};\n"
-                        + Helper.get_generic_field_constraint(
-                            collection_name, field_name, new_collections, True
+                        AlterSchemaHelper.get_drop_table_constraint_statement(
+                            table_name,
+                            HelperGetNames.get_generic_valid_constraint_name(
+                                collection_name, field_name
+                            ),
                         )
-                        + alter_lines.rstrip("\n,")
+                        + AlterSchemaHelper.get_alter_table_statement(
+                            table_name,
+                            f"\n{alter_lines}"
+                            + Helper.get_generic_field_constraint(
+                                collection_name, field_name, new_collections, True
+                            ).rstrip("\n,"),
+                        )
                         + after_lines
                     )
                 if recreate_triggers:
@@ -1546,10 +1559,6 @@ class EditHelper:
                             .get(key)
                             != triggers
                         ):
-                            # TODO: Currently broken bc CURR_TRIGGER_SQL is generated
-                            # with multiple log triggers for  user, motion and assignment each
-                            # This happens during initial generation.
-                            # I checked @ the ArgumentParser (ln 92)
                             result += triggers
             else:
                 raise NotImplementedError(
@@ -1559,7 +1568,7 @@ class EditHelper:
             raise NotImplementedError(
                 f"{collection_name}/{field_name}: 'to' for changed field type"
             )
-        return result
+        return result + "\n"
 
     @staticmethod
     def handle_enum_field_attribute(
