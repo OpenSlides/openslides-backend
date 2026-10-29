@@ -274,10 +274,18 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
 
     @staticmethod
     def get_conditions_for_join(
-        curs: Cursor[DictRow], right_table: str, join_on_columns: list[JoinOn]
+        curs: Cursor[DictRow],
+        right_table: str,
+        join_on_columns: list[JoinOn],
+        match_nulls: bool = False,
     ) -> list[sql.Composable]:
+        join_query = (
+            "{left_column} IS NOT DISTINCT FROM {right_column}"
+            if match_nulls
+            else "{left_column} = {right_column}"
+        )
         return [
-            sql.SQL("{left_column} = {right_column}").format(
+            sql.SQL(join_query).format(
                 left_column=sql.Identifier(
                     join_on.left_table.table_name, join_on.left_column
                 ),

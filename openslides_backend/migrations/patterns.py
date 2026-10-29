@@ -455,6 +455,8 @@ class ValuesSource:
     column_alias_map: dict[str, Column] = field(default_factory=dict)
     alias: str = "v"
 
+    _match_nulls: bool | None = field(init=False, default=None)
+
     def __post_init__(self) -> None:
         errors = []
         if not self.rows:
@@ -485,8 +487,25 @@ class ValuesSource:
         if not all(set(row) == values_columns_set for row in self.rows[1:]):
             errors.append("All dictionaries in 'values_map' must have the same keys.")
 
+        join_columns_values = {
+            column: [row[column] for row in self.rows]
+            for column in self.join_on_columns
+        }
+        if columns_with_duplicates := [
+            column
+            for column, values in join_columns_values.items()
+            if len(values) != len(set(values))
+        ]:
+            errors.append(
+                f"Columns {columns_with_duplicates} from 'join_on_columns' contain duplicates."
+            )
         if errors:
             raise BadCodingException("\n".join(errors))
+        object.__setattr__(
+            self,
+            "_match_nulls",
+            any([None in values for values in join_columns_values.values()]),
+        )
 
     def column_alias(self, column_name: str) -> Column:
         """
@@ -518,3 +537,9 @@ class ValuesSource:
     def select_columns(self) -> list[ColumnRef]:
         """Columns of VALUES used as data sources."""
         return [ColumnRef(column, self.alias) for column in self.data_source_columns]
+
+    @property
+    def match_nulls(self) -> bool:
+        """Returns True if at least one of values in join_on_columns is None."""
+        assert self._match_nulls is not None
+        return self._match_nulls

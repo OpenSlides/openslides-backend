@@ -321,6 +321,7 @@ class BaseMigration:
                 self.cursor,
                 mig_table.table_name,
                 [JoinOn("id", target_table, "id")],
+                values_source.match_nulls,
             )
         else:
             from_part = MigrationSqlHelper.build_values_table(values_source, arguments)
@@ -598,6 +599,7 @@ class BaseMigration:
                 JoinOn(column, left_table, values_source.column_alias(column))
                 for column in values_source.join_on_columns
             ],
+            values_source.match_nulls,
         )
 
     def _get_joined_tables_data(
