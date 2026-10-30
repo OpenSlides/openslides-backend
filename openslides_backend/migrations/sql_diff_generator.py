@@ -43,7 +43,12 @@ from openslides_backend.migrations.yaml_diff_generator import (
     was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.patterns import Collection, CollectionField
+from openslides_backend.shared.patterns import (
+    Collection,
+    CollectionField,
+    collection_and_field_from_collectionfield,
+    collectionfield_from_collection_and_field,
+)
 
 TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_partitioned_sequences",
@@ -700,6 +705,34 @@ class RemoveHelper:
                         )
 
             if drop_column:
+                affected_collection_to_field = {collection_name: field_name}
+                if field_def.get("type") in RELATION_TYPES:
+                    with prev_models_context():
+                        foreign_fields = (
+                            InternalHelper.get_foreign_definitions_from_field_def(
+                                field_def
+                            )
+                        )
+                        for foreign_field in foreign_fields:
+                            affected_collection_to_field[foreign_field.table] = (
+                                foreign_field.column
+                            )
+                for trigger_coll, trigger_field in affected_collection_to_field.items():
+                    for key, triggers in (
+                        PREV_TRIGGER_SQL[trigger_coll].get(trigger_field, {}).items()
+                    ):
+                        if key not in [
+                            "create_trigger_equal_fields_code",
+                            "create_trigger_notify",
+                        ]:
+                            trigger_names = [
+                                trig.strip(" ").split(" ")[0]
+                                for trig in triggers.split("TRIGGER ")[1:]
+                            ]
+                            for trigger_name in trigger_names:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    trigger_coll, trigger_name
+                                )
                 result += AlterSchemaHelper.get_drop_column_statement(
                     collection_name, field_name, PREV_CODE_BLOCKS["view_sql"]
                 )
@@ -1358,7 +1391,19 @@ class EditHelper:
         for key, meta_def_part in meta[1].items():
             match key:
                 case "enum_definitions":
+                    enum_to_collectionfields = EditHelper.find_global_enum_usage()
                     for enum, values in meta_def_part[0].items():
+                        for other_collectionfield in enum_to_collectionfields[enum]:
+                            other_coll, other_field = (
+                                collection_and_field_from_collectionfield(
+                                    other_collectionfield
+                                )
+                            )
+                            sql += EditHelper.get_change_enum_to_text(
+                                other_coll,
+                                other_field,
+                                PREV_MODELS[other_coll]["fields"][other_field],
+                            )
                         sql += EditHelper.edit_enum(
                             values,
                             PREV_MODELS["_meta"]["enum_definitions"][enum],
@@ -1405,6 +1450,35 @@ class EditHelper:
             remove_empty(dc_edit_tree_dict, collection_name)
         sql += EqualFieldsHelper.handle_alter_equal_fields()
         return sql
+
+    @staticmethod
+    def get_enum_data(field_def: dict[str, Any]) -> str | list[str] | None:
+        if data := field_def.get("enum"):
+            return data
+        return field_def.get("items", {}).get("enum")
+
+    @staticmethod
+    def find_global_enum_usage() -> dict[str, list[str]]:
+        global_enum_to_collection_fields: dict[str, list[str]] = defaultdict(list)
+        for collection in CURR_MODELS:
+            if collection == "_meta":
+                continue
+            relevant_fields = {
+                f
+                for f in CURR_MODELS.get(collection, {}).get("fields", {})
+                if any(
+                    key in CURR_MODELS.get(collection, {}).get("fields", {}).get(f, {})
+                    for key in ["enum", "items"]
+                )
+            }
+            for field in relevant_fields:
+                new_def = CURR_MODELS.get(collection, {}).get("fields", {}).get(field)
+                new_data = EditHelper.get_enum_data(new_def)
+                if isinstance(new_data, str):
+                    global_enum_to_collection_fields[new_data].append(
+                        collectionfield_from_collection_and_field(collection, field)
+                    )
+        return global_enum_to_collection_fields
 
     @staticmethod
     def get_change_enum_to_text(
