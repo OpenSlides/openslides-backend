@@ -1472,9 +1472,7 @@ class EditHelper:
                 )
             }
             for field in relevant_fields:
-                # old_def = prev_models.get(collection, {}).get("fields", {}).get(field)
                 new_def = CURR_MODELS.get(collection, {}).get("fields", {}).get(field)
-                # old_data = EditHelper.get_enum_data(old_def)
                 new_data = EditHelper.get_enum_data(new_def)
                 if isinstance(new_data, str):
                     global_enum_to_collection_fields[new_data].append(
