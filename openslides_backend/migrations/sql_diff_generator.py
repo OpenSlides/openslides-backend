@@ -700,6 +700,34 @@ class RemoveHelper:
                         )
 
             if drop_column:
+                affected_collection_to_field = {collection_name: field_name}
+                if field_def.get("type") in RELATION_TYPES:
+                    with prev_models_context():
+                        foreign_fields = (
+                            InternalHelper.get_foreign_definitions_from_field_def(
+                                field_def
+                            )
+                        )
+                        for foreign_field in foreign_fields:
+                            affected_collection_to_field[foreign_field.table] = (
+                                foreign_field.column
+                            )
+                for trigger_coll, trigger_field in affected_collection_to_field.items():
+                    for key, triggers in (
+                        PREV_TRIGGER_SQL[trigger_coll].get(trigger_field, {}).items()
+                    ):
+                        if key not in [
+                            "create_trigger_equal_fields_code",
+                            "create_trigger_notify",
+                        ]:
+                            trigger_names = [
+                                trig.strip(" ").split(" ")[0]
+                                for trig in triggers.split("TRIGGER ")[1:]
+                            ]
+                            for trigger_name in trigger_names:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    trigger_coll, trigger_name
+                                )
                 result += AlterSchemaHelper.get_drop_column_statement(
                     collection_name, field_name, PREV_CODE_BLOCKS["view_sql"]
                 )
