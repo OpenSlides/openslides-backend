@@ -18,8 +18,8 @@ from ....shared.interfaces.write_request import (
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
-from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.idp_mixin import IDPMixin
+from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action

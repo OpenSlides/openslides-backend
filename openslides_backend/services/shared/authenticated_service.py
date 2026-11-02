@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
+
 class AuthenticatedServiceInterface(Protocol):
     access_token: str
 

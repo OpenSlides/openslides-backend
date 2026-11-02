@@ -18,4 +18,16 @@ printf "Creating schema ...\n"
 python cli/create_schema.py
 printf "\n"
 
+# Prune old blocked sessions
+if [ "$OPENSLIDES_DEVELOPMENT" = 1 ] || [ "$OPENSLIDES_BACKEND_COMPONENT" = "manage" ]; then
+  prune_loop() {
+    while true; do
+      # 259200 = 3 days
+      sleep 259200
+      python /app/cli/prune-blocked-sessions.py || true
+    done
+  }
+  prune_loop &
+fi
+
 exec "$@"

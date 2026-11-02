@@ -248,9 +248,10 @@ class UserScopeMixin(BaseServiceProvider):
         Generates data used for calculating scope details. Builds
         committees-meetings maps for user's all and active meetings.
         """
-        meetings_committees, active_meetings_committees = (
-            self._map_meetings_to_committees(meeting_ids)
-        )
+        (
+            meetings_committees,
+            active_meetings_committees,
+        ) = self._map_meetings_to_committees(meeting_ids)
 
         committee_meetings = self._get_committee_meetings_map(
             meetings_committees, committees_manager

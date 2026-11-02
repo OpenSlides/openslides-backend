@@ -392,9 +392,14 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     ) -> tuple[
         dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]
     ]:
-        collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-            self.get_test_relation_data(rel_type, equal_field)
-        )
+        (
+            collection_b,
+            field1,
+            ref_val1,
+            collection_c,
+            field2,
+            ref_val2,
+        ) = self.get_test_relation_data(rel_type, equal_field)
         test_coll = collection_c if back else collection_b
         back_coll = collection_b if back else collection_c
         setup_data = {
@@ -513,9 +518,14 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             self.set_models(setup_data)
             with pytest.raises(RaiseException) as e:
                 self.set_models(test_data)
-            collection_b, field1, _, collection_c, field2, _ = (
-                self.get_test_relation_data(rel_type, equal_field)
-            )
+            (
+                collection_b,
+                field1,
+                _,
+                collection_c,
+                field2,
+                _,
+            ) = self.get_test_relation_data(rel_type, equal_field)
             self.assert_fail_test_error(
                 str(e.value),
                 equal_field,
@@ -539,9 +549,14 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             self.set_models(setup_data)
             with pytest.raises(RaiseException) as e:
                 self.set_models(test_data)
-            collection_b, field1, _, collection_c, field2, _ = (
-                self.get_test_relation_data(rel_type, equal_field)
-            )
+            (
+                collection_b,
+                field1,
+                _,
+                collection_c,
+                field2,
+                _,
+            ) = self.get_test_relation_data(rel_type, equal_field)
             self.assert_fail_test_error(
                 str(e.value),
                 equal_field,
@@ -560,9 +575,14 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     ) -> Callable:
         def base_test_delete(self: TestEqualFieldsCheck) -> None:
             _, _, setup_data = self.get_test_data(rel_type, equal_field, back)
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
-            )
+            (
+                collection_b,
+                field1,
+                ref_val1,
+                collection_c,
+                field2,
+                ref_val2,
+            ) = self.get_test_relation_data(rel_type, equal_field)
             self.set_models(setup_data)
 
             fqid = f"{collection_c if back else collection_b}/1"
@@ -621,9 +641,14 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     ) -> Callable:
         def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
             _, _, setup_data = self.get_test_data(rel_type, equal_field, False)
-            collection_b, field1, _, collection_c, field2, _ = (
-                self.get_test_relation_data(rel_type, equal_field)
-            )
+            (
+                collection_b,
+                field1,
+                _,
+                collection_c,
+                field2,
+                _,
+            ) = self.get_test_relation_data(rel_type, equal_field)
             self.set_models(setup_data)
             with pytest.raises(RaiseException) as e:
                 self.set_models(

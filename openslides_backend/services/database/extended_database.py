@@ -264,9 +264,10 @@ class ExtendedDatabase(Database):
                         request.mapped_fields
                     )
             # fetch results from changed models
-            results, missing_fields_per_collection_and_id = (
-                self._get_many_from_changed_models(mapped_fields_per_collection_and_id)
-            )
+            (
+                results,
+                missing_fields_per_collection_and_id,
+            ) = self._get_many_from_changed_models(mapped_fields_per_collection_and_id)
             # fetch missing fields in the changed_models from the db and merge into the results
             if missing_fields_per_collection_and_id:
                 get_many_requests = [

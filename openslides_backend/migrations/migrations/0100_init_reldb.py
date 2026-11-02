@@ -335,7 +335,6 @@ class Migration(BaseMigration):
                 for field_name in data.keys():
                     # 3) Check wether field exists in models.py too
                     if field := model.try_get_field(field_name):
-
                         # 3.1) If field is RelationListField write the other tables
                         if (
                             isinstance(field, tuple(RELATION_LIST_FIELD_CLASSES))

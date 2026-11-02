@@ -3,7 +3,6 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemActionTest(BaseActionTestCase):
-
     PERMISSION_TEST_MODELS = {
         "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
     }

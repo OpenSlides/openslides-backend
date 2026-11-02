@@ -1,7 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
-from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID

@@ -35,9 +35,10 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.forwarded_attachments, self.meeting_mediafile_replace_map = (
-            self.duplicate_mediafiles(action_data, defaultdict(set), defaultdict(dict))
-        )
+        (
+            self.forwarded_attachments,
+            self.meeting_mediafile_replace_map,
+        ) = self.duplicate_mediafiles(action_data, defaultdict(set), defaultdict(dict))
         return action_data
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

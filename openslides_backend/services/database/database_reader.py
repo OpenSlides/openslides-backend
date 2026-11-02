@@ -25,7 +25,6 @@ from .query_helper import SqlQueryHelper
 
 
 class DatabaseReader(SqlQueryHelper):
-
     def __init__(
         self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
     ) -> None:

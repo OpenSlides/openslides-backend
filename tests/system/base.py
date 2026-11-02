@@ -193,9 +193,7 @@ class BaseSystemTestCase(TestCase):
         self.client.login(user["username"], user["default_password"])
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
-        self.vote_service.set_authentication(
-            auth_data["access_token"]
-        )
+        self.vote_service.set_authentication(auth_data["access_token"])
 
     def get_application(self) -> OpenSlidesBackendWSGIApplication:
         raise NotImplementedError()
