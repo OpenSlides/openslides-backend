@@ -265,8 +265,8 @@ class TestMigration101(BaseMigrationTestCase):
                 "meeting/1": {
                     "motion_poll_projection_name_order_first": "first_name",
                     "motion_poll_projection_max_columns": 8,
-                    "assignment_poll_default_method": "Y",
-                    "motion_poll_default_method": "YNA",
+                    "assignment_poll_default_method": "yna",
+                    "motion_poll_default_method": "votes",
                     "poll_default_method": "N",
                     "assignment_poll_default_type": "named",
                     "motion_poll_default_type": "named",

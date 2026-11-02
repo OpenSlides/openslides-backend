@@ -207,41 +207,54 @@ class Migration(DiffMixin, BaseMigration):
                     {"origin": field_name, "target": field_name},
                 ),
             )
-        for poll_type, methods_map in (
-            (
-                "assignment",
-                (
+        methods_map = {
+            "assignment": {
+                "map": (
                     ("Y", "selection.yes"),
                     ("N", "selection.no"),
                     ("YN", "rating_approval.yes_no"),
                     ("YNA", "rating_approval.yes_no_abstain"),
-                    (None, "selection.yes"),
+                    ("yna", "rating_approval.yes_no_abstain"),
                 ),
-            ),
-            (
-                "motion",
-                (
+                "default": "selection.yes",
+            },
+            "motion": {
+                "map": (
                     ("YN", "approval.yes_no"),
                     ("YNA", "approval.yes_no_abstain"),
-                    (None, "approval.yes_no_abstain"),
                 ),
-            ),
-        ):
-            field_name = fields_maps_by_poll_type[poll_type]["method"]
-            self.update_from_values_map(
-                meeting_m,
-                ValuesSource(
-                    [
-                        {"origin": origin, "target": target}
-                        for origin, target in methods_map
-                    ],
-                    ["origin"],
-                    {"origin": field_name, "target": field_name},
-                ),
-            )
-        self.update_all_entries(meeting_m, {"poll_default_method": "selection.yes"})
+                "default": "approval.yes_no_abstain",
+            },
+        }
 
         for poll_type, fields_map in fields_maps_by_poll_type.items():
+            method_sql = (
+                sql.SQL("{value}::enum_meeting_poll_setting_method").format(
+                    value=sql.Literal("selection.yes")
+                )
+                if poll_type == "topic"
+                else sql.SQL("CASE {case} END").format(
+                    case=sql.SQL(" ").join(
+                        [
+                            sql.SQL(
+                                "WHEN {column} = {origin} THEN {target}::enum_meeting_poll_setting_method"
+                            ).format(
+                                column=sql.Identifier(
+                                    fields_maps_by_poll_type[poll_type]["method"]
+                                ),
+                                origin=sql.Literal(origin),
+                                target=sql.Literal(target),
+                            )
+                            for origin, target in methods_map[poll_type]["map"]
+                        ]
+                        + [
+                            sql.SQL("ELSE {default}").format(
+                                default=methods_map[poll_type]["default"]
+                            )
+                        ]
+                    )
+                )
+            )
             new_ids = [
                 entry["id"]
                 for entry in self.insert_from_other_table(
@@ -252,7 +265,9 @@ class Migration(DiffMixin, BaseMigration):
                                 Join(TableRef("meeting", True), []),
                                 [
                                     ColumnDataSource("meeting_id", "id"),
-                                    ColumnDataSource("method", fields_map["method"]),
+                                    ColumnDataSource(
+                                        "method", transformed_column_value=method_sql
+                                    ),
                                     ColumnDataSource(
                                         "onehundred_percent_base",
                                         fields_map["onehundred_percent_base"],
