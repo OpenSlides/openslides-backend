@@ -529,7 +529,6 @@ class TestMigration101(BaseMigrationTestCase):
                             {
                                 "user_id": 3,
                                 "voted": True,
-                                "present": False,
                             },
                         ]
                     ),

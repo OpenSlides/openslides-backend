@@ -486,7 +486,7 @@ class Migration(DiffMixin, BaseMigration):
             SELECT
                 poll_m.id,
                 meeting_user_t.id,
-                (e->>'present')::boolean
+                COALESCE((e->>'present')::boolean, FALSE)
             FROM poll_m
             CROSS JOIN LATERAL jsonb_array_elements(poll_m.entitled_users_at_stop) AS e
             JOIN meeting_user_t
