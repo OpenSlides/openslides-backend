@@ -1464,16 +1464,10 @@ class EditHelper:
         for collection in CURR_MODELS:
             if collection == "_meta":
                 continue
-            relevant_fields = {
-                f
-                for f, field_def in CURR_MODELS.get(collection, {})
-                .get("fields", {})
-                .items()
-                if any(key in field_def for key in ["enum", "items"])
-            }
-            for field in relevant_fields:
-                new_def = CURR_MODELS.get(collection, {}).get("fields", {}).get(field)
-                new_data = EditHelper.get_enum_data(new_def)
+            for field, field_def in (
+                CURR_MODELS.get(collection, {}).get("fields", {}).items()
+            ):
+                new_data = EditHelper.get_enum_data(field_def)
                 if isinstance(new_data, str):
                     global_enum_to_collection_fields[new_data].append(
                         collectionfield_from_collection_and_field(collection, field)
