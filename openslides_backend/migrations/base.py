@@ -3,7 +3,6 @@ from typing import Any
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
-from meta.dev.src.alter_schema_helper import AlterSchemaHelper
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.patterns import (
     ArrayDiff,
@@ -128,7 +127,9 @@ class BaseMigration:
             cursor
         """
         for table in getattr(self, "copied_tables", []):
-            self.execute_query(AlterSchemaHelper.get_drop_table_statement(table, True))
+            self.cursor.execute(
+                sql.SQL("DROP TABLE {table};").format(table=sql.Identifier(table))
+            )
         if getattr(self, "cleanup_statements", None):
             self.execute_query(self.cleanup_statements)
 
