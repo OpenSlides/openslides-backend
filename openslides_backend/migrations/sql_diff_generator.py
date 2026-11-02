@@ -724,6 +724,7 @@ class RemoveHelper:
                         if key not in [
                             "create_trigger_equal_fields_code",
                             "create_trigger_notify",
+                            "create_trigger_prevent_updates_code",
                         ]:
                             trigger_names = [
                                 trig.strip(" ").split(" ")[0]
@@ -1465,11 +1466,10 @@ class EditHelper:
                 continue
             relevant_fields = {
                 f
-                for f in CURR_MODELS.get(collection, {}).get("fields", {})
-                if any(
-                    key in CURR_MODELS.get(collection, {}).get("fields", {}).get(f, {})
-                    for key in ["enum", "items"]
-                )
+                for f, field_def in CURR_MODELS.get(collection, {})
+                .get("fields", {})
+                .items()
+                if any(key in field_def for key in ["enum", "items"])
             }
             for field in relevant_fields:
                 new_def = CURR_MODELS.get(collection, {}).get("fields", {}).get(field)
