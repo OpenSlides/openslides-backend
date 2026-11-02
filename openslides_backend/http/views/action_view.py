@@ -85,11 +85,6 @@ class ActionView(BaseView):
             with conn.cursor() as curs:
                 MigrationHelper.assert_migration_index(curs)
 
-        # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(
-            request.headers, request.cookies
-        )
-
         # Execute user.block_session action
         # Request validation and blocklisting will be performed in the action
         handler = ActionHandler(self.env, self.services, self.logging)
@@ -101,10 +96,10 @@ class ActionView(BaseView):
         ]
 
         response = handle_action_in_worker_thread(
-            payload, user_id, True, handler, internal=True
+            payload, 0, True, handler, internal=True
         )
 
-        return response, access_token
+        return response, None
 
     @route("migrations", internal=True)
     def migrations_route(self, request: Request) -> RouteResponse:

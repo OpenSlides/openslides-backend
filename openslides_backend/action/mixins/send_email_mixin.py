@@ -212,6 +212,41 @@ class EmailCheckMixin(IDPMixin):
 
         return on_success
 
+class EmailPasswordResetMixin(QRCodeMixin):
+    def send_password_reset_to(self, password_reset_link: str, email: str, username: str):
+        expiry = os.environ.get("MAGIC_LINK_EXPIRY_TIME", "72 hours")
+
+        qr_code = self.render_qr_png(password_reset_link, "png", 8, 2)
+        qr_cid = make_msgid(domain=EmailSettings.host)
+
+        html_body = f"""\
+<p>You are receiving this email because a password reset for your OpenSlides account has been requested.</p>
+<p><a href="{escape(password_reset_link)}">Reset OpenSlides Password</a></p>
+<p>Alternatively scan this QR Code on your phone:</p>
+<p><img src="cid:{qr_cid[1:-1]}" width="200" height="200" alt="QR code"></p>
+<p>The link is valid for {escape(expiry)}.</p>"""
+
+        plain_body = (
+            "You are receiving this email because a password reset for your OpenSlides account has been requested.\n\n"
+            f"Please open the following link:\n{password_reset_link}\n\n"
+        )
+
+        # Send it to user's email
+        with EmailUtils.get_mail_connection() as mail_client:
+            ok, errors = EmailUtils.send_email_safe(
+                mail_client,
+                self.logger,
+                EmailSettings.default_from_email,
+                email,
+                f"OpenSlides Password Reset : {username}",
+                html_body,
+                html=True,
+                contentplain=plain_body,
+                inline_images={qr_cid: qr_code},
+            )
+            if not ok:
+                raise ActionException(f"Error sending magic link email: {errors}")
+
 class EmailMagicLinkMixin(QRCodeMixin):
     def send_magic_link_to(self, magic_link: str, email: str, username: str):
         expiry = os.environ.get("MAGIC_LINK_EXPIRY_TIME", "72 hours")
@@ -231,7 +266,7 @@ class EmailMagicLinkMixin(QRCodeMixin):
             f"Please open the following link:\n{magic_link}\n\n"
         )
 
-        # Send it to users email
+        # Send it to user's email
         with EmailUtils.get_mail_connection() as mail_client:
             ok, errors = EmailUtils.send_email_safe(
                 mail_client,

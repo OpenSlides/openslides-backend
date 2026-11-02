@@ -23,6 +23,7 @@ class IDPMixin(Action):
     admin_token_path = "/zitadel/bootstrap/admin.pat"
     organization_id_path = "/zitadel/bootstrap/org-id"
 
+    external_url = os.getenv("IDP_URL_EXTERNAL", "https://localhost:8800")
     external_host = os.getenv("IDP_EXTERNAL_HOST", "localhost:8800")
 
     idp_route = os.getenv("IDP_URL_INTERNAL", "http://zitadel-api:8080")
@@ -614,6 +615,34 @@ class IDPMixin(Action):
             self.revoke_all_sessions_of_user(idp_id)
         except Exception as e:
             raise ActionException(f"Error changing password: {e}")
+
+    def generate_password_reset_link(self, idp_id: str) -> str:
+        idp_admin_access_token = self._get_admin_key()
+        organization_id = self._get_organization_id()
+
+        if not idp_id:
+            raise ActionException("Generating password reset link couldn't be done: no IDP ID")
+
+        try:
+            # Request password reset verification code
+            response = requests.post(
+                self.idp_admin_route + "users/" + idp_id + "/password_reset",
+                json={"returnCode": {}},
+                headers={
+                    "Authorization": f"Bearer {idp_admin_access_token}",
+                    "Host": f"{self.external_host}",
+                },
+            )
+            if response.status_code != 200:
+                self.idp_error(response)
+
+            verification_code = response.json()["verificationCode"]
+            if not verification_code:
+                raise ActionException("No verifiction code")
+
+            return f"{self.external_url}/ui/v2/login/password/set?code={verification_code}&userId={idp_id}&organization={organization_id}"
+        except Exception as e:
+            raise ActionException(f"Error generating password reset link: {e}")
 
     # Throws a generic error to the client while logging the real issue
     def idp_error(self, from_response: Response) -> None:
