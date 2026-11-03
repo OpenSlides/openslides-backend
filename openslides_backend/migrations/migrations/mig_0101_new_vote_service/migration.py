@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Any
 
 from psycopg import sql
@@ -13,8 +14,14 @@ from openslides_backend.migrations.patterns import (
     UpdateFromTables,
     ValuesSource,
 )
-from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
+from openslides_backend.shared.filters import (
+    And,
+    Filter,
+    FilterOperator,
+    Not,
+    Or,
+    SqlArguments,
+)
 
 from .diff_mixin import DiffMixin
 
@@ -95,30 +102,284 @@ class Migration(DiffMixin, BaseMigration):
         ],
     }
 
-    def validate_data_compatibility(self) -> None:
+    def check_prerequisites(self) -> str:
         errors = []
-        for field_name, allowed_pollmethods in {
-            "assignment_poll_default_method": ["Y", "N", "YN", "YNA"],
-            "motion_poll_default_method": ["YN", "YNA"],
-            "poll_default_method": ["N"],
-        }.items():
-            self.execute_query(
-                sql.SQL(
-                    "SELECT id from meeting_m where {column} <> ALL({values});"
-                ).format(column=sql.Identifier(field_name), values=sql.Placeholder()),
-                [allowed_pollmethods],
+        # poll/state
+        if message := self._check_allowed_values(
+            "poll", "state", ["created", "finished", "published"], False
+        ):
+            errors.append(message)
+
+        # onehundred_percent_base by poll type
+        for poll_filter, allowed_bases, option_filter_query in (
+            (
+                None,
+                [
+                    "YN",
+                    "YNA",
+                    "valid",
+                    "cast",
+                    "entitled",
+                    "entitled_present",
+                    "disabled",
+                ],
+                """
+                AND (
+                    poll.content_object_id LIKE 'motion/%%'
+                    OR (
+                        poll.content_object_id LIKE 'assignment/%%'
+                        AND (
+                            option.content_object_id LIKE 'poll_candidate_list/%%'
+                            OR (
+                                option.content_object_id LIKE 'user/%%'
+                                AND poll.max_votes_per_option <= 1
+                                AND poll.global_yes <> TRUE
+                                AND poll.global_no <> TRUE
+                                AND poll.global_option_id IS NULL
+                            )
+                        )
+                    )
+                )
+                """,
+            ),
+            (self._get_filter_by_content_object_collection("topic"), ["Y", "N"], None),
+            (
+                And(
+                    self._get_filter_by_content_object_collection("assignment"),
+                    FilterOperator("max_votes_per_option", ">", 1),
+                ),
+                ["Y", "valid", "cast", "entitled", "entitled_present", "disabled"],
+                " AND option.content_object_id LIKE 'user/%%'",
+            ),
+            (
+                And(
+                    self._get_filter_by_content_object_collection("assignment"),
+                    FilterOperator("global_option_id", "!=", None),
+                    Or(
+                        FilterOperator("global_yes", "=", True),
+                        FilterOperator("global_no", "=", True),
+                    ),
+                ),
+                [
+                    "Y",
+                    "N",
+                    "valid",
+                    "cast",
+                    "entitled",
+                    "entitled_present",
+                    "disabled",
+                ],
+                " AND option.content_object_id LIKE 'user/%%'",
+            ),
+        ):
+            if message := self._check_allowed_values(
+                "poll",
+                "onehundred_percent_base",
+                allowed_bases,
                 False,
+                poll_filter,
+                option_filter_query,
+            ):
+                errors.append(message)
+
+        # pollmethod for selection polls
+        if message := self._check_allowed_values(
+            "poll",
+            "pollmethod",
+            ["Y", "N"],
+            False,
+            None,
+            dedent("""
+                AND (
+                    poll.content_object_id LIKE 'topic/%%'
+                    OR(
+                        poll.content_object_id LIKE 'assignment/%%'
+                        AND option.content_object_id LIKE 'user/%%'
+                        AND (poll.global_yes = TRUE OR poll.global_no = TRUE)
+                        AND (poll.global_option_id IS NOT NULL)
+                    )
+                )
+                """),
+        ):
+            errors.append(message)
+
+        # Correct option/content_object_id
+        self.execute_query("""
+            SELECT o.id
+            FROM poll_t p
+            JOIN option_t o ON o.poll_id = p.id
+            WHERE p.content_object_id LIKE 'motion/%' AND o.content_object_id NOT LIKE 'motion/%';
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                f"Invalid option/content_object_id: collection must be 'motion' if collection of poll/content_object_id is 'motion'.\n"
+                f"Affected option ids: {[entry['id'] for entry in entries]}."
             )
+
+        self.execute_query("""
+            SELECT o.id
+            FROM poll_t p
+            JOIN option_t o ON o.poll_id = p.id
+            WHERE p.content_object_id LIKE 'assignment/%' AND o.content_object_id LIKE 'motion/%';
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                f"Invalid option/content_object_id: collection must be 'user' or 'poll_candidate_list' if collection of poll/content_object_id is 'assignment'.\n"
+                f"Affected option ids: {[entry['id'] for entry in entries]}."
+            )
+
+        # option/text for topic polls
+        self.execute_query("""
+            SELECT o.id
+            FROM poll_t p
+            JOIN option_t o ON o.poll_id = p.id
+            WHERE p.content_object_id LIKE 'topic/%' AND o.text IS NULL OR o.text = '';
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                f"Invalid option/text: can not be empty if collection of poll/content_object_id is 'topic'.\n"
+                f"Affected option ids: {[entry['id'] for entry in entries]}."
+            )
+
+        # Global option exists if global_yes or global_no is True
+        self.execute_query(
+            "SELECT id FROM poll WHERE (global_yes = TRUE OR global_no = TRUE) AND (global_option_id IS NULL);"
+        )
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "poll/global_yes or poll/global_no can be set to 'True' only if poll/global_option_id is defined.\n"
+                f"Affected poll ids: {[entry['id'] for entry in entries]}."
+            )
+
+        # Valid option/used_as_global_option_in_poll_id
+        self.execute_query("""
+            SELECT id
+            FROM option o
+            WHERE o.used_as_global_option_in_poll_id IS NOT NULL AND o.used_as_global_option_in_poll_id != o.poll_id;
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "option/used_as_global_option_in_poll_id must be equal to option/poll_id or Null.\n"
+                f"Affected option ids: {[entry['id'] for entry in entries]}."
+            )
+
+        # Global option is the only selected option
+        self.execute_query("""
+            SELECT array_agg(v.id) AS ids
+            FROM vote_t v
+            JOIN option o ON o.id = v.option_id
+            GROUP BY o.poll_id, v.user_token
+            HAVING COUNT(v.id) > 1 AND BOOL_OR(o.used_as_global_option_in_poll_id IS NOT NULL);
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "When global option is selected, it must be the only selected option in a split vote.\n"
+                f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
+            )
+
+        # One option and vote per single-option poll
+        self.execute_query("""
+            SELECT DISTINCT(p.id)
+            FROM poll p
+            JOIN option_t o ON o.poll_id = p.id
+            WHERE (
+                (
+                    p.content_object_id LIKE 'motion/%'
+                    OR (
+                        p.content_object_id LIKE 'assignment/%'
+                        AND o.content_object_id LIKE 'poll_candidate_list/%'
+                    )
+                )
+                AND CARDINALITY(p.option_ids) > 1
+            );
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "Only one option should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
+                f"Affected poll ids: {[entry['id'] for entry in entries]}."
+            )
+
+        self.execute_query("""
+            SELECT array_agg(v.id) AS ids
+            FROM vote_t v
+            JOIN option_t o ON o.id = v.option_id
+            JOIN poll_t p ON p.id = o.poll_id
+            WHERE (
+                p.content_object_id LIKE 'motion/%'
+                OR (
+                    p.content_object_id LIKE 'assignment/%'
+                    AND o.content_object_id LIKE 'poll_candidate_list/%'
+                )
+            )
+            GROUP BY o.poll_id, v.user_token
+            HAVING COUNT(v.id) > 1;
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "Only one vote per user should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
+                f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
+            )
+
+        # vote/value
+        if message := self._check_allowed_values(
+            "vote", "value", ["Y", "N", "A"], False
+        ):
+            errors.append(message)
+
+        # Same weight per user_token + poll_id for selection and rating-approval polls
+        self.execute_query("""
+            SELECT array_agg(v.id) AS ids
+            FROM vote_t v
+            JOIN option_t o ON o.id = v.option_id
+            JOIN poll_t p ON p.id = o.poll_id
+            WHERE (
+                p.content_object_id LIKE 'topic/%'
+                OR(
+                    p.content_object_id LIKE 'assignment/%'
+                    AND o.content_object_id LIKE 'user/%'
+                    AND p.max_votes_per_option <= 1
+                )
+            )
+            GROUP BY o.poll_id, v.user_token
+            HAVING COUNT(DISTINCT(v.weight)) > 1;
+            """)
+        if entries := self.cursor.fetchall():
+            errors.append(
+                "All parts of a split vote must have the same weight.\n"
+                f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
+            )
+
+        # Fields that get merged for multi-option polls have same values
+        for column in ["user_id", "delegated_user_id"]:
+            self.execute_query(sql.SQL("""
+                    SELECT array_agg(v.id) AS ids
+                    FROM vote_t v
+                    JOIN option_t o ON o.id = v.option_id
+                    JOIN poll_t p ON p.id = o.poll_id
+                    WHERE (
+                        p.content_object_id LIKE 'topic/%'
+                        OR (
+                            p.content_object_id LIKE 'assignment/%'
+                            AND o.content_object_id LIKE 'user/%'
+                        )
+                    )
+                    GROUP BY o.poll_id, v.user_token
+                    HAVING COUNT(DISTINCT(v.{column})) > 1;
+                    """).format(column=sql.Identifier(column)))
             if entries := self.cursor.fetchall():
                 errors.append(
-                    f"Detected invalid values in field {field_name} for meetings: {[entry['id'] for entry in entries]}. "
-                    f"Allowed values are: {allowed_pollmethods}."
+                    f"vote/{column} must be the same for all the votes with the same poll_id + user_token. \n"
+                    f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
                 )
+
         if errors:
-            raise BadCodingException("\n".join(errors))
+            errors = [
+                "Some entries contain forbidden values and can not be migrated:"
+            ] + errors
+            return "\n\n".join(errors)
+        return ""
 
     def data_manipulation(self, stash: dict[str, Any] | None) -> None:
-        # self.validate_data_compatibility()
         self.insert_from_other_table(
             "nm_meeting_user_vote_delegated_to_ids_meeting_user_t",
             InsertFromTables(
@@ -1076,6 +1337,65 @@ class Migration(DiffMixin, BaseMigration):
         ]
 
     # -- Helpers specific for this migration --
+
+    def _check_allowed_values(
+        self,
+        collection: str,
+        column: str,
+        allowed_values: list[Any],
+        allow_null: bool,
+        filter_operator: Filter | None = None,
+        option_filter_query: str | None = None,
+    ) -> str | None:
+        arguments: SqlArguments = []
+
+        filter_: Filter = Not(FilterOperator(column, "in", allowed_values))
+        if allow_null:
+            filter_ = And(filter_, FilterOperator(column, "!=", None))
+        if filter_operator:
+            filter_ = And(filter_operator, filter_)
+
+        query = sql.SQL(
+            "SELECT {table}.id FROM {table}{join_option} WHERE {poll_filter}{filter_query};"
+        ).format(
+            table=sql.Identifier(collection),
+            join_option=sql.SQL(
+                " LEFT JOIN option ON option.poll_id = poll.id"
+                if option_filter_query
+                else ""
+            ),
+            poll_filter=self._build_filter_query(
+                filter_, arguments, collection, filter_condition_table_alias=collection
+            ),
+            filter_query=sql.SQL(
+                option_filter_query.replace("    ", "").replace("\n", " ")
+                if option_filter_query
+                else ""
+            ),
+        )
+        self.execute_query(query, [*arguments])
+        if entries := self.cursor.fetchall():
+            ids = [entry["id"] for entry in entries]
+            found_invalid_values = [
+                entry[column]
+                for entry in self.cursor.execute(
+                    sql.SQL(
+                        "SELECT DISTINCT {column} FROM {table} WHERE id = ANY({ids});"
+                    ).format(
+                        column=sql.Identifier(column),
+                        table=sql.Identifier(collection),
+                        ids=sql.Placeholder(),
+                    ),
+                    [ids],
+                ).fetchall()
+            ]
+            return (
+                f"Invalid values in {collection}/{column} for ids: {ids}.\n"
+                f"Value must be one of: {allowed_values}.\n"
+                f"Found invalid values: {found_invalid_values}.\n"
+            )
+        return None
+
     def _assign_configs_to_polls(
         self, poll_config_collection: str, poll_ids: list[int]
     ) -> None:

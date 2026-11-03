@@ -3,6 +3,7 @@ from typing import Any, Literal
 
 from psycopg.types.json import Jsonb
 
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.migrations.migration_helper import MigrationState
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import FullQualifiedId
@@ -36,9 +37,14 @@ class TestMigration101(BaseMigrationTestCase):
         base: int = 1, extra_data: dict[FullQualifiedId, PartialModel] = {}
     ) -> dict[FullQualifiedId, PartialModel]:
         result: dict[FullQualifiedId, PartialModel] = {}
-        if "committee_id" not in extra_data[f"meeting/{base}"]:
+        if "committee_id" not in (
+            meeting_data := extra_data.get(f"meeting/{base}", {})
+        ):
             committee_id = base + 59
-            extra_data[f"meeting/{base}"]["committee_id"] = committee_id
+            if meeting_data:
+                extra_data[f"meeting/{base}"]["committee_id"] = committee_id
+            else:
+                extra_data[f"meeting/{base}"] = {"committee_id": committee_id}
             result[f"committee/{committee_id}"] = {"name": f"Committee {committee_id}"}
         result.update(
             {
@@ -87,22 +93,25 @@ class TestMigration101(BaseMigrationTestCase):
     def _get_poll_data(
         poll_id: int,
         meeting_id: int,
-        pollmethod: Literal["Y", "YN", "YNA", "N"],
-        onehundred_percent_base: Literal[
-            "Y",
-            "YN",
-            "YNA",
-            "N",
-            "valid",
-            "cast",
-            "entitled",
-            "entitled_present",
-            "disabled",
-        ],
-        type_: Literal["analog", "named", "pseudoanonymous", "cryptographic"],
         content_object_id: str,
-        state: Literal["created", "started", "finished", "published"],
-        is_pseudoanonymized: bool,
+        pollmethod: Literal["Y", "YN", "YNA", "N"] = "N",
+        onehundred_percent_base: (
+            Literal[
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+            | None
+        ) = None,
+        type_: Literal["analog", "named", "pseudoanonymous", "cryptographic"] = "named",
+        state: Literal["created", "started", "finished", "published"] = "published",
+        is_pseudoanonymized: bool = False,
         extra_data: PartialModel = {},
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
@@ -111,7 +120,8 @@ class TestMigration101(BaseMigrationTestCase):
                 "meeting_id": meeting_id,
                 "backend": "fast",
                 "pollmethod": pollmethod,
-                "onehundred_percent_base": onehundred_percent_base,
+                "onehundred_percent_base": onehundred_percent_base
+                or ("Y" if content_object_id.startswith("topic/") else "valid"),
                 "type": type_,
                 "content_object_id": content_object_id,
                 "state": state,
@@ -122,8 +132,8 @@ class TestMigration101(BaseMigrationTestCase):
 
     @staticmethod
     def _get_motion_data(
-        base: int,
-        meeting_id: int,
+        base: int = 1,
+        meeting_id: int = 1,
         motion_data: PartialModel = {},
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
@@ -141,8 +151,8 @@ class TestMigration101(BaseMigrationTestCase):
 
     @staticmethod
     def _get_assignment_data(
-        base: int,
-        meeting_id: int,
+        base: int = 1,
+        meeting_id: int = 1,
         assignment_data: PartialModel = {},
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
@@ -159,8 +169,8 @@ class TestMigration101(BaseMigrationTestCase):
 
     @staticmethod
     def _get_topic_data(
-        base: int,
-        meeting_id: int,
+        base: int = 1,
+        meeting_id: int = 1,
         topic_data: PartialModel = {},
     ) -> dict[FullQualifiedId, PartialModel]:
         return {
@@ -241,13 +251,20 @@ class TestMigration101(BaseMigrationTestCase):
         weight: int = 1,
         user_token: str | None = None,
     ) -> dict[FullQualifiedId, PartialModel]:
+        if not delegated_user_id:
+            delegated_user_id = user_id
         result: dict[str, Any] = {
             f"vote/{base}": {
                 "meeting_id": meeting_id,
                 "option_id": option_id,
                 "value": Jsonb(value) if isinstance(value, dict) else value,
                 "weight": Decimal(weight),
-                "user_token": user_token or f"pseudo-token-for-{user_id}",
+                "user_token": user_token
+                or (
+                    f"pseudo-token-for-{user_id}-{delegated_user_id}"
+                    if user_id and delegated_user_id
+                    else get_random_string(16)
+                ),
             }
         }
         for field_name, field_value in (
@@ -448,7 +465,7 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(6, 1, 5, "N", 2, 1),
             **self._get_vote_data(7, 1, 5, "N", 1, 1),
             **self._get_vote_data(8, 1, 6, "Y", 3, 3),
-            # assignment with max_votes_per_option > 1
+            # Assignment with max_votes_per_option > 1
             **self._get_assignment_data(2, 1),
             **self._get_poll_data(
                 poll_id=4,
@@ -492,9 +509,9 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_option_data(9, 4, 1, "user/23", extra_data={"yes": 4}),
             **self._get_vote_data(9, 1, 7, "Y", 2, 2),
             **self._get_vote_data(10, 1, 8, "Y", 2, 2),
-            **self._get_vote_data(11, 1, 9, "Y", 2, 2, 4),
+            **self._get_vote_data(11, 1, 9, "Y", 2, 2, 2),
             **self._get_vote_data(12, 1, 8, "Y", 1, 1, 2),
-            # assignment with global options
+            # Assignment with global options
             **self._get_assignment_data(3, 1),
             **self._get_poll_data(
                 poll_id=5,
@@ -541,7 +558,7 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(14, 1, 11, "Y", 2, 2),
             **self._get_vote_data(15, 1, 11, "Y", 1, 1),
             **self._get_vote_data(16, 1, 12, "N", 3, 3),
-            # assignment - other
+            # Assignment - other
             **self._get_assignment_data(4, 1),
             **self._get_poll_data(
                 poll_id=6,
@@ -596,6 +613,8 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(22, 1, 15, "A", 1, 1),
             **self._get_vote_data(23, 1, 13, "N", 3, 3),
             **self._get_vote_data(24, 1, 14, "N", 3, 3),
+            **self._get_vote_data(25, 1, 13, "N"),
+            **self._get_vote_data(26, 1, 14, "N"),
         }
 
         self.create_entries(polls_data)
@@ -618,3 +637,216 @@ class TestMigration101(BaseMigrationTestCase):
                 f"Migration failed with message: {result['exception']}."
             )
         self.assert_migration_finalized()
+
+    def test_check_prerequisites(self) -> None:
+        meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data()
+
+        self.set_up_organization()
+        self.create_entries(meeting_data)
+        self._create_users_for_meeting(1, [1, 2, 3], [1])
+        self._create_users([21, 22, 23])
+        polls_data = {
+            # # --------- Running poll
+            # **self._get_motion_data(),
+            # **self._get_poll_data(
+            #     poll_id=1, meeting_id=1, content_object_id="motion/1", state="started"
+            # ),
+            # ----------- Incorrect onehundred_percent_base + (for selection polls) pollmethod
+            # # Motion
+            **self._get_motion_data(2, 1),
+            **self._get_poll_data(
+                poll_id=2,
+                meeting_id=1,
+                content_object_id="motion/2",
+                onehundred_percent_base="Y",
+            ),
+            # # Assignment with poll_candidate_list
+            **self._get_assignment_data(),
+            **self._get_poll_data(
+                poll_id=3,
+                meeting_id=1,
+                content_object_id="assignment/1",
+                onehundred_percent_base="Y",
+            ),
+            "poll_candidate_list/1": {"meeting_id": 1},
+            **self._get_option_data(1, 3, 1, "poll_candidate_list/1"),
+            # # Topic
+            **self._get_topic_data(),
+            **self._get_poll_data(
+                poll_id=4,
+                meeting_id=1,
+                content_object_id="topic/1",
+                pollmethod="YN",
+                onehundred_percent_base="YN",
+            ),
+            # # Assignment with max_votes_per_option > 1
+            **self._get_assignment_data(2, 1),
+            **self._get_poll_data(
+                poll_id=5,
+                meeting_id=1,
+                content_object_id="assignment/2",
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                extra_data={"max_votes_per_option": 2},
+            ),
+            **self._get_option_data(3, 5, 1, "user/1"),
+            # # Assignment with global options
+            **self._get_assignment_data(3, 1),
+            **self._get_poll_data(
+                poll_id=6,
+                meeting_id=1,
+                content_object_id="assignment/3",
+                pollmethod="YNA",
+                onehundred_percent_base="YNA",
+                extra_data={"global_option_id": 4, "global_no": True},
+            ),
+            **self._get_option_data(4, 6, 1, "user/1"),
+            # # Assignment - other
+            **self._get_assignment_data(4, 1),
+            **self._get_poll_data(
+                poll_id=7,
+                meeting_id=1,
+                content_object_id="assignment/4",
+                onehundred_percent_base="Y",
+            ),
+            **self._get_option_data(5, 7, 1, "user/1"),
+            # # ------------- options
+            # # Invalid option/content_object_id
+            # # # Motion
+            # **self._get_motion_data(),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="motion/1",
+            # ),
+            # **self._get_option_data(10, 1, 1, "user/1"),
+            # # # Assignment
+            # **self._get_assignment_data(),
+            # **self._get_poll_data(
+            #     poll_id=2,
+            #     meeting_id=1,
+            #     content_object_id="assignment/1",
+            # ),
+            # **self._get_option_data(20, 2, 1, "motion/1"),
+            # # Invalid option/text
+            # # # Topic
+            # **self._get_topic_data(),
+            # **self._get_poll_data(
+            #     poll_id=3,
+            #     meeting_id=1,
+            #     content_object_id="topic/1",
+            # ),
+            # **self._get_option_data(30, 3, 1, "motion/1"),
+            # # ----------------- global_option
+            # # Missing global option on global_yes/global_no = True
+            # **self._get_motion_data(),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="motion/1",
+            #     extra_data={"global_yes": True},
+            # ),
+            # # option/poll_id != option/used_as_global_option_in_poll_id
+            # **self._get_motion_data(2),
+            # **self._get_poll_data(
+            #     poll_id=2,
+            #     meeting_id=1,
+            #     content_object_id="motion/2",
+            #     extra_data={"global_option_id": 20},
+            # ),
+            # **self._get_option_data(20, 1, 1, "motion/1"),
+            # # (split-)vote for regular and global option
+            # **self._get_assignment_data(),
+            # **self._get_poll_data(
+            #     poll_id=3,
+            #     meeting_id=1,
+            #     content_object_id="assignment/1",
+            #     extra_data={
+            #         "global_yes": True,
+            #         "global_option_id": 32,
+            #         "max_votes_amount": 3,
+            #         "max_votes_per_option": 2,
+            #     },
+            # ),
+            # **self._get_option_data(30, 3, 1, "user/1"),
+            # **self._get_option_data(31, 3, 1, "user/2"),
+            # **self._get_option_data(32, 3, 1, text="Nota-Oprion"),
+            # **self._get_vote_data(50, 1, 30, "Y", 1),
+            # **self._get_vote_data(51, 1, 31, "Y", 1),
+            # **self._get_vote_data(52, 1, 30, "Y", 2),
+            # **self._get_vote_data(53, 1, 32, "Y", 2),
+            # # ----------------- single option polls
+            # # Multiple options
+            # **self._get_motion_data(),
+            # **self._get_motion_data(2, 1),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="motion/1",
+            # ),
+            # **self._get_option_data(10, 1, 1, "motion/1"),
+            # **self._get_option_data(20, 1, 1, "motion/2"),
+            # # Multiple votes
+            # **self._get_assignment_data(),
+            # **self._get_poll_data(
+            #     poll_id=2,
+            #     meeting_id=1,
+            #     content_object_id="assignment/1",
+            # ),
+            # "poll_candidate_list/1": {"meeting_id": 1},
+            # **self._get_option_data(30, 2, 1, "poll_candidate_list/1"),
+            # **self._get_vote_data(1, 1, 30, "Y", 1, 1),
+            # **self._get_vote_data(2, 1, 30, "N", 1, 1),
+            # **self._get_vote_data(3, 1, 30, "N", 1, 2),
+            # # ----------------- vote/value
+            # **self._get_motion_data(),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="motion/1",
+            # ),
+            # **self._get_option_data(10, 1, 1, "motion/1"),
+            # **self._get_vote_data(38, 1, 10, "no"),
+            # # ----------------- split_vote_same_weight
+            # **self._get_topic_data(),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="topic/1",
+            # ),
+            # **self._get_option_data(10, 1, 1, text="Option 10"),
+            # **self._get_option_data(20, 1, 1, text="Option 20"),
+            # **self._get_vote_data(38, 1, 10, "Y", 1, 1, 1),
+            # **self._get_vote_data(39, 1, 20, "N", 1, 1, 2),
+            # **self._get_vote_data(40, 1, 10, "Y", 2),
+            # **self._get_vote_data(41, 1, 20, "N", 2),
+            # **self._get_vote_data(42, 1, 10, "Y", 3, 3, 2),
+            # **self._get_vote_data(43, 1, 20, "N", 3, 3, 2),
+            # **self._get_vote_data(44, 1, 20, "A", 3, 3, 3),
+            # # ----------------- split_vote_same_users
+            # **self._get_topic_data(),
+            # **self._get_poll_data(
+            #     poll_id=1,
+            #     meeting_id=1,
+            #     content_object_id="topic/1",
+            # ),
+            # **self._get_option_data(10, 1, 1, text="Option 10"),
+            # **self._get_vote_data(38, 1, 10, "Y", 1, 1, user_token="pseudo-token-10-1"),
+            # **self._get_vote_data(39, 1, 10, "N", 1, 2, user_token="pseudo-token-10-1"),
+            # **self._get_vote_data(40, 1, 10, "Y", 2, 1, user_token="pseudo-token-10-2"),
+            # **self._get_vote_data(41, 1, 10, "N", 3, 1, user_token="pseudo-token-10-2"),
+            # **self._get_vote_data(42, 1, 10, "Y", 2, 1, user_token="pseudo-token-10-3"),
+            # **self._get_vote_data(43, 1, 10, "N", 3, 1, user_token="pseudo-token-10-3"),
+            # **self._get_vote_data(44, 1, 10, "A", 3, 2, user_token="pseudo-token-10-3"),
+        }
+
+        self.create_entries(polls_data)
+
+        manager = self.create_migration_manager()
+
+        self.run_pre_checks(manager)
+        result = self.get_stats(manager)["stats"]
+        if result["status"] == MigrationState.MIGRATION_FAILED:
+            raise BadCodingException(
+                f"Migration failed with message: {result['exception']}."
+            )

@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Any
 
 from psycopg import Cursor, sql
@@ -140,13 +141,13 @@ class BaseMigration:
         log: bool = True,
     ) -> None:
         if self.verbose and log:
-            query_string = (
+            query_string = dedent(
                 query if isinstance(query, str) else query.as_string(self.cursor)
             )
-            self.logger.debug(
-                f"Executing migration query: {query_string}\n"
-                f"With arguments: {arguments}"
-            )
+            log_message = f"Executing migration query: {query_string}"
+            if arguments:
+                log_message += f"\nWith arguments: {arguments}"
+            self.logger.debug(log_message)
         self.cursor.execute(query, arguments)
 
     def log_debug_message(self, message: str) -> None:
