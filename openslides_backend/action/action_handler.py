@@ -132,7 +132,7 @@ class ActionHandler(BaseHandler):
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
                 if attempt > 1:
-                    self.logger.warn(f"Retry attempt #{attempt}: {payload}.")
+                    self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
                     ok = True
                     with get_new_os_conn() as conn:
