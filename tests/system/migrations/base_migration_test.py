@@ -124,6 +124,10 @@ class BaseMigrationTestCase(TestCase):
         return manager.handle_request({"cmd": "migrate", "verbose": True})
 
     @staticmethod
+    def run_pre_checks(manager: MigrationManager) -> dict[str, Any]:
+        return manager.handle_request({"cmd": "pre-check", "verbose": True})
+
+    @staticmethod
     def get_stats(manager: MigrationManager) -> dict[str, Any]:
         return manager.handle_request({"cmd": "stats", "verbose": True})
 

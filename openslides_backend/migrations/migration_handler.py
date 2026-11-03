@@ -166,6 +166,37 @@ class MigrationHandler(BaseHandler):
             f"Migration index was set to {max(self.pending_migrations)}..."
         )
 
+    def pre_check(self) -> None:
+        """
+        Runs pre-migration checks.
+        """
+        self.logger.info("Checking migratability ...")
+        with self.ver_conn.cursor() as ver_cursor:
+            state = MigrationHelper.get_migration_state(ver_cursor)
+            match state:
+                case MigrationState.MIGRATION_REQUIRED:
+                    # Check prerequisites
+                    for package_name in self.pending_migrations.values():
+                        mig_class = MigrationHelper.get_migration_class(package_name)
+                        mig_name = package_name[4:]
+                        self.logger.info("Pre check: " + mig_name + " ...")
+                        if errors := mig_class(
+                            self.migration_cursor, self.logger, self.verbose
+                        ).check_prerequisites():
+                            errors = (
+                                f"Pre check for migration {mig_name} failed.\n{errors}"
+                            )
+                            self.logger.info(errors)
+                            raise MigrationSetupException(errors)
+                        else:
+                            self.logger.info(
+                                f"Pre check for migration {mig_name} finished successfully."
+                            )
+                case _:
+                    raise MigrationException(
+                        f"{state} not allowed when executing pre-check command."
+                    )
+
     def migrate(self) -> None:
         """
         Starts the migration process.
@@ -230,7 +261,9 @@ class MigrationHandler(BaseHandler):
         assert (
             self.migration_cursor and not self.migration_cursor.closed
         ), "Handlers cursor must be initialized."
-        if command == "migrate":
+        if command == "pre-check":
+            self.pre_check()
+        elif command == "migrate":
             self.migrate()
         elif command == "reset":
             self.reset()

@@ -18,6 +18,7 @@ from tests.util import Response
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
+# TODO: add test for pre-check
 class BaseMigrationRouteTest(BaseInternalRequestTest):
     """
     Uses the anonymous client to call the migration route.

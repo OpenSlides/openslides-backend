@@ -45,6 +45,7 @@ class MigrationState(StrEnum):
 
 
 class MigrationCommand(StrEnum):
+    PRE_CHECK = "pre-check"
     MIGRATE = "migrate"
     RESET = "reset"
     STATS = "stats"
