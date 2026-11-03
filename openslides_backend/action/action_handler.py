@@ -131,6 +131,8 @@ class ActionHandler(BaseHandler):
             retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
+                if attempt > 1:
+                    self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
                     with get_new_os_conn() as conn:
                         self.post_edit_necessary = False
@@ -150,6 +152,7 @@ class ActionHandler(BaseHandler):
                                     tuple[1],
                                 )
 
+                            tmp_on_success = deepcopy(self.on_success)
                             for element in payload:
                                 try:
                                     result = self.execute_write_requests(
@@ -159,7 +162,9 @@ class ActionHandler(BaseHandler):
                                         element,
                                     )
                                     results.append(result)
+                                    tmp_on_success = deepcopy(self.on_success)
                                 except ActionException as exception:
+                                    self.on_success = tmp_on_success
                                     error = cast(ActionError, exception.get_json())
                                     results.append(error)
                                 self.datastore.reset()
