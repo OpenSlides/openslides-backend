@@ -128,9 +128,11 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            retry_count = int(self.env.ACTION_MAX_RETRIES or 3)
+            retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
+                if attempt > 1:
+                    self.logger.warn(f"Retry attempt #{attempt}: {payload}.")
                 try:
                     ok = True
                     with get_new_os_conn() as conn:
