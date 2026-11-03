@@ -128,10 +128,11 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
+            retry_count = int(self.env.ACTION_MAX_RETRIES or 3)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
                 try:
+                    ok = True
                     with get_new_os_conn() as conn:
                         self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
@@ -160,13 +161,15 @@ class ActionHandler(BaseHandler):
                                     )
                                     results.append(result)
                                 except ActionException as exception:
+                                    ok = False
                                     error = cast(ActionError, exception.get_json())
                                     results.append(error)
                                 self.datastore.reset()
 
                         # execute cleanup methods
-                        for on_success in self.on_success:
-                            on_success()
+                        if ok:
+                            for on_success in self.on_success:
+                                on_success()
 
                         # Return action result
                         self.logger.info("Request was successful. Send response now.")
