@@ -424,8 +424,36 @@ class Migration(DiffMixin, BaseMigration):
         self.execute_query("""
             ALTER TABLE poll_m
                 ADD COLUMN generate_ballots boolean,
-                ADD COLUMN is_rating_approval boolean;
-        """)
+                ADD COLUMN config_type varchar(32);
+            """)
+        self.execute_query(sql.SQL("""
+                UPDATE poll_m p
+                SET config_type =
+                    CASE
+                        WHEN p.content_object_id LIKE 'motion/%'
+                            THEN 'approval'
+                        WHEN p.content_object_id LIKE 'topic/%'
+                            THEN 'selection'
+                        ELSE
+                            CASE
+                                WHEN o.content_object_id LIKE 'poll_candidate_list/%'
+                                    THEN 'approval'
+                                ELSE
+                                    CASE
+                                        WHEN p.max_votes_per_option > 1
+                                            THEN 'rating_score'
+                                        ELSE
+                                            CASE
+                                                WHEN (p.global_yes = TRUE OR p.global_no = TRUE) AND p.global_option_id IS NOT NULL
+                                                    THEN 'selection'
+                                                ELSE 'rating_approval'
+                                            END
+                                    END
+                            END
+                    END
+                FROM option_m o
+                WHERE o.poll_id = p.id;
+                """))
         self.execute_query("""
             ALTER TABLE vote_m
                 ADD COLUMN poll_id integer,
@@ -495,15 +523,10 @@ class Migration(DiffMixin, BaseMigration):
             RETURNING id;
         """))
 
-        self.migrate_motion_polls()
-        self.migrate_assignment_polls_with_candidate_list()
-        self.migrate_polls_with_multiple_options()
+        self.migrate_single_option_polls()
+        self.migrate_multiple_options_polls()
 
-    def migrate_polls_with_approval(
-        self,
-        poll_content_object_collection: str,
-        filter_polls_with_joined_tables: list[TableDataSource] = [],
-    ) -> list[int]:
+    def migrate_single_option_polls(self) -> None:
         poll_m = TableRef("poll", True)
         option_m = TableRef("option", True)
         vote_m = TableRef("vote", True)
@@ -518,9 +541,7 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 poll_m,
                                 [],
-                                self._get_filter_by_content_object_collection(
-                                    poll_content_object_collection
-                                ),
+                                FilterOperator("config_type", "=", "approval"),
                             ),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
@@ -539,7 +560,6 @@ class Migration(DiffMixin, BaseMigration):
                                 ),
                             ],
                         ),
-                        *filter_polls_with_joined_tables,
                     ]
                 ),
             )
@@ -602,31 +622,8 @@ class Migration(DiffMixin, BaseMigration):
             )
         ]
         self._create_poll_ballots(vote_m, migrated_polls, new_ballot_user_ids)
-        return migrated_polls
 
-    def migrate_motion_polls(
-        self,
-    ) -> None:
-        self.migrate_polls_with_approval("motion")
-
-    def migrate_assignment_polls_with_candidate_list(
-        self,
-    ) -> None:
-        migrated_polls = self.migrate_polls_with_approval(
-            "assignment",
-            [
-                TableDataSource(
-                    Join(
-                        TableRef("option", True),
-                        [JoinOn("poll_id", TableRef("poll", True), "id")],
-                        self._get_filter_by_content_object_collection(
-                            "poll_candidate_list"
-                        ),
-                    )
-                )
-            ],
-        )
-
+        # Create options only for assignment polls
         option_m = TableRef("option", True)
         poll_candidate_m = TableRef("poll_candidate", True)
         poll_candidate_list_m = TableRef("poll_candidate_list", True)
@@ -636,9 +633,20 @@ class Migration(DiffMixin, BaseMigration):
                 copy_data=[
                     TableDataSource(
                         source_table=Join(
-                            option_m,
+                            poll_m,
                             [],
-                            FilterOperator("id", "in", migrated_polls),
+                            And(
+                                FilterOperator("config_type", "=", "approval"),
+                                self._get_filter_by_content_object_collection(
+                                    "assignment"
+                                ),
+                            ),
+                        ),
+                    ),
+                    TableDataSource(
+                        source_table=Join(
+                            option_m,
+                            [JoinOn("poll_id", poll_m, "id")],
                         ),
                         value_definition=[ColumnDataSource("poll_id", "poll_id")],
                     ),
@@ -675,7 +683,7 @@ class Migration(DiffMixin, BaseMigration):
             ),
         )
 
-    def migrate_polls_with_multiple_options(
+    def migrate_multiple_options_polls(
         self,
     ) -> None:
         poll_m = TableRef("poll", True)
@@ -696,20 +704,19 @@ class Migration(DiffMixin, BaseMigration):
             + assignment_rating_approval_polls
         )
 
-        for poll_config_collection, poll_ids in (
-            ("poll_config_selection", topic_polls + assignment_selection_polls),
-            ("poll_config_rating_score", assignment_rating_score_polls),
-            ("poll_config_rating_approval", assignment_rating_approval_polls),
+        for poll_config_type, poll_ids in (
+            ("selection", topic_polls + assignment_selection_polls),
+            ("rating_score", assignment_rating_score_polls),
+            ("rating_approval", assignment_rating_approval_polls),
         ):
-            self._assign_configs_to_polls(poll_config_collection, poll_ids)
-        for option_content_field, poll_ids, exclude_global_option in (
-            ("text", topic_polls, False),
+            self._assign_configs_to_polls(f"poll_config_{poll_config_type}", poll_ids)
+        for option_content_field, poll_ids in (
+            ("text", topic_polls),
             (
                 "content_object_id",
                 assignment_selection_polls + assignment_rating_score_polls,
-                False,
             ),
-            ("content_object_id", assignment_rating_approval_polls, True),
+            ("content_object_id", assignment_rating_approval_polls),
         ):
             polls_filter = FilterOperator("poll_id", "in", poll_ids)
             self.insert_from_other_table(
@@ -720,17 +727,13 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 option_m,
                                 [],
-                                (
-                                    And(
-                                        polls_filter,
-                                        FilterOperator(
-                                            "used_as_global_option_in_poll_id",
-                                            "=",
-                                            None,
-                                        ),
-                                    )
-                                    if exclude_global_option
-                                    else polls_filter
+                                And(
+                                    polls_filter,
+                                    FilterOperator(
+                                        "used_as_global_option_in_poll_id",
+                                        "=",
+                                        None,
+                                    ),
                                 ),
                             ),
                             value_definition=[
@@ -818,18 +821,22 @@ class Migration(DiffMixin, BaseMigration):
                     MIN(v.poll_id) AS poll_id,
                     BOOL_AND(v.link_user_to_ballot) AS link_user_to_ballot,
                     BOOL_AND(v.generate_ballot) AS generate_ballot,
-                    MIN(v.weight) AS weight,
+                    CASE
+                        WHEN BOOL_OR(p.config_type = 'rating_score')
+                            THEN SUM(v.weight)
+                        ELSE MIN(v.weight)
+                    END AS weight,
                     MIN(mur.id) AS represented_meeting_user_id,
                     MIN(mua.id) AS acting_meeting_user_id,
                     CASE
-                        WHEN BOOL_OR(p.is_rating_approval)
+                        WHEN BOOL_OR(p.config_type = 'rating_approval')
                             THEN jsonb_object_agg(
                                 v.option_id::text,
                                 v.value
                             )::text
                         WHEN BOOL_OR(o.used_as_global_option_in_poll_id = v.poll_id)
                             THEN 'nota'
-                        WHEN BOOL_AND(COALESCE(p.max_votes_per_option, 0) > 1)
+                        WHEN BOOL_OR(p.config_type = 'rating_score')
                             THEN jsonb_object_agg(
                                 o.id::text,
                                 TRUNC(v.weight)::integer
@@ -949,10 +956,7 @@ class Migration(DiffMixin, BaseMigration):
     def migrate_assignment_rating_score_polls(
         self,
     ) -> list[int]:
-        filter_ = And(
-            self._get_filter_by_content_object_collection("assignment"),
-            FilterOperator("max_votes_per_option", ">", 1),
-        )
+        filter_ = FilterOperator("config_type", "=", "rating_score")
         poll_m = TableRef("poll", True)
         return [
             entry["id"]
@@ -984,11 +988,7 @@ class Migration(DiffMixin, BaseMigration):
     ) -> list[int]:
         filter_ = And(
             self._get_filter_by_content_object_collection("assignment"),
-            FilterOperator("max_votes_per_option", "<=", 1),
-            Or(
-                FilterOperator("global_yes", "=", True),
-                FilterOperator("global_no", "=", True),
-            ),
+            FilterOperator("config_type", "=", "selection"),
         )
         poll_m = TableRef("poll", True)
         return [
@@ -1034,28 +1034,7 @@ class Migration(DiffMixin, BaseMigration):
     def migrate_assignment_rating_approval_polls(
         self,
     ) -> list[int]:
-        poll_t = TableRef("poll", False)
         poll_m = TableRef("poll", True)
-
-        self.update_matching_entries(
-            poll_m,
-            {"is_rating_approval": True},
-            filter_target_table=And(
-                self._get_filter_by_content_object_collection("assignment"),
-                FilterOperator("max_votes_per_option", "<=", 1),
-                And(
-                    FilterOperator("global_yes", "!=", True),
-                    FilterOperator("global_no", "!=", True),
-                ),
-            ),
-            filter_with_joined_tables=[
-                Join(
-                    poll_t,
-                    [JoinOn("id", poll_m, "id")],
-                    FilterOperator("config_id", "=", None),
-                )
-            ],
-        )
         return [
             entry["id"]
             for entry in self.insert_from_other_table(
@@ -1066,7 +1045,7 @@ class Migration(DiffMixin, BaseMigration):
                             source_table=Join(
                                 poll_m,
                                 [],
-                                FilterOperator("is_rating_approval", "=", True),
+                                FilterOperator("config_type", "=", "rating_approval"),
                             ),
                             value_definition=[
                                 ColumnDataSource("id", "id"),
