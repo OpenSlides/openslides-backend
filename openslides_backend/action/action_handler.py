@@ -134,7 +134,6 @@ class ActionHandler(BaseHandler):
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
-                    ok = True
                     with get_new_os_conn() as conn:
                         self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
@@ -153,6 +152,7 @@ class ActionHandler(BaseHandler):
                                     tuple[1],
                                 )
 
+                            tmp_on_success = deepcopy(self.on_success)
                             for element in payload:
                                 try:
                                     result = self.execute_write_requests(
@@ -162,16 +162,16 @@ class ActionHandler(BaseHandler):
                                         element,
                                     )
                                     results.append(result)
+                                    tmp_on_success = deepcopy(self.on_success)
                                 except ActionException as exception:
-                                    ok = False
+                                    self.on_success = tmp_on_success
                                     error = cast(ActionError, exception.get_json())
                                     results.append(error)
                                 self.datastore.reset()
 
                         # execute cleanup methods
-                        if ok:
-                            for on_success in self.on_success:
-                                on_success()
+                        for on_success in self.on_success:
+                            on_success()
 
                         # Return action result
                         self.logger.info("Request was successful. Send response now.")
