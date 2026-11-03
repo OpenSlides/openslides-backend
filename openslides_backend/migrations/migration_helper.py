@@ -231,6 +231,12 @@ class MigrationHelper:
             )
 
     @staticmethod
+    def assert_finalized(curs: Cursor[DictRow]) -> None:
+        state = MigrationHelper.get_migration_state(curs)
+        if state != MigrationState.FINALIZED:
+            raise ActionException(f"Migration not finalized but in {state}.")
+
+    @staticmethod
     def set_database_migration_info(
         curs: Cursor[DictRow],
         migration_index: int,
