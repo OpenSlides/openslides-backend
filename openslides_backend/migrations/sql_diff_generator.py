@@ -1481,8 +1481,11 @@ class EditHelper:
         assert "enum" in field_def_old or "items" in field_def_old
         target_type = "text[]" if "items" in field_def_old else "text"
         # We can't exchange the type directly as this would potentially invalidate the column.
-        result = AlterSchemaHelper.generate_change_column_type_statements(
-            collection_name, field_name, target_type
+        result = EditHelper.facilitate_change_column_type_statements(
+            collection_name,
+            field_name,
+            target_type,
+            skip_prevent_update_trigger_recreation=True,
         )
         alter_views.add(collection_name)
         if field_def_old.get("default"):
@@ -1491,6 +1494,52 @@ class EditHelper:
                 collection_name, field_name, "DEFAULT"
             )
         return result
+
+    @staticmethod
+    def facilitate_change_column_type_statements(
+        collection_name: str,
+        field_name: str,
+        new_type: str,
+        skip_prevent_update_trigger_recreation: bool = False,
+    ) -> str:
+        return (
+            EditHelper.drop_field_related_triggers(collection_name, field_name)
+            + AlterSchemaHelper.generate_change_column_type_statements(
+                collection_name, field_name, new_type
+            )
+            + EditHelper.create_field_related_triggers(
+                collection_name, field_name, skip_prevent_update_trigger_recreation
+            )
+        )
+
+    @staticmethod
+    def drop_field_related_triggers(collection_name: str, field_name: str) -> str:
+        trigger_names = {
+            trig.strip(" ").split(" ")[0]
+            for triggers in CURR_TRIGGER_SQL[collection_name][field_name].values()
+            for trig in triggers.split("TRIGGER ")[1:]
+        }
+        return "".join(
+            [
+                AlterSchemaHelper.get_drop_trigger_statement(collection_name, name)
+                for name in trigger_names
+            ]
+        )
+
+    @staticmethod
+    def create_field_related_triggers(
+        collection_name: str, field_name: str, skip_prevent_update_trigger: bool
+    ) -> str:
+        return "".join(
+            [
+                triggers
+                for key, triggers in CURR_TRIGGER_SQL[collection_name][
+                    field_name
+                ].items()
+                if not skip_prevent_update_trigger
+                or key != "create_trigger_prevent_updates_code"
+            ]
+        )
 
     @staticmethod
     def get_recreate_enum(enum_name: str, values: list[str]) -> str:
