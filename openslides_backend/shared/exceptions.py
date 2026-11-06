@@ -145,10 +145,6 @@ class DatastoreConnectionException(DatabaseException):
     pass
 
 
-class DatastoreLockedException(DatabaseException):
-    pass
-
-
 class PermissionException(ServiceException):
     pass
 

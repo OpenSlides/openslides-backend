@@ -1,9 +1,11 @@
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.patterns import FullQualifiedId
 
 pytest_thread_local = threading.local()
 
@@ -23,7 +25,7 @@ def monkeypatch_datastore_adapter_write() -> Iterator[None]:
         delattr(ExtendedDatabase, "write_original")
 
 
-def write(self, write_request: WriteRequest) -> None:  # type: ignore
+def write(self, write_request: WriteRequest) -> dict[FullQualifiedId, dict[str, Any]]:  # type: ignore
     """
     Wraps the write of the datastore.adapter and stops a thread, if the testlock attribute is set thread-local.
     See example in test_create_sequential_numbers_race_condition
@@ -35,6 +37,6 @@ def write(self, write_request: WriteRequest) -> None:  # type: ignore
         ):
             pytest_thread_local.sync_event.set()
         with pytest_thread_local.testlock:
-            self.write_original(write_request)
+            return self.write_original(write_request)
     else:
-        self.write_original(write_request)
+        return self.write_original(write_request)
