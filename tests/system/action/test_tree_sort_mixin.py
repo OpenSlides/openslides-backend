@@ -170,7 +170,7 @@ class TestTreeSortMixin(BaseActionTestCase):
         else:
             assert self.create_response.json == {
                 "message": "Actions handled successfully",
-                "results": [[{"id": 102, "sequential_number": 101}]],
+                "results": [[{"id": 102, "sequential_number": 102}]],
                 "status_code": 200,
                 "success": True,
             }
@@ -184,6 +184,6 @@ class TestTreeSortMixin(BaseActionTestCase):
                     "meeting_id": 1,
                     "name": name,
                     "parent_id": parent_id,
-                    "sequential_number": 101,
+                    "sequential_number": 102,
                 },
             )

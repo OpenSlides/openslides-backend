@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.action_type import ActionType
@@ -34,9 +33,6 @@ ACTION_URL_SEPARATELY = get_route_path(ActionView.action_route, "handle_separate
 
 
 class BaseActionTestCase(BaseSystemTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        ActionHandler.MAX_RETRY = 1
 
     def reset_redis(self) -> None:
         # access auth database directly to reset it

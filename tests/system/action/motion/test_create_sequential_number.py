@@ -1,8 +1,5 @@
 import threading
 
-import pytest
-
-from openslides_backend.action.action_handler import ActionHandler
 from tests.system.action.base import ACTION_URL, BaseActionTestCase
 from tests.system.action.lock import (
     monkeypatch_datastore_adapter_write,
@@ -119,9 +116,6 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.assert_model_exists("motion/2", {"sequential_number": 2})
         assert response.json["results"][0][0] == {"id": 2, "sequential_number": 2}
 
-    @pytest.mark.skip(
-        "Seems to run into an infinite loop, probably since the database is broken. TODO: unskip once this is fixed"
-    )
     def test_create_sequential_numbers_race_condition(self) -> None:
         """
         !!!We could delete this test or implement a switch-off for the action_worker procedure at all!!!
@@ -134,7 +128,6 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         The lock-object will be shared in threading.local(), instance created in lock.py.
         If possible you should pass as an argument to the thread function(s).
         """
-        ActionHandler.MAX_RETRY = 3
         self.set_thread_watch_timeout(-2)
         pytest_thread_local.name = "MainThread_RC"
         self.create_meeting(222)
@@ -173,7 +166,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             thread1.start()
             sync_event.wait()
             thread2.start()
-            thread2.join()  # Now it fails here
+            thread2.join()
             testlock.release()
             thread1.join()
 
@@ -212,6 +205,7 @@ def thread_method(
             }
         ],
     )
+    test_instance.connection.commit()
 
     if sync_event and not sync_event.is_set() and response.status_code != 200:
         sync_event.set()

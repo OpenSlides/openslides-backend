@@ -60,6 +60,7 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
             ["motions_reason_required"],
+            lock_result=False,
         )
         return meeting.get("motions_reason_required", False)
 
@@ -177,6 +178,7 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
             ],
+            lock_result=False,
         )
         workflow_id = instance.get("workflow_id", None)
         if workflow_id is None:

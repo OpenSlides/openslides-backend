@@ -18,7 +18,6 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from ..shared.exceptions import (
     ActionException,
     BadCodingException,
-    DatastoreLockedException,
     ModelDoesNotExist,
     RelationException,
     View400Exception,
@@ -81,8 +80,6 @@ class ActionHandler(BaseHandler):
     """
     Action handler. It is the concrete implementation of Action interface.
     """
-
-    MAX_RETRY = 3
 
     on_success: list[Callable[[], None]]
 
@@ -228,20 +225,11 @@ class ActionHandler(BaseHandler):
         *args: Any,
     ) -> T:
         with make_span(self.env, "execute write requests"):
-            retries = 0
-            while True:
-                try:
-                    write_requests, data = get_write_requests(*args)
-                    if write_requests:
-                        results = self.datastore.write(write_requests)
-                        data = self.update_action_data_with_write_results(data, results)
-                    return data
-                except DatastoreLockedException as exception:
-                    retries += 1
-                    if retries >= self.MAX_RETRY:
-                        raise ActionException(exception.message)
-                    else:
-                        self.datastore.reset()
+            write_requests, data = get_write_requests(*args)
+            if write_requests:
+                results = self.datastore.write(write_requests)
+                data = self.update_action_data_with_write_results(data, results)
+            return data
 
     def update_action_data_with_write_results(
         self, data: T, results: dict[str, dict[str, Any]]
@@ -341,12 +329,6 @@ class ActionHandler(BaseHandler):
 
             if write_request:
                 action.validate_write_request(write_request)
-
-                # # add locked_fields to request
-                # write_request.locked_fields = self.datastore.locked_fields
-                # # reset locked fields, but not changed models - these might be needed
-                # # by another action
-                # self.datastore.reset(hard=False)
 
             # add on_success routine
             if on_success := action.get_on_success(action_data):

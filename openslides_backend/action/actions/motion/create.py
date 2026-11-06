@@ -7,7 +7,6 @@ from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import (
     ActionException,
     AnyPermission,
@@ -23,7 +22,6 @@ from ....shared.schema import (
 from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 from .create_base import MotionCreateBase
@@ -70,37 +68,6 @@ class MotionCreate(
     )
     history_information = "Motion created"
 
-    def prefetch(self, action_data: ActionData) -> None:
-        self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting",
-                    list(
-                        {
-                            instance["meeting_id"]
-                            for instance in action_data
-                            if instance.get("meeting_id")
-                        }
-                    ),
-                    [
-                        "is_active_in_organization_id",
-                        "name",
-                        "id",
-                        "motions_default_workflow_id",
-                        "motions_default_amendment_workflow_id",
-                        "motions_reason_required",
-                        "motion_submitter_ids",
-                        "motions_number_type",
-                        "agenda_item_creation",
-                        "agenda_item_ids",
-                        "list_of_speakers_initially_closed",
-                        "list_of_speakers_ids",
-                        "motion_ids",
-                    ],
-                )
-            ]
-        )
-
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # special check logic
         error_messages = self.get_create_payload_integrity_error_message(
@@ -133,6 +100,7 @@ class MotionCreate(
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
             ],
+            lock_result=False,
         )
 
         self.set_state_from_workflow(instance, meeting)

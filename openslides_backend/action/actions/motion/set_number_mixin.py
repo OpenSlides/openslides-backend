@@ -77,11 +77,14 @@ class SetNumberMixin(Action):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
             ["motions_number_with_blank", "motions_amendments_prefix"],
+            lock_result=False,
         )
         blank = " " if meeting.get("motions_number_with_blank") else ""
         if lead_motion_id:
             lead_motion = self.datastore.get(
-                fqid_from_collection_and_id("motion", lead_motion_id), ["number"]
+                fqid_from_collection_and_id("motion", lead_motion_id),
+                ["number"],
+                lock_result=False,
             )
             prefix = f"{lead_motion.get('number', '')}{blank}{meeting.get('motions_amendments_prefix', '')}"
         elif not category_id:

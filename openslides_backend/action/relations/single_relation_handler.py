@@ -131,6 +131,7 @@ class SingleRelationHandler:
                 related_model = self.datastore.get(
                     fqid,
                     [related_name],
+                    lock_result=False,
                     raise_exception=False,
                 )
                 # again, we transform everything to lists of fqids
