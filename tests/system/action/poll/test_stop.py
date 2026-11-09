@@ -464,8 +464,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             sync_event.wait()
             # sleep(0.01)
             thread2.start()
-            thread2.join()
             testlock.release()
+            thread2.join()
             thread1.join()
 
         # self.assert_model_exists("poll/1", {"state": "finished"})
