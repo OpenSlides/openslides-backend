@@ -439,6 +439,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.set_models({"meeting/1": {"present_user_ids": [*range(1, amount)]}})
 
         with monkeypatch_datastore_adapter_write():
+            testlock2 = threading.Lock()
+            sync_event2 = threading.Event()
             testlock = threading.Lock()
             sync_event = threading.Event()
             thread1 = threading.Thread(
@@ -456,6 +458,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "test_instance": self,
                     "name": "Passing Thread",
                     "user_id": user_id,
+                    "sync_event": sync_event2,
+                    "testlock": testlock2,
                 },
             )
 
@@ -464,7 +468,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             sync_event.wait()
             # sleep(0.01)
             thread2.start()
+            sync_event2.wait()
             testlock.release()
+            testlock2.release()
             thread2.join()
             thread1.join()
 
@@ -477,7 +483,7 @@ def thread_method_poll_stop(
     test_instance: PollStopActionTest,
     testlock: threading.Lock,
     name: str,
-    sync_event: threading.Event | None = None,
+    sync_event: threading.Event,
 ) -> None:
     if testlock:
         pytest_thread_local.testlock = testlock
@@ -504,8 +510,14 @@ def thread_method_is_present(
     test_instance: PollStopActionTest,
     name: str,
     user_id: int,
+    testlock: threading.Lock,
+    sync_event: threading.Event,
 ) -> None:
     pytest_thread_local.name = name
+    if testlock:
+        pytest_thread_local.testlock = testlock
+    if sync_event:
+        pytest_thread_local.sync_event = sync_event
     response = test_instance.client.post(
         ACTION_URL,
         json=[
