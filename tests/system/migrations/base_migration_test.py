@@ -44,7 +44,7 @@ from openslides_backend.shared.typing import PartialModel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
-from tests.system.util import create_action_test_application, get_route_path
+from tests.system.util import get_route_path
 
 DEPR_SQL_PATH = os.path.realpath(
     os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
@@ -67,8 +67,6 @@ class BaseMigrationTestCase(TestCase):
         """
         Does not call super class to prevent usage of client and so forth.
         """
-        # Create services
-        self.app = create_action_test_application()
 
         # Set up state before migration 100
         os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
@@ -101,8 +99,6 @@ class BaseMigrationTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.prepare_mig_100_environment()
-
         cls.migration_dir_list = [
             f
             for f in os.listdir(MIGRATIONS_PATH)
@@ -119,7 +115,7 @@ class BaseMigrationTestCase(TestCase):
         super().tearDownClass()
 
     def create_migration_manager(self) -> MigrationManager:
-        return MigrationManager(Mock(), Mock(), self.app.logging)
+        return MigrationManager(Mock(), Mock(), Mock())
 
     @staticmethod
     def make_migration_request(manager: MigrationManager) -> dict[str, Any]:
@@ -299,11 +295,11 @@ class BaseMigrationTestCase(TestCase):
         assert data, "data can not be empty"
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                for fqid, data in data.items():
-                    assert data, "data can not contain empty dictionaries"
+                for fqid, model_data in data.items():
+                    assert model_data, "data can not contain empty dictionaries"
                     collection, id_ = collection_and_id_from_fqid(fqid)
                     table_name = HelperGetNames.get_table_name(collection)
-                    model_data = {**data, "id": id_}
+                    model_data = {**model_data, "id": id_}
                     curs.execute(
                         sql.SQL(
                             "INSERT INTO {table_name} ({columns}) VALUES ({values});"
@@ -317,46 +313,6 @@ class BaseMigrationTestCase(TestCase):
                             ),
                         ),
                         [*model_data.values()],
-                    )
-                if intermediate_tables_data:
-                    self.write_into_intermediate_table(curs, intermediate_tables_data)
-                conn.commit()
-
-    def update_entries(
-        self,
-        tables_data: dict[FullQualifiedId, PartialModel],
-        intermediate_tables_data: dict[str, list[dict[str, Any]]] = {},
-    ) -> None:
-        assert tables_data, "data can not be empty"
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                for fqid, data in tables_data.items():
-                    assert data, "data can not contain empty dictionaries"
-                    collection, id_ = collection_and_id_from_fqid(fqid)
-                    table_name = HelperGetNames.get_table_name(collection)
-                    if len(tables_data) == 1:
-                        set_part = sql.SQL("{column} = {placeholder}").format(
-                            column=sql.Identifier(list(data.keys())[0]),
-                            placeholder=sql.Placeholder(),
-                        )
-                    else:
-                        set_part = sql.SQL("({columns}) = ({placeholders})").format(
-                            columns=sql.SQL(", ").join(
-                                sql.Identifier(column) for column in data.keys()
-                            ),
-                            placeholders=sql.SQL(", ").join(
-                                sql.Placeholder() for _ in data
-                            ),
-                        )
-                    curs.execute(
-                        sql.SQL(
-                            "UPDATE {table_name} SET {set_part} WHERE id={id};"
-                        ).format(
-                            table_name=sql.Identifier(table_name),
-                            set_part=set_part,
-                            id=sql.Placeholder(),
-                        ),
-                        [*data.values(), id_],
                     )
                 if intermediate_tables_data:
                     self.write_into_intermediate_table(curs, intermediate_tables_data)
