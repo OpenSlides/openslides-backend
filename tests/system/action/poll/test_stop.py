@@ -409,7 +409,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         The lock-object will be shared in threading.local(), instance created in lock.py.
         If possible you should pass the lock as an argument to the thread function(s).
         """
-        self.set_thread_watch_timeout(-2)
         pytest_thread_local.name = "MainThread_RC"
 
         self.create_meeting(1, {"poll_couple_countdown": False})
