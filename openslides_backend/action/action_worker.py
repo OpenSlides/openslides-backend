@@ -93,6 +93,11 @@ def handle_action_in_worker_thread(
         if hasattr(action_worker_thread, "exception"):
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
+            # thread finished
+            # execute cleanup methods
+            for on_success in handler.on_success:
+                print(f"###{payload[0]['action']}: immediate on success: {on_success}")
+                on_success()
             return action_worker_thread.response
         msg = (
             "Action request ended with unknown reason, "
@@ -202,10 +207,15 @@ class ActionWorkerWriting:
             else:
                 exception = ActionException(str(action_worker_thread.exception))
             response = exception.get_json()
-            self.logger.error(
+            print(
                 f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
             )
         elif hasattr(action_worker_thread, "response"):
+            # thread finished
+            # execute cleanup methods
+            for on_success in action_worker_thread.handler.on_success:
+                print(f"{self.action_names}: final on success: {on_success}")
+                on_success()
             response = action_worker_thread.response
             self.logger.info(
                 f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
@@ -216,7 +226,7 @@ class ActionWorkerWriting:
             )
             state = ActionWorkerState.ABORTED
             response = exception.get_json()
-            self.logger.error(
+            print(
                 f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
             )
 
@@ -265,7 +275,9 @@ class ActionWorker(threading.Thread):
                 self.response = self.handler.handle_request(
                     self.payload, self.user_id, self.is_atomic, self.internal
                 )
+                print(f"action worker run: {self.payload}\n{self.response}")
             except Exception as exception:
+                print(f"action worker run: {exception}\n{self.payload}")
                 self.exception = exception
 
 
@@ -298,6 +310,7 @@ def gunicorn_post_request(
         action_worker_writing = curr_thread.action_worker_writing
         lock = action_worker.lock
 
+        print(f"###{action_worker.name} action worker still running in post hook.")
         with get_new_os_conn() as conn:
             extended_db = ExtendedDatabase(conn, logging, env)
             initial_write_counter = 0
@@ -305,6 +318,7 @@ def gunicorn_post_request(
                 worker.tmp.notify()
                 if action_worker_writing.written:
                     if lock.acquire(timeout=10):
+                        print(f"###{action_worker.name} action worker finalize.")
                         action_worker_writing.final_action_worker_write(
                             extended_db, action_worker
                         )

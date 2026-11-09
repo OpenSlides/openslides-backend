@@ -85,10 +85,12 @@ class ActionHandler(BaseHandler):
     MAX_RETRY = 3
 
     on_success: list[Callable[[], None]]
+    on_success_transaction_based: list[Callable[[], None]]
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.on_success = []
+        self.on_success_transaction_based = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
@@ -134,6 +136,7 @@ class ActionHandler(BaseHandler):
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
+                    name = payload[0]['action']
                     with get_new_os_conn() as conn:
                         self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
@@ -142,6 +145,7 @@ class ActionHandler(BaseHandler):
                             results = self.execute_write_requests(
                                 self.parse_actions, payload
                             )
+                            print(f"###{name}: result: {results}")
                         else:
 
                             def transform_to_list(
@@ -152,7 +156,10 @@ class ActionHandler(BaseHandler):
                                     tuple[1],
                                 )
 
-                            tmp_on_success = deepcopy(self.on_success)
+                            tmp_on_success_transaction_based = list(
+                                self.on_success_transaction_based
+                            )
+                            tmp_on_success = list(self.on_success)
                             for element in payload:
                                 try:
                                     result = self.execute_write_requests(
@@ -162,19 +169,27 @@ class ActionHandler(BaseHandler):
                                         element,
                                     )
                                     results.append(result)
-                                    tmp_on_success = deepcopy(self.on_success)
+                                    tmp_on_success_transaction_based = list(
+                                        self.on_success_transaction_based
+                                    )
+                                    tmp_on_success = list(self.on_success)
                                 except ActionException as exception:
+                                    self.on_success_transaction_based = (
+                                        tmp_on_success_transaction_based
+                                    )
                                     self.on_success = tmp_on_success
                                     error = cast(ActionError, exception.get_json())
                                     results.append(error)
                                 self.datastore.reset()
 
                         # execute cleanup methods
-                        for on_success in self.on_success:
+                        for on_success in self.on_success_transaction_based:
+                            print(f"###{name}: transactional on success: {on_success}")
                             on_success()
 
                         # Return action result
-                        self.logger.info("Request was successful. Send response now.")
+                        print(f"###{name}: Request was successful. Send response now.")
+                        # results.append(name)
                         return ActionsResponse(
                             status_code=HTTPStatus.OK.value,
                             success=True,
@@ -351,10 +366,12 @@ class ActionHandler(BaseHandler):
             # add on_success routine
             if on_success := action.get_on_success(action_data):
                 self.on_success.append(on_success)
+            if on_success := action.get_on_success_transaction_based(action_data):
+                self.on_success_transaction_based.append(on_success)
 
             return (write_request, results)
         except ActionException as exception:
-            self.logger.error(
+            print(
                 f"Error occured on index {action.index}: {exception.message}"
             )
             # -1: error which cannot be directly associated with a single action data
