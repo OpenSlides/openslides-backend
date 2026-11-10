@@ -61,10 +61,10 @@ def get_meeting_data(base: int = 1) -> dict[FullQualifiedId, PartialModel]:
     }
 
 
-class TestMigration101(BaseMigrationTestCase):
-    migration_number = 101
+class TestMigration102(BaseMigrationTestCase):
+    migration_number = 102
 
-    def test_0101(self) -> None:
+    def test_0102(self) -> None:
 
         self.set_up_organization()
         self.create_entries(get_meeting_data())
@@ -73,7 +73,7 @@ class TestMigration101(BaseMigrationTestCase):
         intermediate_result = self.make_migration_request(manager)
         if intermediate_result["status"] == MigrationState.MIGRATION_FAILED:
             raise BadCodingException(
-                "Migration failed with message: {intermediate_result['exception']}."
+                f"Migration failed with message: {intermediate_result['exception']}."
             )
         if intermediate_result["status"] == MigrationState.MIGRATION_RUNNING:
             self.wait_for_migration_thread(self.MAX_WAIT)
