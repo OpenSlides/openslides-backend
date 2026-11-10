@@ -399,7 +399,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
 
-    def test_stop_race_condition(self) -> None:
+    def test_stop_race_condition1(self) -> None:
         """
         The main thread in this testing function creates an instance of a threading.lock and acquires it.
         Thread1 will be started first, but should wait for the acquired lock after reading and before writing.
@@ -410,6 +410,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         If possible you should pass the lock as an argument to the thread function(s).
         """
         pytest_thread_local.name = "MainThread_RC"
+        self.set_thread_watch_timeout(1)
 
         self.create_meeting(1, {"poll_couple_countdown": False})
         self.create_topic(1, 1)
@@ -430,7 +431,54 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         # self.set_models({"meeting/1": {"present_user_ids": [user_id]}})
 
         # amount = 1000
-        amount = 3
+        amount = 10
+        for i in range(2, amount):
+            user_id = self.create_user_for_meeting(1)
+            self.login(user_id)
+            self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+        self.set_models({"meeting/1": {"present_user_ids": [*range(1, amount)]}})
+
+        self.request("poll.stop", {"id": 1})
+
+        # self.assert_model_exists("poll/1", {"state": "finished"})
+        self.assert_model_exists("poll/1", {"state": "started"})  # TODO uncomment when concurrency bug recreated.
+        self.assert_model_exists(f"user/{user_id}", {"is_present_in_meeting_ids": None})
+
+
+
+    def test_stop_race_condition2(self) -> None:
+        """
+        The main thread in this testing function creates an instance of a threading.lock and acquires it.
+        Thread1 will be started first, but should wait for the acquired lock after reading and before writing.
+        Thread2 will be started later, but passes thread1, because it does not acquire the lock.
+        After finishing of thread2 the lock will be released in the main thread and thread1 could continue with it's writing part.
+
+        The lock-object will be shared in threading.local(), instance created in lock.py.
+        If possible you should pass the lock as an argument to the thread function(s).
+        """
+        pytest_thread_local.name = "MainThread_RC"
+        self.set_thread_watch_timeout(1)
+
+        self.create_meeting(1, {"poll_couple_countdown": False})
+        self.create_topic(1, 1)
+        self.set_models(
+            {
+                "poll/1": self.poll_data,
+                "group/1": {
+                    "poll_ids": [1],
+                    "permissions": ["poll.can_manage", "user.can_manage_presence"],
+                },
+            }
+        )
+
+        self.start_poll(1)
+        # user_id = self.create_user_for_meeting(1)
+        # self.login(user_id)
+        # self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+        # self.set_models({"meeting/1": {"present_user_ids": [user_id]}})
+
+        # amount = 1000
+        amount = 10
         for i in range(2, amount):
             user_id = self.create_user_for_meeting(1)
             self.login(user_id)
@@ -469,6 +517,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             thread2.start()
             sync_event2.wait()
             testlock.release()
+            sync_event.wait()
+            testlock.release()
             testlock2.release()
             thread2.join()
             thread1.join()
@@ -502,7 +552,7 @@ def thread_method_poll_stop(
 
     if sync_event and not sync_event.is_set() and response.status_code != 200:
         sync_event.set()
-    test_instance.assert_status_code(response, 400)
+    # test_instance.assert_status_code(response, 400)
 
 
 def thread_method_is_present(

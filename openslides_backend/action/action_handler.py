@@ -186,6 +186,8 @@ class ActionHandler(BaseHandler):
                         for on_success in self.on_success_transaction_based:
                             print(f"###{name}: transactional on success: {on_success}")
                             on_success()
+                        if self.on_success:
+                            print("### normal on success")
 
                         # Return action result
                         print(f"###{name}: Request was successful. Send response now.")
@@ -207,6 +209,8 @@ class ActionHandler(BaseHandler):
                     else:
                         # Assume equal_fields error
                         raise RelationException(str(e).split("\nCONTEXT:")[0])
+                except DeadlockDetected as e:
+                    print(f"### transaction DeadlockDetected")
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'

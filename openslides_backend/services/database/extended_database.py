@@ -585,6 +585,11 @@ class ExtendedDatabase(Database):
     def write(
         self, write_requests: list[WriteRequest] | WriteRequest
     ) -> dict[FullQualifiedId, dict[str, Any]]:
+        print("### Extended Database write.")
+        if isinstance(write_requests, WriteRequest) and write_requests.events[0].get("fqid").startswith("action"):
+            print(f"### {write_requests}")
+        if isinstance(write_requests, list) and write_requests[0].user_id == -1:
+            print(f"### {write_requests}")
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]
 

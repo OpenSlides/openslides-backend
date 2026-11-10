@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from time import sleep
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
@@ -126,6 +127,8 @@ class PollStopAction(
             )
         instance["state"] = Poll.STATE_FINISHED
         self.on_stop(instance)
+        sleep(3)
+        print("### sleeeppppp!!!!")
         return instance
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:

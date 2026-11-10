@@ -109,6 +109,7 @@ def handle_action_in_worker_thread(
     with get_new_os_conn() as conn:
         extended_db = ExtendedDatabase(conn, handler.logging, env)
         message = action_worker_writing.initial_action_worker_write(extended_db)
+    print(f"### return 202 {action_worker_writing.fqid}")
     return ActionsResponse(
         status_code=HTTPStatus.ACCEPTED.value,
         success=False,
@@ -146,6 +147,7 @@ class ActionWorkerWriting:
         if not self.new_id:
             self.new_id = extended_db.reserve_id(collection="action_worker")
             self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
+        print(f"### Initial action worker write {self.action_names}")
         try:
             extended_db.write(
                 WriteRequest(
@@ -169,6 +171,7 @@ class ActionWorkerWriting:
             )
             extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
             message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
+            print("### " + message)
             self.written = True
         except DatabaseException as e:
             message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."

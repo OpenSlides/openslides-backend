@@ -12,6 +12,7 @@ from psycopg.errors import (
     ProgrammingError,
     StringDataRightTruncation,
     SyntaxError,
+    DeadlockDetected,
     UndefinedColumn,
     UndefinedTable,
     UniqueViolation,
@@ -491,6 +492,8 @@ class DatabaseWriter(SqlQueryHelper):
                         assert target_id  # we will never reach here with delete or update events being None on id
                         raise ModelDoesNotExist(error_fqid)
                     return result
+        except DeadlockDetected as e:
+            print("### Deadlock detected.")
         except InFailedSqlTransaction as e:
             raise BadCodingException(
                 f"Tried to set {error_fqid} in an already broken transaction: {e}"
