@@ -138,12 +138,6 @@ class BaseMigrationTestCase(TestCase):
         )
 
     @staticmethod
-    def prepare_mig_100_environment() -> None:
-        """Sets environment variables required for migration 100"""
-        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
-        os.environ["MIG0100_I_READ_DOCS"] = "YES"
-
-    @staticmethod
     def apply_test_relational_schema() -> None:
         """
         Creates old idempotent key-value-store schema and relational schema on top.
