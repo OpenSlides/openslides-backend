@@ -173,8 +173,6 @@ class Sql_helper:
 
 
 # END HELPER CLASS
-
-
 class Migration(BaseMigration):
     ORIGIN_COLLECTIONS = [
         "organization",

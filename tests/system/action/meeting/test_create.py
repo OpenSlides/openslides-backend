@@ -64,6 +64,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "motion_workflow_ids": [1, 2],
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
+                "motions_enable_consultation_sequence": True,
                 "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,

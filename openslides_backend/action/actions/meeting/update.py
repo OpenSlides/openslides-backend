@@ -128,6 +128,7 @@ meeting_settings_keys = [
     "motions_export_follow_recommendation",
     "motions_enable_restricted_editor_for_manager",
     "motions_enable_restricted_editor_for_non_manager",
+    "motions_enable_consultation_sequence",
     "motion_poll_ballot_paper_selection",
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",

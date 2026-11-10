@@ -348,6 +348,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "motions_create_enable_additional_submitter_text": True,
             "motions_enable_restricted_editor_for_manager": True,
             "motions_enable_restricted_editor_for_non_manager": True,
+            "motions_enable_consultation_sequence": False,
         }
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
