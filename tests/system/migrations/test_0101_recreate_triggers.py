@@ -70,3 +70,18 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_
                     )
                     > 0
                 )
+                # make sure new triggers were created
+                for trigger_name in [
+                    "tr_log_i_committee_user_ids_from_meeting_t",
+                    "tr_log_d_committee_user_ids_from_meeting_t",
+                    "tr_log_i_user_committee_ids_from_meeting_t",
+                    "tr_log_d_user_committee_ids_from_meeting_t",
+                ]:
+                    assert (
+                        len(
+                            curs.execute(
+                                f"SELECT * FROM information_schema.triggers WHERE trigger_name = '{trigger_name}';"
+                            ).fetchall()
+                        )
+                        > 0
+                    )
