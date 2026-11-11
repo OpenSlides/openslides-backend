@@ -106,13 +106,13 @@ class TestMigration102(BaseMigrationTestCase):
                     },
                     col_data,
                 )
-                # check if default is not applied to old meetings (1)
-                # but meetings created after the migration is finalized (4) should have it.
+                # check if default is applied to both old meetings (1)
+                # and meetings created after the migration is finalized (4).
                 assert (
                     curs.execute(
                         "SELECT id, motions_enable_consultation_sequence FROM meeting_t;"
                     ).fetchall()
                 ) == [
-                    {"id": 1, "motions_enable_consultation_sequence": False},
+                    {"id": 1, "motions_enable_consultation_sequence": True},
                     {"id": 4, "motions_enable_consultation_sequence": True},
                 ]
