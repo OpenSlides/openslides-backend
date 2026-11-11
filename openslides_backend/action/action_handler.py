@@ -6,25 +6,18 @@ from time import sleep
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
-from psycopg.errors import ForeignKeyViolation, RaiseException, SerializationFailure
+from psycopg.errors import (
+    DatabaseError,
+    DeadlockDetected,
+    ForeignKeyViolation,
+    InterfaceError,
+    RaiseException,
+    SerializationFailure,
+)
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
-)
-from psycopg.errors import (
-    CheckViolation,
-    DatatypeMismatch,
-    GeneratedAlways,
-    InFailedSqlTransaction,
-    NotNullViolation,
-    ProgrammingError,
-    StringDataRightTruncation,
-    SyntaxError,
-    DeadlockDetected,
-    UndefinedColumn,
-    UndefinedTable,
-    UniqueViolation,
 )
 from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -198,7 +191,7 @@ class ActionHandler(BaseHandler):
                                     results.append(error)
                                 self.datastore.reset()
 
-                        # execute cleanup methods
+                        # execute database cleanup methods
                         for on_success in self.on_success_transaction_based:
                             print(f"###{name}: transactional on success: {on_success}")
                             on_success()
@@ -237,7 +230,14 @@ class ActionHandler(BaseHandler):
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
                         )
                     sleep(retry_timeout)
-                # execute cleanup methods
+                except DatabaseError as e:
+                    raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+                except InterfaceError as e:
+                    raise BadCodingException(
+                        f"The user encountered a new problem with psycopg: {e}"
+                    )
+
+                # execute http cleanup methods
                 for on_success in self.on_success:
                     print(f"###{name}: immediate on success: {on_success}")
                     on_success()

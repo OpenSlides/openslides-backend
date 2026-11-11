@@ -1,32 +1,25 @@
-import threading
+import inspect
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal
+from importlib import import_module
 from time import sleep
 from typing import Any
 from unittest.mock import Mock, patch
-import threading
-from collections.abc import Iterator
-from contextlib import contextmanager
-
-from openslides_backend.services.database.extended_database import ExtendedDatabase
-from openslides_backend.shared.interfaces.write_request import WriteRequest
-
-pytest_thread_local = threading.local()
-
 
 import pytest
+from psycopg.errors import DatabaseError
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import ACTION_URL
-from tests.system.action.lock import (
-    monkeypatch_datastore_adapter_write,
-    pytest_thread_local,
+from openslides_backend.services.postgresql.db_connection_handling import (
+    ConnectionContext,
 )
+from tests.system.action.lock import pytest_thread_local
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
-from openslides_backend.action.actions.poll.mixins import StopControl
 
 
 class PollStopActionTest(PollTestMixin, BasePollTestCase):
@@ -409,52 +402,13 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
 
-
-    def on_stop(self, instance: dict[str, Any]) -> None:  # type: ignore
-        """
-        Wraps the write of the datastore.adapter and stops a thread, if the testlock attribute is set thread-local.
-        See example in test_create_sequential_numbers_race_condition
-        """
-        # if hasattr(pytest_thread_local, "testlock") and pytest_thread_local.testlock:
-        #     if (
-        #         hasattr(pytest_thread_local, "sync_event")
-        #         and pytest_thread_local.sync_event
-        #     ):
-        #         pytest_thread_local.sync_event.set()
-        #     with pytest_thread_local.testlock:
-        #         self.on_stop_original()
-        # else:
-        # StopControl.on_stop_original(self, instance)
-        sleep(3)
-        print("### sleeeppppp!!!")
-        raise Exception("WAAAAHH!!!!")
-
-    @contextmanager
-    def monkeypatch_on_stop(self) -> Iterator[None]:
-        """
-        Use a patched ExtendedDatabase.write in this context,
-        which wraps the write with an optional lock from pytest_thread_local.testlock
-        """
-        StopControl.on_stop_original = StopControl.on_stop  # type: ignore
-        StopControl.on_stop = self.on_stop  # type: ignore
-        try:
-            yield
-        finally:
-            StopControl.on_stop = StopControl.on_stop  # type: ignore
-            delattr(StopControl, "on_stop_original")
-
     def test_stop_race_condition1(self) -> None:
         """
-        The main thread in this testing function creates an instance of a threading.lock and acquires it.
-        Thread1 will be started first, but should wait for the acquired lock after reading and before writing.
-        Thread2 will be started later, but passes thread1, because it does not acquire the lock.
-        After finishing of thread2 the lock will be released in the main thread and thread1 could continue with it's writing part.
-
-        The lock-object will be shared in threading.local(), instance created in lock.py.
-        If possible you should pass the lock as an argument to the thread function(s).
+        Asserts that the on_success method of poll.stop isn't called in case of a exception at the end of transaction.
         """
         pytest_thread_local.name = "MainThread_RC"
         self.set_thread_watch_timeout(1)
+        self.env.vars["ACTION_MAX_RETRIES"] = "1"
 
         self.create_meeting(1, {"poll_couple_countdown": False})
         self.create_topic(1, 1)
@@ -463,164 +417,70 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "poll/1": self.poll_data,
                 "group/1": {
                     "poll_ids": [1],
-                    "permissions": ["poll.can_manage", "user.can_manage_presence"],
+                    "permissions": ["poll.can_manage"],
                 },
             }
         )
 
         self.start_poll(1)
-        # user_id = self.create_user_for_meeting(1)
-        # self.login(user_id)
-        # self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
-        # self.set_models({"meeting/1": {"present_user_ids": [user_id]}})
+        user_id = self.create_user_for_meeting(1)
+        self.login(user_id)
+        self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
 
-        # amount = 1000
-        amount = 10
-        for i in range(2, amount):
-            user_id = self.create_user_for_meeting(1)
-            self.login(user_id)
-            self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
-        self.set_models({"meeting/1": {"present_user_ids": [*range(1, amount)]}})
-
-        with self.monkeypatch_on_stop():
-            self.request("poll.stop", {"id": 1})
-
-        # self.assert_model_exists("poll/1", {"state": "finished"})
-        self.assert_model_exists("poll/1", {"state": "started"})  # TODO uncomment when concurrency bug recreated.
-        self.assert_model_exists(f"user/{user_id}", {"is_present_in_meeting_ids": None})
+        with patch.object(self.vote_service, "clear", autospec=True) as mock_clear:
+            with monkeypatch_get_new_os_conn():
+                self.request("poll.stop", {"id": 1})
+            mock_clear.assert_not_called()
 
 
+hr_calls = 0
 
-    def test_stop_race_condition2(self) -> None:
+
+@contextmanager
+def monkeypatch_get_new_os_conn() -> Iterator[None]:
+    """
+    Patches get_new_os_conn to further patch the ConnectionContext.
+    """
+    module = import_module("openslides_backend.action.action_handler")
+    module.get_new_os_conn_original = module.get_new_os_conn  # type: ignore [attr-defined]
+    module.get_new_os_conn = counting_get_new_os_conn  # type: ignore [attr-defined]
+    try:
+        yield
+    finally:
+        module.get_new_os_conn = module.get_new_os_conn_original  # type: ignore [attr-defined]
+        delattr(module, "get_new_os_conn_original")
+
+
+def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defined]
+    """
+    Wraps the __exit__ of the ConnectionContext to stall the thread and raise a DeadlockDetected exception.
+    """
+    global hr_calls
+
+    def raise_exception(*args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         """
-        The main thread in this testing function creates an instance of a threading.lock and acquires it.
-        Thread1 will be started first, but should wait for the acquired lock after reading and before writing.
-        Thread2 will be started later, but passes thread1, because it does not acquire the lock.
-        After finishing of thread2 the lock will be released in the main thread and thread1 could continue with it's writing part.
-
-        The lock-object will be shared in threading.local(), instance created in lock.py.
-        If possible you should pass the lock as an argument to the thread function(s).
+        Should only be called by handle request on the second entering of the
+        connection context but may be called by other functions too.
         """
-        pytest_thread_local.name = "MainThread_RC"
-        self.set_thread_watch_timeout(1)
+        sleep(1.1)
+        caller = inspect.stack()[1]
+        if caller.function == "handle_request":
+            ConnectionContext.original_exit(*args, **kwargs)  # type: ignore [attr-defined]
+            ConnectionContext.__exit__ = ConnectionContext.original_exit  # type: ignore [method-assign,attr-defined]
+            delattr(ConnectionContext, "original_exit")
+            raise DatabaseError("WAAAAHH!!!!")
+        else:
+            ConnectionContext.__exit__(*args, **kwargs)
 
-        self.create_meeting(1, {"poll_couple_countdown": False})
-        self.create_topic(1, 1)
-        self.set_models(
-            {
-                "poll/1": self.poll_data,
-                "group/1": {
-                    "poll_ids": [1],
-                    "permissions": ["poll.can_manage", "user.can_manage_presence"],
-                },
-            }
-        )
-
-        self.start_poll(1)
-        # user_id = self.create_user_for_meeting(1)
-        # self.login(user_id)
-        # self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
-        # self.set_models({"meeting/1": {"present_user_ids": [user_id]}})
-
-        # amount = 1000
-        amount = 10
-        for i in range(2, amount):
-            user_id = self.create_user_for_meeting(1)
-            self.login(user_id)
-            self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
-        self.set_models({"meeting/1": {"present_user_ids": [*range(1, amount)]}})
-
-        with monkeypatch_datastore_adapter_write():
-            testlock2 = threading.Lock()
-            sync_event2 = threading.Event()
-            testlock = threading.Lock()
-            sync_event = threading.Event()
-            thread1 = threading.Thread(
-                target=thread_method_poll_stop,
-                kwargs={
-                    "test_instance": self,
-                    "testlock": testlock,
-                    "name": "Interrupted Thread",
-                    "sync_event": sync_event,
-                },
-            )
-            thread2 = threading.Thread(
-                target=thread_method_is_present,
-                kwargs={
-                    "test_instance": self,
-                    "name": "Passing Thread",
-                    "user_id": user_id,
-                    "sync_event": sync_event2,
-                    "testlock": testlock2,
-                },
-            )
-
-            testlock.acquire()
-            thread1.start()
-            sync_event.wait()
-            # sleep(0.01)
-            thread2.start()
-            sync_event2.wait()
-            testlock.release()
-            sync_event.wait()
-            testlock.release()
-            testlock2.release()
-            thread2.join()
-            thread1.join()
-
-        # self.assert_model_exists("poll/1", {"state": "finished"})
-        self.assert_model_exists("poll/1", {"state": "started"})  # TODO uncomment when concurrency bug recreated.
-        self.assert_model_exists(f"user/{user_id}", {"is_present_in_meeting_ids": None})
-
-
-def thread_method_poll_stop(
-    test_instance: PollStopActionTest,
-    testlock: threading.Lock,
-    name: str,
-    sync_event: threading.Event,
-) -> None:
-    if testlock:
-        pytest_thread_local.testlock = testlock
-    if sync_event:
-        pytest_thread_local.sync_event = sync_event
-    pytest_thread_local.name = name
-    response = test_instance.client.post(
-        ACTION_URL,
-        json=[
-            {
-                "action": "poll.stop",
-                "data": [{"id": 1}],
-            }
-        ],
-    )
-    test_instance.connection.commit()
-
-    if sync_event and not sync_event.is_set() and response.status_code != 200:
-        sync_event.set()
-    # test_instance.assert_status_code(response, 400)
-
-
-def thread_method_is_present(
-    test_instance: PollStopActionTest,
-    name: str,
-    user_id: int,
-    testlock: threading.Lock,
-    sync_event: threading.Event,
-) -> None:
-    pytest_thread_local.name = name
-    if testlock:
-        pytest_thread_local.testlock = testlock
-    if sync_event:
-        pytest_thread_local.sync_event = sync_event
-    response = test_instance.client.post(
-        ACTION_URL,
-        json=[
-            {
-                "action": "user.set_present",
-                "data": [{"id": user_id, "meeting_id": 1, "present": False}],
-            }
-        ],
-    )
-    test_instance.connection.commit()
-
-    test_instance.assert_status_code(response, 200)
+    nested_patch = False
+    caller = inspect.stack()[1]
+    if caller.function == "handle_request":
+        # count in function context
+        hr_calls += 1
+        if hr_calls == 2:
+            nested_patch = True
+    module = import_module("openslides_backend.action.action_handler")
+    if nested_patch:
+        ConnectionContext.original_exit = ConnectionContext.__exit__  # type: ignore [attr-defined]
+        ConnectionContext.__exit__ = raise_exception  # type: ignore[method-assign]
+    return module.get_new_os_conn_original()  # type: ignore[method-assign]

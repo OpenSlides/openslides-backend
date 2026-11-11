@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from time import sleep
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
