@@ -103,8 +103,8 @@ class ActionHandler(BaseHandler):
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
-        self.on_success = []
-        self.on_success_transaction_based = []
+        # self.on_success = []
+        # self.on_success_transaction_based = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
@@ -147,6 +147,8 @@ class ActionHandler(BaseHandler):
             retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
+                self.on_success = []
+                self.on_success_transaction_based = []
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
