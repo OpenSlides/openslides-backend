@@ -12,6 +12,20 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from psycopg.errors import (
+    CheckViolation,
+    DatatypeMismatch,
+    GeneratedAlways,
+    InFailedSqlTransaction,
+    NotNullViolation,
+    ProgrammingError,
+    StringDataRightTruncation,
+    SyntaxError,
+    DeadlockDetected,
+    UndefinedColumn,
+    UndefinedTable,
+    UniqueViolation,
+)
 from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 

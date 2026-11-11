@@ -3,6 +3,15 @@ from decimal import Decimal
 from time import sleep
 from typing import Any
 from unittest.mock import Mock, patch
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.shared.interfaces.write_request import WriteRequest
+
+pytest_thread_local = threading.local()
+
 
 import pytest
 
@@ -17,6 +26,7 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
+from openslides_backend.action.actions.poll.mixins import StopControl
 
 
 class PollStopActionTest(PollTestMixin, BasePollTestCase):
@@ -399,6 +409,40 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
 
+
+    def on_stop(self, instance: dict[str, Any]) -> None:  # type: ignore
+        """
+        Wraps the write of the datastore.adapter and stops a thread, if the testlock attribute is set thread-local.
+        See example in test_create_sequential_numbers_race_condition
+        """
+        # if hasattr(pytest_thread_local, "testlock") and pytest_thread_local.testlock:
+        #     if (
+        #         hasattr(pytest_thread_local, "sync_event")
+        #         and pytest_thread_local.sync_event
+        #     ):
+        #         pytest_thread_local.sync_event.set()
+        #     with pytest_thread_local.testlock:
+        #         self.on_stop_original()
+        # else:
+        # StopControl.on_stop_original(self, instance)
+        sleep(3)
+        print("### sleeeppppp!!!")
+        raise Exception("WAAAAHH!!!!")
+
+    @contextmanager
+    def monkeypatch_on_stop(self) -> Iterator[None]:
+        """
+        Use a patched ExtendedDatabase.write in this context,
+        which wraps the write with an optional lock from pytest_thread_local.testlock
+        """
+        StopControl.on_stop_original = StopControl.on_stop  # type: ignore
+        StopControl.on_stop = self.on_stop  # type: ignore
+        try:
+            yield
+        finally:
+            StopControl.on_stop = StopControl.on_stop  # type: ignore
+            delattr(StopControl, "on_stop_original")
+
     def test_stop_race_condition1(self) -> None:
         """
         The main thread in this testing function creates an instance of a threading.lock and acquires it.
@@ -438,7 +482,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
         self.set_models({"meeting/1": {"present_user_ids": [*range(1, amount)]}})
 
-        self.request("poll.stop", {"id": 1})
+        with self.monkeypatch_on_stop():
+            self.request("poll.stop", {"id": 1})
 
         # self.assert_model_exists("poll/1", {"state": "finished"})
         self.assert_model_exists("poll/1", {"state": "started"})  # TODO uncomment when concurrency bug recreated.
