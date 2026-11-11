@@ -218,8 +218,8 @@ class Migration(DiffMixin, BaseMigration):
 
         self.execute_query("""
             SELECT o.id
-            FROM poll_t p
-            JOIN option_t o ON o.poll_id = p.id
+            FROM option_t o
+            JOIN poll_t p ON o.poll_id = p.id
             WHERE p.content_object_id LIKE 'assignment/%' AND o.content_object_id LIKE 'motion/%';
             """)
         if entries := self.cursor.fetchall():
@@ -697,7 +697,12 @@ class Migration(DiffMixin, BaseMigration):
                             THEN 'selection'
                         ELSE
                             CASE
-                                WHEN o.content_object_id LIKE 'poll_candidate_list/%'
+                                WHEN EXISTS (
+                                    SELECT 1
+                                    FROM option_m o
+                                    WHERE o.poll_id = p.id
+                                    AND o.content_object_id LIKE 'poll_candidate_list/%'
+                                )
                                     THEN 'approval'
                                 ELSE
                                     CASE
@@ -711,9 +716,7 @@ class Migration(DiffMixin, BaseMigration):
                                             END
                                     END
                             END
-                    END
-                FROM option_m o
-                WHERE o.poll_id = p.id;
+                    END;
                 """))
         self.execute_query("""
             ALTER TABLE vote_m

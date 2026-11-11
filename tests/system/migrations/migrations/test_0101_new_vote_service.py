@@ -615,6 +615,14 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(24, 1, 14, "N", 3, 3),
             **self._get_vote_data(25, 1, 13, "N"),
             **self._get_vote_data(26, 1, 14, "N"),
+            # Assignment - other without option
+            **self._get_assignment_data(5, 1),
+            **self._get_poll_data(
+                poll_id=7,
+                meeting_id=1,
+                content_object_id="assignment/5",
+                state="created",
+            ),
         }
 
         self.create_entries(polls_data)
@@ -728,15 +736,21 @@ class TestMigration101(BaseMigrationTestCase):
             #     content_object_id="assignment/1",
             # ),
             # **self._get_option_data(20, 2, 1, "motion/1"),
+            # **self._get_assignment_data(2),
+            # **self._get_poll_data(
+            #     poll_id=3,
+            #     meeting_id=1,
+            #     content_object_id="assignment/2",
+            # ),
             # # Invalid option/text
             # # # Topic
             # **self._get_topic_data(),
             # **self._get_poll_data(
-            #     poll_id=3,
+            #     poll_id=4,
             #     meeting_id=1,
             #     content_object_id="topic/1",
             # ),
-            # **self._get_option_data(30, 3, 1, "motion/1"),
+            # **self._get_option_data(30, 4, 1, "motion/1"),
             # # ----------------- global_option
             # # Missing global option on global_yes/global_no = True
             # **self._get_motion_data(),
