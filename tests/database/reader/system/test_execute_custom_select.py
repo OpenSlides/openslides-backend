@@ -101,6 +101,15 @@ def test_with_notify(db_connection: Connection) -> None:
                     ),
                     Event(
                         type=EventType.Create,
+                        fqid="meeting_user/6",
+                        fields={
+                            "id": 6,
+                            "user_id": 2,
+                            "meeting_id": 2,
+                        },
+                    ),
+                    Event(
+                        type=EventType.Create,
                         fqid="meeting/2",
                         fields={
                             "id": 2,
@@ -163,7 +172,7 @@ def test_with_notify(db_connection: Connection) -> None:
                             "id": 4,
                             "name": "admin",
                             "meeting_id": 2,
-                            "meeting_user_ids": [5],
+                            "meeting_user_ids": [5,6],
                         },
                     ),
                 ]
@@ -172,7 +181,7 @@ def test_with_notify(db_connection: Connection) -> None:
     response3 = get_notify_logs()
     for id_ in range(0, len(response)):
         assert response[id_] == response3[id_]
-    assert response3[len(response) :] == [
+    assert response3[len(response):] == [
         {
             "operation": "update",
             "fqid": "meeting/2",
@@ -212,6 +221,20 @@ def test_with_notify(db_connection: Connection) -> None:
             "operation": "insert",
             "fqid": "meeting_user/5",
             "updated_fields": None,
+        },
+        {
+            'operation': 'update',
+            'fqid': 'user/2',
+            'updated_fields': [
+                'meeting_ids',
+                "committee_ids",
+                'meeting_user_ids',
+            ],
+        },
+        {
+            'operation': 'insert',
+            'fqid': 'meeting_user/6',
+            'updated_fields': None,
         },
         {
             "operation": "update",
@@ -294,6 +317,13 @@ def test_with_notify(db_connection: Connection) -> None:
             "fqid": "meeting_user/5",
             "updated_fields": [
                 "group_ids",
+            ],
+        },
+        {
+            'operation': 'update',
+            'fqid': 'meeting_user/6',
+            'updated_fields': [
+                'group_ids',
             ],
         },
     ]
