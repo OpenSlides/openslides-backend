@@ -161,7 +161,7 @@ class BaseMigration:
     def _base_update_entries(
         self,
         target_table: TableRef,
-        new_values: dict[Column, Any],
+        new_values: dict[Column, sql.Composable | Any],
         filter_target_table: Filter | None = None,
         filter_migration_table: Filter | None = None,
         joined_tables: list[Join] | None = None,
@@ -219,7 +219,7 @@ class BaseMigration:
     def update_all_entries(
         self,
         target_table: TableRef,
-        new_values: dict[Column, Any],
+        new_values: dict[Column, sql.Composable | Any],
     ) -> None:
         """
         Sets the given simple values into the corresponding columns for all the collection entries.
@@ -229,7 +229,7 @@ class BaseMigration:
     def update_matching_entries(
         self,
         target_table: TableRef,
-        new_values: dict[Column, Any],
+        new_values: dict[Column, sql.Composable | Any],
         filter_target_table: Filter | None = None,
         filter_migration_table: Filter | None = None,
         filter_with_joined_tables: list[Join] | None = None,

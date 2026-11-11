@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
@@ -114,14 +114,33 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
     # -- Methods for building SET part --
     @staticmethod
     def get_set_columns_part(
-        new_values: dict[Column, Any], arguments: SqlArguments
+        new_values: dict[Column, sql.Composable | Any], arguments: SqlArguments
     ) -> sql.Composed:
         if not new_values:
             raise BadCodingException("column_names must not be empty")
 
+        if any([isinstance(value, sql.Composable) for value in new_values.values()]):
+            sql_parts = []
+            for column, value in new_values.items():
+                if isinstance(value, sql.Composable):
+                    sql_parts.append(
+                        sql.SQL("{column} = {value}").format(
+                            column=sql.Identifier(column), value=value
+                        )
+                    )
+                else:
+                    sql_parts.append(
+                        sql.SQL("{column} = {placeholder}").format(
+                            column=sql.Identifier(column),
+                            placeholder=sql.Placeholder(),
+                        )
+                    )
+                    arguments.append(value)
+            return sql.SQL(", ").join(sql_parts)
+
         columns = list(new_values.keys())
         values = list(new_values.values())
-        arguments.extend(values)
+        arguments.extend(cast(SqlArguments, values))
 
         if len(columns) == 1:
             return sql.SQL("{column} = {placeholder}").format(
