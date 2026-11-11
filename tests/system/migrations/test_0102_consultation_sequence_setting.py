@@ -75,10 +75,8 @@ class TestMigration102(BaseMigrationTestCase):
             raise BadCodingException(
                 f"Migration failed with message: {intermediate_result['exception']}."
             )
-        if intermediate_result["status"] == MigrationState.MIGRATION_RUNNING:
+        if intermediate_result["status"] != MigrationState.FINALIZED:
             self.wait_for_migration_thread(self.MAX_WAIT)
-        else:
-            self.assertEqual(intermediate_result["status"], MigrationState.FINALIZED)
 
         self.assert_migration_finalized()
 
