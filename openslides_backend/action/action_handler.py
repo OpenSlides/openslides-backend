@@ -206,12 +206,6 @@ class ActionHandler(BaseHandler):
                         # Return action result
                         print(f"###{name}: Request was successful. Send response now.")
                         # results.append(name)
-                        return ActionsResponse(
-                            status_code=HTTPStatus.OK.value,
-                            success=True,
-                            message="Actions handled successfully",
-                            results=results,
-                        )
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
@@ -241,6 +235,16 @@ class ActionHandler(BaseHandler):
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
                         )
                     sleep(retry_timeout)
+                # execute cleanup methods
+                for on_success in self.on_success:
+                    print(f"###{name}: immediate on success: {on_success}")
+                    on_success()
+                return ActionsResponse(
+                    status_code=HTTPStatus.OK.value,
+                    success=True,
+                    message="Actions handled successfully",
+                    results=results,
+                )
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:

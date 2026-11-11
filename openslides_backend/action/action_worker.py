@@ -94,10 +94,10 @@ def handle_action_in_worker_thread(
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
             # thread finished
-            # execute cleanup methods
-            for on_success in handler.on_success:
-                print(f"###{payload[0]['action']}: immediate on success: {on_success}")
-                on_success()
+            # # execute cleanup methods
+            # for on_success in handler.on_success:
+            #     print(f"###{payload[0]['action']}: immediate on success: {on_success}")
+            #     on_success()
             return action_worker_thread.response
         msg = (
             "Action request ended with unknown reason, "
@@ -215,10 +215,10 @@ class ActionWorkerWriting:
             )
         elif hasattr(action_worker_thread, "response"):
             # thread finished
-            # execute cleanup methods
-            for on_success in action_worker_thread.handler.on_success:
-                print(f"{self.action_names}: final on success: {on_success}")
-                on_success()
+            # # execute cleanup methods
+            # for on_success in action_worker_thread.handler.on_success:
+            #     print(f"{self.action_names}: final on success: {on_success}")
+            #     on_success()
             response = action_worker_thread.response
             self.logger.info(
                 f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
