@@ -39,7 +39,7 @@ class RelationManager:
             field = model.get_field(field_name)
 
             # only relations are handled here
-            if not isinstance(field, BaseRelationField):s # or not field.is_view_field:
+            if not isinstance(field, BaseRelationField): # or not field.is_view_field:
                 # collection = field.own_collection
                 # if model_registry[collection]().get_field(field.to[collection]) == "list_of_speakers_id":
                 #     pass
