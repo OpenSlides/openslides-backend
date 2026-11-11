@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from threading import Lock
-from typing import Any
+from typing import Any, cast
 from unittest import TestCase
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
@@ -214,6 +214,22 @@ class BaseMigrationTestCase(TestCase):
             result = {}
 
         return result
+
+    def get_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> bool:
+        return cast(
+            dict[str, Any],
+            curs.execute(
+                f"SELECT EXISTS(SELECT 1 FROM information_schema.triggers WHERE trigger_name = '{trigger_name}') AS exists;"
+            ).fetchone(),
+        )["exists"]
+
+    def assert_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> None:
+        assert self.get_trigger_exists(curs, trigger_name)
+
+    def assert_trigger_not_exists(
+        self, curs: Cursor[DictRow], trigger_name: str
+    ) -> None:
+        assert not self.get_trigger_exists(curs, trigger_name)
 
     def assert_content_not_none(
         self,
