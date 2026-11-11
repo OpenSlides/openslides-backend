@@ -225,6 +225,7 @@ class ActionHandler(BaseHandler):
                         raise RelationException(str(e).split("\nCONTEXT:")[0])
                 except DeadlockDetected as e:
                     print(f"### transaction DeadlockDetected")
+                    raise DatabaseException(f"Deadlock detected:{e}")
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
