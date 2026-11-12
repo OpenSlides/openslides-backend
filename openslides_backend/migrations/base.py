@@ -173,7 +173,7 @@ class BaseMigration:
         set_part = MigrationSqlHelper.get_set_columns_part(new_values, arguments)
         if filter_target_table:
             conditions.append(
-                self._build_filter_query(
+                self.build_filter_query(
                     filter_condition=filter_target_table,
                     arguments=arguments,
                     target_collection=target_table.collection,
@@ -182,7 +182,7 @@ class BaseMigration:
         if filter_migration_table:
             assert not target_table.migration
             conditions.append(
-                self._build_filter_query(
+                self.build_filter_query(
                     filter_condition=filter_migration_table,
                     arguments=arguments,
                     filter_other_table=Join(
@@ -201,7 +201,7 @@ class BaseMigration:
             for join in joined_tables:
                 assert join.filter_right_table is not None
                 conditions.append(
-                    self._build_filter_query(
+                    self.build_filter_query(
                         filter_condition=join.filter_right_table,
                         arguments=arguments,
                         filter_other_table=join,
@@ -330,11 +330,7 @@ class BaseMigration:
                 values_source, target_table
             )
         filter_conditions = (
-            [
-                self._build_filter_query(
-                    filter_target_table, arguments, target_collection
-                )
-            ]
+            [self.build_filter_query(filter_target_table, arguments, target_collection)]
             if filter_target_table is not None
             else []
         )
@@ -397,7 +393,7 @@ class BaseMigration:
 
         if filter_target_table:
             filters.append(
-                self._build_filter_query(
+                self.build_filter_query(
                     filter_target_table,
                     arguments,
                     copy_from_source_tables.target_table.collection,
@@ -471,7 +467,7 @@ class BaseMigration:
             select_columns.extend(values_source.select_columns)
 
         filter_condition = (
-            self._build_filter_query(
+            self.build_filter_query(
                 copy_from_source_tables.root_source.filter_right_table,
                 arguments,
                 copy_from_source_tables.root_source_table.collection,
@@ -538,7 +534,7 @@ class BaseMigration:
                 ),
             ),
             filter_condition=(
-                self._build_filter_query(
+                self.build_filter_query(
                     filter_target_table, filter_arguments, target_table.collection
                 )
                 if filter_target_table is not None
@@ -555,7 +551,7 @@ class BaseMigration:
             self.execute_query(f"SELECT setval('{table_name}_id_seq', {maximum});")
 
     # -- Helpers for intermediate data generation --
-    def _build_filter_query(
+    def build_filter_query(
         self,
         filter_condition: Filter,
         arguments: SqlArguments,
@@ -627,7 +623,7 @@ class BaseMigration:
             )
             if source_table.filter_right_table is not None:
                 conditions.append(
-                    self._build_filter_query(
+                    self.build_filter_query(
                         source_table.filter_right_table,
                         arguments,
                         source_table.right_table.collection,

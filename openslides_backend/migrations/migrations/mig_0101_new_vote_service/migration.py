@@ -1337,7 +1337,7 @@ class Migration(DiffMixin, BaseMigration):
                 if option_filter_query
                 else ""
             ),
-            poll_filter=self._build_filter_query(
+            poll_filter=self.build_filter_query(
                 filter_, arguments, collection, filter_condition_table_alias=collection
             ),
             filter_query=sql.SQL(
