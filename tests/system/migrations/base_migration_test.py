@@ -223,6 +223,18 @@ class BaseMigrationTestCase(TestCase):
 
         return result
 
+    def assert_entries_count(
+        self, cur: Cursor[DictRow], collection: str, expected_count: int
+    ) -> None:
+        query = f"SELECT COUNT(*) FROM {collection}_t;"
+        result = cur.execute(query).fetchone()
+        if expected_count > 0:
+            assert result, f"Database did not contain a result for this query.\n{query}"
+        if result and (count := result["count"]) != expected_count:
+            raise Exception(
+                f"Entries count mismatch for {collection}_t. Expected: {expected_count}, received: {count}."
+            )
+
     def assert_content_not_none(
         self,
         cur: Cursor[DictRow],

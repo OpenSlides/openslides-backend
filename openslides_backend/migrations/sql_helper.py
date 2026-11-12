@@ -8,6 +8,7 @@ from openslides_backend.migrations.patterns import (
     Column,
     ColumnRef,
     Join,
+    JoinedTableParts,
     JoinOn,
     Table,
     ValuesSource,
@@ -385,21 +386,22 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
 
     @staticmethod
     def join_table_parts(
-        table_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] | None,
+        table_parts: list[JoinedTableParts] | None,
     ) -> sql.Composable:
         if not table_parts:
             return sql.SQL("")
         return MigrationSqlHelper.join_tables(
             [
-                sql.SQL("JOIN {right_table} ON {conditions}").format(
+                sql.SQL("{join_type} JOIN {right_table} ON {conditions}").format(
+                    join_type=sql.SQL(table.join_type.upper()),
                     right_table=(
-                        sql.Identifier(table[0])
-                        if isinstance(table[0], str)
-                        else table[0]
+                        sql.Identifier(table.right_table)
+                        if isinstance(table.right_table, str)
+                        else table.right_table
                     ),
                     conditions=sql.SQL(" AND ").join(
                         sql.SQL("({condition})").format(condition=condition)
-                        for condition in table[1]
+                        for condition in table.conditions
                     ),
                 )
                 for table in table_parts
@@ -423,9 +425,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         table_name: str,
         set_part: sql.Composable,
         source_table: sql.Composable | None = None,
-        joined_tables: (
-            list[tuple[str | sql.Composed, list[sql.Composable]]] | None
-        ) = None,
+        joined_tables: list[JoinedTableParts] | None = None,
         filter_condition: sql.Composable | list[sql.Composable] | None = None,
         common_table_expression: sql.Composable | None = None,
     ) -> sql.Composed:
@@ -452,7 +452,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         target_table: Table,
         target_columns: sql.Composable,
         select_columns: sql.Composed,
-        joined_tables: list[tuple[str | sql.Composed, list[sql.Composable]]],
+        joined_tables: list[JoinedTableParts],
         condition: sql.Composable | None = None,
         return_fields: list[str] | None = None,
     ) -> sql.Composed:

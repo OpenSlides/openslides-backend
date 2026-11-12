@@ -12,6 +12,7 @@ from openslides_backend.migrations.patterns import (
     ColumnRef,
     InsertFromTables,
     Join,
+    JoinedTableParts,
     JoinOn,
     Renames,
     Table,
@@ -309,9 +310,7 @@ class BaseMigration:
         filter_conditions: list[sql.Composable] = []
         join_conditions: list[sql.Composable]
         from_part: sql.Composable
-        joined_tables_parts: (
-            list[tuple[str | sql.Composed, list[sql.Composable]]] | None
-        ) = None
+        joined_tables_parts: list[JoinedTableParts] | None = None
 
         if join_values_to_mig_table:
             mig_table = TableRef(target_collection, True)
@@ -388,14 +387,12 @@ class BaseMigration:
         common_table_expression: sql.SQL | None = None,
     ) -> None:
         arguments: SqlArguments = []
-        joined_tables_parts: list[tuple[str | sql.Composed, list[sql.Composable]]] = (
-            self._get_joined_tables_data(
-                copy_from_source_tables.joined_sources, arguments
-            )
+        joined_tables_parts: list[JoinedTableParts] = self._get_joined_tables_data(
+            copy_from_source_tables.joined_sources, arguments
         )
 
-        source_table = joined_tables_parts[0][0]
-        filters: list[sql.Composable] = joined_tables_parts[0][1]
+        source_table = joined_tables_parts[0].right_table
+        filters: list[sql.Composable] = joined_tables_parts[0].conditions
         joined_tables = joined_tables_parts[1:]
 
         if filter_target_table:
@@ -617,8 +614,8 @@ class BaseMigration:
         self,
         join_tables: list[TableDataSource],
         arguments: SqlArguments,
-    ) -> list[tuple[str | sql.Composed, list[sql.Composable]]]:
-        result: list[tuple[str | sql.Composed, list[sql.Composable]]] = []
+    ) -> list[JoinedTableParts]:
+        result: list[JoinedTableParts] = []
         for data_source in join_tables:
             source_table = data_source.source_table
             conditions: list[sql.Composable] = (
@@ -637,7 +634,13 @@ class BaseMigration:
                         filter_condition_table_alias=source_table.right_table.table_name,
                     )
                 )
-            result.append((source_table.right_table.table_name, conditions))
+            result.append(
+                JoinedTableParts(
+                    source_table.join_type,
+                    source_table.right_table.table_name,
+                    conditions,
+                )
+            )
         return result
 
     def _get_joined_values_data(
@@ -645,8 +648,9 @@ class BaseMigration:
         values_source: ValuesSource,
         left_table: TableRef,
         arguments: SqlArguments,
-    ) -> tuple[sql.Composed, list[sql.Composable]]:
-        return (
+    ) -> JoinedTableParts:
+        return JoinedTableParts(
+            "inner",
             MigrationSqlHelper.build_values_table(values_source, arguments),
             self._get_join_conditions_for_values(values_source, left_table),
         )

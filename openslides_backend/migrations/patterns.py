@@ -1,6 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, NewType, Union
+from typing import Any, Literal, NewType, Union
 
 from psycopg import sql
 
@@ -17,6 +17,14 @@ Table = Union[str, _Table]
 View = Union[str, _View]
 Column = Union[str, _Column]
 Renames = tuple[dict[str, str], dict[str, dict[str, str]]]
+JoinType = Literal["inner", "left"]
+
+
+@dataclass
+class JoinedTableParts:
+    join_type: JoinType
+    right_table: str | sql.Composed
+    conditions: list[sql.Composable]
 
 
 @dataclass(frozen=True)
@@ -126,6 +134,7 @@ class Join:
     right_table: TableRef
     join_on: list[JoinOn]
     filter_right_table: Filter | None = None
+    join_type: JoinType = "inner"
 
 
 @dataclass(frozen=True)

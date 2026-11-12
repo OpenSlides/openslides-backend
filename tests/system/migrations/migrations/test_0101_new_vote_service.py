@@ -658,7 +658,7 @@ class TestMigration101(BaseMigrationTestCase):
             with conn.cursor() as cur:
                 for collection, last_value in (
                     ("poll_ballot", 17),
-                    # ("poll_ballot_user", 17),
+                    ("poll_ballot_user", 26),
                     ("poll_config_approval", 2),
                     ("poll_config_rating_score", 4),
                     ("poll_config_selection", 5),
@@ -671,6 +671,17 @@ class TestMigration101(BaseMigrationTestCase):
                         f"SELECT last_value FROM {collection}_t_id_seq;",
                         {"last_value": last_value},
                     )
+                for collection, count in (
+                    ("poll_ballot", 17),
+                    ("poll_ballot_user", 17),
+                    ("poll_config_approval", 2),
+                    ("poll_config_rating_score", 1),
+                    ("poll_config_selection", 2),
+                    ("poll_config_rating_approval", 2),
+                    ("poll_entitled_user", 18),
+                    ("poll_option", 14),
+                ):
+                    self.assert_entries_count(cur, collection, count)
 
     def test_check_prerequisites(self) -> None:
         meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data()
