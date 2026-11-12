@@ -622,7 +622,7 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("organization/1", {"template_meeting_ids": None})
+        self.assert_model_exists("organization/1", {"template_meeting_ids": []})
         self.assert_model_exists(
             "meeting/2",
             {
@@ -1302,7 +1302,7 @@ class MeetingClone(BaseActionTestCase):
                 "used_as_font_regular_in_meeting_id": 5,
             },
         )
-        self.assert_model_exists("mediafile/16", {"meeting_mediafile_ids": None})
+        self.assert_model_exists("mediafile/16", {"meeting_mediafile_ids": []})
         self.assert_model_exists(
             "mediafile/17", {"meeting_mediafile_ids": [10, 11, 12]}
         )
@@ -1857,9 +1857,9 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 5,
                 "origin_id": None,
-                "all_origin_ids": None,
+                "all_origin_ids": [],
                 "origin_meeting_id": None,
-                "derived_motion_ids": None,
+                "derived_motion_ids": [],
             },
         )
         self.assert_model_exists(
@@ -2045,8 +2045,8 @@ class MeetingClone(BaseActionTestCase):
                 "represented_ballot_ids": [5],
             },
         )
-        self.assert_model_exists("meeting/5", {"relevant_history_entry_ids": None})
-        self.assert_model_exists("motion/5", {"history_entry_ids": None})
+        self.assert_model_exists("meeting/5", {"relevant_history_entry_ids": []})
+        self.assert_model_exists("motion/5", {"history_entry_ids": []})
         self.assert_model_not_exists("history_position/5")
         self.assert_model_not_exists("history_entry/5")
 
@@ -2109,11 +2109,9 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting/2", {"relevant_history_entry_ids": None, "poll_ids": [2]}
+            "meeting/2", {"relevant_history_entry_ids": [], "poll_ids": [2]}
         )
-        self.assert_model_exists(
-            "topic/2", {"history_entry_ids": None, "poll_ids": [2]}
-        )
+        self.assert_model_exists("topic/2", {"history_entry_ids": [], "poll_ids": [2]})
         self.assert_model_not_exists("history_position/2")
         self.assert_model_not_exists("history_entry/2")
 
@@ -2374,7 +2372,7 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_ids": [2],
                 "poll_ids": [2],
                 "projector_ids": [2],
-                "relevant_history_entry_ids": None,
+                "relevant_history_entry_ids": [],
                 "reference_projector_id": 2,
                 **{key: [2] for key in MeetingModelMixin.all_default_projectors()},
                 "motions_default_amendment_workflow_id": 2,
@@ -2404,7 +2402,7 @@ class MeetingClone(BaseActionTestCase):
                     "content_object_id": f"meeting_user/{id_ + 2}",
                 },
             )
-        self.assert_model_exists("assignment/2", {"history_entry_ids": None})
+        self.assert_model_exists("assignment/2", {"history_entry_ids": []})
         self.assert_model_not_exists("history_position/2")
         self.assert_model_not_exists("history_entry/2")
 
@@ -2516,7 +2514,7 @@ class MeetingClone(BaseActionTestCase):
             },
             "group/6": {
                 "meeting_mediafile_access_group_ids": [55],
-                "meeting_mediafile_inherited_access_group_ids": None,
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
             "mediafile/1": {
                 "meeting_mediafile_ids": [10, 51],
@@ -2564,7 +2562,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 2,
                 "mediafile_id": 5,
                 "access_group_ids": [6],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
             },
         }
         for fqid, model in models.items():

@@ -384,7 +384,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 data["group"][str(group_id)]["used_in_meeting_poll_setting_ids"]
                 == config_ids
             )
-        assert "used_in_meeting_poll_setting_ids" not in data["group"]["1"]
+        assert data["group"]["1"].get("used_in_meeting_poll_setting_ids") == []
 
     def test_export_meeting_find_poll_configs(self) -> None:
         configs_data = {
@@ -742,11 +742,8 @@ class TestExportMeeting(BasePresenterTestCase):
             {"meeting_id": 1, **old_db_compatibility_data},
         )
         assert status_code == 200
-        if old_db_compatibility:
-            assert data["meeting_mediafile"]["1"]["inherited_access_group_ids"] == []
-        else:
-            assert "inherited_access_group_ids" not in data["meeting_mediafile"]["1"]
-        assert "access_group_ids" not in data["meeting_mediafile"]["1"]
+        assert data["meeting_mediafile"]["1"]["inherited_access_group_ids"] == []
+        assert data["meeting_mediafile"]["1"]["access_group_ids"] == []
 
     def test_export_without_mmiagi_old_db_compatibility_true(self) -> None:
         self.base_test_export_without_mmiagi_old_db_compatibility(True)

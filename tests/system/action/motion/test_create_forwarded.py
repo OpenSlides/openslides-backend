@@ -72,10 +72,10 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "meeting_id": 4,
                 "origin_id": 12,
                 "origin_meeting_id": 1,
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "additional_submitter": "committee_forwarder",
                 "state_id": 4,
             },
@@ -152,9 +152,9 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 4,
                 "origin_id": 12,
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "additional_submitter": "committee_forwarder",
             },
         )
@@ -221,7 +221,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "origin_id": 11,
                 "all_origin_ids": [6, 11],
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
             },
         )
         self.assert_model_exists(
@@ -229,12 +229,12 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "origin_id": 11,
                 "all_origin_ids": [6, 11],
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
             },
         )
         self.assert_model_exists(
             "motion/12",
-            {"origin_id": 6, "all_origin_ids": [6], "all_derived_motion_ids": None},
+            {"origin_id": 6, "all_origin_ids": [6], "all_derived_motion_ids": []},
         )
         self.assert_model_exists(
             "motion/11",
@@ -244,7 +244,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             "motion/6",
             {
                 "origin_id": None,
-                "all_origin_ids": None,
+                "all_origin_ids": [],
                 "all_derived_motion_ids": [11, 12, 13, 14],
             },
         )
@@ -262,7 +262,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             }
         )
         response = self.request("motion.delete", {"id": 1})
-        self.assert_model_exists("motion/2", {"all_origin_ids": None})
+        self.assert_model_exists("motion/2", {"all_origin_ids": []})
         response = self.request(
             "motion.create_forwarded",
             {
@@ -598,10 +598,10 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "meeting_id": 4,
                 "origin_id": 12,
                 "origin_meeting_id": 1,
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx2",
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "additional_submitter": "committee_forwarder",
                 "state_id": 4,
             },
@@ -615,10 +615,10 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "meeting_id": 7,
                 "origin_id": 12,
                 "origin_meeting_id": 1,
-                "all_derived_motion_ids": None,
+                "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx3",
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "additional_submitter": "committee_forwarder",
                 "state_id": 7,
             },
@@ -894,7 +894,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         self.assert_status_code(response, 200)
         created_id = response.json["results"][0][0]["id"]
         self.assert_model_exists(
-            f"motion/{created_id}", {"number": None, "submitter_ids": None}
+            f"motion/{created_id}", {"number": None, "submitter_ids": []}
         )
 
     def test_use_original_submitter_multiple(self) -> None:
@@ -1128,7 +1128,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         self.assert_status_code(response, 200)
         created_id = response.json["results"][0][0]["id"]
         self.assert_model_exists(
-            f"motion/{created_id}", {"change_recommendation_ids": None}
+            f"motion/{created_id}", {"change_recommendation_ids": []}
         )
         self.assert_model_not_exists("motion_change_recommendation/3")
 
@@ -1314,7 +1314,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "origin_meeting_id": 1,
                 "sequential_number": 2,
                 "additional_submitter": "committee_forwarder",
-                "identical_motion_ids": None,
+                "identical_motion_ids": [],
             },
         )
         self.assert_model_exists(
@@ -1425,10 +1425,10 @@ class CreateForwardedTestWithAttachmentsSimple(
                 "all_origin_ids": [12],
                 "origin_meeting_id": 1,
                 "sequential_number": 1,
-                "attachment_meeting_mediafile_ids": None,
+                "attachment_meeting_mediafile_ids": [],
             },
         )
-        self.assert_model_exists("meeting/4", {"meeting_mediafile_ids": None})
+        self.assert_model_exists("meeting/4", {"meeting_mediafile_ids": []})
         self.media.duplicate_mediafile.assert_not_called()
         self.assert_model_not_exists("mediafile/2")
         self.assert_model_not_exists("meeting_mediafile/2")
@@ -1508,7 +1508,7 @@ class CreateForwardedTestWithAttachmentsSimple(
             "motion/13", {"attachment_meeting_mediafile_ids": [12]}
         )
         self.assert_model_exists(
-            "meeting/4", {"meeting_mediafile_ids": [12], "mediafile_ids": None}
+            "meeting/4", {"meeting_mediafile_ids": [12], "mediafile_ids": []}
         )
         self.assert_model_exists(
             "mediafile/1",
@@ -2171,7 +2171,7 @@ class CreateForwardedTestWithAttachmentsShared(
         self.assert_model_not_exists("meeting_mediafile/13")
         self.assert_model_exists(
             "meeting/4",
-            {"meeting_mediafile_ids": [12], "mediafile_ids": None},
+            {"meeting_mediafile_ids": [12], "mediafile_ids": []},
         )
         self.assert_model_exists("mediafile/1", {"meeting_mediafile_ids": [11, 12]})
         self.assert_model_exists(
@@ -2393,19 +2393,17 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         self.assert_model_not_exists("meeting_mediafile/25")
         self.assert_model_exists(
             "meeting/4",
-            {"meeting_mediafile_ids": None, "mediafile_ids": None},
+            {"meeting_mediafile_ids": [], "mediafile_ids": []},
         )
         self.assert_model_exists(
             "mediafile/8",
             {"meeting_mediafile_ids": [17]},
         )
-        self.assert_model_exists(
-            "motion/14", {"attachment_meeting_mediafile_ids": None}
-        )
+        self.assert_model_exists("motion/14", {"attachment_meeting_mediafile_ids": []})
 
         if with_amendments:
             self.assert_model_exists(
-                "motion/15", {"attachment_meeting_mediafile_ids": None}
+                "motion/15", {"attachment_meeting_mediafile_ids": []}
             )
         else:
             self.assert_model_not_exists("motion/15")

@@ -142,7 +142,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "mediafile_id": 3,
                 "is_public": True,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
@@ -239,7 +239,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 110,
                 "mediafile_id": 111,
                 "access_group_ids": [112],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -280,8 +280,8 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )
@@ -311,7 +311,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "parent_id": 110,
             },
         )
@@ -330,7 +330,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [110, 112],
                 "is_public": False,
             },
@@ -473,7 +473,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 110,
                 "mediafile_id": 111,
                 "access_group_ids": [112],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -508,8 +508,8 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 1,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )

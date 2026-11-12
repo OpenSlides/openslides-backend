@@ -219,9 +219,9 @@ def test_types_enum_list(db_connection: Connection) -> None:
             "external_id": None,
             "id": 1,
             "meeting_id": 1,
-            "meeting_mediafile_access_group_ids": None,
-            "meeting_mediafile_inherited_access_group_ids": None,
-            "meeting_user_ids": None,
+            "meeting_mediafile_access_group_ids": [],
+            "meeting_mediafile_inherited_access_group_ids": [],
+            "meeting_user_ids": [],
             "name": "default",
             "permissions": [
                 "agenda_item.can_see_internal",
@@ -233,13 +233,13 @@ def test_types_enum_list(db_connection: Connection) -> None:
                 "projector.can_see",
                 "user.can_see",
             ],
-            "poll_ids": None,
-            "read_chat_group_ids": None,
-            "read_comment_section_ids": None,
-            "used_in_meeting_poll_setting_ids": None,
+            "poll_ids": [],
+            "read_chat_group_ids": [],
+            "read_comment_section_ids": [],
+            "used_in_meeting_poll_setting_ids": [],
             "weight": None,
-            "write_chat_group_ids": None,
-            "write_comment_section_ids": None,
+            "write_chat_group_ids": [],
+            "write_comment_section_ids": [],
         }
     }
 

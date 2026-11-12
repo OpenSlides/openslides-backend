@@ -180,7 +180,7 @@ class OutMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/2")
-        self.assert_model_exists("group/1", {"meeting_user_ids": None})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_exists("meeting/1", {"group_ids": [1, 2, 3], "user_ids": [1]})
 
     def test_delete_organization_tag(self) -> None:

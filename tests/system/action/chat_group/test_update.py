@@ -30,7 +30,7 @@ class ChatGroupUpdate(BaseActionTestCase):
             "chat_group/1",
             {"name": "test", "read_group_ids": [2], "write_group_ids": [2, 3]},
         )
-        self.assert_model_exists("group/1", {"read_chat_group_ids": None})
+        self.assert_model_exists("group/1", {"read_chat_group_ids": []})
         self.assert_model_exists(
             "group/2", {"read_chat_group_ids": [1], "write_chat_group_ids": [1]}
         )

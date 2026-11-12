@@ -77,19 +77,31 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": None}
         )
         self.assert_status_code(response, 200)
-        agenda_item_7 = self.get_model("agenda_item/7")
-        assert agenda_item_7.get("child_ids") is None
-        assert agenda_item_7.get("parent_id") is None
-        agenda_item_8 = self.get_model("agenda_item/8")
-        assert agenda_item_8.get("child_ids") is None
-        assert agenda_item_8.get("parent_id") is None
-        assert agenda_item_8.get("level") == 0
-        assert agenda_item_8.get("weight") == 10000
-        agenda_item_9 = self.get_model("agenda_item/9")
-        assert agenda_item_9.get("child_ids") is None
-        assert agenda_item_9.get("parent_id") is None
-        assert agenda_item_9.get("level") == 0
-        assert agenda_item_9.get("weight") == 10001
+        self.assert_model_exists(
+            "agenda_item/7",
+            {
+                "child_ids": [],
+                "parent_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/8",
+            {
+                "child_ids": [],
+                "parent_id": None,
+                "level": 0,
+                "weight": 10000,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/9",
+            {
+                "child_ids": [],
+                "parent_id": None,
+                "level": 0,
+                "weight": 10001,
+            },
+        )
 
     def test_assign_parent_set(self) -> None:
         self.create_meeting(222)
@@ -150,19 +162,31 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         assert counter.calls == 11
-        agenda_item_7 = self.get_model("agenda_item/7")
-        assert agenda_item_7.get("child_ids") == [8, 9]
-        assert agenda_item_7.get("parent_id") is None
-        agenda_item_8 = self.get_model("agenda_item/8")
-        assert agenda_item_8.get("child_ids") is None
-        assert agenda_item_8.get("parent_id") == 7
-        assert agenda_item_8.get("level") == 1
-        assert agenda_item_8.get("weight") == 101
-        agenda_item_9 = self.get_model("agenda_item/9")
-        assert agenda_item_9.get("child_ids") is None
-        assert agenda_item_9.get("parent_id") == 7
-        assert agenda_item_9.get("level") == 1
-        assert agenda_item_9.get("weight") == 102
+        self.assert_model_exists(
+            "agenda_item/7",
+            {
+                "child_ids": [8, 9],
+                "parent_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/8",
+            {
+                "child_ids": [],
+                "parent_id": 7,
+                "level": 1,
+                "weight": 101,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/9",
+            {
+                "child_ids": [],
+                "parent_id": 7,
+                "level": 1,
+                "weight": 102,
+            },
+        )
 
     def test_assign_multiple_action_data_items(self) -> None:
         self.create_meeting(222)
@@ -196,10 +220,8 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        agenda_item_7 = self.get_model("agenda_item/7")
-        assert agenda_item_7.get("parent_id") is None
-        agenda_item_8 = self.get_model("agenda_item/8")
-        assert agenda_item_8.get("parent_id") is None
+        self.assert_model_exists("agenda_item/7", {"parent_id": None})
+        self.assert_model_exists("agenda_item/8", {"parent_id": None})
 
     def test_assign_no_permissions(self) -> None:
         self.base_permission_test(

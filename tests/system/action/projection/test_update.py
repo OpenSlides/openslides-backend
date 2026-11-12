@@ -29,5 +29,5 @@ class ProjectionUpdate(BaseActionTestCase):
         )
         self.assert_model_exists(
             "projector/1",
-            {"current_projection_ids": None, "history_projection_ids": [33]},
+            {"current_projection_ids": [], "history_projection_ids": [33]},
         )

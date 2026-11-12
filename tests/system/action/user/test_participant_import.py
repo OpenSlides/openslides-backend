@@ -510,7 +510,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "user10",
                 "default_password": "",
                 "meeting_user_ids": [110],
-                "is_present_in_meeting_ids": None,
+                "is_present_in_meeting_ids": [],
             },
         )
         self.assert_model_exists(
@@ -821,9 +821,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.set_models(
             {
                 "meeting/1": {"admin_group_id": 1},
-                "group/2": {
-                    "meeting_user_ids": None,
-                },
+                "group/2": {"meeting_user_ids": None},
                 "group/7": {"name": "changed"},
                 "meeting_user/31": {"group_ids": [1]},
             }
@@ -1676,7 +1674,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "user/2",
             {
                 "id": 2,
-                "meeting_user_ids": None,
+                "meeting_user_ids": [],
                 "username": "Alice",
                 "first_name": None,
                 "home_committee_id": 1,

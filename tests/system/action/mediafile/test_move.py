@@ -81,11 +81,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "mediafile/7",
-            {"child_ids": None, "parent_id": None, "meeting_mediafile_ids": [2227]},
+            {"child_ids": [], "parent_id": None, "meeting_mediafile_ids": [2227]},
         )
         self.assert_model_exists(
             "mediafile/8",
-            {"child_ids": None, "parent_id": None, "meeting_mediafile_ids": [2228]},
+            {"child_ids": [], "parent_id": None, "meeting_mediafile_ids": [2228]},
         )
         self.assert_model_exists("meeting_mediafile/2228", {"is_public": True})
         self.assert_model_exists(
@@ -95,11 +95,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_mediafile/2229", {"is_public": True})
         self.assert_model_exists(
             "mediafile/10",
-            {"child_ids": None, "parent_id": 9, "meeting_mediafile_ids": [2230]},
+            {"child_ids": [], "parent_id": 9, "meeting_mediafile_ids": [2230]},
         )
         self.assert_model_exists(
             "meeting_mediafile/2230",
-            {"is_public": True, "inherited_access_group_ids": None},
+            {"is_public": True, "inherited_access_group_ids": []},
         )
 
     def test_move_parent_set(self) -> None:
@@ -138,14 +138,14 @@ class MediafileMoveActionTest(BaseActionTestCase):
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
-                    "child_ids": None,
+                    "child_ids": [],
                     "parent_id": 7,
                     "meeting_mediafile_ids": [2220 + id_],
                 },
             )
             self.assert_model_exists(
                 f"meeting_mediafile/222{id_}",
-                {"inherited_access_group_ids": None, "is_public": True},
+                {"inherited_access_group_ids": [], "is_public": True},
             )
 
     def test_move_non_directory_parent_set(self) -> None:
@@ -383,7 +383,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 2,
                 "meeting_id": 4,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )
@@ -409,7 +409,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 3,
                 "meeting_id": 4,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )
@@ -518,7 +518,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "meeting_id": 7,
                 "mediafile_id": 2,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [8],
                 "is_public": False,
             },
@@ -529,7 +529,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "meeting_id": 4,
                 "mediafile_id": 2,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )
@@ -548,7 +548,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile_id": 3,
                 "meeting_id": 1,
                 "access_group_ids": [1, 2],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -568,12 +568,12 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile_id": 3,
                 "meeting_id": 7,
                 "access_group_ids": [9],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
         self.assert_model_not_exists("meeting_mediafile/11")
-        self.assert_model_exists("mediafile/4", {"parent_id": None, "child_ids": None})
+        self.assert_model_exists("mediafile/4", {"parent_id": None, "child_ids": []})
 
     def test_move_published_to_unpublished_parent_meeting_data(self) -> None:
         self.create_meeting(1)
@@ -670,7 +670,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "parent_id": 1,
                 "child_ids": [3],
-                "meeting_mediafile_ids": None,
+                "meeting_mediafile_ids": [],
                 "published_to_meetings_in_organization_id": None,
             },
         )
@@ -681,7 +681,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             "mediafile/3",
             {
                 "parent_id": 2,
-                "meeting_mediafile_ids": None,
+                "meeting_mediafile_ids": [],
                 "published_to_meetings_in_organization_id": None,
             },
         )

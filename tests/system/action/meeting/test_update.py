@@ -861,7 +861,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"set_as_template": None, "template_for_organization_id": None}
         )
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": None})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
 
     def test_update_set_as_template_required_duplicate_from(self) -> None:
         self.create_meeting(meeting_data={"template_for_organization_id": 1})
@@ -872,7 +872,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"set_as_template": None, "template_for_organization_id": None}
         )
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": None})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
 
     def test_update_set_as_template_not_allowed(self) -> None:
         self.create_meeting(meeting_data={"template_for_organization_id": 1})

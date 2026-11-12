@@ -36,7 +36,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "state_id": 1,
             },
         )
@@ -47,7 +47,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("motion_submitter/1")
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": None},
+            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": []},
         )
         self.assert_model_exists(
             "agenda_item/1", {"meeting_id": 1, "content_object_id": "motion/1"}
@@ -113,10 +113,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             {
                 **motion,
                 "attachment_meeting_mediafile_ids": [80],
-                "submitter_ids": None,
                 "additional_submitter": "test",
                 "supporter_ids": [1],
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "supporter_meeting_user_ids": None,
             },
         )
@@ -378,7 +377,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        motion = self.assert_model_exists("motion/2", {"identical_motion_ids": None})
+        motion = self.assert_model_exists("motion/2", {"identical_motion_ids": []})
         self.assertNotEqual(motion["text_hash"], self.hash)
 
     def test_create_identical_motion_in_other_meeting(self) -> None:
@@ -395,7 +394,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion/2",
-            {"meeting_id": 10, "text_hash": self.hash, "identical_motion_ids": None},
+            {"meeting_id": 10, "text_hash": self.hash, "identical_motion_ids": []},
         )
 
     def test_create_no_permission(self) -> None:
@@ -921,7 +920,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
             },
         )
 
@@ -943,7 +942,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
             },
         )
 
@@ -985,7 +984,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
             },
         )
 
@@ -1011,7 +1010,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
             },
         )
 
@@ -1035,7 +1034,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
             },
         )
 
@@ -1095,7 +1094,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [],
                 "diff_version": "0.1.2",
             },
         )

@@ -219,7 +219,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/3", {"text_hash": hash, "identical_motion_ids": None}
+            "motion/3", {"text_hash": hash, "identical_motion_ids": []}
         )
 
     def test_create_identical_paragraph_based_amendment(self) -> None:

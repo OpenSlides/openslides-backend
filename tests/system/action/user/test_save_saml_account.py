@@ -880,7 +880,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
         self.assert_model_not_exists("meeting_user/2")
         self.assert_model_exists(
-            "group/2", {"meeting_user_ids": None, "external_id": "Delegates"}
+            "group/2", {"meeting_user_ids": [], "external_id": "Delegates"}
         )
         self.assert_model_exists(
             "group/4", {"meeting_user_ids": [1], "external_id": "Default"}
@@ -994,8 +994,8 @@ class UserAddToGroup(UserBaseSamlAccount):
             {
                 "saml_id": "111",
                 "username": "111",
-                "meeting_user_ids": None,
-                "meeting_ids": None,
+                "meeting_user_ids": [],
+                "meeting_ids": [],
             },
         )
         self.assert_model_not_exists("meeting_user/1")
@@ -1394,7 +1394,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
         self.assert_model_not_exists("meeting_user/2")
         self.assert_model_exists(
-            "group/1", {"meeting_user_ids": None, "external_id": "Default"}
+            "group/1", {"meeting_user_ids": [], "external_id": "Default"}
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}

@@ -537,7 +537,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "speaker/890", {"structure_level_list_of_speakers_id": None}
         )
         self.assert_model_exists(
-            "structure_level_list_of_speakers/42", {"speaker_ids": None}
+            "structure_level_list_of_speakers/42", {"speaker_ids": []}
         )
 
     def test_update_set_point_of_order_forbidden(self) -> None:

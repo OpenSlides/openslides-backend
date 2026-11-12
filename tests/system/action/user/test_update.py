@@ -61,22 +61,14 @@ class UserUpdateActionTest(BaseActionTestCase):
                 response.json["message"],
             )
             self.assert_model_exists(
-                "user/111",
-                {
-                    "committee_management_ids": [committee_id],
-                },
+                "user/111", {"committee_management_ids": [committee_id]}
             )
         else:
             self.assertIn(
                 "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee ",
                 response.json["message"],
             )
-            self.assert_model_exists(
-                "user/111",
-                {
-                    "committee_management_ids": None,
-                },
-            )
+            self.assert_model_exists("user/111", {"committee_management_ids": []})
         # test group E
         response = self.request(
             "user.update",
@@ -350,7 +342,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 22,
                 "meeting_id": 1,
-                "vote_delegated_to_ids": None,
+                "vote_delegated_to_ids": [],
             },
         )
         self.assert_model_exists(
@@ -358,7 +350,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 23,
                 "meeting_id": 1,
-                "vote_delegations_from_ids": None,
+                "vote_delegations_from_ids": [],
             },
         )
 
@@ -473,8 +465,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "meeting_ids": None,
-                "meeting_user_ids": None,
+                "meeting_ids": [],
+                "meeting_user_ids": [],
                 "committee_management_ids": [60, 61],
                 "committee_ids": [60, 61],
             },
@@ -512,9 +504,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/111", {"committee_management_ids": None, "committee_ids": None}
+            "user/111", {"committee_management_ids": [], "committee_ids": []}
         )
-        self.assert_model_exists("committee/1", {"user_ids": None})
+        self.assert_model_exists("committee/1", {"user_ids": []})
 
     def test_committee_manager_add_and_remove_both(self) -> None:
         """test with 2 actions in 2 transaction"""
@@ -576,11 +568,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("meeting_user/111")
-        self.assert_model_exists("committee/1", {"user_ids": None})
+        self.assert_model_exists("committee/1", {"user_ids": []})
         self.assert_model_exists("committee/2", {"user_ids": [123]})
         self.assert_model_exists("committee/3", {"user_ids": [123]})
         self.assert_model_exists("committee/4", {"user_ids": [123]})
-        self.assert_model_exists("meeting/11", {"user_ids": None})
+        self.assert_model_exists("meeting/11", {"user_ids": []})
         self.assert_model_exists("meeting/22", {"user_ids": [123]})
         self.assert_model_exists("meeting/33", {"user_ids": [123]})
 
@@ -2999,18 +2991,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_present_in_meeting_ids": [7],
             },
         )
-        self.assert_model_exists(
-            "meeting/4",
-            {
-                "present_user_ids": None,
-            },
-        )
-        self.assert_model_exists(
-            "meeting/7",
-            {
-                "present_user_ids": [1234],
-            },
-        )
+        self.assert_model_exists("meeting/4", {"present_user_ids": []})
+        self.assert_model_exists("meeting/7", {"present_user_ids": [1234]})
         self.assert_model_not_exists("meeting_user/4444")
         self.assert_model_exists(
             "meeting_user/7777",
@@ -3112,7 +3094,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/1", {"present_user_ids": [2]})
         self.assert_model_exists("poll_option/1", {"content_object_id": "user/2"})
-        self.assert_model_exists("meeting_user/1", {"poll_option_ids": None})
+        self.assert_model_exists("meeting_user/1", {"poll_option_ids": []})
 
     def test_update_with_internal_fields_error(self) -> None:
         self.create_meeting()

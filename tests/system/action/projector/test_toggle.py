@@ -53,7 +53,7 @@ class ProjectorToggle(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("projection/33")
-        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_correct_remove_unstable_projection(self) -> None:
         self.setup_projection_33(False)

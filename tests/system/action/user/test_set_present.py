@@ -35,8 +35,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
-        self.assert_model_exists("meeting/1", {"present_user_ids": None})
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": []})
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
         self.assert_history_information(
             "user/111", ["Set not present in meeting {}", "meeting/1"]
         )
@@ -57,8 +57,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
-        self.assert_model_exists("meeting/1", {"present_user_ids": None})
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": []})
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
 
     def test_set_present_add_self_correct(self) -> None:
         self.set_models(

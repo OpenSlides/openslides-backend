@@ -896,7 +896,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             "content_object_id": f"topic/{next_topic_id}",
                             "meeting_id": meeting_id,
-                            "tag_ids": None,
+                            "tag_ids": [],
                             "weight": id_ + base_agenda_weight_per_meeting[meeting_id],
                             **(
                                 {"parent_id": model_matches[0][meeting_id][parent_id]}
@@ -1181,9 +1181,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                             *mediafile_data[1], for_writing=False
                         ),
                         "meeting_mediafile_ids": (
-                            list(mediafile_data[2].keys())
-                            if mediafile_data[2]
-                            else None
+                            list(mediafile_data[2].keys()) if mediafile_data[2] else []
                         ),
                     },
                 )
@@ -1206,7 +1204,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                     for topic_id in sorted(mmediafile_data[1])
                                 ]
                                 if mmediafile_data[1]
-                                else None
+                                else []
                             ),
                             **mmediafile_data[2],
                         },
@@ -1663,8 +1661,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "content_object_id": f"topic/{90 + copy_order}",
                     "meeting_id": meeting_id,
                     "sequential_number": meeting_copy_order,
-                    "speaker_ids": None,
-                    "structure_level_list_of_speakers_ids": None,
+                    "speaker_ids": [],
+                    "structure_level_list_of_speakers_ids": [],
                     "closed": False,
                     "moderator_notes": None,
                 },
@@ -1865,8 +1863,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "content_object_id": f"topic/{90 + copy_order}",
                     "meeting_id": meeting_id,
                     "sequential_number": meeting_copy_order,
-                    "speaker_ids": None,
-                    "structure_level_list_of_speakers_ids": None,
+                    "speaker_ids": [],
+                    "structure_level_list_of_speakers_ids": [],
                     "closed": False,
                     "moderator_notes": None,
                     **extra_los_fields,
@@ -1974,9 +1972,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             [1, 2, 3, 4, 5, 6], [4, 7], with_speakers=True, with_moderator_notes=True
         )
         for id_ in 4, 7:
-            self.assert_model_exists(
-                f"meeting/{id_}", {"is_present_in_meeting_ids": None}
-            )
+            self.assert_model_exists(f"meeting/{id_}", {"present_user_ids": []})
         self.assert_group_data(
             {
                 4: {10: "Delegate"},
@@ -2130,7 +2126,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     14: (
                         9,
                         [6, 10],
-                        None,
+                        [],
                         self.get_meeting_user_data(14),
                         False,
                     ),  # Take 6 add 10
@@ -2146,7 +2142,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     3: (
                         1,
                         [8, 9, 12],
-                        None,
+                        [],
                         self.get_meeting_user_data(3),
                         False,
                     ),  # Take 8, 9 add 12
@@ -2195,14 +2191,14 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     29: (
                         8,
                         [12],
-                        None,
+                        [],
                         self.get_meeting_user_data(11),
                         True,
                     ),  # From meeting_user 11
                     15: (
                         9,
                         [9, 13],
-                        None,
+                        [],
                         self.get_meeting_user_data(15),
                         False,
                     ),  # Take 9 add 13
@@ -2280,9 +2276,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, None),
+                    4: ("You have", 1, []),
                     5: ("A point", 2, [37]),
-                    6: ("A", 3, None),
+                    6: ("A", 3, []),
                     7: ("Small point", 4, [50]),
                     8: ("Big point", 1, [36, 48, 49]),  # new
                 },
@@ -2327,7 +2323,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [85],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2350,7 +2346,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89, 85],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2374,7 +2370,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2416,8 +2412,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting/1": {
                     6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
                     7: ({}, ("G", None), {71: (1, [66], {})}, False),
-                    8: ({}, ("H", None), {81: (1, None, {})}, False),
-                    9: ({}, ("I", None), {91: (1, None, {})}, False),
+                    8: ({}, ("H", None), {81: (1, [], {})}, False),
+                    9: ({}, ("I", None), {91: (1, [], {})}, False),
                     10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
@@ -2459,10 +2455,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             104: (
                                 4,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2475,10 +2471,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             105: (
                                 4,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2494,7 +2490,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [82, 83],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2541,10 +2537,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             110: (
                                 7,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2557,10 +2553,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             111: (
                                 7,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2576,7 +2572,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2643,7 +2639,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [85],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2666,7 +2662,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89, 85],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2690,7 +2686,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             ),
@@ -2732,8 +2728,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting/1": {
                     6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
                     7: ({}, ("G", None), {71: (1, [66], {})}, False),
-                    8: ({}, ("H", None), {81: (1, None, {})}, False),
-                    9: ({}, ("I", None), {91: (1, None, {})}, False),
+                    8: ({}, ("H", None), {81: (1, [], {})}, False),
+                    9: ({}, ("I", None), {91: (1, [], {})}, False),
                     10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
@@ -2775,10 +2771,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             104: (
                                 4,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2791,10 +2787,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             105: (
                                 4,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2810,7 +2806,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [82, 83],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2857,10 +2853,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             110: (
                                 7,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2873,10 +2869,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             111: (
                                 7,
-                                None,
+                                [],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2892,7 +2888,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": None,
+                                    "access_group_ids": [],
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -3105,7 +3101,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     14: (
                         9,
                         [6, 10],
-                        None,
+                        [],
                         self.get_meeting_user_data(14),
                         False,
                     ),  # Take 6 add 10
@@ -3121,7 +3117,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     3: (
                         1,
                         [8, 9, 12],
-                        None,
+                        [],
                         self.get_meeting_user_data(3),
                         False,
                     ),  # Take 8, 9 add 12
@@ -3170,14 +3166,14 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     29: (
                         8,
                         [12],
-                        None,
+                        [],
                         self.get_meeting_user_data(11),
                         True,
                     ),  # From meeting_user 11
                     15: (
                         9,
                         [9, 13],
-                        None,
+                        [],
                         self.get_meeting_user_data(15),
                         False,
                     ),  # Take 9 add 13
@@ -3255,9 +3251,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, None),
+                    4: ("You have", 1, []),
                     5: ("A point", 2, [37]),
-                    6: ("A", 3, None),
+                    6: ("A", 3, []),
                     7: ("Small point", 4, [50]),
                     8: ("Big point", 1, [36, 48, 49]),  # new
                 },
@@ -3406,7 +3402,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     18: (
                         4,
                         [6, 10],
-                        None,
+                        [],
                         {"number": None, "comment": None, "about_me": None},
                         False,
                     ),  # From meeting_user 6
@@ -3481,7 +3477,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
 
         for id_ in [4, 7]:
-            self.assert_model_exists(f"meeting/{id_}", {"present_user_ids": None})
+            self.assert_model_exists(f"meeting/{id_}", {"present_user_ids": []})
 
         for collection, id_ in {
             "mediafile": 4,
@@ -3712,9 +3708,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_meeting_user_data(
             {
                 4: {
-                    5: (2, [8], None, {}, True),
-                    6: (3, [9], None, {}, True),
-                    7: (4, [10], None, {}, False),
+                    5: (2, [8], [], {}, True),
+                    6: (3, [9], [], {}, True),
+                    7: (4, [10], [], {}, False),
                 },
             }
         )
@@ -3853,7 +3849,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             {
                 4: {
                     12: (8, [5], [16, 17, 18, 19, 20], {}, False),
-                    14: (9, [6], None, {}, False),
+                    14: (9, [6], [], {}, False),
                     17: (10, [4, 5], [14, 16, 18, 20], {}, False),
                 }
             }
@@ -3884,9 +3880,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, None),
-                    5: ("A point", 2, None),
-                    6: ("A", 3, None),
+                    4: ("You have", 1, []),
+                    5: ("A point", 2, []),
+                    6: ("A", 3, []),
                     7: ("Small point", 4, [31]),
                     8: ("Big point", 1, [29, 30]),
                 }

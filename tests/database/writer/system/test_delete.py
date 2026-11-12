@@ -56,7 +56,7 @@ def test_delete_nm() -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_no_model(fqid)
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": []})
 
 
 def create_models_for_1_1_tests() -> None:
@@ -414,7 +414,7 @@ def test_delete_n_m_not_null_success_delete_one_side(
         conn.commit()
     assert_no_model("meeting_user/3")
     assert_model(
-        "group/4", {"id": 4, "name": "4", "meeting_id": 1, "meeting_user_ids": None}
+        "group/4", {"id": 4, "name": "4", "meeting_id": 1, "meeting_user_ids": []}
     )
 
 

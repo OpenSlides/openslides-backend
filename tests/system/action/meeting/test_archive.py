@@ -20,7 +20,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
-            {"active_meeting_ids": None, "archived_meeting_ids": [1]},
+            {"active_meeting_ids": [], "archived_meeting_ids": [1]},
         )
 
     def test_archive_2_meetings(self) -> None:

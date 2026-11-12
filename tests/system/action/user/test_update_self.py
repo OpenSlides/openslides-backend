@@ -129,7 +129,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_delegated_to_ids": [12], "vote_delegations_from_ids": None},
+            {"vote_delegated_to_ids": [12], "vote_delegations_from_ids": []},
         )
 
     def test_update_foreign_delegation_error(self) -> None:
@@ -193,7 +193,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_delegated_to_ids": [12], "vote_delegations_from_ids": None},
+            {"vote_delegated_to_ids": [12], "vote_delegations_from_ids": []},
         )
 
     def test_update_remove_delegation(self) -> None:
@@ -255,7 +255,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_delegated_to_ids": None},
+            {"vote_delegated_to_ids": []},
         )
 
     def test_update_delegation_without_meeting_id(self) -> None:
@@ -320,7 +320,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": None})
+        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_ids": []})
 
     def test_update_delegation_self(self) -> None:
         self.create_meeting()

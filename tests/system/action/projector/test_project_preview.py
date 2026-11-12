@@ -86,8 +86,8 @@ class ProjectorProjectPreview(BaseActionTestCase):
             "projector/2",
             {
                 "current_projection_ids": [6],
-                "preview_projection_ids": None,
-                "history_projection_ids": None,
+                "preview_projection_ids": [],
+                "history_projection_ids": [],
             },
         )
 

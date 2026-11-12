@@ -39,7 +39,7 @@ class ProjectorCountdownDelete(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("projector_countdown/1")
         self.assert_model_not_exists("projection/1")
-        self.assert_model_exists("meeting/1", {"all_projection_ids": None})
+        self.assert_model_exists("meeting/1", {"all_projection_ids": []})
 
     def test_delete_not_allowed_1(self) -> None:
         response = self.request("projector_countdown.delete", {"id": 2})

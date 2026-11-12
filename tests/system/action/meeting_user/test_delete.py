@@ -62,9 +62,9 @@ class MeetingUserDelete(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "user/1", {"is_present_in_meeting_ids": [101], "meeting_user_ids": None}
+            "user/1", {"is_present_in_meeting_ids": [101], "meeting_user_ids": []}
         )
-        self.assert_model_exists("meeting/10", {"present_user_ids": None})
+        self.assert_model_exists("meeting/10", {"present_user_ids": []})
         self.assert_model_exists("meeting/101", {"present_user_ids": [1]})
 
     def test_delete_with_editor_and_working_group_speaker(self) -> None:
