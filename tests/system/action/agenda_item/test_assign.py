@@ -276,10 +276,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "Assigning item 7 to one of its children is not possible."
-        )
+        assert response.json["message"] == "Assigning item 7 to itself is not possible."
 
     def test_assign_no_permissions(self) -> None:
         self.base_permission_test(
