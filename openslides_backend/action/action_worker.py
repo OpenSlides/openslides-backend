@@ -24,6 +24,7 @@ from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
+from .util.action_name import summarize_action_names
 from .util.typing import ActionsResponse, Payload
 
 
@@ -31,26 +32,6 @@ class ActionWorkerState(StrEnum):
     RUNNING = "running"
     END = "end"
     ABORTED = "aborted"
-
-
-def concatenate_action_names(payload: Payload) -> str:
-    result = ",".join(elem.get("action", "") for elem in payload)
-    if len(result) > 256:
-        action_names = result.split(",")
-        result = ""
-        prev_action_name = action_names[0]
-        counter = 1
-        for action_name in action_names[1:]:
-            if action_name == prev_action_name:
-                counter += 1
-            else:
-                result += f"{prev_action_name}_{counter},"
-                prev_action_name = action_name
-                counter = 1
-        result += f"{prev_action_name}_{counter}"
-        if len(result) > 256:
-            result = result[:255] + "…"
-    return result
 
 
 def handle_action_in_worker_thread(
@@ -63,7 +44,7 @@ def handle_action_in_worker_thread(
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
-        action_names = concatenate_action_names(payload)
+        action_names = summarize_action_names(payload)
     except Exception:
         action_names = "Cannot be determined"
     action_worker_writing = ActionWorkerWriting(user_id, handler.logging, action_names)
@@ -94,10 +75,6 @@ def handle_action_in_worker_thread(
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
             # thread finished
-            # # execute cleanup methods
-            # for on_success in handler.on_success:
-            #     print(f"###{payload[0]['action']}: immediate on success: {on_success}")
-            #     on_success()
             return action_worker_thread.response
         msg = (
             "Action request ended with unknown reason, "
@@ -109,7 +86,6 @@ def handle_action_in_worker_thread(
     with get_new_os_conn() as conn:
         extended_db = ExtendedDatabase(conn, handler.logging, env)
         message = action_worker_writing.initial_action_worker_write(extended_db)
-    print(f"### return 202 {action_worker_writing.fqid}")
     return ActionsResponse(
         status_code=HTTPStatus.ACCEPTED.value,
         success=False,
@@ -147,7 +123,6 @@ class ActionWorkerWriting:
         if not self.new_id:
             self.new_id = extended_db.reserve_id(collection="action_worker")
             self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
-        print(f"### Initial action worker write {self.action_names}")
         try:
             extended_db.write(
                 WriteRequest(
@@ -171,7 +146,6 @@ class ActionWorkerWriting:
             )
             extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
             message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
-            print("### " + message)
             self.written = True
         except DatabaseException as e:
             message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
@@ -210,15 +184,11 @@ class ActionWorkerWriting:
             else:
                 exception = ActionException(str(action_worker_thread.exception))
             response = exception.get_json()
-            print(
+            self.logger.error(
                 f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
             )
         elif hasattr(action_worker_thread, "response"):
             # thread finished
-            # # execute cleanup methods
-            # for on_success in action_worker_thread.handler.on_success:
-            #     print(f"{self.action_names}: final on success: {on_success}")
-            #     on_success()
             response = action_worker_thread.response
             self.logger.info(
                 f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
@@ -229,7 +199,7 @@ class ActionWorkerWriting:
             )
             state = ActionWorkerState.ABORTED
             response = exception.get_json()
-            print(
+            self.logger.error(
                 f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
             )
 
@@ -278,9 +248,7 @@ class ActionWorker(threading.Thread):
                 self.response = self.handler.handle_request(
                     self.payload, self.user_id, self.is_atomic, self.internal
                 )
-                print(f"action worker run: {self.payload}\n{self.response}")
             except Exception as exception:
-                print(f"action worker run: {exception}\n{self.payload}")
                 self.exception = exception
 
 
@@ -313,7 +281,6 @@ def gunicorn_post_request(
         action_worker_writing = curr_thread.action_worker_writing
         lock = action_worker.lock
 
-        print(f"###{action_worker.name} action worker still running in post hook.")
         with get_new_os_conn() as conn:
             extended_db = ExtendedDatabase(conn, logging, env)
             initial_write_counter = 0
@@ -321,7 +288,6 @@ def gunicorn_post_request(
                 worker.tmp.notify()
                 if action_worker_writing.written:
                     if lock.acquire(timeout=10):
-                        print(f"###{action_worker.name} action worker finalize.")
                         action_worker_writing.final_action_worker_write(
                             extended_db, action_worker
                         )

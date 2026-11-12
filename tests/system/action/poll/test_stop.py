@@ -8,7 +8,7 @@ from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
-from psycopg.errors import DatabaseError
+from psycopg.errors import DeadlockDetected
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
@@ -402,13 +402,13 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
 
-    def test_stop_race_condition1(self) -> None:
+    def base_no_success(self, max_retries: str) -> None:
         """
-        Asserts that the on_success method of poll.stop isn't called in case of a exception at the end of transaction.
+        Asserts that the on_success method of poll.stop isn't called in case of an exception at transaction end.
         """
         pytest_thread_local.name = "MainThread_RC"
-        self.set_thread_watch_timeout(1)
-        self.env.vars["ACTION_MAX_RETRIES"] = "1"
+        self.set_thread_watch_timeout(0.2)
+        self.env.vars["ACTION_MAX_RETRIES"] = max_retries
 
         self.create_meeting(1, {"poll_couple_countdown": False})
         self.create_topic(1, 1)
@@ -431,6 +431,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             with monkeypatch_get_new_os_conn():
                 self.request("poll.stop", {"id": 1})
             mock_clear.assert_not_called()
+
+    def test_stop_no_success(self) -> None:
+        self.base_no_success("1")
+
+    def test_stop_no_success2(self) -> None:
+        self.base_no_success("2")
 
 
 hr_calls = 0
@@ -468,7 +474,7 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
             ConnectionContext.original_exit(*args, **kwargs)  # type: ignore [attr-defined]
             ConnectionContext.__exit__ = ConnectionContext.original_exit  # type: ignore [method-assign,attr-defined]
             delattr(ConnectionContext, "original_exit")
-            raise DatabaseError("WAAAAHH!!!!")
+            raise DeadlockDetected("WAAAAHH!!!!")
         else:
             ConnectionContext.__exit__(*args, **kwargs)
 
@@ -477,7 +483,7 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
     if caller.function == "handle_request":
         # count in function context
         hr_calls += 1
-        if hr_calls == 2:
+        if hr_calls == 2 or hr_calls == 3:
             nested_patch = True
     module = import_module("openslides_backend.action.action_handler")
     if nested_patch:

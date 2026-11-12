@@ -39,6 +39,7 @@ from ..shared.otel import make_span
 from ..shared.schema import schema_version
 from . import actions  # noqa
 from .relations.relation_manager import RelationManager
+from .util.action_name import summarize_action_names
 from .util.action_type import ActionType
 from .util.actions_map import actions_map
 from .util.typing import (
@@ -96,8 +97,6 @@ class ActionHandler(BaseHandler):
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
-        # self.on_success = []
-        # self.on_success_transaction_based = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
@@ -145,7 +144,6 @@ class ActionHandler(BaseHandler):
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
-                    name = payload[0]['action']
                     with get_new_os_conn() as conn:
                         self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
@@ -154,7 +152,6 @@ class ActionHandler(BaseHandler):
                             results = self.execute_write_requests(
                                 self.parse_actions, payload
                             )
-                            print(f"###{name}: result: {results}")
                         else:
 
                             def transform_to_list(
@@ -193,14 +190,7 @@ class ActionHandler(BaseHandler):
 
                         # execute database cleanup methods
                         for on_success in self.on_success_transaction_based:
-                            print(f"###{name}: transactional on success: {on_success}")
                             on_success()
-                        if self.on_success:
-                            print("### normal on success")
-
-                        # Return action result
-                        print(f"###{name}: Request was successful. Send response now.")
-                        # results.append(name)
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
@@ -212,9 +202,6 @@ class ActionHandler(BaseHandler):
                     else:
                         # Assume equal_fields error
                         raise RelationException(str(e).split("\nCONTEXT:")[0])
-                except DeadlockDetected as e:
-                    print(f"### transaction DeadlockDetected")
-                    raise DatabaseException(f"Deadlock detected:{e}")
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
@@ -224,11 +211,19 @@ class ActionHandler(BaseHandler):
                         )
                         raise ModelDoesNotExist(error_fqid)
                     raise e
-                except SerializationFailure:
+                except DeadlockDetected as e:
+                    self.logger.error(str(e))
+                    if attempt == retry_count:
+                        raise DatabaseException(
+                            f"{summarize_action_names(payload)}: Deadlock detected."
+                        )
+                except SerializationFailure as e:
                     if attempt == retry_count:
                         raise DatabaseException(
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
                         )
+                    else:
+                        self.logger.error(str(e))
                     sleep(retry_timeout)
                 except DatabaseError as e:
                     raise DatabaseException(f"Psycopg encountered a new problem: {e}")
@@ -237,16 +232,18 @@ class ActionHandler(BaseHandler):
                         f"The user encountered a new problem with psycopg: {e}"
                     )
 
-                # execute http cleanup methods
-                for on_success in self.on_success:
-                    print(f"###{name}: immediate on success: {on_success}")
-                    on_success()
-                return ActionsResponse(
-                    status_code=HTTPStatus.OK.value,
-                    success=True,
-                    message="Actions handled successfully",
-                    results=results,
-                )
+            # execute http cleanup methods
+            for on_success in self.on_success:
+                on_success()
+
+            # Return action results
+            self.logger.info("Request was successful. Send response now.")
+            return ActionsResponse(
+                status_code=HTTPStatus.OK.value,
+                success=True,
+                message="Actions handled successfully",
+                results=results,
+            )
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
@@ -396,7 +393,7 @@ class ActionHandler(BaseHandler):
 
             return (write_request, results)
         except ActionException as exception:
-            print(
+            self.logger.error(
                 f"Error occured on index {action.index}: {exception.message}"
             )
             # -1: error which cannot be directly associated with a single action data

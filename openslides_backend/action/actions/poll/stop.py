@@ -132,7 +132,6 @@ class PollStopAction(
         def on_success() -> None:
             for instance in action_data:
                 try:
-                    print("####Poll stop clear vote!!")
                     self.vote_service.clear(instance["id"])
                 except VoteServiceException as e:
                     self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
