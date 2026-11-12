@@ -141,13 +141,13 @@ class ActionHandler(BaseHandler):
             for attempt in range(1, retry_count + 1):
                 self.on_success = []
                 self.on_success_transaction_based = []
+                results: ActionsResponseResults = []
+                self.post_edit_necessary = False
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
                     with get_new_os_conn() as conn:
-                        self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-                        results: ActionsResponseResults = []
                         if atomic:
                             results = self.execute_write_requests(
                                 self.parse_actions, payload
@@ -231,19 +231,20 @@ class ActionHandler(BaseHandler):
                     raise BadCodingException(
                         f"The user encountered a new problem with psycopg: {e}"
                     )
+                else:
+                    # Connection terminated successfully.
+                    # Execute http cleanup methods.
+                    for on_success in self.on_success:
+                        on_success()
 
-            # execute http cleanup methods
-            for on_success in self.on_success:
-                on_success()
-
-            # Return action results
-            self.logger.info("Request was successful. Send response now.")
-            return ActionsResponse(
-                status_code=HTTPStatus.OK.value,
-                success=True,
-                message="Actions handled successfully",
-                results=results,
-            )
+                    # Return action results.
+                    self.logger.info("Request was successful. Send response now.")
+                    return ActionsResponse(
+                        status_code=HTTPStatus.OK.value,
+                        success=True,
+                        message="Actions handled successfully",
+                        results=results,
+                    )
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
@@ -365,7 +366,6 @@ class ActionHandler(BaseHandler):
         action_data = deepcopy(action_payload_element["data"])
 
         try:
-            # with self.datastore.get_database_context():
             with make_span(self.env, "action.perform"):
                 write_request, results = action.perform(
                     action_data, self.user_id, internal=self.internal
@@ -378,12 +378,6 @@ class ActionHandler(BaseHandler):
 
             if write_request:
                 action.validate_write_request(write_request)
-
-                # # add locked_fields to request
-                # write_request.locked_fields = self.datastore.locked_fields
-                # # reset locked fields, but not changed models - these might be needed
-                # # by another action
-                # self.datastore.reset(hard=False)
 
             # add on_success routine
             if on_success := action.get_on_success(action_data):

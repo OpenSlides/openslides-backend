@@ -407,7 +407,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         Asserts that the on_success method of poll.stop isn't called in case of an exception at transaction end.
         """
         pytest_thread_local.name = "MainThread_RC"
-        self.set_thread_watch_timeout(0.2)
+        self.set_thread_watch_timeout(0.1)
         self.env.vars["ACTION_MAX_RETRIES"] = max_retries
 
         self.create_meeting(1, {"poll_couple_countdown": False})
@@ -447,6 +447,8 @@ def monkeypatch_get_new_os_conn() -> Iterator[None]:
     """
     Patches get_new_os_conn to further patch the ConnectionContext.
     """
+    global hr_calls
+    hr_calls = 0
     module = import_module("openslides_backend.action.action_handler")
     module.get_new_os_conn_original = module.get_new_os_conn  # type: ignore [attr-defined]
     module.get_new_os_conn = counting_get_new_os_conn  # type: ignore [attr-defined]
@@ -468,7 +470,7 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
         Should only be called by handle request on the second entering of the
         connection context but may be called by other functions too.
         """
-        sleep(1.1)
+        sleep(0.2)
         caller = inspect.stack()[1]
         if caller.function == "handle_request":
             ConnectionContext.original_exit(*args, **kwargs)  # type: ignore [attr-defined]
