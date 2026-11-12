@@ -19,7 +19,6 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ..shared.exceptions import (
@@ -28,7 +27,6 @@ from ..shared.exceptions import (
     DatabaseException,
     DatastoreLockedException,
     ModelDoesNotExist,
-    RelationException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
