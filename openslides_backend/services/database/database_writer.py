@@ -588,7 +588,7 @@ class DatabaseWriter(SqlQueryHelper):
         except DatabaseError as e:
             raise DatabaseException(f"Psycopg encountered a new problem: {e}")
         except InterfaceError as e:
-            raise BadCodingException(
+            raise DatabaseException(
                 f"The user encountered a new problem with psycopg: {e}"
             )
         except Exception as e:

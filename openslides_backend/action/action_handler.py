@@ -25,6 +25,7 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from ..shared.exceptions import (
     ActionException,
     BadCodingException,
+    DatabaseException,
     DatastoreLockedException,
     ModelDoesNotExist,
     RelationException,
@@ -228,7 +229,7 @@ class ActionHandler(BaseHandler):
                 except DatabaseError as e:
                     raise DatabaseException(f"Psycopg encountered a new problem: {e}")
                 except InterfaceError as e:
-                    raise BadCodingException(
+                    raise DatabaseException(
                         f"The user encountered a new problem with psycopg: {e}"
                     )
                 else:

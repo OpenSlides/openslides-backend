@@ -13,11 +13,7 @@ from psycopg.errors import (
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
 )
-from openslides_backend.shared.exceptions import (
-    BadCodingException,
-    DatabaseException,
-    InvalidFormat,
-)
+from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
 from openslides_backend.shared.filters import And, Filter, Not, Or
 from openslides_backend.shared.patterns import Collection, Id
 from openslides_backend.shared.typing import LockResult, Model, PartialModel
@@ -260,7 +256,7 @@ class DatabaseReader(SqlQueryHelper):
         except DatabaseError as e:
             raise DatabaseException(f"Psycopg encountered a new problem: {e}")
         except InterfaceError as e:
-            raise BadCodingException(
+            raise DatabaseException(
                 f"The user encountered a new problem with psycopg: {e}"
             )
         except Exception as e:

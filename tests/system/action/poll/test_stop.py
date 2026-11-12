@@ -439,7 +439,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.base_no_success("2")
 
 
-hr_calls = 0
+handle_request_calls = 0
 
 
 @contextmanager
@@ -447,8 +447,8 @@ def monkeypatch_get_new_os_conn() -> Iterator[None]:
     """
     Patches get_new_os_conn to further patch the ConnectionContext.
     """
-    global hr_calls
-    hr_calls = 0
+    global handle_request_calls
+    handle_request_calls = 0
     module = import_module("openslides_backend.action.action_handler")
     module.get_new_os_conn_original = module.get_new_os_conn  # type: ignore [attr-defined]
     module.get_new_os_conn = counting_get_new_os_conn  # type: ignore [attr-defined]
@@ -463,7 +463,7 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
     """
     Wraps the __exit__ of the ConnectionContext to stall the thread and raise a DeadlockDetected exception.
     """
-    global hr_calls
+    global handle_request_calls
 
     def raise_exception(*args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         """
@@ -476,7 +476,7 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
             ConnectionContext.original_exit(*args, **kwargs)  # type: ignore [attr-defined]
             ConnectionContext.__exit__ = ConnectionContext.original_exit  # type: ignore [method-assign,attr-defined]
             delattr(ConnectionContext, "original_exit")
-            raise DeadlockDetected("WAAAAHH!!!!")
+            raise DeadlockDetected("Nii!!")
         else:
             ConnectionContext.__exit__(*args, **kwargs)
 
@@ -484,8 +484,8 @@ def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defin
     caller = inspect.stack()[1]
     if caller.function == "handle_request":
         # count in function context
-        hr_calls += 1
-        if hr_calls == 2 or hr_calls == 3:
+        handle_request_calls += 1
+        if handle_request_calls == 2 or handle_request_calls == 3:
             nested_patch = True
     module = import_module("openslides_backend.action.action_handler")
     if nested_patch:
