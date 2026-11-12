@@ -58,7 +58,7 @@ def test_update_view_field() -> None:
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": 1, "meeting_user_ids": None})
+    assert_model(f"user/{id_}", {"id": 1, "meeting_user_ids": []})
 
 
 def test_update_nm_field_simple() -> None:
@@ -124,12 +124,12 @@ def test_update_nm_field_null() -> None:
                 {
                     "type": EventType.Update,
                     "fqid": f"committee/{committee_id}",
-                    "fields": {"manager_ids": None},
+                    "fields": {"manager_ids": []},
                 },
                 {
                     "type": EventType.Update,
                     "fqid": f"user/{user_id}",
-                    "fields": {"committee_management_ids": None},
+                    "fields": {"committee_management_ids": []},
                 },
             ]
         }
@@ -139,9 +139,9 @@ def test_update_nm_field_null() -> None:
         extended_database.write(create_write_requests(data))
     assert_model(
         "user/1",
-        {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": None},
+        {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": []},
     )
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": []})
 
 
 def test_update_error_own_field_unique(
@@ -534,7 +534,7 @@ def test_update_n_m_nt_ntR_not_null_success(
         conn.commit()
     assert_model(
         "group/4",
-        {"id": 4, "meeting_user_ids": None},
+        {"id": 4, "meeting_user_ids": []},
     )
     assert_model(
         "group/5",
@@ -568,9 +568,9 @@ def test_update_nm_field_remove() -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_model(
-        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": None}
+        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": []}
     )
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": []})
 
 
 def test_update_nm_field_generic() -> None:
@@ -908,19 +908,19 @@ def test_list_update_remove_wrong_field_type() -> None:
         pytest.param(
             {"manager_ids": [1]},
             {"add": {"forward_to_committee_ids": [2]}, "remove": {"manager_ids": [1]}},
-            {"manager_ids": None, "forward_to_committee_ids": [2]},
+            {"manager_ids": [], "forward_to_committee_ids": [2]},
             id="different_fields",
         ),
         pytest.param(
             {"manager_ids": [1], "forward_to_committee_ids": [2]},
             {"add": {"manager_ids": [2]}, "remove": {"forward_to_committee_ids": [2]}},
-            {"manager_ids": [1, 2], "forward_to_committee_ids": None},
+            {"manager_ids": [1, 2], "forward_to_committee_ids": []},
             id="different_fields_filled",
         ),
         pytest.param(
             {"manager_ids": []},
             {"add": {"manager_ids": []}, "remove": {"manager_ids": []}},
-            {"manager_ids": None},
+            {"manager_ids": []},
             id="same_field_empty",
         ),
         pytest.param(

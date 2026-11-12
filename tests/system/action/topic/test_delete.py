@@ -90,7 +90,7 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/333")
         self.assert_model_not_exists("list_of_speakers/222")
         self.assert_model_not_exists("projection/1")
-        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_create_delete(self) -> None:
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
@@ -137,8 +137,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("list_of_speakers/3")
         self.assert_model_not_exists("speaker/1")
         self.assert_model_not_exists("speaker/2")
-        self.assert_model_exists("meeting_user/1", {"speaker_ids": None})
-        self.assert_model_exists("meeting_user/2", {"speaker_ids": None})
+        self.assert_model_exists("meeting_user/1", {"speaker_ids": []})
+        self.assert_model_exists("meeting_user/2", {"speaker_ids": []})
 
     def test_delete_with_poll(self) -> None:
         self.set_models(
@@ -175,10 +175,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1",
             {
-                "poll_ids": None,
-                "topic_ids": None,
-                "list_of_speakers_ids": None,
-                "agenda_item_ids": None,
+                "poll_ids": [],
+                "topic_ids": [],
+                "list_of_speakers_ids": [],
+                "agenda_item_ids": [],
             },
         )
 

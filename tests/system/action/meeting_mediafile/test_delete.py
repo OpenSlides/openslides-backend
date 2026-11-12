@@ -62,17 +62,17 @@ class MeetingMediafileDelete(BaseActionTestCase):
         response = self.request("meeting_mediafile.delete", {"id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting_mediafile/2")
-        self.assert_model_exists("mediafile/10", {"meeting_mediafile_ids": None})
+        self.assert_model_exists("mediafile/10", {"meeting_mediafile_ids": []})
         self.assert_model_exists(
             "group/1",
             {
-                "meeting_mediafile_access_group_ids": None,
-                "meeting_mediafile_inherited_access_group_ids": None,
+                "meeting_mediafile_access_group_ids": [],
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
         )
         self.assert_model_not_exists("list_of_speakers/3")
         self.assert_model_not_exists("projection/4")
-        self.assert_model_exists("topic/5", {"attachment_meeting_mediafile_ids": None})
+        self.assert_model_exists("topic/5", {"attachment_meeting_mediafile_ids": []})
         self.assert_model_exists(
-            "meeting/1", {"meeting_mediafile_ids": None, "logo_projector_main_id": None}
+            "meeting/1", {"meeting_mediafile_ids": [], "logo_projector_main_id": None}
         )

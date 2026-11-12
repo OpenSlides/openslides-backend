@@ -146,5 +146,5 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("list_of_speakers/23")
         self.assert_model_exists(
             "meeting/110",
-            {"poll_ids": None, "list_of_speakers_ids": None, "assignment_ids": None},
+            {"poll_ids": [], "list_of_speakers_ids": [], "assignment_ids": []},
         )

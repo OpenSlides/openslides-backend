@@ -174,7 +174,7 @@ class ActionWorkerTest(BaseActionTestCase):
         )
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
-        self.assert_model_exists("chat_group/22", {"chat_message_ids": None})
+        self.assert_model_exists("chat_group/22", {"chat_message_ids": []})
         for id_ in chat_message_ids:
             self.assert_model_not_exists(
                 fqid_from_collection_and_id("chat_message", id_)

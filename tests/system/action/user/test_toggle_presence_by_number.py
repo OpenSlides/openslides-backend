@@ -45,8 +45,8 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["id"] == 111
-        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
-        self.assert_model_exists("meeting/1", {"present_user_ids": None})
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": []})
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
 
     def test_toggle_presence_by_number_too_many_numbers(self) -> None:
         self.set_models(

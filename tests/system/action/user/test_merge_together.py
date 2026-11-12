@@ -773,13 +773,8 @@ class UserMergeTogether(BaseActionTestCase):
             "user/3",
             {"gender_id": None, "external": True, "home_committee_id": None},
         )
-        self.assert_model_exists(
-            "gender/1",
-            {
-                "user_ids": None,
-            },
-        )
-        self.assert_model_exists("committee/60", {"native_user_ids": None})
+        self.assert_model_exists("gender/1", {"user_ids": []})
+        self.assert_model_exists("committee/60", {"native_user_ids": []})
 
     def test_with_custom_fields_simple(self) -> None:
         response = self.request(
@@ -875,7 +870,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/12", {"vote_delegated_to_ids": [16]})
         self.assert_model_exists("meeting_user/16", {"vote_delegations_from_ids": [12]})
-        self.assert_model_exists("meeting_user/15", {"vote_delegations_from_ids": None})
+        self.assert_model_exists("meeting_user/15", {"vote_delegations_from_ids": []})
 
     def base_test_different_delegation_roles_error(self) -> None:
         response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
@@ -1303,7 +1298,7 @@ class UserMergeTogether(BaseActionTestCase):
         for id_ in [3, 4]:
             self.assert_model_exists(
                 f"poll/{id_}",
-                {"ballot_ids": None, "ballot_user_ids": None},
+                {"ballot_ids": [], "ballot_user_ids": []},
             )
         self.assert_model_exists(
             "poll/5",

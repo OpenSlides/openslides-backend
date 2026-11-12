@@ -58,7 +58,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
         self.assert_model_not_exists("meeting_user/1111")
-        self.assert_model_exists("group/456", {"user_ids": None})
+        self.assert_model_exists("group/456", {"meeting_user_ids": []})
         self.assert_history_information(
             "user/111",
             ["Participant removed from meeting {}", "meeting/42", "Account deleted"],
@@ -115,7 +115,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("speaker/16")
-        self.assert_model_exists("meeting/1", {"present_user_ids": None})
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
 
     def test_delete_with_candidate(self) -> None:
         self.create_meeting()
@@ -292,7 +292,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         self.assert_model_not_exists("user/2")
-        self.assert_model_exists("group/1", {"meeting_user_ids": None})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
 
     def test_delete_with_multiple_fields(self) -> None:
         self.create_meeting()
@@ -330,7 +330,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_model_not_exists("user/2")
         self.assert_model_not_exists("meeting_user/12")
-        self.assert_model_exists("group/1", {"meeting_user_ids": None})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_exists("motion_submitter/1", {"meeting_user_id": None})
         self.assert_model_exists("motion/1", {"submitter_ids": [1]})
 

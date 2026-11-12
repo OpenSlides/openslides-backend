@@ -19,7 +19,7 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
             "meeting.update", {"id": 1, "motion_poll_setting_group_ids": [2, 3]}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/1", {"used_in_meeting_poll_setting_ids": None})
+        self.assert_model_exists("group/1", {"used_in_meeting_poll_setting_ids": []})
         self.assert_model_exists("group/2", {"used_in_meeting_poll_setting_ids": [1]})
         self.assert_model_exists("group/3", {"used_in_meeting_poll_setting_ids": [1]})
         self.assert_model_exists("meeting_poll_setting/1", {"group_ids": [2, 3]})
@@ -34,7 +34,7 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
             "The following models do not belong to meeting 1: ['group/4']",
             response.json["message"],
         )
-        self.assert_model_exists("meeting/1", {"poll_setting_ids": None})
+        self.assert_model_exists("meeting/1", {"poll_setting_ids": []})
 
     def test_poll_setting_projector(self) -> None:
         self.set_models({"projector/2": {"meeting_id": 1, "name": "Projector 2"}})

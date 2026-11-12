@@ -358,7 +358,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": None},
+            {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": []},
         )
 
     def test_create_committee_manager_without_committee_ids(self) -> None:
@@ -402,9 +402,9 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "meeting_ids": None,
+                "meeting_ids": [],
                 "organization_management_level": None,
-                "committee_management_ids": None,
+                "committee_management_ids": [],
             },
         )
 
@@ -1317,7 +1317,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "committee/63", {"user_ids": [222, 223], "manager_ids": [222]}
         )
         self.assert_model_exists("group/22", {"meeting_user_ids": [1]})
-        self.assert_model_exists("meeting/1", {"user_ids": None})
+        self.assert_model_exists("meeting/1", {"user_ids": []})
         self.assert_model_exists(
             "meeting/4", {"user_ids": [223], "meeting_user_ids": [1]}
         )

@@ -38,18 +38,18 @@ class StructureLevelListOfSpeakersDeleteTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1",
             {
-                "structure_level_list_of_speakers_ids": None,
+                "structure_level_list_of_speakers_ids": [],
             },
         )
         self.assert_model_exists(
             "structure_level/1",
             {
-                "structure_level_list_of_speakers_ids": None,
+                "structure_level_list_of_speakers_ids": [],
             },
         )
         self.assert_model_exists(
             "list_of_speakers/2",
             {
-                "structure_level_list_of_speakers_ids": None,
+                "structure_level_list_of_speakers_ids": [],
             },
         )

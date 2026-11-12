@@ -33,7 +33,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         response = self.request("motion_category.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/89", {"category_id": None})
-        self.assert_model_exists("meeting/1", {"motion_category_ids": None})
+        self.assert_model_exists("meeting/1", {"motion_category_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test({}, "motion_category.delete", {"id": 111})

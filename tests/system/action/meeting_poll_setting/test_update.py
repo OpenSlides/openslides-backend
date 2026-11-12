@@ -1,3 +1,5 @@
+from typing import Any
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -21,11 +23,11 @@ class MeetingPollSettingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_poll_setting/21", {"visibility": "named"})
 
     def test_update_erase_data(self) -> None:
-        data = {
+        data: dict[str, Any] = {
             "sort_result_by_votes": None,
             "visibility": None,
             "onehundred_percent_base": None,
-            "group_ids": None,
+            "group_ids": [],
             "enable_cumulative_voting": None,
             "allow_live_voting": None,
             "enable_live_voting": None,
@@ -79,4 +81,4 @@ class MeetingPollSettingUpdateActionTest(BaseActionTestCase):
             "The following models do not belong to meeting 1: ['meeting_poll_setting/21']",
             response.json["message"],
         )
-        self.assert_model_exists("meeting_poll_setting/21", {"group_ids": None})
+        self.assert_model_exists("meeting_poll_setting/21", {"group_ids": []})

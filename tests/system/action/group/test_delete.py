@@ -171,8 +171,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
             "meeting_mediafile/2",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )
 
@@ -230,24 +230,24 @@ class GroupDeleteActionTest(BaseActionTestCase):
             "meeting_mediafile/1",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
             "meeting_mediafile/2",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
             "meeting_mediafile/3",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
@@ -301,15 +301,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
             "meeting_mediafile/1",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
             "meeting_mediafile/2",
             {
                 "is_public": True,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
             },
         )

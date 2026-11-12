@@ -93,7 +93,7 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         self.assert_model_not_exists("list_of_speakers/222")
         self.assert_model_not_exists("projection/1")
         self.assert_model_not_exists("motion/112")
-        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def set_forwarded_motion(
         self,
@@ -205,7 +205,7 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         self.assert_model_not_exists("poll_config_approval/14")
         self.assert_model_not_exists("list_of_speakers/111")
         self.assert_model_exists(
-            "meeting/1", {"poll_ids": None, "motion_ids": None, "assignment_ids": None}
+            "meeting/1", {"poll_ids": [], "motion_ids": [], "assignment_ids": []}
         )
 
 

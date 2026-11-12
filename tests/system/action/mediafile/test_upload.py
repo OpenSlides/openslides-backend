@@ -49,7 +49,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         # admin group. The below line therefore is essential to ensure the correct functionality.
         self.assert_model_exists(
             "meeting_mediafile/1",
-            {"is_public": True, "inherited_access_group_ids": None},
+            {"is_public": True, "inherited_access_group_ids": []},
         )
 
     def test_create_orga(self) -> None:
@@ -178,7 +178,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "mediafile_id": 3,
                 "is_public": True,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
@@ -300,7 +300,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "filename": "fn_jumbo.txt",
                 "file": file_content,
                 "parent_id": 10,
-                "access_group_ids": None,
+                "access_group_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -320,9 +320,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 11,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "is_public": True,
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
             },
         )
         self.media.upload_mediafile.assert_called_with(file_content, 11, "text/plain")
@@ -818,7 +818,7 @@ l,m,n,"""
             {
                 "meeting_id": 110,
                 "mediafile_id": 11,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [112],
                 "is_public": False,
             },

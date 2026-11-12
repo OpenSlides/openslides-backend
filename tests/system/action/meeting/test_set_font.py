@@ -170,7 +170,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "mediafile_id": 17,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [2],
                 "is_public": False,
                 "used_as_font_bold_in_meeting_id": 1,

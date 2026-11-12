@@ -100,11 +100,11 @@ class MeetingUserUpdate(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/2",
             {
-                "assignment_candidate_ids": None,
-                "motion_working_group_speaker_ids": None,
-                "motion_editor_ids": None,
-                "motion_supporter_ids": None,
-                "chat_message_ids": None,
+                "assignment_candidate_ids": [],
+                "motion_working_group_speaker_ids": [],
+                "motion_editor_ids": [],
+                "motion_supporter_ids": [],
+                "chat_message_ids": [],
             },
         )
 
