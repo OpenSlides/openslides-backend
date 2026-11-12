@@ -27,7 +27,7 @@ DECLARE
 BEGIN
     -- No related log_collection instance -> return
     IF (log_collection_id_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING NEW;
+        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING NEW;
     ELSE
         log_collection_id := new_hstore -> log_collection_id_column;
         IF log_collection_id IS NULL THEN
@@ -43,7 +43,7 @@ BEGIN
     -- No value in column used for log_field -> return
     -- Value deletion on update is processed in after-trigger
     IF (added_item_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(id) FROM (%s);', added_item_sql) INTO added_items USING NEW;
+        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', added_item_sql) INTO added_items USING NEW;
     ELSE
         added_item := new_hstore -> added_item_column;
         IF added_item IS NULL THEN
@@ -98,7 +98,7 @@ DECLARE
 BEGIN
     -- No related log_collection instance -> return
     IF (log_collection_id_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING OLD;
+        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', log_collection_id_sql) INTO log_collection_ids USING OLD;
     ELSE
         log_collection_id := old_hstore -> log_collection_id_column;
         IF log_collection_id IS NULL THEN
@@ -114,7 +114,7 @@ BEGIN
     -- No value in column used for log_field -> return
     -- Value adding on update is processed in before-trigger
     IF (deleted_item_sql <> '') THEN
-        EXECUTE format('SELECT array_agg(id) FROM (%s);', deleted_item_sql) INTO deleted_items USING OLD;
+        EXECUTE format('SELECT array_agg(DISTINCT id) FROM (%s);', deleted_item_sql) INTO deleted_items USING OLD;
     ELSE
         deleted_item := old_hstore -> deleted_item_column;
         IF deleted_item IS NULL THEN
