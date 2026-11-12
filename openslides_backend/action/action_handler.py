@@ -27,6 +27,7 @@ from ..shared.exceptions import (
     DatabaseException,
     DatastoreLockedException,
     ModelDoesNotExist,
+    RelationException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
