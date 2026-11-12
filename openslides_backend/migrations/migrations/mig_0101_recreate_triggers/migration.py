@@ -69,8 +69,8 @@ class Migration(BaseMigration):
         Abuses the data preparation method a bit to delete all triggers.
         """
         for trigger in curs.execute(
-            "SELECT event_object_table, trigger_name FROM information_schema.triggers;"
+            "SELECT event_object_table, trigger_name FROM information_schema.triggers GROUP BY event_object_table, trigger_name;"
         ).fetchall():
             eot = trigger["event_object_table"]
             tn = trigger["trigger_name"]
-            curs.execute(f"DROP TRIGGER IF EXISTS {tn} ON {eot};\n")
+            curs.execute(f"DROP TRIGGER {tn} ON {eot};\n")
