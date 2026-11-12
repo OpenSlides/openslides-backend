@@ -27,6 +27,16 @@ from .diff_mixin import DiffMixin
 
 
 class Migration(DiffMixin, BaseMigration):
+    ORIGIN_COLLECTIONS = [
+        "poll_ballot",
+        "poll_ballot_user",
+        "poll_config_approval",
+        "poll_config_rating_approval",
+        "poll_config_rating_score",
+        "poll_config_selection",
+        "poll_entitled_user",
+        "poll_option",
+    ]
     renames = (
         {},
         {
@@ -764,8 +774,8 @@ class Migration(DiffMixin, BaseMigration):
             RETURNING id;
             """)
 
-        self.migrate_single_option_polls()
         self.migrate_multiple_options_polls()
+        self.migrate_single_option_polls()
 
     def migrate_single_option_polls(self) -> None:
         poll_m = TableRef("poll", True)
@@ -1135,6 +1145,7 @@ class Migration(DiffMixin, BaseMigration):
         self._create_poll_ballots(
             TableRef("aggregated_votes", True), all_polls, new_ballot_user_ids
         )
+        self.adjust_id_sequence("poll_option")
 
     def migrate_topic_polls(self) -> list[int]:
         return [

@@ -5,6 +5,7 @@ from psycopg.types.json import Jsonb
 
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.migrations.migration_helper import MigrationState
+from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import PartialModel
@@ -411,6 +412,13 @@ class TestMigration101(BaseMigrationTestCase):
                 "meeting_id": 1,
                 "poll_candidate_list_id": 1,
             },
+            "poll_candidate/3": {
+                "id": 3,
+                "weight": 2,
+                "user_id": 23,
+                "meeting_id": 1,
+                "poll_candidate_list_id": 1,
+            },
             **self._get_option_data(
                 2, 2, 1, "poll_candidate_list/1", extra_data={"yes": 1, "no": 1}
             ),
@@ -645,6 +653,24 @@ class TestMigration101(BaseMigrationTestCase):
                 f"Migration failed with message: {result['exception']}."
             )
         self.assert_migration_finalized()
+
+        with os_conn_pool.connection() as conn:
+            with conn.cursor() as cur:
+                for collection, last_value in (
+                    ("poll_ballot", 17),
+                    # ("poll_ballot_user", 17),
+                    ("poll_config_approval", 2),
+                    ("poll_config_rating_score", 4),
+                    ("poll_config_selection", 5),
+                    ("poll_config_rating_approval", 7),
+                    ("poll_entitled_user", 18),
+                    ("poll_option", 18),
+                ):
+                    self.assert_content_not_none(
+                        cur,
+                        f"SELECT last_value FROM {collection}_t_id_seq;",
+                        {"last_value": last_value},
+                    )
 
     def test_check_prerequisites(self) -> None:
         meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data()

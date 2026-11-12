@@ -550,6 +550,13 @@ class BaseMigration:
         )
         self.execute_query(query, [*values_arguments, *filter_arguments])
 
+    def adjust_id_sequence(self, collection: Collection) -> None:
+        table_name = f"{collection}_t"
+
+        self.execute_query(f"SELECT MAX(id) FROM {table_name};")
+        if (result := self.cursor.fetchall()) and (maximum := result[0]["max"]) > 1:
+            self.execute_query(f"SELECT setval('{table_name}_id_seq', {maximum});")
+
     # -- Helpers for intermediate data generation --
     def _build_filter_query(
         self,
