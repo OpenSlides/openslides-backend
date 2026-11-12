@@ -36,7 +36,7 @@ BEGIN
         log_collection_ids := ARRAY[log_collection_id];
     END IF;
 
-    IF log_collection_ids IS NULL OR array_length(log_collection_ids,1) = 0 THEN
+    IF array_length(log_collection_ids,1) IS NULL THEN
         RETURN NEW;
     END IF;
 
@@ -52,7 +52,7 @@ BEGIN
         added_items := ARRAY[added_item];
     END IF;
 
-    IF added_items IS NULL OR array_length(added_items,1) = 0 THEN
+    IF array_length(added_items,1) IS NULL THEN
         RETURN NEW;
     END IF;
 
@@ -107,7 +107,7 @@ BEGIN
         log_collection_ids := ARRAY[log_collection_id];
     END IF;
 
-    IF log_collection_ids IS NULL OR array_length(log_collection_ids,1) = 0 THEN
+    IF array_length(log_collection_ids,1) IS NULL THEN
         RETURN NULL;
     END IF;
 
@@ -123,7 +123,7 @@ BEGIN
         deleted_items := ARRAY[deleted_item];
     END IF;
 
-    IF deleted_items IS NULL OR array_length(deleted_items,1) = 0 THEN
+    IF array_length(deleted_items,1) IS NULL THEN
         RETURN NULL;
     END IF;
 
