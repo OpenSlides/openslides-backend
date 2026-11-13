@@ -748,7 +748,16 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         """
         Can be overridden by actions to return a cleanup method to execute
-        after the result was successfully written to the DS.
+        after the result was successfully written to the DB and the connection was closed.
+        """
+        return None
+
+    def get_on_success_transaction_based(
+        self, action_data: ActionData
+    ) -> Callable[[], None] | None:
+        """
+        Can be overridden by actions to return a cleanup method to execute
+        after the result was successfully written to the DB.
         """
         return None
 

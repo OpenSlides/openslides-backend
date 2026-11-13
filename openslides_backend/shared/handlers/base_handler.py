@@ -13,8 +13,3 @@ class BaseHandler:
         self.services = services
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-
-        # Now initialize datastore instance.
-        # self.datastore = services.datastore()
-        # self.extended_db = ExtendedDatabase(self.logging, self.env)
-        # self.database = services.database()

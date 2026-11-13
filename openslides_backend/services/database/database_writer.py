@@ -5,9 +5,12 @@ from typing import Any
 from psycopg import Connection, adapt, rows, sql
 from psycopg.errors import (
     CheckViolation,
+    DatabaseError,
     DatatypeMismatch,
+    DeadlockDetected,
     GeneratedAlways,
     InFailedSqlTransaction,
+    InterfaceError,
     NotNullViolation,
     ProgrammingError,
     StringDataRightTruncation,
@@ -29,6 +32,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import (
     BadCodingException,
+    DatabaseException,
     InvalidData,
     InvalidFormat,
     ModelDoesNotExist,
@@ -491,6 +495,8 @@ class DatabaseWriter(SqlQueryHelper):
                         assert target_id  # we will never reach here with delete or update events being None on id
                         raise ModelDoesNotExist(error_fqid)
                     return result
+        except DeadlockDetected as e:
+            raise DatabaseException(f"{e}")
         except InFailedSqlTransaction as e:
             raise BadCodingException(
                 f"Tried to set {error_fqid} in an already broken transaction: {e}"
@@ -579,6 +585,12 @@ class DatabaseWriter(SqlQueryHelper):
                 )
             else:
                 raise e
+        except DatabaseError as e:
+            raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+        except InterfaceError as e:
+            raise DatabaseException(
+                f"The user encountered a new problem with psycopg: {e}"
+            )
         except Exception as e:
             raise e
             raise ModelLocked(f"Model ... is locked on fields .... {e}\

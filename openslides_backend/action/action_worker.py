@@ -24,6 +24,7 @@ from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
+from .util.action_name import summarize_action_names
 from .util.typing import ActionsResponse, Payload
 
 
@@ -31,26 +32,6 @@ class ActionWorkerState(StrEnum):
     RUNNING = "running"
     END = "end"
     ABORTED = "aborted"
-
-
-def concatenate_action_names(payload: Payload) -> str:
-    result = ",".join(elem.get("action", "") for elem in payload)
-    if len(result) > 256:
-        action_names = result.split(",")
-        result = ""
-        prev_action_name = action_names[0]
-        counter = 1
-        for action_name in action_names[1:]:
-            if action_name == prev_action_name:
-                counter += 1
-            else:
-                result += f"{prev_action_name}_{counter},"
-                prev_action_name = action_name
-                counter = 1
-        result += f"{prev_action_name}_{counter}"
-        if len(result) > 256:
-            result = result[:255] + "…"
-    return result
 
 
 def handle_action_in_worker_thread(
@@ -63,7 +44,7 @@ def handle_action_in_worker_thread(
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
-        action_names = concatenate_action_names(payload)
+        action_names = summarize_action_names(payload)
     except Exception:
         action_names = "Cannot be determined"
     action_worker_writing = ActionWorkerWriting(user_id, handler.logging, action_names)
@@ -93,6 +74,7 @@ def handle_action_in_worker_thread(
         if hasattr(action_worker_thread, "exception"):
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
+            # thread finished
             return action_worker_thread.response
         msg = (
             "Action request ended with unknown reason, "
@@ -206,6 +188,7 @@ class ActionWorkerWriting:
                 f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
             )
         elif hasattr(action_worker_thread, "response"):
+            # thread finished
             response = action_worker_thread.response
             self.logger.info(
                 f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"

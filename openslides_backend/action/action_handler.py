@@ -6,18 +6,25 @@ from time import sleep
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
-from psycopg.errors import ForeignKeyViolation, RaiseException, SerializationFailure
+from psycopg.errors import (
+    DatabaseError,
+    DeadlockDetected,
+    ForeignKeyViolation,
+    InterfaceError,
+    RaiseException,
+    SerializationFailure,
+)
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ..shared.exceptions import (
     ActionException,
     BadCodingException,
+    DatabaseException,
     DatastoreLockedException,
     ModelDoesNotExist,
     RelationException,
@@ -33,6 +40,7 @@ from ..shared.schema import schema_version
 from ..shared.util import json_schema_error_to_str
 from . import actions  # noqa
 from .relations.relation_manager import RelationManager
+from .util.action_name import summarize_action_names
 from .util.action_type import ActionType
 from .util.actions_map import actions_map
 from .util.typing import (
@@ -86,10 +94,10 @@ class ActionHandler(BaseHandler):
     MAX_RETRY = 3
 
     on_success: list[Callable[[], None]]
+    on_success_transaction_based: list[Callable[[], None]]
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
-        self.on_success = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
@@ -132,13 +140,15 @@ class ActionHandler(BaseHandler):
             retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
+                self.on_success = []
+                self.on_success_transaction_based = []
+                results: ActionsResponseResults = []
+                self.post_edit_necessary = False
                 if attempt > 1:
                     self.logger.warning(f"Retry attempt #{attempt}:/n{payload}.")
                 try:
                     with get_new_os_conn() as conn:
-                        self.post_edit_necessary = False
                         self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-                        results: ActionsResponseResults = []
                         if atomic:
                             results = self.execute_write_requests(
                                 self.parse_actions, payload
@@ -153,7 +163,10 @@ class ActionHandler(BaseHandler):
                                     tuple[1],
                                 )
 
-                            tmp_on_success = deepcopy(self.on_success)
+                            tmp_on_success_transaction_based = list(
+                                self.on_success_transaction_based
+                            )
+                            tmp_on_success = list(self.on_success)
                             for element in payload:
                                 try:
                                     result = self.execute_write_requests(
@@ -163,25 +176,22 @@ class ActionHandler(BaseHandler):
                                         element,
                                     )
                                     results.append(result)
-                                    tmp_on_success = deepcopy(self.on_success)
+                                    tmp_on_success_transaction_based = list(
+                                        self.on_success_transaction_based
+                                    )
+                                    tmp_on_success = list(self.on_success)
                                 except ActionException as exception:
+                                    self.on_success_transaction_based = (
+                                        tmp_on_success_transaction_based
+                                    )
                                     self.on_success = tmp_on_success
                                     error = cast(ActionError, exception.get_json())
                                     results.append(error)
                                 self.datastore.reset()
 
-                        # execute cleanup methods
-                        for on_success in self.on_success:
+                        # execute database cleanup methods
+                        for on_success in self.on_success_transaction_based:
                             on_success()
-
-                        # Return action result
-                        self.logger.info("Request was successful. Send response now.")
-                        return ActionsResponse(
-                            status_code=HTTPStatus.OK.value,
-                            success=True,
-                            message="Actions handled successfully",
-                            results=results,
-                        )
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
@@ -202,12 +212,40 @@ class ActionHandler(BaseHandler):
                         )
                         raise ModelDoesNotExist(error_fqid)
                     raise e
-                except SerializationFailure:
+                except DeadlockDetected as e:
+                    self.logger.error(str(e))
+                    if attempt == retry_count:
+                        raise DatabaseException(
+                            f"{summarize_action_names(payload)}: Deadlock detected."
+                        )
+                except SerializationFailure as e:
                     if attempt == retry_count:
                         raise DatabaseException(
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
                         )
+                    else:
+                        self.logger.error(str(e))
                     sleep(retry_timeout)
+                except DatabaseError as e:
+                    raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+                except InterfaceError as e:
+                    raise DatabaseException(
+                        f"The user encountered a new problem with psycopg: {e}"
+                    )
+                else:
+                    # Connection terminated successfully.
+                    # Execute http cleanup methods.
+                    for on_success in self.on_success:
+                        on_success()
+
+                    # Return action results.
+                    self.logger.info("Request was successful. Send response now.")
+                    return ActionsResponse(
+                        status_code=HTTPStatus.OK.value,
+                        success=True,
+                        message="Actions handled successfully",
+                        results=results,
+                    )
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
@@ -329,7 +367,6 @@ class ActionHandler(BaseHandler):
         action_data = deepcopy(action_payload_element["data"])
 
         try:
-            # with self.datastore.get_database_context():
             with make_span(self.env, "action.perform"):
                 write_request, results = action.perform(
                     action_data, self.user_id, internal=self.internal
@@ -343,15 +380,11 @@ class ActionHandler(BaseHandler):
             if write_request:
                 action.validate_write_request(write_request)
 
-                # # add locked_fields to request
-                # write_request.locked_fields = self.datastore.locked_fields
-                # # reset locked fields, but not changed models - these might be needed
-                # # by another action
-                # self.datastore.reset(hard=False)
-
             # add on_success routine
             if on_success := action.get_on_success(action_data):
                 self.on_success.append(on_success)
+            if on_success := action.get_on_success_transaction_based(action_data):
+                self.on_success_transaction_based.append(on_success)
 
             return (write_request, results)
         except ActionException as exception:
