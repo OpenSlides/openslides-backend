@@ -23,6 +23,9 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_
                     "DROP TRIGGER tr_constant_speaker_meeting_id ON speaker_t;"
                 )
                 self.assert_trigger_exists(curs, "tr_log_a_bit_too_much")
+                self.assert_trigger_exists(
+                    curs, "tr_log_meeting_t_motions_default_workflow_id"
+                )
                 self.assert_trigger_not_exists(curs, "tr_constant_speaker_meeting_id")
         manager = self.create_migration_manager()
 
@@ -39,12 +42,15 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('user','model_id_user_
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 self.assert_trigger_not_exists(curs, "tr_log_a_bit_too_much")
+                self.assert_trigger_exists(
+                    curs, "tr_log_meeting_motions_default_workflow_id"
+                )
                 self.assert_trigger_exists(curs, "tr_constant_speaker_meeting_id")
                 # make sure new triggers were created
                 for trigger_name in [
-                    "tr_log_i_committee_user_ids_from_meeting_t",
-                    "tr_log_d_committee_user_ids_from_meeting_t",
-                    "tr_log_i_user_committee_ids_from_meeting_t",
-                    "tr_log_d_user_committee_ids_from_meeting_t",
+                    "tr_log_i_committee_user_ids_from_meeting",
+                    "tr_log_d_committee_user_ids_from_meeting",
+                    "tr_log_i_user_committee_ids_from_meeting",
+                    "tr_log_d_user_committee_ids_from_meeting",
                 ]:
                     self.assert_trigger_exists(curs, trigger_name)
