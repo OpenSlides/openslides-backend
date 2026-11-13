@@ -17,6 +17,7 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
+from ....shared.util import json_schema_error_to_str
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -126,7 +127,7 @@ class UserSaveSamlAccount(
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(json_schema_error_to_str(exception))
 
     def validate_fields(self, instance_old: dict[str, Any]) -> dict[str, Any]:
         """

@@ -44,6 +44,7 @@ from ..shared.patterns import (
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
+from ..shared.util import json_schema_error_to_str
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -330,7 +331,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 }
             )
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(f"Action {self.name}: " + exception.message)
+            raise ActionException(
+                f"Action {self.name}: " + json_schema_error_to_str(exception)
+            )
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
