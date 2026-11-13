@@ -38,7 +38,6 @@ from openslides_backend.shared.exceptions import (
     ModelDoesNotExist,
     ModelExists,
     ModelLocked,
-    RelationException,
 )
 from openslides_backend.shared.interfaces.event import (
     Event,
@@ -511,11 +510,10 @@ class DatabaseWriter(SqlQueryHelper):
                     value = e.args[0].split("=(")[1].split(")")[0]
                     field = model.try_get_field(key)
                     value = f"'{value}'" if type(field) is CharField else value
-                    raise RelationException(
+                    raise InvalidData(
                         f"{error_fqid}: {model_registry[collection].verbose_name.capitalize()} with {key} {value} already exists."
                     )
-                else:
-                    raise RelationException(f"{error_fqid}: {e}")
+            raise InvalidData(f"{error_fqid}: {e}")
         except NotNullViolation as e:
             column = e.args[0].split('"')[1]
             raise BadCodingException(

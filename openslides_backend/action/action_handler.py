@@ -26,8 +26,8 @@ from ..shared.exceptions import (
     BadCodingException,
     DatabaseException,
     DatastoreLockedException,
+    InvalidData,
     ModelDoesNotExist,
-    RelationException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
@@ -197,12 +197,10 @@ class ActionHandler(BaseHandler):
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
                         "NOT NULL CONSTRAINT VIOLATED"
                     ):
-                        raise RelationException(
-                            f"Relation violates required constraint: {e}"
-                        )
+                        raise InvalidData(f"Relation violates required constraint: {e}")
                     else:
                         # Assume equal_fields error
-                        raise RelationException(str(e).split("\nCONTEXT:")[0])
+                        raise InvalidData(str(e).split("\nCONTEXT:")[0])
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
