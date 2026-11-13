@@ -61,10 +61,10 @@ def get_meeting_data(base: int = 1) -> dict[FullQualifiedId, PartialModel]:
     }
 
 
-class TestMigration101(BaseMigrationTestCase):
-    migration_number = 101
+class TestMigration102(BaseMigrationTestCase):
+    migration_number = 102
 
-    def test_0101(self) -> None:
+    def test_0102(self) -> None:
 
         self.set_up_organization()
         self.create_entries(get_meeting_data())
@@ -73,12 +73,10 @@ class TestMigration101(BaseMigrationTestCase):
         intermediate_result = self.make_migration_request(manager)
         if intermediate_result["status"] == MigrationState.MIGRATION_FAILED:
             raise BadCodingException(
-                "Migration failed with message: {intermediate_result['exception']}."
+                f"Migration failed with message: {intermediate_result['exception']}."
             )
-        if intermediate_result["status"] == MigrationState.MIGRATION_RUNNING:
+        if intermediate_result["status"] != MigrationState.FINALIZED:
             self.wait_for_migration_thread(self.MAX_WAIT)
-        else:
-            self.assertEqual(intermediate_result["status"], MigrationState.FINALIZED)
 
         self.assert_migration_finalized()
 
@@ -106,13 +104,13 @@ class TestMigration101(BaseMigrationTestCase):
                     },
                     col_data,
                 )
-                # check if default is not applied to old meetings (1)
-                # but meetings created after the migration is finalized (4) should have it.
+                # check if default is applied to both old meetings (1)
+                # and meetings created after the migration is finalized (4).
                 assert (
                     curs.execute(
                         "SELECT id, motions_enable_consultation_sequence FROM meeting_t;"
                     ).fetchall()
                 ) == [
-                    {"id": 1, "motions_enable_consultation_sequence": False},
+                    {"id": 1, "motions_enable_consultation_sequence": True},
                     {"id": 4, "motions_enable_consultation_sequence": True},
                 ]

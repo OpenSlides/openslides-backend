@@ -3,10 +3,15 @@ from typing import Any, TypedDict, cast
 
 import simplejson as json
 from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
+from psycopg import Connection
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
 
+from openslides_backend.services.postgresql.utils import (
+    activate_notify_triggers,
+    deactivate_notify_triggers,
+)
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 
@@ -110,3 +115,16 @@ class Client(WerkzeugClient):
                 {"access_token": response.headers[AUTHENTICATION_HEADER]}
             )
         return response
+
+
+class NotifyForTest:
+    def __init__(self, db_connection: Connection) -> None:
+        self.conn = db_connection
+
+    def __enter__(self) -> None:
+        with self.conn.cursor() as curs:
+            activate_notify_triggers(curs)  # type: ignore
+
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        with self.conn.cursor() as curs:
+            deactivate_notify_triggers(curs)  # type: ignore
