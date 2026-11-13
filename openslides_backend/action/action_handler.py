@@ -37,6 +37,7 @@ from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.otel import make_span
 from ..shared.schema import schema_version
+from ..shared.util import json_schema_error_to_str
 from . import actions  # noqa
 from .relations.relation_manager import RelationManager
 from .util.action_name import summarize_action_names
@@ -134,7 +135,7 @@ class ActionHandler(BaseHandler):
                 try:
                     payload_schema(payload)
                 except fastjsonschema.JsonSchemaException as exception:
-                    raise ActionException(exception.message)
+                    raise ActionException(json_schema_error_to_str(exception))
 
             retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
