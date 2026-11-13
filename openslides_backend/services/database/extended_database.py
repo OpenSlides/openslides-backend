@@ -239,7 +239,7 @@ class ExtendedDatabase(Database):
                 )
                 if not result:
                     raise ModelDoesNotExist(fqid)
-        except DatabaseException as e:
+        except (DatabaseException, ModelDoesNotExist, InvalidFormat) as e:
             if raise_exception:
                 raise e
             else:

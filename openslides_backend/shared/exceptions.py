@@ -34,6 +34,10 @@ class View400Exception(ViewException):
     status_code = 400
 
 
+class View500Exception(ViewException):
+    status_code = 500
+
+
 class AuthenticationException(View400Exception):
     pass
 
@@ -99,15 +103,15 @@ class ServiceException(View400Exception):
     pass
 
 
-class DatabaseException(ServiceException):
+class DatabaseException(View500Exception):
     pass
 
 
-class InvalidFormat(DatabaseException):
+class InvalidFormat(View400Exception):
     pass
 
 
-class InvalidData(DatabaseException):
+class InvalidData(View400Exception):
     pass
 
 
@@ -115,13 +119,13 @@ class RelationException(DatabaseException):
     pass
 
 
-class ModelDoesNotExist(DatabaseException):
+class ModelDoesNotExist(View400Exception):
     def __init__(self, fqid: str) -> None:
         super().__init__(f"Model '{fqid}' does not exist.")
         self.fqid = fqid
 
 
-class ModelExists(DatabaseException):
+class ModelExists(View400Exception):
     def __init__(self, fqid: str) -> None:
         super().__init__(f"Model '{fqid}' exists.")
         self.fqid = fqid
@@ -131,18 +135,6 @@ class ModelLocked(DatabaseException):
     def __init__(self, keys: str) -> None:
         super().__init__("")
         self.keys = keys
-
-
-class InvalidDatastoreState(DatabaseException):
-    pass
-
-
-class DatastoreNotEmpty(DatabaseException):
-    pass
-
-
-class DatastoreConnectionException(DatabaseException):
-    pass
 
 
 class DatastoreLockedException(DatabaseException):

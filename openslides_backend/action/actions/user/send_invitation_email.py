@@ -30,7 +30,12 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
-from ....shared.exceptions import DatabaseException, MissingPermission
+from ....shared.exceptions import (
+    DatabaseException,
+    InvalidData,
+    MissingPermission,
+    ModelDoesNotExist,
+)
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
@@ -108,6 +113,12 @@ class UserSendInvitationMail(UpdateAction):
                     except DatabaseException as e:
                         result["message"] = f"DatabaseException: {e.message}"
                         result["type"] = EmailErrorType.OTHER_ERROR
+                    except InvalidData as e:
+                        result["message"] = f"InvalidData: {e.message}"
+                        result["type"] = EmailErrorType.OTHER_ERROR
+                    except ModelDoesNotExist as e:
+                        result["message"] = f"ModelDoesNotExist: {e.message}"
+                        result["type"] = EmailErrorType.USER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
                         result["type"] = EmailErrorType.USER_ERROR
@@ -118,6 +129,7 @@ class UserSendInvitationMail(UpdateAction):
                         raise e
                     except Exception as e:
                         result["message"] = f"Exception: {str(e)}"
+                        result["type"] = EmailErrorType.OTHER_ERROR
 
                     if result["sent"]:
                         instance.pop("meeting_id", None)
