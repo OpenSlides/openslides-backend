@@ -1010,19 +1010,21 @@ class Migration(DiffMixin, BaseMigration):
                     SUM(COALESCE(o.yes, 0) + COALESCE(o.no, 0)) FILTER (
                         WHERE o.used_as_global_option_in_poll_id = o.poll_id
                     ) AS nota,
-                    jsonb_object_agg(
-                        CASE
-                            WHEN p.content_object_id LIKE 'topic/%%'
-                            THEN o.text
-                            ELSE o.id::text
-                        END,
-                        CASE
-                            WHEN p.pollmethod = 'N'
-                            THEN o.no::text
-                            ELSE o.yes::text
-                        END
-                    ) FILTER (
-                        WHERE o.used_as_global_option_in_poll_id IS NULL
+                    jsonb_strip_nulls(
+                        jsonb_object_agg(
+                            CASE
+                                WHEN p.content_object_id LIKE 'topic/%%'
+                                THEN o.text
+                                ELSE o.id::text
+                            END,
+                            CASE
+                                WHEN p.pollmethod = 'N'
+                                THEN NULLIF(o.no, 0)::text
+                                ELSE NULLIF(o.yes, 0)::text
+                            END
+                        ) FILTER (
+                            WHERE o.used_as_global_option_in_poll_id IS NULL
+                        )
                     ) AS options_json
                 FROM option_m o
                 JOIN poll_m p ON p.id = o.poll_id
