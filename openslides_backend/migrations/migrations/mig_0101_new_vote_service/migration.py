@@ -1070,43 +1070,47 @@ class Migration(DiffMixin, BaseMigration):
         self.execute_query(
             sql.SQL("""
                 CREATE TEMP TABLE aggregated_votes_m AS
-                SELECT
-                    MIN(v.id) AS id,
-                    MIN(v.poll_id) AS poll_id,
-                    BOOL_AND(v.link_user_to_ballot) AS link_user_to_ballot,
-                    CASE
-                        WHEN BOOL_OR(p.config_type = 'rating_score')
-                            THEN SUM(v.weight)
-                        ELSE MIN(v.weight)
-                    END AS weight,
-                    MIN(mur.id) AS represented_meeting_user_id,
-                    MIN(mua.id) AS acting_meeting_user_id,
-                    CASE
-                        WHEN BOOL_OR(p.config_type = 'rating_approval')
-                            THEN jsonb_object_agg(
-                                v.option_id::text,
-                                v.value
-                            )::text
-                        WHEN BOOL_OR(o.used_as_global_option_in_poll_id = o.poll_id)
-                            THEN 'nota'
-                        WHEN BOOL_OR(p.config_type = 'rating_score')
-                            THEN jsonb_object_agg(
-                                o.id::text,
-                                TRUNC(v.weight)::numeric(16,6)::text
-                            )::text
-                        ELSE array_to_string(array_agg(v.option_id), ', ')
-                    END AS value
-                FROM vote_m v
-                JOIN option_m o ON o.id = v.option_id
-                JOIN poll_m p ON p.id = v.poll_id
-                LEFT JOIN meeting_user mur
-                    ON mur.meeting_id = p.meeting_id
-                    AND mur.user_id = v.user_id
-                LEFT JOIN meeting_user mua
-                    ON mua.meeting_id = p.meeting_id
-                    AND mua.user_id = v.delegated_user_id
-                WHERE v.poll_id = ANY(%s) AND p.type != 'analog'
-                GROUP BY v.poll_id, v.user_token;
+                SELECT *
+                FROM (
+                    SELECT
+                        MIN(v.id) AS id,
+                        MIN(v.poll_id) AS poll_id,
+                        BOOL_AND(v.link_user_to_ballot) AS link_user_to_ballot,
+                        CASE
+                            WHEN BOOL_OR(p.config_type = 'rating_score')
+                                THEN SUM(v.weight)
+                            ELSE MIN(v.weight)
+                        END AS weight,
+                        MIN(mur.id) AS represented_meeting_user_id,
+                        MIN(mua.id) AS acting_meeting_user_id,
+                        CASE
+                            WHEN BOOL_OR(p.config_type = 'rating_approval')
+                                THEN jsonb_object_agg(
+                                    v.option_id::text,
+                                    v.value
+                                )::text
+                            WHEN BOOL_OR(o.used_as_global_option_in_poll_id = o.poll_id)
+                                THEN 'nota'
+                            WHEN BOOL_OR(p.config_type = 'rating_score')
+                                THEN jsonb_object_agg(
+                                    o.id::text,
+                                    TRUNC(v.weight)::numeric(16,6)::text
+                                )::text
+                            ELSE array_to_string(array_agg(v.option_id), ', ')
+                        END AS value
+                    FROM vote_m v
+                    JOIN option_m o ON o.id = v.option_id
+                    JOIN poll_m p ON p.id = v.poll_id
+                    LEFT JOIN meeting_user mur
+                        ON mur.meeting_id = p.meeting_id
+                        AND mur.user_id = v.user_id
+                    LEFT JOIN meeting_user mua
+                        ON mua.meeting_id = p.meeting_id
+                        AND mua.user_id = v.delegated_user_id
+                    WHERE v.poll_id = ANY(%s) AND p.type != 'analog'
+                    GROUP BY v.poll_id, v.user_token
+                ) AS aggregated
+                ORDER BY aggregated.poll_id, aggregated.value;
             """),
             [all_polls],
         )
