@@ -1,5 +1,6 @@
 import os
 import re
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
@@ -37,10 +38,13 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import (
+    Collection,
     FullQualifiedId,
+    Id,
     collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
 )
-from openslides_backend.shared.typing import PartialModel
+from openslides_backend.shared.typing import ModelMap, PartialModel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
@@ -344,7 +348,7 @@ class BaseMigrationTestCase(TestCase):
                     assert data, "data can not contain empty dictionaries"
                     collection, id_ = collection_and_id_from_fqid(fqid)
                     table_name = HelperGetNames.get_table_name(collection)
-                    if len(tables_data) == 1:
+                    if len(data) == 1:
                         set_part = sql.SQL("{column} = {placeholder}").format(
                             column=sql.Identifier(list(data.keys())[0]),
                             placeholder=sql.Placeholder(),
@@ -360,7 +364,7 @@ class BaseMigrationTestCase(TestCase):
                         )
                     curs.execute(
                         sql.SQL(
-                            "UPDATE {table_name} SET {set_part} WHERE id={id};"
+                            "UPDATE {table_name} SET {set_part} WHERE id = {id};"
                         ).format(
                             table_name=sql.Identifier(table_name),
                             set_part=set_part,
@@ -402,3 +406,80 @@ class BaseMigrationTestCase(TestCase):
                     for target_value in data_item.values()
                 ],
             )
+
+    def check_entries(
+        self,
+        expected_data: ModelMap,
+        enum_list_columns: dict[Collection, list[str]],
+    ) -> None:
+        assert expected_data, "data can not be empty"
+        failing_rows: dict[FullQualifiedId, list[tuple[str, Any, Any]]] = {}
+        missing_rows: dict[Collection, list[Id]] = defaultdict(list)
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for collection, expected_models in expected_data.items():
+                    if not expected_models or not all(
+                        data for data in expected_models.values()
+                    ):
+                        raise BadCodingException(
+                            "expected_data can not contain empty dictionaries"
+                        )
+
+                    # Collect all the column names per collection, cast text[] for enum[]
+                    columns = [
+                        (
+                            sql.SQL("{}::text[] AS {}").format(
+                                sql.Identifier(column),
+                                sql.Identifier(column),
+                            )
+                            if column in enum_list_columns.get(collection, [])
+                            else sql.Identifier(column)
+                        )
+                        for column in {
+                            "id",
+                            *(
+                                column
+                                for model in expected_models.values()
+                                for column in model
+                            ),
+                        }
+                    ]
+                    curs.execute(
+                        sql.SQL(
+                            "SELECT {columns} FROM {view} WHERE id = ANY({ids});"
+                        ).format(
+                            columns=sql.SQL(", ").join(columns),
+                            view=sql.Identifier(collection),
+                            ids=sql.Placeholder(),
+                        ),
+                        [list(expected_models.keys())],
+                    )
+
+                    rows = {row["id"]: row for row in curs.fetchall()}
+                    for id_, expected_model in expected_models.items():
+                        if id_ not in rows:
+                            missing_rows[collection].append(id_)
+                        elif mismatch := [
+                            (column, database_value, expected_value)
+                            for column, expected_value in expected_model.items()
+                            if (database_value := rows[id_][column]) != expected_value
+                        ]:
+                            failing_rows[
+                                fqid_from_collection_and_id(collection, id_)
+                            ] = mismatch
+
+        if not missing_rows and not failing_rows:
+            return
+        errors = []
+        if missing_rows:
+            errors.append("Rows don't exist:")
+            for collection, ids in missing_rows.items():
+                errors.append(f"\t{collection}: {ids}")
+        if failing_rows:
+            errors.append("Rows differ in column(s):")
+            for fqid, diff in failing_rows.items():
+                errors.append(f"\t{fqid}:")
+                for column, actual, expected in diff:
+                    errors.append(f"\t\t{column}: {actual} (expected: {expected})")
+        raise Exception("\n".join(errors))

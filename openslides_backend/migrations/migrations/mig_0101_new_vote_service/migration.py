@@ -771,6 +771,7 @@ class Migration(DiffMixin, BaseMigration):
             JOIN meeting_user_t
                 ON meeting_user_t.meeting_id = poll_m.meeting_id
                 AND meeting_user_t.user_id = (e->>'user_id')::integer
+            ORDER BY poll_m.id, meeting_user_t.id
             RETURNING id;
             """)
 
