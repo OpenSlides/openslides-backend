@@ -120,8 +120,8 @@ class MigrationHandler(BaseHandler):
 
     def execute_migrations(self) -> None:
         """
-        Executes the data_definition and data_manipulation methods of the migrations
-        stored in self.pending_migrations.
+        Executes the data_preparation, data_definition, data_manipulation and cleanup
+        methods of the migrations stored in self.pending_migrations.
         """
         for index, package_name in self.pending_migrations.items():
             try:
