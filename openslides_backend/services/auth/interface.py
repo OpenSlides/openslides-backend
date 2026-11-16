@@ -1,16 +1,10 @@
 from typing import Any, Protocol
 
-from ..shared.authenticated_service import AuthenticatedServiceInterface
-
-
-class AuthenticationService(AuthenticatedServiceInterface, Protocol):
+class AuthenticationService(Protocol):
     """
     Interface of the Auth Service.
     """
-
-    auth_handler: Any
-
-    def authenticate(self) -> tuple[int, str | None]:
+    def authenticate(self) -> int:
         """
         A request to get knowledge about themselves. This information is contained in the payload of
         a Token. So, this function handles the refreshing of a Token.
@@ -18,8 +12,6 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Sends back a new Token.
 
         Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
-
-        Authentication data must be set beforehand via set_authentication.
         """
 
     def decode_logout_token(self, encoded_logout_token: str) -> str:

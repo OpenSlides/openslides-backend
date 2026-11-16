@@ -28,11 +28,11 @@ class PresenterView(BaseView):
             logging=self.logging,
             services=self.services,
         )
-        presenter_response, access_token = handler.handle_request(request)
+        presenter_response = handler.handle_request(request)
 
         # Finish request.
         self.logger.debug("Presenter request finished successfully. Send response now.")
-        return presenter_response, access_token
+        return presenter_response
 
     @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> RouteResponse:

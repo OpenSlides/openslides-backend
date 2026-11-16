@@ -1,10 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Protocol
 
-from ..shared.authenticated_service import AuthenticatedServiceInterface
 
-
-class VoteService(AuthenticatedServiceInterface, Protocol):
+class VoteService(Protocol):
     """
     Interface of the vote service.
     """

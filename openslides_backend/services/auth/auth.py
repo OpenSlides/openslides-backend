@@ -14,7 +14,6 @@ from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.filters import FilterOperator
 from ..database.commands import GetManyRequest
-from ..shared.authenticated_service import AuthenticatedService
 from .interface import AuthenticationService
 
 
@@ -25,7 +24,7 @@ class IDPPayload:
         self.os_id = claims.get("os_id", "")  # OS User ID
 
 
-class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
+class AuthenticationOIDC(AuthenticationService):
     """
     OIDC authentication service
     """
@@ -137,16 +136,15 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         except Exception as e:
             raise AuthenticationException(f"Error setting backchannel logout URI: {e}")
 
-    def authenticate(self) -> tuple[int, str | None]:
+    def authenticate(self, auth_header: str) -> int:
         self.logger.debug("Authentication request received")
 
         # Fetch JWT
-        header_value = self.access_token
-        if not header_value.startswith("Bearer: "):
+        if not auth_header.startswith("Bearer: "):
             raise AuthenticationException("Authorization does not contain 'Bearer:'")
 
         # Convert JWT to Payload
-        token_string = header_value[len("Bearer: ") :]
+        token_string = auth_header[len("Bearer: ") :]
         payload = IDPPayload(self._extract_claims(token_string))
 
         if not payload.sub or not payload.os_id:
@@ -160,7 +158,7 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
             return (0, "")
 
 
-        return (int(payload.os_id), header_value)
+        return int(payload.os_id)
 
     def decode_logout_token(self, encoded_logout_token: str) -> str:
         # Extract session ID

@@ -10,14 +10,14 @@ from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
-from ...shared.interfaces.wsgi import Headers, ResponseBody, RouteResponse, View
+from ...shared.interfaces.wsgi import Headers, RouteResponse, View
 from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
 
 ROUTE_OPTIONS_ATTR = "__route_options"
 
-RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
+RouteFunction = Callable[[Any, Request], RouteResponse]
 
 
 def route(
@@ -80,12 +80,9 @@ class BaseView(View):
         """
         Returns user id from authentication service using HTTP headers.
         """
-        self.services.authentication().set_authentication(
-            headers.get("Authorization", "")
-        )
-        user_id, access_token = self.services.authentication().authenticate()
+        user_id = self.services.authentication().authenticate(headers.get("Authorization", ""))
         self.logger.debug(f"User id is {user_id}.")
-        return user_id, access_token
+        return user_id
 
     def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(

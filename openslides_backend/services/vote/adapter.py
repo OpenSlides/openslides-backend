@@ -5,11 +5,10 @@ import simplejson as json
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
-from ..shared.authenticated_service import AuthenticatedService
 from .interface import VoteService
 
 
-class VoteAdapter(VoteService, AuthenticatedService):
+class VoteAdapter(VoteService):
     """
     Adapter to connect to the vote service.
     """

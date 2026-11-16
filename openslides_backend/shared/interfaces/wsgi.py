@@ -15,9 +15,7 @@ WSGIEnvironment = dict[str, Any]
 
 
 # TODO Use proper type here.
-ResponseBody = Any
-
-RouteResponse = tuple[ResponseBody, str | None]
+RouteResponse = Any
 
 
 class View(Protocol):

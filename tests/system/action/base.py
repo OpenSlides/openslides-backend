@@ -38,19 +38,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         super().setUp()
         ActionHandler.MAX_RETRY = 1
 
-    def reset_redis(self) -> None:
-        # access auth database directly to reset it
-        redis = self.auth.auth_handler.database.redis
-        prefix = ":".join(
-            (
-                self.auth.auth_handler.database.AUTH_PREFIX,
-                self.auth.auth_handler.TOKEN_DB_KEY,
-            )
-        )
-        for key in redis.keys():
-            if key.decode().startswith(prefix):
-                redis.delete(key)
-
     def get_application(self) -> OpenSlidesBackendWSGIApplication:
         return create_action_test_application()
 

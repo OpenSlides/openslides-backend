@@ -9,7 +9,7 @@ from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
 class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.reset_redis()
+        #self.reset_redis() -Removed-
 
     def test_correct(self) -> None:
         self.update_model("user/1", {"password": "old_pw"})

@@ -14,7 +14,7 @@ build-tests:
 
 # Development redirects
 
-.SERVICE_TARGETS := auth backend vote
+.SERVICE_TARGETS := backend vote
 
 $(.SERVICE_TARGETS):
 	@echo ""

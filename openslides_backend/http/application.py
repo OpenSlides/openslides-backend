@@ -99,7 +99,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
         # Dispatch view and return response.
         view_instance = self.view(self.env, self.logging, self.services)
         try:
-            response_body, access_token = view_instance.dispatch(request)
+            response_body = view_instance.dispatch(request)
         except ViewException as exception:
             env_var = self.env.OPENSLIDES_BACKEND_RAISE_4XX
             if is_truthy(env_var):
@@ -138,8 +138,8 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             status=status_code,
             content_type="application/json",
         )
-        if access_token is not None:
-            response.headers["Authentication"] = access_token
+        #if access_token is not None:
+        #    response.headers["Authentication"] = access_token
         return response
 
     def wsgi_application(

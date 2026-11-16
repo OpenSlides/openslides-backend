@@ -31,7 +31,7 @@ RUN REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
     dev)   echo "requirements_development.txt";; \
     *)     echo "requirements_production.txt" ;; esac) && \
     REQUIREMENTS_FILE=${REQUIEREMENTS_FILE_OVERWRITE:-$REQUIREMENTS_FILE} && \
-    . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
+    pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
 
 ENV PYTHONPATH=/app
 
