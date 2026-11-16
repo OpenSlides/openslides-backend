@@ -134,9 +134,8 @@ class ChatGroupCreate(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            'chat_group/22: duplicate key value violates unique constraint "unique_chat_group_meeting_id_name"\n'
-            + "DETAIL:  Key (meeting_id, name)=(1, test) already exists.",
+        self.assertEqual(
+            'chat_group/22: duplicate key value violates unique constraint "unique_chat_group_meeting_id_name"',
             response.json["message"],
         )
 

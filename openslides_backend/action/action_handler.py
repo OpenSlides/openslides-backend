@@ -195,21 +195,23 @@ class ActionHandler(BaseHandler):
                             on_success()
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    self.logger.error(str(e))
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
                         "NOT NULL CONSTRAINT VIOLATED"
                     ):
                         raise InvalidData(f"Relation violates required constraint: {e}")
                     else:
                         # Assume equal_fields error
-                        raise InvalidData(str(e).split("\nCONTEXT:")[0])
+                        raise InvalidData(str(e).split("\nCONTEXT:")[0]) from e
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    self.logger.error(str(e))
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
                     if match := re.search(pattern, e.args[0]):
                         error_fqid = fqid_from_collection_and_id(
                             match.group(2), match.group(1)
                         )
-                        raise ModelDoesNotExist(error_fqid)
+                        raise ModelDoesNotExist(error_fqid) from e
                     raise e
                 except DatabaseInternalException as e:
                     self.logger.error(str(e))
@@ -228,11 +230,13 @@ class ActionHandler(BaseHandler):
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
                         ) from e
                 except DatabaseError as e:
-                    raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+                    self.logger.error(str(e))
+                    raise DatabaseException("Psycopg encountered a new problem.") from e
                 except InterfaceError as e:
+                    self.logger.error(str(e))
                     raise DatabaseException(
-                        f"The user encountered a new problem with psycopg: {e}"
-                    )
+                        "The user encountered a new problem with psycopg."
+                    ) from e
                 else:
                     # Connection terminated successfully.
                     # Execute http cleanup methods.
