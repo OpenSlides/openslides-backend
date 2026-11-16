@@ -13,6 +13,7 @@ from psycopg.errors import (
     InterfaceError,
     NotNullViolation,
     ProgrammingError,
+    SerializationFailure,
     StringDataRightTruncation,
     SyntaxError,
     UndefinedColumn,
@@ -33,6 +34,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
+    DatabaseInternalException,
     InvalidData,
     InvalidFormat,
     ModelDoesNotExist,
@@ -494,8 +496,8 @@ class DatabaseWriter(SqlQueryHelper):
                         assert target_id  # we will never reach here with delete or update events being None on id
                         raise ModelDoesNotExist(error_fqid)
                     return result
-        except DeadlockDetected as e:
-            raise DatabaseException(f"{e}")
+        except DatabaseException as e:
+            raise e
         except InFailedSqlTransaction as e:
             raise BadCodingException(
                 f"Tried to set {error_fqid} in an already broken transaction: {e}"
@@ -583,6 +585,12 @@ class DatabaseWriter(SqlQueryHelper):
                 )
             else:
                 raise e
+        except DeadlockDetected as e:
+            self.logger.error(str(e))
+            raise DatabaseInternalException(f"{e}") from e
+        except SerializationFailure as e:
+            self.logger.error(str(e))
+            raise DatabaseInternalException("SerializationFailure") from e
         except DatabaseError as e:
             raise DatabaseException(f"Psycopg encountered a new problem: {e}")
         except InterfaceError as e:
@@ -590,9 +598,10 @@ class DatabaseWriter(SqlQueryHelper):
                 f"The user encountered a new problem with psycopg: {e}"
             )
         except Exception as e:
-            raise e
-            raise ModelLocked(f"Model ... is locked on fields .... {e}\
-                This is not the end. There will be more next episode. To be continued.")
+            self.logger.error(str(e))
+            raise DatabaseException("Unexpected error writing to database.") from e
+            # raise ModelLocked(f"Model ... is locked on fields .... {e}\
+            #     This is not the end. There will be more next episode. To be continued.")
 
         return {}
 

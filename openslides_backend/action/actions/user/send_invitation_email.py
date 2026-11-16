@@ -32,7 +32,6 @@ from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import (
     DatabaseException,
-    InvalidData,
     MissingPermission,
     ModelDoesNotExist,
 )
@@ -110,18 +109,15 @@ class UserSendInvitationMail(UpdateAction):
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
-                    except DatabaseException as e:
-                        result["message"] = f"DatabaseException: {e.message}"
-                        result["type"] = EmailErrorType.OTHER_ERROR
-                    except InvalidData as e:
-                        result["message"] = f"InvalidData: {e.message}"
-                        result["type"] = EmailErrorType.OTHER_ERROR
-                    except ModelDoesNotExist as e:
-                        result["message"] = f"ModelDoesNotExist: {e.message}"
-                        result["type"] = EmailErrorType.USER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
                         result["type"] = EmailErrorType.USER_ERROR
+                    except ModelDoesNotExist as e:
+                        result["message"] = f"ModelDoesNotExist: {e.message}"
+                        result["type"] = EmailErrorType.USER_ERROR
+                    except DatabaseException as e:
+                        result["message"] = f"DatabaseException: {e.message}"
+                        result["type"] = EmailErrorType.OTHER_ERROR
                     except SMTPDataError as e:
                         result["message"] = f"SMTPDataError: {str(e)}"
                         result["type"] = EmailErrorType.CONFIGURATION_ERROR

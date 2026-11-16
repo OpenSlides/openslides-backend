@@ -25,6 +25,7 @@ from ..shared.exceptions import (
     ActionException,
     BadCodingException,
     DatabaseException,
+    DatabaseInternalException,
     DatastoreLockedException,
     InvalidData,
     ModelDoesNotExist,
@@ -210,20 +211,22 @@ class ActionHandler(BaseHandler):
                         )
                         raise ModelDoesNotExist(error_fqid)
                     raise e
+                except DatabaseInternalException as e:
+                    self.logger.error(str(e))
+                    if attempt == retry_count:
+                        raise e
                 except DeadlockDetected as e:
                     self.logger.error(str(e))
                     if attempt == retry_count:
-                        raise DatabaseException(
+                        raise DatabaseInternalException(
                             f"{summarize_action_names(payload)}: Deadlock detected."
-                        )
+                        ) from e
                 except SerializationFailure as e:
+                    self.logger.error(str(e))
                     if attempt == retry_count:
-                        raise DatabaseException(
+                        raise DatabaseInternalException(
                             "Database operation failed due to concurrent conflicting actions. Please try again later."
-                        )
-                    else:
-                        self.logger.error(str(e))
-                    sleep(retry_timeout)
+                        ) from e
                 except DatabaseError as e:
                     raise DatabaseException(f"Psycopg encountered a new problem: {e}")
                 except InterfaceError as e:
@@ -244,6 +247,7 @@ class ActionHandler(BaseHandler):
                         message="Actions handled successfully",
                         results=results,
                     )
+                sleep(retry_timeout)
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:

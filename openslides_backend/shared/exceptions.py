@@ -103,15 +103,19 @@ class ServiceException(View400Exception):
     pass
 
 
-class DatabaseException(View500Exception):
+class DatabaseException(ServiceException):
     pass
 
 
-class InvalidFormat(View400Exception):
+class DatabaseInternalException(View500Exception):
     pass
 
 
-class InvalidData(View400Exception):
+class InvalidFormat(DatabaseException):
+    pass
+
+
+class InvalidData(DatabaseException):
     pass
 
 
@@ -119,13 +123,13 @@ class RelationException(DatabaseException):
     pass
 
 
-class ModelDoesNotExist(View400Exception):
+class ModelDoesNotExist(DatabaseException):
     def __init__(self, fqid: str) -> None:
         super().__init__(f"Model '{fqid}' does not exist.")
         self.fqid = fqid
 
 
-class ModelExists(View400Exception):
+class ModelExists(DatabaseException):
     def __init__(self, fqid: str) -> None:
         super().__init__(f"Model '{fqid}' exists.")
         self.fqid = fqid
