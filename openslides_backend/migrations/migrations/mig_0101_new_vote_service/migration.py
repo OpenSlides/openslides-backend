@@ -1092,9 +1092,9 @@ class Migration(DiffMixin, BaseMigration):
                         WHEN BOOL_OR(p.config_type = 'rating_score')
                             THEN jsonb_object_agg(
                                 o.id::text,
-                                TRUNC(v.weight)::integer
+                                TRUNC(v.weight)::numeric(16,6)::text
                             )::text
-                        ELSE array_to_string(array_agg(v.option_id), ',')
+                        ELSE array_to_string(array_agg(v.option_id), ', ')
                     END AS value
                 FROM vote_m v
                 JOIN option_m o ON o.id = v.option_id
@@ -1390,9 +1390,9 @@ class Migration(DiffMixin, BaseMigration):
     ) -> sql.Composed:
         json_source = {
             **{
-                column: sql.SQL("NULLIF({source_column}::text, '0')").format(
-                    source_column=sql.Identifier(source_table, column)
-                )
+                column: sql.SQL(
+                    "NULLIF({source_column}, 0)::numeric(16,6)::text"
+                ).format(source_column=sql.Identifier(source_table, column))
                 for column in [*extra_source_columns, "abstain"]
             },
             "entitled_users": sql.Identifier("cte_entitled_users", "all"),
