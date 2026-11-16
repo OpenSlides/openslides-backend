@@ -39,7 +39,6 @@ from openslides_backend.shared.exceptions import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
-    ModelLocked,
 )
 from openslides_backend.shared.interfaces.event import (
     Event,
