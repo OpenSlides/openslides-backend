@@ -92,7 +92,6 @@ class TestMigration101(BaseMigrationTestCase):
     @staticmethod
     def _get_poll_data(
         poll_id: int,
-        meeting_id: int,
         content_object_id: str,
         pollmethod: Literal["Y", "YN", "YNA", "N"] = "N",
         onehundred_percent_base: (
@@ -117,7 +116,7 @@ class TestMigration101(BaseMigrationTestCase):
         return {
             f"poll/{poll_id}": {
                 "title": f"Poll {poll_id}",
-                "meeting_id": meeting_id,
+                "meeting_id": 1,
                 "backend": "fast",
                 "pollmethod": pollmethod,
                 "onehundred_percent_base": onehundred_percent_base
@@ -196,9 +195,9 @@ class TestMigration101(BaseMigrationTestCase):
 
     def _create_users_for_meeting(
         self,
-        meeting_id: int,
         user_ids: list[int],
         group_ids: list[int],
+        meeting_id: int = 1,
     ) -> None:
         self._create_users(user_ids)
         self.create_entries(
@@ -225,7 +224,6 @@ class TestMigration101(BaseMigrationTestCase):
     def _get_option_data(
         base: int,
         poll_id: int,
-        meeting_id: int,
         content_object_id: str | None = None,
         text: str | None = None,
         extra_data: PartialModel = {},
@@ -233,7 +231,7 @@ class TestMigration101(BaseMigrationTestCase):
         return {
             f"option/{base}": {
                 "poll_id": poll_id,
-                "meeting_id": meeting_id,
+                "meeting_id": 1,
                 "content_object_id": content_object_id,
                 "text": text,
                 **extra_data,
@@ -243,7 +241,6 @@ class TestMigration101(BaseMigrationTestCase):
     @staticmethod
     def _get_vote_data(
         base: int,
-        meeting_id: int,
         option_id: int,
         value: Literal["Y", "N", "A"],
         user_id: int | None = None,
@@ -255,7 +252,7 @@ class TestMigration101(BaseMigrationTestCase):
             delegated_user_id = user_id
         result: dict[str, Any] = {
             f"vote/{base}": {
-                "meeting_id": meeting_id,
+                "meeting_id": 1,
                 "option_id": option_id,
                 "value": Jsonb(value) if isinstance(value, dict) else value,
                 "weight": Decimal(weight),
@@ -321,7 +318,7 @@ class TestMigration101(BaseMigrationTestCase):
 
         self.set_up_organization()
         self.create_entries(meeting_data)
-        self._create_users_for_meeting(1, [1, 2, 3, 4], [1])
+        self._create_users_for_meeting([1, 2, 3, 4], [1])
         self._create_users([21, 22, 23])
         self.update_entries(
             {
@@ -331,10 +328,9 @@ class TestMigration101(BaseMigrationTestCase):
         )
         polls_data = {
             # Motion
-            **self._get_motion_data(1, 1),
+            **self._get_motion_data(1),
             **self._get_poll_data(
                 poll_id=1,
-                meeting_id=1,
                 pollmethod="YNA",
                 onehundred_percent_base="YNA",
                 content_object_id="motion/1",
@@ -364,16 +360,13 @@ class TestMigration101(BaseMigrationTestCase):
                     ),
                 },
             ),
-            **self._get_option_data(
-                1, 1, 1, "motion/1", extra_data={"yes": 1, "no": 1}
-            ),
-            **self._get_vote_data(1, 1, 1, "Y"),
-            **self._get_vote_data(2, 1, 1, "N", 2, 1),
+            **self._get_option_data(1, 1, "motion/1", extra_data={"yes": 1, "no": 1}),
+            **self._get_vote_data(1, 1, "Y"),
+            **self._get_vote_data(2, 1, "N", 2, 1),
             # Assignment with poll_candidate_list
-            **self._get_assignment_data(1, 1),
+            **self._get_assignment_data(1),
             **self._get_poll_data(
                 poll_id=2,
-                meeting_id=1,
                 pollmethod="YN",
                 onehundred_percent_base="YN",
                 content_object_id="assignment/1",
@@ -425,15 +418,14 @@ class TestMigration101(BaseMigrationTestCase):
                 "poll_candidate_list_id": 1,
             },
             **self._get_option_data(
-                2, 2, 1, "poll_candidate_list/1", extra_data={"yes": 1, "no": 1}
+                2, 2, "poll_candidate_list/1", extra_data={"yes": 1, "no": 1}
             ),
-            **self._get_vote_data(3, 1, 2, "Y"),
-            **self._get_vote_data(4, 1, 2, "N", 2, 1),
+            **self._get_vote_data(3, 2, "Y"),
+            **self._get_vote_data(4, 2, "N", 2, 1),
             # Topic
-            **self._get_topic_data(1, 1),
+            **self._get_topic_data(1),
             **self._get_poll_data(
                 poll_id=3,
-                meeting_id=1,
                 pollmethod="N",
                 onehundred_percent_base="N",
                 content_object_id="topic/1",
@@ -467,19 +459,18 @@ class TestMigration101(BaseMigrationTestCase):
                     ),
                 },
             ),
-            **self._get_option_data(3, 3, 1, text="Option 3/1", extra_data={"no": 1}),
-            **self._get_option_data(4, 3, 1, text="Option 3/2", extra_data={"no": 0}),
-            **self._get_option_data(5, 3, 1, text="Option 3/3", extra_data={"no": 2}),
-            **self._get_option_data(6, 3, 1, text="Nota-Option", extra_data={"yes": 1}),
-            **self._get_vote_data(5, 1, 3, "N", 2, 1),
-            **self._get_vote_data(6, 1, 5, "N", 2, 1),
-            **self._get_vote_data(7, 1, 5, "N", 1, 1),
-            **self._get_vote_data(8, 1, 6, "Y", 3, 3),
+            **self._get_option_data(3, 3, text="Option 3/1", extra_data={"no": 1}),
+            **self._get_option_data(4, 3, text="Option 3/2", extra_data={"no": 0}),
+            **self._get_option_data(5, 3, text="Option 3/3", extra_data={"no": 2}),
+            **self._get_option_data(6, 3, text="Nota-Option", extra_data={"yes": 1}),
+            **self._get_vote_data(5, 3, "N", 2, 1),
+            **self._get_vote_data(6, 5, "N", 2, 1),
+            **self._get_vote_data(7, 5, "N", 1, 1),
+            **self._get_vote_data(8, 6, "Y", 3, 3),
             # Assignment with max_votes_per_option > 1
-            **self._get_assignment_data(2, 1),
+            **self._get_assignment_data(2),
             **self._get_poll_data(
                 poll_id=4,
-                meeting_id=1,
                 pollmethod="Y",
                 onehundred_percent_base="cast",
                 content_object_id="assignment/2",
@@ -511,18 +502,17 @@ class TestMigration101(BaseMigrationTestCase):
                     ),
                 },
             ),
-            **self._get_option_data(7, 4, 1, "user/21", extra_data={"yes": 1}),
-            **self._get_option_data(8, 4, 1, "user/22", extra_data={"yes": 2}),
-            **self._get_option_data(9, 4, 1, "user/23", extra_data={"yes": 2}),
-            **self._get_vote_data(9, 1, 7, "Y", 2, 2),
-            **self._get_vote_data(10, 1, 8, "Y", 2, 2),
-            **self._get_vote_data(11, 1, 9, "Y", 2, 2, 2),
-            **self._get_vote_data(12, 1, 8, "Y", 1, 2, 1),
+            **self._get_option_data(7, 4, "user/21", extra_data={"yes": 1}),
+            **self._get_option_data(8, 4, "user/22", extra_data={"yes": 2}),
+            **self._get_option_data(9, 4, "user/23", extra_data={"yes": 2}),
+            **self._get_vote_data(9, 7, "Y", 2, 2),
+            **self._get_vote_data(10, 8, "Y", 2, 2),
+            **self._get_vote_data(11, 9, "Y", 2, 2, 2),
+            **self._get_vote_data(12, 8, "Y", 1, 2, 1),
             # Assignment with global options
-            **self._get_assignment_data(3, 1),
+            **self._get_assignment_data(3),
             **self._get_poll_data(
                 poll_id=5,
-                meeting_id=1,
                 pollmethod="Y",
                 onehundred_percent_base="Y",
                 content_object_id="assignment/3",
@@ -555,18 +545,17 @@ class TestMigration101(BaseMigrationTestCase):
                     ),
                 },
             ),
-            **self._get_option_data(10, 5, 1, "user/21", extra_data={"yes": 1}),
-            **self._get_option_data(11, 5, 1, "user/22", extra_data={"yes": 2}),
-            **self._get_option_data(12, 5, 1, extra_data={"no": 1}),
-            **self._get_vote_data(13, 1, 10, "Y", 2, 2),
-            **self._get_vote_data(14, 1, 11, "Y", 2, 2),
-            **self._get_vote_data(15, 1, 11, "Y", 1, 1),
-            **self._get_vote_data(16, 1, 12, "N", 3, 3),
+            **self._get_option_data(10, 5, "user/21", extra_data={"yes": 1}),
+            **self._get_option_data(11, 5, "user/22", extra_data={"yes": 2}),
+            **self._get_option_data(12, 5, extra_data={"no": 1}),
+            **self._get_vote_data(13, 10, "Y", 2, 2),
+            **self._get_vote_data(14, 11, "Y", 2, 2),
+            **self._get_vote_data(15, 11, "Y", 1, 1),
+            **self._get_vote_data(16, 12, "N", 3, 3),
             # Assignment - other
-            **self._get_assignment_data(4, 1),
+            **self._get_assignment_data(4),
             **self._get_poll_data(
                 poll_id=6,
-                meeting_id=1,
                 pollmethod="YNA",
                 onehundred_percent_base="entitled",
                 content_object_id="assignment/4",
@@ -603,42 +592,38 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_option_data(
                 13,
                 6,
-                1,
                 "user/21",
                 extra_data={"yes": 2, "no": 2, "abstain": 0, "weight": Decimal(1)},
             ),
             **self._get_option_data(
                 14,
                 6,
-                1,
                 "user/22",
                 extra_data={"yes": 0, "no": 2, "abstain": 1, "weight": Decimal(1)},
             ),
             **self._get_option_data(
                 15,
                 6,
-                1,
                 "user/23",
                 extra_data={"yes": 0, "no": 0, "abstain": 2, "weight": Decimal(1)},
             ),
             **self._get_option_data(
-                16, 6, 1, "user/4", extra_data={"abstain": 1, "weight": Decimal(1)}
+                16, 6, "user/4", extra_data={"abstain": 1, "weight": Decimal(1)}
             ),
-            **self._get_vote_data(17, 1, 13, "Y", 2, 1),
-            **self._get_vote_data(18, 1, 14, "N", 2, 1),
-            **self._get_vote_data(19, 1, 15, "A", 2, 1),
-            **self._get_vote_data(20, 1, 13, "Y", 1, 1),
-            **self._get_vote_data(21, 1, 14, "A", 1, 1),
-            **self._get_vote_data(22, 1, 15, "A", 1, 1),
-            **self._get_vote_data(23, 1, 13, "N", 3, 3),
-            **self._get_vote_data(24, 1, 14, "N", 3, 3),
-            **self._get_vote_data(25, 1, 13, "N"),
-            **self._get_vote_data(26, 1, 16, "A"),
+            **self._get_vote_data(17, 13, "Y", 2, 1),
+            **self._get_vote_data(18, 14, "N", 2, 1),
+            **self._get_vote_data(19, 15, "A", 2, 1),
+            **self._get_vote_data(20, 13, "Y", 1, 1),
+            **self._get_vote_data(21, 14, "A", 1, 1),
+            **self._get_vote_data(22, 15, "A", 1, 1),
+            **self._get_vote_data(23, 13, "N", 3, 3),
+            **self._get_vote_data(24, 14, "N", 3, 3),
+            **self._get_vote_data(25, 13, "N"),
+            **self._get_vote_data(26, 16, "A"),
             # Assignment - other (without option)
-            **self._get_assignment_data(5, 1),
+            **self._get_assignment_data(5),
             **self._get_poll_data(
                 poll_id=7,
-                meeting_id=1,
                 content_object_id="assignment/5",
                 state="created",
             ),
@@ -1324,20 +1309,19 @@ class TestMigration101(BaseMigrationTestCase):
 
         self.set_up_organization()
         self.create_entries(meeting_data)
-        self._create_users_for_meeting(1, [1, 2, 3], [1])
+        self._create_users_for_meeting([1, 2, 3], [1])
         self._create_users([21, 22, 23])
         polls_data = {
             # # --------- Running poll
             # **self._get_motion_data(),
             # **self._get_poll_data(
-            #     poll_id=1, meeting_id=1, content_object_id="motion/1", state="started"
+            #     poll_id=1, content_object_id="motion/1", state="started"
             # ),
             # ----------- Incorrect onehundred_percent_base + (for selection polls) pollmethod
             # # Motion
-            **self._get_motion_data(2, 1),
+            **self._get_motion_data(2),
             **self._get_poll_data(
                 poll_id=2,
-                meeting_id=1,
                 content_object_id="motion/2",
                 onehundred_percent_base="Y",
             ),
@@ -1345,74 +1329,66 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_assignment_data(),
             **self._get_poll_data(
                 poll_id=3,
-                meeting_id=1,
                 content_object_id="assignment/1",
                 onehundred_percent_base="Y",
             ),
             "poll_candidate_list/1": {"meeting_id": 1},
-            **self._get_option_data(1, 3, 1, "poll_candidate_list/1"),
+            **self._get_option_data(1, 3, "poll_candidate_list/1"),
             # # Topic
             **self._get_topic_data(),
             **self._get_poll_data(
                 poll_id=4,
-                meeting_id=1,
                 content_object_id="topic/1",
                 pollmethod="YN",
                 onehundred_percent_base="YN",
             ),
             # # Assignment with max_votes_per_option > 1
-            **self._get_assignment_data(2, 1),
+            **self._get_assignment_data(2),
             **self._get_poll_data(
                 poll_id=5,
-                meeting_id=1,
                 content_object_id="assignment/2",
                 pollmethod="YNA",
                 onehundred_percent_base="YNA",
                 extra_data={"max_votes_per_option": 2},
             ),
-            **self._get_option_data(3, 5, 1, "user/1"),
+            **self._get_option_data(3, 5, "user/1"),
             # # Assignment with global options
-            **self._get_assignment_data(3, 1),
+            **self._get_assignment_data(3),
             **self._get_poll_data(
                 poll_id=6,
-                meeting_id=1,
                 content_object_id="assignment/3",
                 pollmethod="YNA",
                 onehundred_percent_base="YNA",
                 extra_data={"global_option_id": 4, "global_no": True},
             ),
-            **self._get_option_data(4, 6, 1, "user/1"),
+            **self._get_option_data(4, 6, "user/1"),
             # # Assignment - other
-            **self._get_assignment_data(4, 1),
+            **self._get_assignment_data(4),
             **self._get_poll_data(
                 poll_id=7,
-                meeting_id=1,
                 content_object_id="assignment/4",
                 onehundred_percent_base="Y",
             ),
-            **self._get_option_data(5, 7, 1, "user/1"),
+            **self._get_option_data(5, 7, "user/1"),
             # # ------------- options
             # # Invalid option/content_object_id
             # # # Motion
             # **self._get_motion_data(),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="motion/1",
             # ),
-            # **self._get_option_data(10, 1, 1, "user/1"),
+            # **self._get_option_data(10, 1, "user/1"),
             # # # Assignment
             # **self._get_assignment_data(),
             # **self._get_poll_data(
             #     poll_id=2,
-            #     meeting_id=1,
             #     content_object_id="assignment/1",
             # ),
-            # **self._get_option_data(20, 2, 1, "motion/1"),
+            # **self._get_option_data(20, 2, "motion/1"),
             # **self._get_assignment_data(2),
             # **self._get_poll_data(
             #     poll_id=3,
-            #     meeting_id=1,
             #     content_object_id="assignment/2",
             # ),
             # # Invalid option/text
@@ -1420,16 +1396,14 @@ class TestMigration101(BaseMigrationTestCase):
             # **self._get_topic_data(),
             # **self._get_poll_data(
             #     poll_id=4,
-            #     meeting_id=1,
             #     content_object_id="topic/1",
             # ),
-            # **self._get_option_data(30, 4, 1, "motion/1"),
+            # **self._get_option_data(30, 4, "motion/1"),
             # # ----------------- global_option
             # # Missing global option on global_yes/global_no = True
             # **self._get_motion_data(),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="motion/1",
             #     extra_data={"global_yes": True},
             # ),
@@ -1437,16 +1411,14 @@ class TestMigration101(BaseMigrationTestCase):
             # **self._get_motion_data(2),
             # **self._get_poll_data(
             #     poll_id=2,
-            #     meeting_id=1,
             #     content_object_id="motion/2",
             #     extra_data={"global_option_id": 20},
             # ),
-            # **self._get_option_data(20, 1, 1, "motion/1"),
+            # **self._get_option_data(20, 1, "motion/1"),
             # # (split-)vote for regular and global option
             # **self._get_assignment_data(),
             # **self._get_poll_data(
             #     poll_id=3,
-            #     meeting_id=1,
             #     content_object_id="assignment/1",
             #     extra_data={
             #         "global_yes": True,
@@ -1455,76 +1427,71 @@ class TestMigration101(BaseMigrationTestCase):
             #         "max_votes_per_option": 2,
             #     },
             # ),
-            # **self._get_option_data(30, 3, 1, "user/1"),
-            # **self._get_option_data(31, 3, 1, "user/2"),
-            # **self._get_option_data(32, 3, 1, text="Nota-Oprion"),
-            # **self._get_vote_data(50, 1, 30, "Y", 1),
-            # **self._get_vote_data(51, 1, 31, "Y", 1),
-            # **self._get_vote_data(52, 1, 30, "Y", 2),
-            # **self._get_vote_data(53, 1, 32, "Y", 2),
+            # **self._get_option_data(30, 3, "user/1"),
+            # **self._get_option_data(31, 3, "user/2"),
+            # **self._get_option_data(32, 3, text="Nota-Oprion"),
+            # **self._get_vote_data(50, 30, "Y", 1),
+            # **self._get_vote_data(51, 31, "Y", 1),
+            # **self._get_vote_data(52, 30, "Y", 2),
+            # **self._get_vote_data(53, 32, "Y", 2),
             # # ----------------- single option polls
             # # Multiple options
             # **self._get_motion_data(),
-            # **self._get_motion_data(2, 1),
+            # **self._get_motion_data(2),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="motion/1",
             # ),
-            # **self._get_option_data(10, 1, 1, "motion/1"),
-            # **self._get_option_data(20, 1, 1, "motion/2"),
+            # **self._get_option_data(10, 1, "motion/1"),
+            # **self._get_option_data(20, 1, "motion/2"),
             # # Multiple votes
             # **self._get_assignment_data(),
             # **self._get_poll_data(
             #     poll_id=2,
-            #     meeting_id=1,
             #     content_object_id="assignment/1",
             # ),
             # "poll_candidate_list/1": {"meeting_id": 1},
-            # **self._get_option_data(30, 2, 1, "poll_candidate_list/1"),
-            # **self._get_vote_data(1, 1, 30, "Y", 1, 1),
-            # **self._get_vote_data(2, 1, 30, "N", 1, 1),
-            # **self._get_vote_data(3, 1, 30, "N", 2, 1),
+            # **self._get_option_data(30, 2, "poll_candidate_list/1"),
+            # **self._get_vote_data(1, 30, "Y", 1, 1),
+            # **self._get_vote_data(2, 30, "N", 1, 1),
+            # **self._get_vote_data(3, 30, "N", 2, 1),
             # # ----------------- vote/value
             # **self._get_motion_data(),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="motion/1",
             # ),
-            # **self._get_option_data(10, 1, 1, "motion/1"),
-            # **self._get_vote_data(38, 1, 10, "no"),
+            # **self._get_option_data(10, 1, "motion/1"),
+            # **self._get_vote_data(38, 10, "no"),
             # # ----------------- split_vote_same_weight
             # **self._get_topic_data(),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="topic/1",
             # ),
-            # **self._get_option_data(10, 1, 1, text="Option 10"),
-            # **self._get_option_data(20, 1, 1, text="Option 20"),
-            # **self._get_vote_data(38, 1, 10, "Y", 1, 1, 1),
-            # **self._get_vote_data(39, 1, 20, "N", 1, 2, 1),
-            # **self._get_vote_data(40, 1, 10, "Y", 2),
-            # **self._get_vote_data(41, 1, 20, "N", 2),
-            # **self._get_vote_data(42, 1, 10, "Y", 3, 3, 2),
-            # **self._get_vote_data(43, 1, 20, "N", 3, 3, 2),
-            # **self._get_vote_data(44, 1, 20, "A", 3, 3, 3),
+            # **self._get_option_data(10, 1,  text="Option 10"),
+            # **self._get_option_data(20, 1,  text="Option 20"),
+            # **self._get_vote_data(38, 10, "Y", 1, 1, 1),
+            # **self._get_vote_data(39, 20, "N", 1, 2, 1),
+            # **self._get_vote_data(40, 10, "Y", 2),
+            # **self._get_vote_data(41, 20, "N", 2),
+            # **self._get_vote_data(42, 10, "Y", 3, 3, 2),
+            # **self._get_vote_data(43, 20, "N", 3, 3, 2),
+            # **self._get_vote_data(44, 20, "A", 3, 3, 3),
             # # ----------------- split_vote_same_users
             # **self._get_topic_data(),
             # **self._get_poll_data(
             #     poll_id=1,
-            #     meeting_id=1,
             #     content_object_id="topic/1",
             # ),
-            # **self._get_option_data(10, 1, 1, text="Option 10"),
-            # **self._get_vote_data(38, 1, 10, "Y", 1, 1, user_token="pseudo-token-10-1"),
-            # **self._get_vote_data(39, 1, 10, "N", 1, 2, user_token="pseudo-token-10-1"),
-            # **self._get_vote_data(40, 1, 10, "Y", 2, 1, user_token="pseudo-token-10-2"),
-            # **self._get_vote_data(41, 1, 10, "N", 3, 1, user_token="pseudo-token-10-2"),
-            # **self._get_vote_data(42, 1, 10, "Y", 2, 1, user_token="pseudo-token-10-3"),
-            # **self._get_vote_data(43, 1, 10, "N", 3, 1, user_token="pseudo-token-10-3"),
-            # **self._get_vote_data(44, 1, 10, "A", 3, 2, user_token="pseudo-token-10-3"),
+            # **self._get_option_data(10, 1, text="Option 10"),
+            # **self._get_vote_data(38, 10, "Y", 1, 1, user_token="pseudo-token-10-1"),
+            # **self._get_vote_data(39, 10, "N", 1, 2, user_token="pseudo-token-10-1"),
+            # **self._get_vote_data(40, 10, "Y", 2, 1, user_token="pseudo-token-10-2"),
+            # **self._get_vote_data(41, 10, "N", 3, 1, user_token="pseudo-token-10-2"),
+            # **self._get_vote_data(42, 10, "Y", 2, 1, user_token="pseudo-token-10-3"),
+            # **self._get_vote_data(43, 10, "N", 3, 1, user_token="pseudo-token-10-3"),
+            # **self._get_vote_data(44, 10, "A", 3, 2, user_token="pseudo-token-10-3"),
         }
 
         self.create_entries(polls_data)
