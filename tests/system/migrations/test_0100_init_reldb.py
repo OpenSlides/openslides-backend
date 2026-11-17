@@ -399,7 +399,7 @@ For more information, see
         self.wait_for_migration_thread(15)
 
         assert self.request("stats").json["stats"] == {
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
             "status": MigrationState.MIGRATION_FAILED,
             "exception": 'psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "organization_t_pkey"\nDETAIL:  Key (id)=(1) already exists.',
