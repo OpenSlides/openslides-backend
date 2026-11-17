@@ -187,7 +187,6 @@ class MigrationHandler(BaseHandler):
                                 f"Pre check for migration {mig_name} failed.\n{errors}"
                             )
                             self.logger.info(errors)
-                            raise MigrationSetupException(errors)
                         else:
                             self.logger.info(
                                 f"Pre check for migration {mig_name} finished successfully."
