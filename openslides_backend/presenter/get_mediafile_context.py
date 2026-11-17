@@ -56,7 +56,9 @@ class GetMediafileContext(BasePresenter):
                 "child_ids",
             ],
         )
-        mediafiles = self.datastore.get_many([gmr]).get("mediafile", {})
+        mediafiles = self.datastore.get_many([gmr], lock_result=False).get(
+            "mediafile", {}
+        )
         self.check_permissions(
             {mediafile["owner_id"] for mediafile in mediafiles.values()}
         )
@@ -146,7 +148,7 @@ class GetMediafileContext(BasePresenter):
                 )
             )
         if len(gmrs):
-            data = self.datastore.get_many(gmrs)
+            data = self.datastore.get_many(gmrs, lock_result=False)
         else:
             data = {}
         if meetings := data.get("meeting"):

@@ -407,7 +407,7 @@ class UserMergeTogether(
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]
         vote_poll_ids_per_user_id: dict[int, set[int]] = {
-            user["id"]: {poll_id for poll_id in user.get("poll_voted_ids", [])}
+            user["id"]: {*user.get("poll_voted_ids", [])}
             for user in [into, *other_models]
         }
         option_poll_ids_per_user_id: dict[int, set[int]] = {}
@@ -420,8 +420,7 @@ class UserMergeTogether(
                 + (
                     v_ids := list(
                         {
-                            id_
-                            for id_ in [
+                            *[
                                 *model.get("vote_ids", []),
                                 *model.get("delegated_vote_ids", []),
                             ]
@@ -468,8 +467,7 @@ class UserMergeTogether(
                                     "option",
                                     list(
                                         {
-                                            id_
-                                            for id_ in [
+                                            *[
                                                 vote["option_id"]
                                                 for vote in vote_data.values()
                                                 if vote.get("option_id")

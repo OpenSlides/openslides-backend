@@ -30,9 +30,7 @@ def assert_model(fqid: FullQualifiedId, fields: Model) -> None:
     with get_new_os_conn() as conn:
         database_reader = DatabaseReader(conn, MagicMock(), MagicMock())
         model = (
-            database_reader.get_many(
-                [GetManyRequest(collection, [id_], [field for field in fields.keys()])]
-            )
+            database_reader.get_many([GetManyRequest(collection, [id_], list(fields))])
             .get(collection, dict())
             .get(id_)
         )

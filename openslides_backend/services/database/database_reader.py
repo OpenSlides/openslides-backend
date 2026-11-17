@@ -2,6 +2,8 @@ from typing import Any
 
 from psycopg import Connection, rows, sql
 from psycopg.errors import (
+    DatabaseError,
+    InterfaceError,
     SerializationFailure,
     UndefinedColumn,
     UndefinedFunction,
@@ -251,6 +253,12 @@ class DatabaseReader(SqlQueryHelper):
             raise InvalidFormat(e.diag.message_primary or "")
         except SerializationFailure as e:
             raise e
+        except DatabaseError as e:
+            raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+        except InterfaceError as e:
+            raise DatabaseException(
+                f"The user encountered a new problem with psycopg: {e}"
+            )
         except Exception as e:
             raise DatabaseException(f"Unexpected error reading from database: {e}")
 

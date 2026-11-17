@@ -19,5 +19,5 @@ class ForbidAnonymousGroupMixin(Action):
             ).get("anonymous_group_id")
         if anonymous_group_id:
             for field in group_list_field_names:
-                if anonymous_group_id in instance.get(field, []):
+                if anonymous_group_id in (instance.get(field) or []):
                     raise ActionException(f"Anonymous group is not allowed in {field}.")

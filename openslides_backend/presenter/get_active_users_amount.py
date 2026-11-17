@@ -44,4 +44,4 @@ class GetActiveUsersAmount(BasePresenter):
 
     def get_amount(self) -> int:
         filter_ = FilterOperator("is_active", "=", True)
-        return self.datastore.count("user", filter_)
+        return self.datastore.count("user", filter_, lock_result=False)

@@ -8,7 +8,12 @@ from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
+from ....shared.exceptions import (
+    ActionException,
+    AnyPermission,
+    MissingPermission,
+    PermissionDenied,
+)
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import (
     id_list_schema,
@@ -170,21 +175,22 @@ class MotionCreate(
                 )
             )
             and len(
-                missing_perms := {
-                    perm: instance["meeting_id"]
-                    for perm in extra_submitter_perms
-                    if not has_perm(
-                        self.datastore,
-                        self.user_id,
-                        perm,
-                        instance["meeting_id"],
-                    )
-                }
+                missing_perms := cast(
+                    dict[AnyPermission, int | set[int]],
+                    {
+                        perm: instance["meeting_id"]
+                        for perm in extra_submitter_perms
+                        if not has_perm(
+                            self.datastore,
+                            self.user_id,
+                            perm,
+                            instance["meeting_id"],
+                        )
+                    },
+                )
             )
         ):
-            raise MissingPermission(
-                {key: val for key, val in missing_perms.items()}, use_and=True
-            )
+            raise MissingPermission(missing_perms, use_and=True)
 
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
         can_manage_whitelist = set()

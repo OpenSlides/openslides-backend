@@ -201,6 +201,83 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         agenda_item_8 = self.get_model("agenda_item/8")
         assert agenda_item_8.get("parent_id") is None
 
+    def test_assign_circle(self) -> None:
+        self.create_meeting(222)
+        self.set_models(
+            {
+                "agenda_item/7": {"meeting_id": 222, "content_object_id": "topic/1"},
+                "agenda_item/8": {
+                    "meeting_id": 222,
+                    "content_object_id": "topic/2",
+                    "parent_id": 7,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+            }
+        )
+        response = self.request_multi(
+            "agenda_item.assign",
+            [
+                {"meeting_id": 222, "ids": [7], "parent_id": 8},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Assigning item 7 to one of its children is not possible."
+        )
+
+    def test_assign_self_as_parent(self) -> None:
+        self.create_meeting(222)
+        self.set_models(
+            {
+                "agenda_item/7": {"meeting_id": 222, "content_object_id": "topic/1"},
+                "agenda_item/8": {
+                    "meeting_id": 222,
+                    "content_object_id": "topic/2",
+                    "parent_id": 7,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+            }
+        )
+        response = self.request_multi(
+            "agenda_item.assign",
+            [
+                {"meeting_id": 222, "ids": [7], "parent_id": 7},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Assigning item 7 to itself is not possible."
+
     def test_assign_no_permissions(self) -> None:
         self.base_permission_test(
             self.PERMISSION_TEST_MODELS,

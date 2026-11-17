@@ -13,6 +13,7 @@ from ..http.request import Request
 from ..shared.exceptions import PresenterException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.schema import schema_version
+from ..shared.util import json_schema_error_to_str
 from .base import BasePresenter
 from .presenter_interface import Payload, PresenterResponse
 
@@ -73,11 +74,12 @@ class PresenterHandler(BaseHandler):
         try:
             self.validate(request.json)
         except JsonSchemaException as exception:
-            raise PresenterException(exception.message)
+            raise PresenterException(json_schema_error_to_str(exception))
 
         # Parse presentations and creates response
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, self.logging, self.env)
+            self.datastore.never_lock = True
             response, access_token = self.parse_presenters(request)
         self.logger.debug("Request was successful. Send response now.")
         return response, access_token

@@ -300,7 +300,7 @@ For more information, see
             "status": MigrationState.MIGRATION_REQUIRED,
             "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
@@ -315,7 +315,7 @@ For more information, see
             "status": MigrationState.MIGRATION_REQUIRED,
             "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)

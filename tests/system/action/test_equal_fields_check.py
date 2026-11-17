@@ -664,7 +664,7 @@ for group in grouped_check_relations:
         "to": [rel for rel, rr in rel_to_rr_stat.items() if not rr[1]],
         "update": [rel for rel, rr in rel_to_rr_stat.items() if not any(rr)],
     }
-    unused = {rel for rel in group}
+    unused = {*group}
     # make sure the check_equal-field-update test is done for every relation
     # that is to be tested with the `a_number` field.
     for rel in group:

@@ -51,7 +51,7 @@ class MigrationCommand(StrEnum):
 # relative path to the migrations
 MIGRATIONS_PATH = "openslides_backend/migrations/migrations/"
 MODULE_PATH = MIGRATIONS_PATH.replace("/", ".")
-MIN_NON_REL_MIGRATION = 73
+MIN_NON_REL_MIGRATION = 83
 
 
 class MigrationHelper:
@@ -255,6 +255,12 @@ class MigrationHelper:
             raise ActionException(
                 f"Migration indices do not match: Database has {database_migration_index} and the backend has {backend_migration_index}"
             )
+
+    @staticmethod
+    def assert_finalized(curs: Cursor[DictRow]) -> None:
+        state = MigrationHelper.get_migration_state(curs)
+        if state != MigrationState.FINALIZED:
+            raise ActionException(f"Migration not finalized but in {state}.")
 
     @staticmethod
     def set_database_migration_info(

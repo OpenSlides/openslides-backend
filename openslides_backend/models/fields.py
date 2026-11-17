@@ -22,6 +22,7 @@ from ..shared.typing import Schema
 from ..shared.util import (
     ALLOWED_HTML_TAGS_PERMISSIVE,
     ALLOWED_HTML_TAGS_STRICT,
+    json_schema_error_to_str,
     validate_html,
 )
 
@@ -101,7 +102,9 @@ class Field:
         try:
             self.schema_validator(value)
         except fastjsonschema.JsonSchemaException as e:
-            raise ActionException(f"Invalid data for {fqid}/{field_name}: " + e.message)
+            raise ActionException(
+                f"Invalid data for {fqid}/{field_name}: " + json_schema_error_to_str(e)
+            )
 
     def check_required_not_fulfilled(
         self, instance: dict[str, Any], is_create: bool

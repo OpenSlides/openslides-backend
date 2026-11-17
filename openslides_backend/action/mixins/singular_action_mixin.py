@@ -2,6 +2,7 @@ import fastjsonschema
 
 from ...shared.exceptions import ActionException
 from ...shared.schema import schema_version
+from ...shared.util import json_schema_error_to_str
 from ..action import Action, original_instances
 from ..util.typing import ActionData
 
@@ -34,4 +35,4 @@ class SingularActionMixin(Action):
         try:
             singular_schema(action_data)
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(json_schema_error_to_str(exception))

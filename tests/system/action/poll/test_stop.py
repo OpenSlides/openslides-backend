@@ -1,11 +1,21 @@
+import inspect
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal
+from importlib import import_module
+from time import sleep
 from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
+from psycopg.errors import DeadlockDetected
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.services.postgresql.db_connection_handling import (
+    ConnectionContext,
+)
+from tests.system.action.lock import pytest_thread_local
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 from .base_poll_test import BasePollTestCase
@@ -45,7 +55,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     **self.poll_data,
                     "content_object_id": "motion/1",
                     "pollmethod": "YN",
-                    "entitled_group_ids": [1],
                 },
                 "group/1": {"poll_ids": [1]},
                 "option/1": {"meeting_id": 1, "poll_id": 1},
@@ -392,3 +401,94 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
+
+    def base_no_success(self, max_retries: str) -> None:
+        """
+        Asserts that the on_success method of poll.stop isn't called in case of an exception at transaction end.
+        """
+        pytest_thread_local.name = "MainThread_RC"
+        self.set_thread_watch_timeout(0.1)
+        self.env.vars["ACTION_MAX_RETRIES"] = max_retries
+
+        self.create_meeting(1, {"poll_couple_countdown": False})
+        self.create_topic(1, 1)
+        self.set_models(
+            {
+                "poll/1": self.poll_data,
+                "group/1": {
+                    "poll_ids": [1],
+                    "permissions": ["poll.can_manage"],
+                },
+            }
+        )
+
+        self.start_poll(1)
+        user_id = self.create_user_for_meeting(1)
+        self.login(user_id)
+        self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+
+        with patch.object(self.vote_service, "clear", autospec=True) as mock_clear:
+            with monkeypatch_get_new_os_conn():
+                self.request("poll.stop", {"id": 1})
+            mock_clear.assert_not_called()
+
+    def test_stop_no_success(self) -> None:
+        self.base_no_success("1")
+
+    def test_stop_no_success2(self) -> None:
+        self.base_no_success("2")
+
+
+handle_request_calls = 0
+
+
+@contextmanager
+def monkeypatch_get_new_os_conn() -> Iterator[None]:
+    """
+    Patches get_new_os_conn to further patch the ConnectionContext.
+    """
+    global handle_request_calls
+    handle_request_calls = 0
+    module = import_module("openslides_backend.action.action_handler")
+    module.get_new_os_conn_original = module.get_new_os_conn  # type: ignore [attr-defined]
+    module.get_new_os_conn = counting_get_new_os_conn  # type: ignore [attr-defined]
+    try:
+        yield
+    finally:
+        module.get_new_os_conn = module.get_new_os_conn_original  # type: ignore [attr-defined]
+        delattr(module, "get_new_os_conn_original")
+
+
+def counting_get_new_os_conn() -> ConnectionContext:  # type: ignore [attr-defined]
+    """
+    Wraps the __exit__ of the ConnectionContext to stall the thread and raise a DeadlockDetected exception.
+    """
+    global handle_request_calls
+
+    def raise_exception(*args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+        """
+        Should only be called by handle request on the second entering of the
+        connection context but may be called by other functions too.
+        """
+        sleep(0.2)
+        caller = inspect.stack()[1]
+        if caller.function == "handle_request":
+            ConnectionContext.original_exit(*args, **kwargs)  # type: ignore [attr-defined]
+            ConnectionContext.__exit__ = ConnectionContext.original_exit  # type: ignore [method-assign,attr-defined]
+            delattr(ConnectionContext, "original_exit")
+            raise DeadlockDetected("Nii!!")
+        else:
+            ConnectionContext.__exit__(*args, **kwargs)
+
+    nested_patch = False
+    caller = inspect.stack()[1]
+    if caller.function == "handle_request":
+        # count in function context
+        handle_request_calls += 1
+        if handle_request_calls == 2 or handle_request_calls == 3:
+            nested_patch = True
+    module = import_module("openslides_backend.action.action_handler")
+    if nested_patch:
+        ConnectionContext.original_exit = ConnectionContext.__exit__  # type: ignore [attr-defined]
+        ConnectionContext.__exit__ = raise_exception  # type: ignore[method-assign]
+    return module.get_new_os_conn_original()  # type: ignore[method-assign]

@@ -88,6 +88,7 @@ class GetUsers(BasePresenter):
             self.datastore.get_all(
                 "user",
                 fields,
+                lock_result=False,
             ).values()
         )
 
