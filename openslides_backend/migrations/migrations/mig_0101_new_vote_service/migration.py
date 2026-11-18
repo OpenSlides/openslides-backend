@@ -287,48 +287,48 @@ class Migration(DiffMixin, BaseMigration):
                 f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
             )
 
-        # One option and vote per single-option poll
-        self.execute_query("""
-            SELECT DISTINCT(p.id)
-            FROM poll p
-            JOIN option_t o ON o.poll_id = p.id
-            WHERE (
-                (
-                    p.content_object_id LIKE 'motion/%'
-                    OR (
-                        p.content_object_id LIKE 'assignment/%'
-                        AND o.content_object_id LIKE 'poll_candidate_list/%'
-                    )
-                )
-                AND CARDINALITY(p.option_ids) > 1
-            );
-            """)
-        if entries := self.cursor.fetchall():
-            errors.append(
-                "Only one option should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
-                f"Affected poll ids: {[entry['id'] for entry in entries]}."
-            )
+        # # One option and vote per single-option poll
+        # self.execute_query("""
+        #     SELECT DISTINCT(p.id)
+        #     FROM poll p
+        #     JOIN option_t o ON o.poll_id = p.id
+        #     WHERE (
+        #         (
+        #             p.content_object_id LIKE 'motion/%'
+        #             OR (
+        #                 p.content_object_id LIKE 'assignment/%'
+        #                 AND o.content_object_id LIKE 'poll_candidate_list/%'
+        #             )
+        #         )
+        #         AND CARDINALITY(p.option_ids) > 1
+        #     );
+        #     """)
+        # if entries := self.cursor.fetchall():
+        #     errors.append(
+        #         "Only one option should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
+        #         f"Affected poll ids: {[entry['id'] for entry in entries]}."
+        #     )
 
-        self.execute_query("""
-            SELECT array_agg(v.id) AS ids
-            FROM vote_t v
-            JOIN option_t o ON o.id = v.option_id
-            JOIN poll_t p ON p.id = o.poll_id
-            WHERE (
-                p.content_object_id LIKE 'motion/%'
-                OR (
-                    p.content_object_id LIKE 'assignment/%'
-                    AND o.content_object_id LIKE 'poll_candidate_list/%'
-                )
-            )
-            GROUP BY o.poll_id, v.user_token
-            HAVING COUNT(v.id) > 1;
-            """)
-        if entries := self.cursor.fetchall():
-            errors.append(
-                "Only one vote per user should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
-                f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
-            )
+        # self.execute_query("""
+        #     SELECT array_agg(v.id) AS ids
+        #     FROM vote_t v
+        #     JOIN option_t o ON o.id = v.option_id
+        #     JOIN poll_t p ON p.id = o.poll_id
+        #     WHERE (
+        #         p.content_object_id LIKE 'motion/%'
+        #         OR (
+        #             p.content_object_id LIKE 'assignment/%'
+        #             AND o.content_object_id LIKE 'poll_candidate_list/%'
+        #         )
+        #     )
+        #     GROUP BY o.poll_id, v.user_token
+        #     HAVING COUNT(v.id) > 1;
+        #     """)
+        # if entries := self.cursor.fetchall():
+        #     errors.append(
+        #         "Only one vote per user should exist when poll/content_object_id collection is 'motion' or poll/content_object_id collection is 'assignment' and option/content_object_id collection is 'poll_candidate_list'.\n"
+        #         f"Affected vote ids groups: {[entry['ids'] for entry in entries]}."
+        #     )
 
         # vote/value
         if message := self._check_allowed_values(
