@@ -1,3 +1,5 @@
+from typing import Any
+
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
@@ -19,6 +21,16 @@ class BaseMigration:
         return ""
 
     @staticmethod
+    def data_preparation(curs: Cursor[DictRow]) -> dict[str, Any] | None:
+        """
+        This function can be overridden by subclasses in order to implement the desired behavior.
+        Purpose:
+            Save data in helper tables or return it in a dict.
+        Input:
+            cursor
+        """
+
+    @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
@@ -30,13 +42,14 @@ class BaseMigration:
         """
 
     @staticmethod
-    def data_manipulation(curs: Cursor[DictRow]) -> None:
+    def data_manipulation(curs: Cursor[DictRow], stash: dict[str, Any] | None) -> None:
         """
         This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Writes all data changes necessary after the DDL changes.
         Input:
             cursor
+            stash: data that was previously stashed by data_preparation.
         """
 
     @staticmethod

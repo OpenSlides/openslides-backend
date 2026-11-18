@@ -27,13 +27,7 @@ def get_parser() -> ArgumentParser:
         "migrate",
         add_help=False,
         description="The migrate parser",
-        help="Migrate the datastore.",
-    )
-    subparsers.add_parser(
-        "finalize",
-        add_help=False,
-        description="The finalize parser",
-        help="Finalize the datastore migrations.",
+        help="Migrate the database.",
     )
     subparsers.add_parser(
         "reset",
