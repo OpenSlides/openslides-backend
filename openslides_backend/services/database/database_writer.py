@@ -576,9 +576,10 @@ class DatabaseWriter(SqlQueryHelper):
                 if "UPDATE " not in statement.as_string()
                 else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()
             )
-            raise InvalidFormat(f"""{e.args[0]}
+            raise InvalidFormat(
+                f"""{e.args[0] if self.env.is_dev_mode() else ""}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
-        The psycopg arguments are: {arguments}
+        {"The psycopg arguments are: " + str(arguments) if self.env.is_dev_mode() else ""}
         The fields are: {fields}
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}"""
