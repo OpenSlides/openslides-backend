@@ -53,10 +53,6 @@ class MigrationManager:
         self.logger = logging.getLogger(__name__)
 
         self.handler: MigrationHandler | None
-        MigrationHelper.load_migrations()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as cursor:
-                MigrationHelper.add_new_migrations_to_version(cursor)
         self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
@@ -182,11 +178,10 @@ class MigrationManager:
             version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
             with version_conn.cursor() as cursor:
                 self.ver_conn = version_conn
-                if command == MigrationCommand.PROGRESS:
-                    return self.handle_progress_command()
-                elif command == MigrationCommand.STATS:
-                    return {"stats": self.get_stats()}
+                if command in [MigrationCommand.PROGRESS, MigrationCommand.STATS]:
+                    return self.execute_migration_stats_command(command, cursor)
                 elif command != MigrationCommand.RESET:
+                    MigrationHelper.add_new_migrations_to_version(cursor)
                     self.assert_valid_migration_index(cursor)
                     match MigrationHelper.get_migration_state(cursor):
                         case MigrationState.MIGRATION_RUNNING:
@@ -218,6 +213,22 @@ class MigrationManager:
                 else:
                     # Migration already finished/had nothing to do
                     return self.get_migration_result()
+
+    def execute_migration_stats_command(
+        self, command: str, cursor: Cursor[DictRow]
+    ) -> dict[str, Any]:
+        """Returns the output of the read commands"""
+        original_indexes = MigrationHelper.get_indices_from_database(cursor)
+        MigrationHelper.add_new_migrations_to_version(cursor)
+        if command == MigrationCommand.PROGRESS:
+            result = self.handle_progress_command()
+        else:
+            result = {"stats": self.get_stats()}
+        cursor.execute(
+            sql.SQL("DELETE FROM version WHERE migration_index <> ALL(%s);"),
+            (original_indexes,),
+        )
+        return result
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         """
