@@ -297,13 +297,13 @@ For more information, see
         expected_error_message = "Required env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE"
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_REQUIRED,
+            "status": MigrationState.MIGRATION_FAILED,
             "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
         }
-        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.assert_indices_state(MigrationState.MIGRATION_FAILED)
 
     def test_migration_fail_time_zone(self) -> None:
         os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
@@ -312,13 +312,13 @@ For more information, see
         expected_error_message = "JST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_REQUIRED,
+            "status": MigrationState.MIGRATION_FAILED,
             "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
         }
-        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.assert_indices_state(MigrationState.MIGRATION_FAILED)
 
     def test_migration_handler(self) -> None:
         # Prepare what manager would.

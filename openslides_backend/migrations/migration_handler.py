@@ -169,7 +169,7 @@ class MigrationHandler(BaseHandler):
                                 MigrationHelper.set_database_migration_info(
                                     ver_cursor,
                                     minimum_required_index["min"],
-                                    MigrationState.MIGRATION_REQUIRED,
+                                    MigrationState.MIGRATION_FAILED,
                                 )
                             errors = (
                                 f"Pre check for migration {mig_name} failed.\n{errors}"
