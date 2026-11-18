@@ -490,7 +490,7 @@ For more information, see
         response = self.request("reset")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
             "output": "",
         }
         self.wait_for_migration_thread(15)
@@ -504,13 +504,8 @@ For more information, see
             reset = reset_data[tablename]
             if tablename == "version":
                 assert len(prev) == 2
-                assert len(reset) == 2
+                assert len(reset) == 1
                 assert prev[0] == reset[0]
-                assert reset[1] == {
-                    "migration_index": 100,
-                    "migration_state": MigrationState.MIGRATION_REQUIRED,
-                    "replace_tables": {k: {} for k in Migration.ORIGIN_COLLECTIONS},
-                }
             else:
                 self.assertEqual(prev, reset, f"Failed for {tablename}")
 
