@@ -278,11 +278,7 @@ class MigrationHandler(BaseHandler):
         MigrationHelper.migrate_thread_exception = None
         # Remove unfinalized migration indices from version table
         with self.ver_conn.cursor() as ver_cursor:
-            to_reset_indices = MigrationHelper.get_unfinalized_indices(ver_cursor)
             ver_cursor.execute(
-                sql.SQL(
-                    "UPDATE version SET migration_state = %s "
-                    "WHERE migration_index = ANY(%s)"
-                ),
-                (MigrationState.MIGRATION_REQUIRED, to_reset_indices),
+                sql.SQL("DELETE FROM version WHERE migration_index = ANY(%s);"),
+                (MigrationHelper.get_unfinalized_indices(ver_cursor),),
             )
