@@ -58,7 +58,7 @@ The link will be valid for 10 minutes."""
             # search for users with email
             filter_ = FilterOperator("email", "~=", email)
             results = self.datastore.filter(
-                self.model.collection, filter_, ["id", "username", "saml_id", "email"]
+                self.model.collection, filter_, ["id", "username", "email"]
             )
 
             organization = self.datastore.get(
@@ -70,10 +70,6 @@ The link will be valid for 10 minutes."""
             try:
                 with EmailUtils.get_mail_connection() as mail_client:
                     for user in results.values():
-                        if user.get("saml_id"):
-                            raise ActionException(
-                                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
-                            )
                         username = user["username"]
                         ok, errors = EmailUtils.send_email_safe(
                             mail_client,

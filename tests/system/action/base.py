@@ -325,9 +325,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         assert information in last_information
 
     def assert_logged_in(self) -> None:
-        self.auth.authenticate()  # assert that no exception is thrown
+        self.auth.authenticate(self.client.get_auth_header())  # assert that no exception is thrown
 
     def assert_logged_out(self) -> None:
         with pytest.raises(AuthenticationException):
-            self.auth.authenticate()
+            self.auth.authenticate(self.client.get_auth_header())
         BaseSystemTestCase.auth_data = None

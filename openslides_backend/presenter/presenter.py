@@ -108,7 +108,7 @@ class PresenterHandler(BaseHandler):
                 )
             presenters.append(presenter)
 
-        user_id = self.services.authentication().authenticate() #request.headers.get("Authorization", ""))
+        user_id = self.services.authentication().authenticate(request.headers.get("Authorization", ""))
 
         response = []
         for PresenterClass in presenters:

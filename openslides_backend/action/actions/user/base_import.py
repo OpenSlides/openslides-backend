@@ -79,28 +79,12 @@ class BaseUserImport(BaseImportAction):
             if home_committee_id := committee_instance.get("id"):
                 entry["home_committee_id"] = home_committee_id
 
-        # set fields empty/False if saml_id will be set
         field_values = (
             ("can_change_own_password", False),
         )
         username = cast(str, self.get_value_from_union_str_object(entry["username"]))
         member_number = self.get_value_from_union_str_object(entry.get("member_number"))
-        if (
-            (obj := entry.get("saml_id"))
-            and obj["value"]
-            and obj["info"] != ImportState.REMOVE
-        ):
-            for field, value in field_values:
-                field_data = self.username_lookup.get_field_by_name(username, field)
-                if member_number:
-                    field_data = (
-                        self.member_number_lookup.get_field_by_name(
-                            member_number, field
-                        )
-                        or field_data
-                    )
-                if field_data or entry.get(field):
-                    entry[field] = value
+
         if isinstance(entry.get("gender"), dict):
             if entry["gender"].get("info") != ImportState.WARNING:
                 entry["gender_id"] = entry["gender"]["id"]
@@ -162,7 +146,6 @@ class BaseUserImport(BaseImportAction):
                 row, self.member_number_lookup, "member_number"
             )
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
-        self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         self.validate_field(row, self.committee_map, "home_committee", False)
 
     def check_field_failures(
@@ -224,19 +207,8 @@ class BaseUserImport(BaseImportAction):
             ],
             field="username",
             mapped_fields=[
-                "saml_id",
                 "can_change_own_password",
             ],
-        )
-        self.saml_id_lookup = Lookup(
-            self.datastore,
-            "user",
-            [
-                (entry["saml_id"]["value"], entry)
-                for row in self.rows
-                if "saml_id" in (entry := row["data"])
-            ],
-            field="saml_id",
         )
         self.member_number_lookup = Lookup(
             self.datastore,

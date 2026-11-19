@@ -2918,13 +2918,6 @@ class User(Model):
         unique=True,
         constraints={"minLength": 1, "description": "unique-key from IDP for login"},
     )
-    saml_id = fields.CharField(
-        unique=True,
-        constraints={
-            "minLength": 1,
-            "description": "unique-key from IdP for SAML login",
-        },
-    )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()

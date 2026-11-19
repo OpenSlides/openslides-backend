@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any, TypedDict, cast
 
+import jwt
 import simplejson as json
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
@@ -26,17 +27,23 @@ class Response(ResponseWrapper, TestResponse):
     we have to create this dummy class for correct typing of the Response.
     """
 
+class IDPPayloadMock:
+    def __init__(self, claims: dict):
+        self.sub = claims.get("sub", "")  # User ID
+        self.sid = claims.get("sid", "")  # Session ID
+        self.os_id = claims.get("os_id", "")  # OS User ID
 
 class AuthData(TypedDict, total=False):
     """
-    TypedDict for the authentication data. access_token must be inserted into the headers.
+    TypedDict for the authentication data. Contains encoded mock JWT Access Token
     """
 
-    access_token: str
+    access_token: IDPPayloadMock
 
 
 class Client(WerkzeugClient):
     application: WSGIApplication
+    mock_client_id = 400019926833692681
 
     def __init__(
         self,
@@ -48,27 +55,28 @@ class Client(WerkzeugClient):
         self.auth_data: AuthData = {}
         self.on_auth_data_changed = on_auth_data_changed
 
-    def login(self, username: str, password: str) -> None:
-        #handler = self.application.services.authentication().auth_handler.http_handler
-        retries = 0
-        while True:
-            try:
-                response = handler.send_request(
-                    "login",
-                    payload=json.dumps({"username": username, "password": password}),
-                    headers={"Content-Type": "application/json"},
-                )
-            except Exception as e:
-                raise AuthenticationException(str(e))
-            if response.status_code == 500 and retries < 10:
-                retries += 1
-                continue
-            assert (
-                response.status_code == 200
-            ), f"Auth Service: {response.status_code} {response.reason} {response.content.decode()}"
-            break
+    def logout(self) -> None:
+        self.login(0)
+
+    def login(self, user_id: int) -> None:
+        self.set_client_id(mock_client_id)
+
+        # Mock Claims
+        claims = {
+            "sub": sub,
+            "sid": sid,
+            "os_id": user_id,
+            "aud": mock_client_id,
+        }
+
+        # JWT encode it
+        token = jwt.encode(claims, "test-signing-key-for-jwt-encode-000000000000", algorithm="HS256")
+
+        # Set as header
+        header = "Bearer: " + payload
+
         # save access token and refresh id for subsequent requests
-        self.update_auth_data({"access_token": response.headers.get("Authorization")})
+        self.update_auth_data({"access_token": header})
 
     def update_auth_data(self, auth_data: AuthData) -> None:
         """
@@ -77,6 +85,9 @@ class Client(WerkzeugClient):
         self.auth_data.update(auth_data)
         if self.on_auth_data_changed:
             self.on_auth_data_changed(self.auth_data)
+
+    def get_auth_header(self) -> AuthData:
+        return self.auth_data
 
     def get(self, *args: Any, **kwargs: Any) -> Response:
         """

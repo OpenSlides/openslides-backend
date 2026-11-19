@@ -4,14 +4,18 @@ class AuthenticationService(Protocol):
     """
     Interface of the Auth Service.
     """
-    def authenticate(self) -> int:
+    def authenticate(self, auth_header: str) -> int:
         """
-        A request to get knowledge about themselves. This information is contained in the payload of
-        a Token. So, this function handles the refreshing of a Token.
+        Decodes a JWT token set by the IDP provider.
+        Handles exceptions and validates audience/client source
 
-        Sends back a new Token.
+        Returns the OpenSlides User ID contained within the JWT token on success
+        Returns 0 as User ID, of authentication failed
+        """
 
-        Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
+    def set_client_id(self, client_id: str) -> None:
+        """
+        Sets the expected client ID manually. If unset or empty, the client ID will be read from a volume mounted client ID file
         """
 
     def decode_logout_token(self, encoded_logout_token: str) -> str:

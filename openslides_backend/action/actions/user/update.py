@@ -87,7 +87,6 @@ class UserUpdate(
             "organization_management_level",
             "committee_management_ids",
             "is_demo_user",
-            "saml_id",
             "member_number",
             "external",
             "home_committee_id",
@@ -147,7 +146,6 @@ class UserUpdate(
                 "is_active",
                 "idp_id",
                 "organization_management_level",
-                "saml_id",
                 "home_committee_id",
             ],
         )
@@ -159,17 +157,6 @@ class UserUpdate(
             instance["home_committee_id"] = None
         elif home_committee_id:
             instance["external"] = False
-        if user.get("saml_id") and (
-            instance.get("can_change_own_password")
-        ):
-            raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
-            )
-        if instance.get("saml_id"):
-            instance["can_change_own_password"] = False
-            # TODO: Set IDP to null??
-            # instance["default_password"] = ""
-            # instance["password"] = ""
 
         if instance.get("username") and re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")

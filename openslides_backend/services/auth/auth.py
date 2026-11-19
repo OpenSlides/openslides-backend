@@ -136,6 +136,9 @@ class AuthenticationOIDC(AuthenticationService):
         except Exception as e:
             raise AuthenticationException(f"Error setting backchannel logout URI: {e}")
 
+    def set_client_id(self, client_id: str) -> None:
+        manual_client_id = client_id
+
     def authenticate(self, auth_header: str) -> int:
         self.logger.debug("Authentication request received")
 
@@ -162,7 +165,7 @@ class AuthenticationOIDC(AuthenticationService):
 
     def decode_logout_token(self, encoded_logout_token: str) -> str:
         # Extract session ID
-        claims = self._extract_claims(encoded_logout_token)
+        claims = self._extract_claims(encoded_logout_token, "")
 
         # Required per OIDC backchannel logout: events must include the backchannel logout event
         backchannel_event_key = "http://schemas.openid.net/event/backchannel-logout"
@@ -187,11 +190,15 @@ class AuthenticationOIDC(AuthenticationService):
         return claims["sid"]
 
     def _extract_claims(self, token: str) -> dict[str, Any]:
+        # Client ID can be manually set if desired (eg. for tests)
+        if not client_id:
+            client_id = self._get_client_id()
+
         try:
             claims = jwt.decode(
                 token,
                 algorithms=["RS256"],
-                audience=self._get_client_id(),
+                audience=client_id,
                 options={"verify_aud": True, "verify_signature": False},
             )
         except jwt.exceptions.DecodeError as e:

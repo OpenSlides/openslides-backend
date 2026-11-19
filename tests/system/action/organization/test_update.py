@@ -13,7 +13,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         dict[str, str | ListOfDicts | dict[str, str | dict[str, str] | ListOfDicts]]
     ]
     saml_attr_mapping: dict[str, str | MeetingMappers] = {
-        "saml_id": "username",
         "title": "title",
         "first_name": "firstName",
         "last_name": "lastName",
@@ -428,27 +427,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "data.saml_attr_mapping must be object" in response.json["message"]
-
-    def test_update_broken_saml_attr_mapping_missing_saml_id(self) -> None:
-        response = self.request(
-            "organization.update", {"id": 1, "saml_attr_mapping": {"x": "y"}}
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.saml_attr_mapping must contain ['saml_id'] properties"
-            in response.json["message"]
-        )
-
-    def test_update_broken_saml_attr_mapping_unknown_field(self) -> None:
-        response = self.request(
-            "organization.update",
-            {"id": 1, "saml_attr_mapping": {"saml_id": "111", "unkown_field": "xxx"}},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.saml_attr_mapping must not contain {'unkown_field'} properties"
-            in response.json["message"]
-        )
 
     def test_update_default_language(self) -> None:
         response = self.request(
