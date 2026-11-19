@@ -165,8 +165,8 @@ class ActionHandler(BaseHandler):
                                 self.datastore.reset()
 
                         # execute cleanup methods
-                        for on_success in self.on_success:
-                            on_success()
+                        for on_success_fn in self.on_success:
+                            on_success_fn()
 
                         # Return action result
                         self.logger.info("Request was successful. Send response now.")
@@ -344,6 +344,7 @@ class ActionHandler(BaseHandler):
                 # self.datastore.reset(hard=False)
 
             # add on_success routine
+            self.on_success.extend(action.on_success)
             if on_success := action.get_on_success(action_data):
                 self.on_success.append(on_success)
 

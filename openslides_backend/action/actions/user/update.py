@@ -205,7 +205,6 @@ class UserUpdate(
 
                 if "is_active" in action_data[0]:
                     self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
-                    self.revoke_all_sessions_of_user(action_data[0])
 
                 if "email" in action_data[0]:
                     self.update_email(action_data[0], action_data[0].get("email"))
