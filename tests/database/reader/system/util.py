@@ -180,6 +180,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "parent_id": None,
             "receive_forwardings_from_committee_ids": None,
             "user_ids": None,
+            "identity_key": None,
             "organization_id": 1,
         },
         2: {
@@ -200,6 +201,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "parent_id": None,
             "receive_forwardings_from_committee_ids": None,
             "user_ids": None,
+            "identity_key": None,
         },
     },
 }
