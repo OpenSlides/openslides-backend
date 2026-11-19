@@ -37,6 +37,7 @@ from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailSettings, EmailUtils
+from ...mixins.magic_link_mixin import IDPMagicLinkMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
@@ -50,7 +51,7 @@ class EmailErrorType(StrEnum):
 
 
 @register_action("user.send_invitation_email")
-class UserSendInvitationMail(UpdateAction):
+class UserSendInvitationMail(UpdateAction, IDPMagicLinkMixin, QRCodeMixin):
     """
     Action send an invitation mail to a user.
     """
@@ -254,20 +255,34 @@ class UserSendInvitationMail(UpdateAction):
                     for coll in ["group", "structure_level"]
                 }
             )
+
+        magic_link = self.create_magic_link(user.get("idp_id", ""))
+
         body_dict = {
-            # TODO: "password": user.get("default_password", ""),
+            "magicLink": magic_link,
             "url": mail_data.get("url", ""),
             **subject_format,
         }
 
         body_format = format_dict(None, body_dict)
 
+        email_body = mail_data.get("users_email_body", "").format_map(body_format)
+
+        # Magic link as QR
+        qr_code = self.render_qr_png(magic_link, "png", 8, 2)
+        qr_cid = make_msgid(domain=EmailSettings.host)
+        qr_code_body = f"""\
+            <p><img src="cid:{qr_cid[1:-1]}" width="200" height="200" alt="QR code"></p>
+            """
+
+        email_body = email_body + "\n" + qr_code_body
+
         EmailUtils.send_email(
             self.mail_client,
             from_email,
             to_email,
             mail_data.get("users_email_subject", "").format_map(subject_format),
-            mail_data.get("users_email_body", "").format_map(body_format),
+            email_body,
             reply_to=reply_to,
             html=False,
         )
