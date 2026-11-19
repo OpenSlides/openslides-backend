@@ -96,24 +96,8 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error finding user: {e}") from e
 
-    def create_user(self, user: dict, password: str = "") -> None:
-        idp_admin_access_token = self._get_admin_key()
-
-        os_id = user.get("id")
-        username = user.get("username")
-        email = user.get("email") or f"{username}@openslides.local"
-        givenname = user.get("first_name") or username
-        familyname = user.get("last_name") or username
-        idp_org_id = self._get_organisation_id()
-
-        # Check if there is already a IDP User with the identifying keys and delete those accounts
-        self.find_and_remove_similar_idp_users(user)
-
-        try:
-            ## Upload OS user to IDP
-            response = requests.post(
-                f"{self.idp_scim_route}{idp_org_id}/Users",
-                json={
+    def _scim_user_request_body(self, os_id: int, password: str, username: str, givenname: str, familyname: str, email:str) -> Any | None:
+        return {
                     "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
                     "externalId": str(os_id),
                     **({"password": password} if password else {}),
@@ -127,7 +111,26 @@ class IDPMixin(Action):
                             "value": email,
                         }
                     ],
-                },
+                }
+
+    def create_user(self, user: dict, password: str = "") -> None:
+        idp_admin_access_token = self._get_admin_key()
+
+        # Check if there is already a IDP User with the identifying keys and delete those accounts
+        self.find_and_remove_similar_idp_users(user)
+
+        os_id = user.get("id")
+        username = user.get("username")
+        email = user.get("email") or f"{username}@openslides.local"
+        givenname = user.get("first_name") or username
+        familyname = user.get("last_name") or username
+        idp_org_id = self._get_organisation_id()
+
+        try:
+            ## Upload OS user to IDP
+            response = requests.post(
+                f"{self.idp_scim_route}{idp_org_id}/Users",
+                json=self._scim_user_request_body(os_id, password, username, givenname, familyname, email),
                 headers={
                     "Authorization": f"Bearer {idp_admin_access_token}",
                     "Host": f"{self.external_host}",
@@ -142,6 +145,12 @@ class IDPMixin(Action):
             raise ActionException(f"Error creating user: {e}") from e
 
     def create_user_bulk(self, users: list[dict[str, Any]]) -> None:
+        if len(users) <= 0:
+            return
+        elif len(users) == 1:
+            self.create_user(users[0])
+            return
+
         idp_admin_access_token = self._get_admin_key()
         idp_org_id = self._get_organisation_id()
 
@@ -158,21 +167,7 @@ class IDPMixin(Action):
                 "method": "POST",
                 "path": "/Users",
                 "bulkId": f"user-{ndx}",
-                "data": {
-                    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
-                    "externalId": str(external_id),
-                    **({"password": password} if password else {}),
-                    "username": username,
-                    "name": {
-                        "givenName": givenname,
-                        "familyName": familyname,
-                    },
-                    "emails": [
-                        {
-                            "value": email,
-                        }
-                    ],
-                },
+                "data": self._scim_user_request_body(os_id, password, username, givenname, familyname, email),
             }
             operations.append(item)
 
@@ -239,18 +234,18 @@ class IDPMixin(Action):
         except Exception as e:
             raise ActionException(f"Error deleting user: {e}") from e
 
-            # Logs user out and thereby revokes any active session of user
 
+    # Logs user out and thereby revokes any active session of user
     def revoke_all_sessions_of_user(self, instance: dict[str, Any]) -> None:
         idp_admin_access_token = self._get_admin_key()
-        self.logger.warning(f"Revoke sessions for {instance["id"]}")
+        self.logger.warning(f"Revoke sessions for {instance['id']}")
         try:
             response = requests.post(
                 f"{self.idp_admin_route}sessions/search",
                 json={
                     "query": {"offset": 0, "limit": 100, "asc": True},
                     "queries": [
-                        {"userIdQuery": {"id": f"{instance["id"]}"}},
+                        {"userIdQuery": {"id": f"{instance['id']}"}},
                     ],
                 },
                 headers={
@@ -379,7 +374,7 @@ class IDPMixin(Action):
             )
             idp_id = self.get_idp_id(filter_response)
 
-            ## Change enable status of IDP user
+            ## Send request
             response = requests.patch(
                 f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
@@ -423,7 +418,7 @@ class IDPMixin(Action):
             )
             idp_id = self.get_idp_id(filter_response)
 
-            ## Change enable status of IDP user
+            ## Send Request
             response = requests.patch(
                 f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
@@ -466,7 +461,7 @@ class IDPMixin(Action):
             )
             idp_id = self.get_idp_id(filter_response)
 
-            ## Change enable status of IDP user
+            ## Send request
             response = requests.patch(
                 f"{self.idp_scim_route}{idp_org_id}/Users/{idp_id}",
                 json={
@@ -487,7 +482,7 @@ class IDPMixin(Action):
             )
             if response.status_code != 204:
                 if response.status_code == 400 and response.json()["code"] == 9:
-                    self.logger.warning("Error updating the username of the user.")
+                    self.logger.warning("Error updating the password of the user.")
                     return
 
                 self.idp_error(response)

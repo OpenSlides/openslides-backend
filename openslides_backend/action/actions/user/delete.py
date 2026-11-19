@@ -42,7 +42,8 @@ class UserDelete(
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
             # Delete IDP account
-            self.delete_user(action_data[0])
+            for user in action_data:
+                self.delete_user(user)
 
         return on_success
 
