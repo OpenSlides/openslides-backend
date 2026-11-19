@@ -82,7 +82,6 @@ class BaseUserImport(BaseImportAction):
         # set fields empty/False if saml_id will be set
         field_values = (
             ("can_change_own_password", False),
-            ("default_password", ""),
         )
         username = cast(str, self.get_value_from_union_str_object(entry["username"]))
         member_number = self.get_value_from_union_str_object(entry.get("member_number"))
@@ -226,8 +225,6 @@ class BaseUserImport(BaseImportAction):
             field="username",
             mapped_fields=[
                 "saml_id",
-                "default_password",
-                "password",
                 "can_change_own_password",
             ],
         )
@@ -251,7 +248,6 @@ class BaseUserImport(BaseImportAction):
             ],
             field="member_number",
             mapped_fields=[
-                "default_password",
                 "can_change_own_password",
             ],
         )

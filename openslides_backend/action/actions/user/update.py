@@ -80,7 +80,6 @@ class UserUpdate(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "can_change_own_password",
             "gender_id",
             "email",
@@ -149,7 +148,6 @@ class UserUpdate(
                 "idp_id",
                 "organization_management_level",
                 "saml_id",
-                "password",
                 "home_committee_id",
             ],
         )
@@ -162,15 +160,16 @@ class UserUpdate(
         elif home_committee_id:
             instance["external"] = False
         if user.get("saml_id") and (
-            instance.get("can_change_own_password") or instance.get("default_password")
+            instance.get("can_change_own_password")
         ):
             raise ActionException(
                 f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
-        if instance.get("saml_id") and user.get("password"):
+        if instance.get("saml_id"):
             instance["can_change_own_password"] = False
-            instance["default_password"] = ""
-            instance["password"] = ""
+            # TODO: Set IDP to null??
+            # instance["default_password"] = ""
+            # instance["password"] = ""
 
         if instance.get("username") and re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")

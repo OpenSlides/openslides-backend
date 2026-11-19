@@ -36,4 +36,4 @@ class PresenterView(BaseView):
 
     @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> RouteResponse:
-        return {"status": "running"}, None
+        return {"status": "running"}

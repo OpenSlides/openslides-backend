@@ -72,7 +72,7 @@ def test_simple(db_connection: Connection) -> None:
                 "\n"
                 "{url}\n"
                 "Username: {username}\n"
-                "Password: {password}\n"
+                "Password: {magicLink}\n"
                 "\n"
                 "\n"
                 "This email was generated automatically.",

@@ -60,7 +60,6 @@ class UserMergeTogether(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "gender_id",
             "email",
             "default_vote_weight",
@@ -81,8 +80,6 @@ class UserMergeTogether(
             User,
             {
                 "ignore": [
-                    "password",
-                    "default_password",
                     "organization_id",
                     "last_email_sent",
                     "last_login",

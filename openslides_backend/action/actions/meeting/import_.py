@@ -48,7 +48,6 @@ from ....shared.util import (
     validate_html,
 )
 from ...mixins.singular_action_mixin import SingularActionMixin
-from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
@@ -289,8 +288,6 @@ class MeetingImport(
                     "origin_meeting_id",
                 ],
                 "user": [
-                    "password",
-                    "default_password",
                     "last_email_sent",
                     "last_login",
                     "committee_ids",
@@ -445,12 +442,6 @@ class MeetingImport(
         meeting = self.get_meeting_from_json(json_data)
         meeting["committee_id"] = instance["committee_id"]
         meeting["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
-
-        # generate passwords
-        for entry in json_data.get("user", {}).values():
-            if entry["id"] not in self.merge_user_map:
-                entry["default_password"] = get_random_password()
-                entry["password"] = self.auth.hash(entry["default_password"])
 
         # set enable_anonymous
         meeting["enable_anonymous"] = False

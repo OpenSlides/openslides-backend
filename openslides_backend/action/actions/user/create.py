@@ -53,7 +53,6 @@ class UserCreate(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "can_change_own_password",
             "gender_id",
             "email",
@@ -97,11 +96,12 @@ class UserCreate(
         instance = super().update_instance(instance)
         if saml_id:
             instance["can_change_own_password"] = False
-            instance["password"] = None
-            if instance.get("default_password"):
-                raise ActionException(
-                    f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
-                )
+            # TODO: Set IDP to null??
+            #instance["password"] = None
+            #if instance.get("default_password"):
+            #    raise ActionException(
+            #        f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            #    )
 
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)

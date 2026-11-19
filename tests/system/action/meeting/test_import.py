@@ -158,7 +158,7 @@ class MeetingImport(BaseActionTestCase):
                         "users_email_sender": "noreply@yourdomain.com",
                         "users_email_replyto": "",
                         "users_email_subject": "OpenSlides access data",
-                        "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+                        "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically.",
                         "assignments_export_title": "Elections",
                         "assignments_export_preamble": "",
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",

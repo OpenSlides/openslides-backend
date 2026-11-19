@@ -944,7 +944,7 @@ class Meeting(Model, MeetingModelMixin):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically."
     )
     users_enable_vote_delegations = fields.BooleanField()
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
@@ -2270,7 +2270,7 @@ class Organization(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically."
     )
     url = fields.CharField(default="https://example.com")
 
@@ -2931,8 +2931,6 @@ class User(Model):
     last_name = fields.CharField()
     is_active = fields.BooleanField(default=True)
     is_physical_person = fields.BooleanField(default=True)
-    password = fields.CharField()
-    default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
     email = fields.CharField()
     default_vote_weight = fields.DecimalField(

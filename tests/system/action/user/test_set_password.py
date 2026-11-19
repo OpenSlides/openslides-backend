@@ -10,7 +10,6 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        #self.reset_redis() -Removed-
 
     def test_update_correct(self) -> None:
         self.create_model("user/2", {"username": "klaus", "password": "old_pw"})

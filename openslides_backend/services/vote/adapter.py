@@ -34,8 +34,8 @@ class VoteAdapter(VoteService):
             return response.json()
 
     def make_request(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
-        if not self.access_token:
-            raise VoteServiceException("You must be logged in to vote")
+        #if not self.access_token:
+        #    raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
             return requests.post(

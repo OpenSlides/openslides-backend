@@ -229,7 +229,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "C": ["meeting_id", "group_ids"],
         "D": ["committee_management_ids"],
         "E": ["organization_management_level"],
-        "F": ["default_password"],
+        "F": [],
         "G": ["is_demo_user"],
         "H": ["saml_id"],
         "I": ["home_committee_id"],

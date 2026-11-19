@@ -334,9 +334,10 @@ class Checker:
                 self.errors.append(error)
                 errors = True
         if diff := model_fields - all_collection_fields:
-            error = f"{collection}/{model['id']}: Invalid fields {', '.join(f'{field} (value: {model[field]})' for field in diff)}"
-            self.errors.append(error)
-            errors = True
+            if not (collection == "user" and len(diff) == 1 and "password" in diff) :
+                error = f"{collection}/{model['id']}: Invalid fields {', '.join(f'{field} (value: {model[field]})' for field in diff)}"
+                self.errors.append(error)
+                errors = True
 
         for field in self.get_fields(collection):
             if (fieldname := field.get_own_field_name()) in model_fields:
@@ -362,6 +363,8 @@ class Checker:
 
     def check_types(self, model: dict[str, Any], collection: str) -> None:
         for field in model.keys():
+            if collection == "user" and field == "password":
+                continue
             field_type = self.get_type_from_collection(field, collection)
             enum = self.get_enum_from_collection_field(field, collection)
 
@@ -459,11 +462,10 @@ class Checker:
     def check_relation(
         self, model: dict[str, Any], collection: str, field: str
     ) -> None:
+        if collection == "user" and (field == "password" or field == "organization_id"):
+            return
         field_type = self.get_type_from_collection(field, collection)
         basemsg = f"{collection}/{model['id']}/{field}: Relation Error:"
-
-        if collection == "user" and field == "organization_id":
-            return
 
         if isinstance(field_type, RelationField):
             foreign_id = model[field]

@@ -171,7 +171,6 @@ class UserSendInvitationMail(UpdateAction):
                 "last_name",
                 "first_name",
                 "title",
-                "default_password",
             ],
         )
         if not (to_email := user.get("email")):
@@ -256,7 +255,7 @@ class UserSendInvitationMail(UpdateAction):
                 }
             )
         body_dict = {
-            "password": user.get("default_password", ""),
+            # TODO: "password": user.get("default_password", ""),
             "url": mail_data.get("url", ""),
             **subject_format,
         }

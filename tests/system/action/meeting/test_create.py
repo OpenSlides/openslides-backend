@@ -418,7 +418,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "users_pdf_welcometext": "[Platz für Ihren Begrüßungs- und Hilfetext.]",
                 "users_email_sender": "OpenSlides",
                 "users_email_subject": "OpenSlides-Zugangsdaten",
-                "users_email_body": "Hallo {name},\n\nhier ist Ihr persönlicher OpenSlides-Zugang:\n\n{url}\nBenutzername: {username}\nPasswort: {password}\n\n\nDiese E-Mail wurde automatisch erstellt.",
+                "users_email_body": "Hallo {name},\n\nhier ist Ihr persönlicher OpenSlides-Zugang:\n\n{url}\nBenutzername: {username}\nPasswort: {magicLink}\n\n\nDiese E-Mail wurde automatisch erstellt.",
             },
         )
         for i, name in enumerate(["Default", "Admin", "Delegates", "Staff"], 1):

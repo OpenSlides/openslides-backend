@@ -6,7 +6,6 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        #self.reset_redis() -Removed-
         self.set_models({"user/1": {"password": "old", "email": self.EMAIL}})
 
     def get_token(self, user_id: int = 1) -> str:

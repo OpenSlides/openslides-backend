@@ -138,8 +138,6 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             status=status_code,
             content_type="application/json",
         )
-        #if access_token is not None:
-        #    response.headers["Authentication"] = access_token
         return response
 
     def wsgi_application(
