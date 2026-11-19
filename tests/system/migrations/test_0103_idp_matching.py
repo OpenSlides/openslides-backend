@@ -1,8 +1,6 @@
-from openslides_backend.migrations.migration_helper import MigrationState
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import BadCodingException
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 
 from .test_0102_consultation_sequence_setting import get_meeting_data
@@ -16,65 +14,111 @@ class TestMigration103(BaseMigrationTestCase):
         self.create_entries(get_meeting_data())
         manager = self.create_migration_manager()
 
-        intermediate_result = self.make_migration_request(manager)
-        if intermediate_result["status"] == MigrationState.MIGRATION_FAILED:
-            raise BadCodingException(
-                f"Migration failed with message: {intermediate_result['exception']}."
-            )
-        if intermediate_result["status"] != MigrationState.FINALIZED:
-            self.wait_for_migration_thread(self.MAX_WAIT)
+        self.make_migration_request(manager)
+        self.wait_for_migration_thread(self.MAX_WAIT)
 
         self.assert_migration_finalized()
 
         self.create_entries(get_meeting_data(4))
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                for tablename, fname, datatype, default, max_len in [
-                    ("meeting_t", "enable_idp_matching", "boolean", "false", None),
-                    ("committee_t", "identity_key", "character varying", None, 256),
-                    (
-                        "organization_t",
-                        "idp_identity_key",
-                        "character varying",
-                        None,
-                        256,
-                    ),
-                ]:
-                    assert (
-                        col_data := curs.execute(
-                            f"SELECT * FROM information_schema.columns WHERE table_name='{tablename}' AND column_name='{fname}';"
-                        ).fetchone()
-                    )
-                    # check if field exists and has the correct settings
-                    self.assert_contained_in(
-                        {
-                            "table_name": tablename,
-                            "column_name": fname,
-                            "data_type": datatype,
-                            "column_default": default,
-                            "is_nullable": "YES",
-                            "is_updatable": "YES",
-                            "is_self_referencing": "NO",
-                            "is_identity": "NO",
-                            "is_generated": "NEVER",
-                            "character_maximum_length": max_len,
-                        },
-                        col_data,
-                    )
-                for tablename, fnames in {
-                    "idp_condition_t": [
-                        "id",
-                        "idp_field",
-                        "regex",
-                        "mapper_id",
-                    ],
-                    "idp_mapper_t": [
-                        "id",
-                        "group_external_ids",
-                        "weight",
-                        "organization_id",
-                    ],
-                    "idp_mapping_t": [
+                self.assert_field_exists(
+                    curs, "meeting_t", "enable_idp_matching", "boolean", default="false"
+                )
+                self.assert_view_exists(curs, "meeting")
+
+                self.assert_field_exists(
+                    curs,
+                    "committee_t",
+                    "identity_key",
+                    "character varying",
+                    max_len=256,
+                )
+                self.assert_view_exists(curs, "committee")
+
+                self.assert_field_exists(
+                    curs,
+                    "organization_t",
+                    "idp_identity_key",
+                    "character varying",
+                    max_len=256,
+                )
+                self.assert_view_exists(curs, "organization")
+
+                table_fields = self.assert_table_fields(
+                    curs, "idp_condition_t", ["id", "idp_field", "regex", "mapper_id"]
+                )
+                self.assert_id_field_exists(curs, "idp_condition_t", table_fields)
+                self.assert_field_exists(
+                    curs,
+                    "idp_condition_t",
+                    "idp_field",
+                    "character varying",
+                    table_fields,
+                    is_nullable=False,
+                    max_len=256,
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_condition_t",
+                    "regex",
+                    "character varying",
+                    table_fields,
+                    is_nullable=False,
+                    max_len=256,
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_condition_t",
+                    "mapper_id",
+                    "integer",
+                    table_fields,
+                    is_nullable=False,
+                    fk_to_tablename="idp_mapper_t",
+                )
+                self.assert_view_exists(curs, "idp_condition")
+                self.assert_trigger_exists(curs, "tr_log_idp_condition")
+                self.assert_trigger_exists(curs, "tr_log_idp_condition_mapper_id")
+
+                table_fields = self.assert_table_fields(
+                    curs,
+                    "idp_mapper_t",
+                    ["id", "group_external_ids", "weight", "organization_id"],
+                )
+                self.assert_id_field_exists(curs, "idp_mapper_t", table_fields)
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapper_t",
+                    "group_external_ids",
+                    "ARRAY",
+                    table_fields,
+                    is_nullable=False,
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapper_t",
+                    "weight",
+                    "integer",
+                    table_fields,
+                    default="10000",
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapper_t",
+                    "organization_id",
+                    "integer",
+                    table_fields,
+                    is_nullable=False,
+                    fk_to_tablename="organization_t",
+                )
+                self.assert_view_exists(curs, "idp_mapper")
+                self.assert_trigger_exists(curs, "tr_log_idp_mapper")
+                self.assert_trigger_exists(curs, "tr_log_idp_mapper_organization_id")
+
+                table_fields = self.assert_table_fields(
+                    curs,
+                    "idp_mapping_t",
+                    [
                         "id",
                         "idp_field",
                         "os_field",
@@ -83,13 +127,64 @@ class TestMigration103(BaseMigrationTestCase):
                         "override_default",
                         "mapper_id",
                     ],
-                }.items():
-                    cols = curs.execute(
-                        f"SELECT * FROM information_schema.columns WHERE table_name='{tablename}';"
-                    ).fetchall()
-                    assert sorted(col["column_name"] for col in cols) == sorted(fnames)
-
-                # TODO: check schema for enums, field types etc, views and triggers
+                )
+                self.assert_id_field_exists(curs, "idp_mapping_t", table_fields)
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapping_t",
+                    "idp_field",
+                    "character varying",
+                    table_fields,
+                    is_nullable=False,
+                    max_len=256,
+                )
+                self.assert_enum_exists(
+                    curs,
+                    "enum_idp_mapping_os_field",
+                    [
+                        "groups",
+                        "structure_levels",
+                        "number",
+                        "vote_weight",
+                        "present",
+                        "comment",
+                    ],
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapping_t",
+                    "os_field",
+                    "USER-DEFINED",
+                    table_fields,
+                    is_nullable=False,
+                    enum_name="enum_idp_mapping_os_field",
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapping_t",
+                    "default_value",
+                    "character varying",
+                    table_fields,
+                    max_len=256,
+                )
+                self.assert_field_exists(
+                    curs, "idp_mapping_t", "allow_update", "boolean", table_fields
+                )
+                self.assert_field_exists(
+                    curs, "idp_mapping_t", "override_default", "boolean", table_fields
+                )
+                self.assert_field_exists(
+                    curs,
+                    "idp_mapping_t",
+                    "mapper_id",
+                    "integer",
+                    table_fields,
+                    is_nullable=False,
+                    fk_to_tablename="idp_mapper_t",
+                )
+                self.assert_view_exists(curs, "idp_mapping")
+                self.assert_trigger_exists(curs, "tr_log_idp_mapping")
+                self.assert_trigger_exists(curs, "tr_log_idp_mapping_mapper_id")
 
                 # check if default is applied to both old meetings (1)
                 # and meetings created after the migration is finalized (4).

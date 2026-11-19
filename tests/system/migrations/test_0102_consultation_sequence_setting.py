@@ -83,27 +83,14 @@ class TestMigration102(BaseMigrationTestCase):
         self.create_entries(get_meeting_data(4))
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                assert (
-                    col_data := curs.execute(
-                        "SELECT * FROM information_schema.columns WHERE table_name='meeting_t' AND column_name='motions_enable_consultation_sequence';"
-                    ).fetchone()
+                self.assert_field_exists(
+                    curs,
+                    "meeting_t",
+                    "motions_enable_consultation_sequence",
+                    "boolean",
+                    default="true",
                 )
-                # check if field exists and has the correct settings
-                self.assert_contained_in(
-                    {
-                        "table_name": "meeting_t",
-                        "column_name": "motions_enable_consultation_sequence",
-                        "data_type": "boolean",
-                        "column_default": "true",
-                        "is_nullable": "YES",
-                        "is_updatable": "YES",
-                        # I never ever will desert you when your heart is torn
-                        "is_self_referencing": "NO",
-                        "is_identity": "NO",
-                        "is_generated": "NEVER",
-                    },
-                    col_data,
-                )
+
                 # check if default is applied to both old meetings (1)
                 # and meetings created after the migration is finalized (4).
                 assert (
