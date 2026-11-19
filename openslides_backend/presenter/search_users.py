@@ -23,7 +23,6 @@ from .presenter import register_presenter
 
 search_fields = [
     ["username"],
-    ["saml_id"],
     ["member_number"],
     ["first_name", "last_name", "email"],
 ]

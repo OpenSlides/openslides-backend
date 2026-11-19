@@ -1,6 +1,6 @@
 import re
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -12,9 +12,10 @@ from ....shared.exceptions import ActionException
 from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
-from ...mixins.meeting_user_helper import get_meeting_user
-from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.idp_mixin import IDPMixin
+from ...mixins.meeting_user_helper import get_meeting_user
+from ...mixins.send_email_mixin import EmailCheckMixin, EmailMagicLinkMixin, EmailPasswordResetMixin
+from ...mixins.magic_link_mixin import IDPMagicLinkMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,12 +28,15 @@ from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gende
 class UserCreate(
     UserMixin,
     EmailCheckMixin,
+    EmailMagicLinkMixin,
+    EmailPasswordResetMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
     IDPMixin,
+    IDPMagicLinkMixin,
 ):
     """
     Action to create a user.
@@ -49,7 +53,6 @@ class UserCreate(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "can_change_own_password",
             "gender_id",
             "email",
@@ -58,7 +61,6 @@ class UserCreate(
             "is_present_in_meeting_ids",
             "committee_management_ids",
             "is_demo_user",
-            "saml_id",
             "member_number",
             "external",
             "home_committee_id",
@@ -78,26 +80,15 @@ class UserCreate(
 
         if instance.get("is_active"):
             self.check_limit_of_user(1)
-        saml_id = instance.get("saml_id")
 
         if not instance.get("username"):
-            if saml_id:
-                instance["username"] = saml_id
-            else:
-                if not (instance.get("first_name") or instance.get("last_name")):
-                    raise ActionException("Need username or first_name or last_name")
-                instance["username"] = self.generate_username(instance)
+            if not (instance.get("first_name") or instance.get("last_name")):
+                raise ActionException("Need username or first_name or last_name")
+            instance["username"] = self.generate_username(instance)
         elif re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
         self.check_locking_status(instance.get("meeting_id"), instance, None, None)
         instance = super().update_instance(instance)
-        if saml_id:
-            instance["can_change_own_password"] = False
-            instance["password"] = None
-            if instance.get("default_password"):
-                raise ActionException(
-                    f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
-                )
 
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
@@ -111,9 +102,24 @@ class UserCreate(
         def on_success() -> None:
             try:
                 # Create IDP account
-                self.create_user(action_data[0], self.auth.hash(get_random_password()), False)
+                idp_id = self.create_user(
+                    action_data[0], self.auth.hash(get_random_password()), False
+                )
+                # Debug: Create magic link
+                magicLinkURL = self.create_magic_link(idp_id)
+
+                # Debug: Send magic link
+                self.send_magic_link_to(magicLinkURL, action_data[0].get("email"), action_data[0].get("username"))
+
+                # Debug: Create password reset link
+                resetLinkURL = self.generate_password_reset_link(idp_id)
+
+                # Debug: Send password reset link
+                self.send_password_reset_to(resetLinkURL, action_data[0].get("email"), action_data[0].get("username"))
             except Exception as e:
-                self.logger.error(f"Couldn't create IDP user after OS user was created: {e}")
+                self.logger.error(
+                    f"Couldn't create IDP user after OS user was created: {e}"
+                )
 
         return on_success
 

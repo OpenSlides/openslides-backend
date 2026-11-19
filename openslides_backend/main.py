@@ -144,7 +144,7 @@ def start_them_all(env: Env) -> None:  # pragma: no cover
 def main() -> None:  # pragma: no cover
     env = Environment(os.environ)
     component = env.OPENSLIDES_BACKEND_COMPONENT
-    if component == "action":
+    if component == "action" or component == "manage":
         start_action_server(env)
     elif component == "presenter":
         start_presenter_server(env)

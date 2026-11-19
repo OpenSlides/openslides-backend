@@ -10,7 +10,7 @@ _("Elections")
 _("[Place for your welcome and help text.]")
 _("OpenSlides access data")
 _(
-    "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+    "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically."
 )
 
 # Json uploads

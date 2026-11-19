@@ -140,7 +140,7 @@ class OrganizationUpdate(
             "saml_attr_mapping": {
                 "type": ["object", "null"],
                 "properties": saml_props,
-                "required": ["saml_id"],
+                "required": [],
                 "additionalProperties": False,
             },
         },

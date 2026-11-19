@@ -107,7 +107,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            for field in ("username", "first_name", "last_name", "email", "saml_id"):
+            for field in ("username", "first_name", "last_name", "email"):
                 self.strip_field(field, instance)
         return super().get_updated_instances(action_data)
 
@@ -119,7 +119,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 if not instance[what]:
                     raise ActionException(f"This {what} is forbidden.")
 
-        check_existence("saml_id")
         if instance.get("member_number") is not None:
             check_existence("member_number")
 

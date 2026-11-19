@@ -128,7 +128,7 @@ class UserScopeMixin(BaseServiceProvider):
     ) -> bool:
         """
         This function checks the special permission condition for scope request, user.update/create with
-        payload fields A and F and other user altering actions like user.delete or set_default_password.
+        payload fields A and F and other user altering actions like user.delete.
         This function returns true if:
         * requested user is no committee manager and
         * requested user doesn't have any admin/user.can_update/user.can_manage rights in his meetings and
@@ -248,9 +248,10 @@ class UserScopeMixin(BaseServiceProvider):
         Generates data used for calculating scope details. Builds
         committees-meetings maps for user's all and active meetings.
         """
-        meetings_committees, active_meetings_committees = (
-            self._map_meetings_to_committees(meeting_ids)
-        )
+        (
+            meetings_committees,
+            active_meetings_committees,
+        ) = self._map_meetings_to_committees(meeting_ids)
 
         committee_meetings = self._get_committee_meetings_map(
             meetings_committees, committees_manager

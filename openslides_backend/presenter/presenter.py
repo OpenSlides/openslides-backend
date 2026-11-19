@@ -63,7 +63,7 @@ class PresenterHandler(BaseHandler):
     Presenter handler. It is the concret implementation of Presenter interface.
     """
 
-    def handle_request(self, request: Request) -> tuple[PresenterResponse, str | None]:
+    def handle_request(self, request: Request) -> PresenterResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing the presentations.
@@ -77,9 +77,9 @@ class PresenterHandler(BaseHandler):
         # Parse presentations and creates response
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-            response, access_token = self.parse_presenters(request)
+            response = self.parse_presenters(request)
         self.logger.debug("Request was successful. Send response now.")
-        return response, access_token
+        return response
 
     def validate(self, payload: Payload) -> None:
         """
@@ -91,7 +91,7 @@ class PresenterHandler(BaseHandler):
 
     def parse_presenters(
         self, request: Request
-    ) -> tuple[PresenterResponse, str | None]:
+    ) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
@@ -108,11 +108,7 @@ class PresenterHandler(BaseHandler):
                 )
             presenters.append(presenter)
 
-        self.services.authentication().set_authentication(
-            request.headers.get("Authorization", "")
-        )
-        access_token: str | None = None
-        user_id, access_token = self.services.authentication().authenticate()
+        user_id = self.services.authentication().authenticate(request.headers.get("Authorization", ""))
 
         response = []
         for PresenterClass in presenters:
@@ -128,4 +124,4 @@ class PresenterHandler(BaseHandler):
             result = presenter_instance.get_result()
             response.append(result)
         self.logger.debug("Presenter data ready.")
-        return response, access_token
+        return response

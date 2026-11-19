@@ -56,7 +56,7 @@
             ],
             "users_email_sender": "OpenSlides",
             "users_email_subject": "OpenSlides access data",
-            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
             "user_ids": [1, 2, 3],
             "require_duplicate_from": false,
@@ -143,7 +143,7 @@
             "meeting_ids": [
                 1
             ],
-            "organization_id": 1, 
+            "organization_id": 1,
             "committee_ids": [
                 1
             ]
@@ -375,7 +375,7 @@
             "users_pdf_wlan_encryption": "",
             "users_email_sender": "Openslides",
             "users_email_subject": "OpenSlides access data",
-            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically.",
             "assignments_export_title": "Elections",
             "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "assignment_poll_ballot_paper_number": 8,
@@ -1116,7 +1116,7 @@
     "speaker": {
         "11": {
             "id": 11,
-            "weight": 11, 
+            "weight": 11,
             "begin_time": 1584512636,
             "end_time": 1584512638,
             "list_of_speakers_id": 1,
@@ -1658,7 +1658,7 @@
             "allow_support": false,
             "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true, 
+            "allow_amendment_forwarding": true,
             "meeting_id": 1
         },
         "6": {

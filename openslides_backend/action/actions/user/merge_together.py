@@ -60,7 +60,6 @@ class UserMergeTogether(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "gender_id",
             "email",
             "default_vote_weight",
@@ -81,8 +80,6 @@ class UserMergeTogether(
             User,
             {
                 "ignore": [
-                    "password",
-                    "default_password",
                     "organization_id",
                     "last_email_sent",
                     "last_login",
@@ -120,9 +117,8 @@ class UserMergeTogether(
                 "special_function": [
                     "is_present_in_meeting_ids",  # union of primary user data and the meetings from the other users where primary is not a member
                     "organization_management_level",
-                    "saml_id",  # error if set on secondary users, otherwise ignore the field
                     "member_number",
-                    "can_change_own_password",  # ignore on secondary users if primary has a saml_id, else highest
+                    "can_change_own_password",
                 ],
             },
         )
@@ -567,13 +563,6 @@ class UserMergeTogether(
                     if len(all_omls) == 0:
                         return None
                     return max(all_omls)
-                case "saml_id":
-                    # error if set on secondary users, otherwise ignore the field
-                    if any([field in model for model in ranked_others]):
-                        raise ActionException(
-                            f"Merge of user/{into_['id']}: Saml_id may not exist on any user except target."
-                        )
-                    return None
                 case "is_present_in_meeting_ids":
                     all_meeting_ids = self.get_meeting_ids_per_user(
                         [into_, *ranked_others]
@@ -592,8 +581,6 @@ class UserMergeTogether(
                     )
                     return None
                 case "can_change_own_password":
-                    if into_.get("saml_id"):
-                        return None
                     if len(
                         comp_data := [
                             date

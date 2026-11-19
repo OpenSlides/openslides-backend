@@ -15,7 +15,3 @@ services:
   backend:
     environment:
       - OPENTELEMETRY_ENABLED=1
-
-  auth:
-    environment:
-      - OPENTELEMETRY_ENABLED=1

@@ -1,9 +1,9 @@
-# 
+#
 # Translators:
 # Emanuel Schütze <emanuel.schuetze@intevation.de>, 2022
 # Katharina <karmitt2@web.de>, 2022
 # Birte Spekker <birte.spekker@intevation.de>, 2025
-# 
+#
 msgid ""
 msgstr ""
 "Last-Translator: Birte Spekker <birte.spekker@intevation.de>, 2025\n"
@@ -3856,7 +3856,7 @@ msgstr ""
 msgid ""
 "Possible placeholders for email subject and body: {title}, {first_name}, "
 "{last_name}, {groups}, {structure_levels}, {event_name}, {url}, {username} "
-"and {password}"
+"and {magicLink}"
 msgstr ""
 
 msgid "Possible points of order"
@@ -6026,7 +6026,7 @@ msgid ""
 "\n"
 "{url}\n"
 "Username: {username}\n"
-"Password: {password}\n"
+"Password: {magicLink}\n"
 "\n"
 "\n"
 "This email was generated automatically."
@@ -6037,7 +6037,7 @@ msgstr ""
 "\n"
 "  {url}\n"
 "  имя пользователя: {username}\n"
-"  пароль: {password}\n"
+"  пароль: {magicLink}\n"
 "\n"
 "\n"
 "Это письмо было сгенерировано автоматически."

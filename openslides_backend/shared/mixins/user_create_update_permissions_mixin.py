@@ -229,9 +229,9 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "C": ["meeting_id", "group_ids"],
         "D": ["committee_management_ids"],
         "E": ["organization_management_level"],
-        "F": ["default_password"],
+        "F": [],
         "G": ["is_demo_user"],
-        "H": ["saml_id"],
+        "H": [],
         "I": ["home_committee_id"],
         "J": ["external"],
     }
@@ -477,7 +477,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 )
             )
         ):
-            msg = "The field 'saml_id' can only be used in internal action calls"
+            msg = "The field in Group H can only be used in internal action calls"
             if self.name == "user.create":
                 msg += f" or with {OrganizationManagementLevel.CAN_MANAGE_USERS} permission"
             raise ActionException(msg)

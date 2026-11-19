@@ -38,19 +38,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         super().setUp()
         ActionHandler.MAX_RETRY = 1
 
-    def reset_redis(self) -> None:
-        # access auth database directly to reset it
-        redis = self.auth.auth_handler.database.redis
-        prefix = ":".join(
-            (
-                self.auth.auth_handler.database.AUTH_PREFIX,
-                self.auth.auth_handler.TOKEN_DB_KEY,
-            )
-        )
-        for key in redis.keys():
-            if key.decode().startswith(prefix):
-                redis.delete(key)
-
     def get_application(self) -> OpenSlidesBackendWSGIApplication:
         return create_action_test_application()
 
@@ -338,9 +325,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         assert information in last_information
 
     def assert_logged_in(self) -> None:
-        self.auth.authenticate()  # assert that no exception is thrown
+        self.auth.authenticate(self.client.get_auth_header())  # assert that no exception is thrown
 
     def assert_logged_out(self) -> None:
         with pytest.raises(AuthenticationException):
-            self.auth.authenticate()
+            self.auth.authenticate(self.client.get_auth_header())
         BaseSystemTestCase.auth_data = None

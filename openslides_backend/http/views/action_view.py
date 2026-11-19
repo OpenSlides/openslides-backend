@@ -37,12 +37,8 @@ class ActionView(BaseView):
                 curs.execute("SELECT default_language FROM organization_t WHERE id = 1")
                 lang: str | None = (curs.fetchone() or {}).get("default_language")
         # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(
+        user_id = self.get_user_id_from_headers(
             request.headers, request.cookies
-        )
-        # Set Headers and Cookies in services.
-        self.services.vote().set_authentication(
-            request.headers.get("Authorization", "")
         )
 
         # Handle request.
@@ -54,7 +50,7 @@ class ActionView(BaseView):
         response = handle_action_in_worker_thread(
             request.json, user_id, is_atomic, handler
         )
-        return response, access_token
+        return response
 
     @route("handle_request", internal=True)
     def internal_action_route(self, request: Request) -> RouteResponse:
@@ -71,7 +67,7 @@ class ActionView(BaseView):
             request.json, -1, is_atomic, handler, internal=True
         )
         self.logger.debug("Internal action request finished successfully.")
-        return response, None
+        return response
 
     @route("backchannel_logout", json=False)
     def backchannel_logout_route(self, request: Request) -> RouteResponse:
@@ -99,7 +95,7 @@ class ActionView(BaseView):
             payload, 0, True, handler, internal=True
         )
 
-        return response, None
+        return response
 
     @route("migrations", internal=True)
     def migrations_route(self, request: Request) -> RouteResponse:
@@ -108,21 +104,21 @@ class ActionView(BaseView):
         manager = MigrationManager(self.env, self.services, self.logging)
         response = manager.handle_request(request.json)
         self.logger.debug("Migrations request finished successfully.")
-        return {"success": True, **response}, None
+        return {"success": True, **response}
 
     @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> RouteResponse:
-        return {"status": "running"}, None
+        return {"status": "running"}
 
     @route("info", method="GET", json=False)
     def info_route(self, request: Request) -> RouteResponse:
-        return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+        return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}
 
     @route("version", method="GET", json=False)
     def version_route(self, _: Request) -> RouteResponse:
         with open(VERSION_PATH) as file:
             version = file.read().strip()
-            return {"version": version}, None
+            return {"version": version}
 
     def check_internal_auth_password(self, request: Request) -> None:
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)

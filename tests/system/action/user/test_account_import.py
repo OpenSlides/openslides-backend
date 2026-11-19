@@ -123,10 +123,6 @@ class AccountJsonImport(BaseActionTestCase):
                                             "info": ImportState.DONE,
                                             "id": 2,
                                         },
-                                        "saml_id": {
-                                            "value": "12345",
-                                            "info": ImportState.DONE,
-                                        },
                                         "default_password": {
                                             "value": "",
                                             "info": ImportState.WARNING,

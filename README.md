@@ -61,7 +61,7 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
+    $ pip install --requirement requirements/requirements_development.txt
 
 To start it run
 

@@ -5,11 +5,10 @@ import simplejson as json
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
-from ..shared.authenticated_service import AuthenticatedService
 from .interface import VoteService
 
 
-class VoteAdapter(VoteService, AuthenticatedService):
+class VoteAdapter(VoteService):
     """
     Adapter to connect to the vote service.
     """
@@ -35,8 +34,8 @@ class VoteAdapter(VoteService, AuthenticatedService):
             return response.json()
 
     def make_request(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
-        if not self.access_token:
-            raise VoteServiceException("You must be logged in to vote")
+        #if not self.access_token:
+        #    raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
             return requests.post(
@@ -45,7 +44,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
                 headers={
                     "Content-Type": "application/json",
                     **self.get_auth_header(),
-                }
+                },
             )
         except requests.exceptions.ConnectionError as e:
             self.logger.error(

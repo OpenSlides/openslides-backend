@@ -39,7 +39,7 @@ search_for_id_by_external_id_schema = fastjsonschema.compile(
 class SearchForIdByExternalId(BasePresenter):
     """
     Search the collection for a entry with external_id. If found just one,
-    returns the id. If the collection is "user", search the saml_id.
+    returns the id.
     """
 
     schema = search_for_id_by_external_id_schema

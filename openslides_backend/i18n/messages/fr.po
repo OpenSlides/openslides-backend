@@ -2,11 +2,11 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 # Translators:
 # Moosline, 2024
 # Elblinator, 2025
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -4209,7 +4209,7 @@ msgstr "Sondages"
 msgid ""
 "Possible placeholders for email subject and body: {title}, {first_name}, "
 "{last_name}, {groups}, {structure_levels}, {event_name}, {url}, {username} "
-"and {password}"
+"and {magicLink}"
 msgstr ""
 
 msgid "Possible points of order"
@@ -6543,7 +6543,7 @@ msgid ""
 "\n"
 "{url}\n"
 "Username: {username}\n"
-"Password: {password}\n"
+"Password: {magicLink}\n"
 "\n"
 "\n"
 "This email was generated automatically."
