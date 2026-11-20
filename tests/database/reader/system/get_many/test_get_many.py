@@ -162,8 +162,8 @@ def test_field_not_exists(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
     assert (
-        "Field 'does_not_exist' does not exist in collection 'committee': column "
-        in e_info.value.message
+        "Field 'does_not_exist' does not exist in collection 'committee'.\nCheck mapped fields."
+        == e_info.value.message
     )
 
 
@@ -189,8 +189,8 @@ def test_invalid_collection(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
     assert (
-        "Collection 'committeee' does not exist in the database: relation"
-        in e_info.value.message
+        "Collection 'committeee' does not exist in the database."
+        == e_info.value.message
     )
 
 

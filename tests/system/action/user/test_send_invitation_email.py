@@ -220,10 +220,10 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][1][4]["sent"], False)
         self.assertEqual(response.json["results"][1][4]["recipient_user_id"], 8)
         self.assertEqual(
-            response.json["results"][1][4]["type"], EmailErrorType.OTHER_ERROR
+            response.json["results"][1][4]["type"], EmailErrorType.USER_ERROR
         )
         self.assertIn(
-            "DatabaseException: Model 'user/8' does not exist.",
+            "ModelDoesNotExist: Model 'user/8' does not exist.",
             response.json["results"][1][4]["message"],
         )
 

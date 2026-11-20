@@ -39,7 +39,8 @@ lint:
 	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
-	pytest
+# s= number of tests to skip from the beginning also works with %
+	pytest $(if $(s), --skip-first $s)
 
 coverage:
 	pytest --cov --cov-report html

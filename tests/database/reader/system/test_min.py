@@ -67,21 +67,21 @@ def test_case_sensitive(
             "committeee",
             FilterOperator("name", "=", "23"),
             "name",
-            "Collection 'committeee' does not exist in the database:",
+            "Collection 'committeee' does not exist in the database.",
             id="collection",
         ),
         pytest.param(
             "user",
             FilterOperator("id", "<=", 2),
             "not valid",
-            "Field 'not valid' does not exist in collection 'user': column",
+            "Field 'not valid' does not exist in collection 'user'.",
             id="field",
         ),
         pytest.param(
             "committee",
             FilterOperator("namee", "=", "23"),
             "name",
-            "Field 'namee' does not exist in collection 'committee': column",
+            "Field 'namee' does not exist in collection 'committee'.",
             id="filter_field",
         ),
     ],
@@ -98,7 +98,7 @@ def test_invalid(
         with pytest.raises(InvalidFormat) as e:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.min(collection, filter_, field, use_changed_models=False)
-    assert expected_error in e.value.message
+    assert expected_error == e.value.message
 
 
 def test_changed_models(db_connection: Connection) -> None:
