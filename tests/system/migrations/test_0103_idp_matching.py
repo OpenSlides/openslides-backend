@@ -1,13 +1,22 @@
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from tests.system.migrations.base_migration_test import BaseMigrationTestCase
+from tests.system.migrations.base_migration_test import (
+    AssertFieldData,
+    BaseMigrationTestCase,
+)
 
-from .test_0102_consultation_sequence_setting import get_meeting_data
+from .test_0102_consultation_sequence_setting import (
+    get_fk_constraint_name_condition,
+    get_meeting_data,
+)
 
 
 class TestMigration103(BaseMigrationTestCase):
     migration_number = 103
+
+    def get_find_fk_constraint_name_condition(self, field_data: AssertFieldData) -> str:
+        return get_fk_constraint_name_condition(field_data)
 
     def test_0103(self) -> None:
         self.set_up_organization()
@@ -20,6 +29,7 @@ class TestMigration103(BaseMigrationTestCase):
         self.assert_migration_finalized()
 
         self.create_entries(get_meeting_data(4))
+
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 self.assert_field_exists(
@@ -74,7 +84,7 @@ class TestMigration103(BaseMigrationTestCase):
                     "integer",
                     table_fields,
                     is_nullable=False,
-                    fk_to_tablename="idp_mapper_t",
+                    fk_to_table_name="idp_mapper_t",
                 )
                 self.assert_view_exists(curs, "idp_condition")
                 self.assert_trigger_exists(curs, "tr_log_idp_condition")
@@ -109,7 +119,7 @@ class TestMigration103(BaseMigrationTestCase):
                     "integer",
                     table_fields,
                     is_nullable=False,
-                    fk_to_tablename="organization_t",
+                    fk_to_table_name="organization_t",
                 )
                 self.assert_view_exists(curs, "idp_mapper")
                 self.assert_trigger_exists(curs, "tr_log_idp_mapper")
@@ -180,7 +190,7 @@ class TestMigration103(BaseMigrationTestCase):
                     "integer",
                     table_fields,
                     is_nullable=False,
-                    fk_to_tablename="idp_mapper_t",
+                    fk_to_table_name="idp_mapper_t",
                 )
                 self.assert_view_exists(curs, "idp_mapping")
                 self.assert_trigger_exists(curs, "tr_log_idp_mapping")

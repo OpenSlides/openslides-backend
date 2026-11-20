@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
@@ -50,6 +51,20 @@ DEPR_SQL_PATH = os.path.realpath(
     os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
 )
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
+
+
+@dataclass
+class AssertFieldData:
+    table_name: str
+    field_name: str
+    postgres_type: str
+    table_fields: dict[str, dict[str, Any]] | None = None
+    is_identity: bool = False
+    is_nullable: bool = True
+    default: str | None = None
+    max_len: int | None = None
+    fk_to_table_name: str | None = None
+    enum_name: str | None = None
 
 
 class BaseMigrationTestCase(TestCase):
@@ -252,6 +267,22 @@ class BaseMigrationTestCase(TestCase):
             is_nullable=False,
         )
 
+    def get_find_fk_constraint_name_condition(
+        self,
+        field_data: AssertFieldData,
+    ) -> str:
+        """
+        Needs to be overridden by subclass to define whatever
+        query condition should be added to the WHERE part to restrict
+        the foreign constraint check to specifically the ones referring
+        to this field.
+
+        This is to ensure this test class remains valid even with schema generation changes.
+        """
+        raise BadCodingException(
+            "assert_field_exists only works if get_find_fk_constraint_name_condition is overridden."
+        )
+
     def assert_field_exists(
         self,
         curs: Cursor[DictRow],
@@ -263,7 +294,7 @@ class BaseMigrationTestCase(TestCase):
         is_nullable: bool = True,
         default: str | None = None,
         max_len: int | None = None,
-        fk_to_tablename: str | None = None,
+        fk_to_table_name: str | None = None,
         enum_name: str | None = None,
     ) -> None:
         """
@@ -272,6 +303,18 @@ class BaseMigrationTestCase(TestCase):
         (as is returned by assert_table_fields)
         may optionally be input at the table_fields attribute.
         """
+        field_data = AssertFieldData(
+            table_name,
+            field_name,
+            postgres_type,
+            table_fields,
+            is_identity,
+            is_nullable,
+            default,
+            max_len,
+            fk_to_table_name,
+            enum_name,
+        )
         if table_fields:
             col_data = [table_fields[field_name]]
         else:
@@ -303,26 +346,12 @@ class BaseMigrationTestCase(TestCase):
         )
         if enum_name:
             assert col_data[0]["udt_name"] == enum_name
-        if fk_to_tablename:
-            assert (
-                cast(
-                    dict[str, Any],
-                    curs.execute(
-                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND constraint_name='fk_{table_name}_{field_name}_{fk_to_tablename}_id' AND constraint_type='FOREIGN KEY';"
-                    ).fetchone(),
-                )["c"]
-                == 1
-            )
-        else:
-            assert (
-                cast(
-                    dict[str, Any],
-                    curs.execute(
-                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND constraint_name LIKE 'fk_{table_name}_{field_name}_%_id' AND constraint_type='FOREIGN KEY';"
-                    ).fetchone(),
-                )["c"]
-                == 0
-            )
+        assert cast(
+            dict[str, Any],
+            curs.execute(
+                f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND {self.get_find_fk_constraint_name_condition(field_data)} AND constraint_type='FOREIGN KEY';"
+            ).fetchone(),
+        )["c"] == (1 if fk_to_table_name else 0)
 
     def assert_view_exists(self, curs: Cursor[DictRow], view_name: str) -> None:
         assert (
