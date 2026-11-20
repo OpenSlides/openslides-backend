@@ -245,7 +245,7 @@ class Committee(Model):
     external_id = fields.CharField(unique=True)
     identity_key = fields.CharField(
         constraints={
-            "description": "Mainly used by idp matching. Key by which users are matched to committees."
+            "description": "Mainly used by idp matching. A committee is assigned when the users IDP identity value (see organization/idp_identity_key) starts with this string."
         }
     )
     meeting_ids = fields.RelationListField(
@@ -564,7 +564,9 @@ class IdpCondition(Model):
     idp_field = fields.CharField(required=True)
     regex = fields.CharField(
         required=True,
-        constraints={"description": "Assertation regex to match against the idp_field"},
+        constraints={
+            "description": "Assertation regex to match against the idp_fields value."
+        },
     )
     mapper_id = fields.RelationField(to={"idp_mapper": "condition_ids"}, required=True)
 

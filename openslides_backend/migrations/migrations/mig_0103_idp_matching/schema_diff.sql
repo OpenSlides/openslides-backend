@@ -16,7 +16,7 @@ CREATE TABLE idp_condition_t (
 
 
 
-comment on column idp_condition_t.regex is 'Assertation regex to match against the idp_field';
+comment on column idp_condition_t.regex is 'Assertation regex to match against the idp_fields value.';
 
 
 CREATE TABLE idp_mapper_t (
@@ -95,7 +95,7 @@ FOR EACH ROW EXECUTE FUNCTION log_modified_models('idp_mapping');
 CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELETE ON idp_mapping_t
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 
-comment on column committee_t.identity_key is 'Mainly used by idp matching. Key by which users are matched to committees.';
+comment on column committee_t.identity_key is 'Mainly used by idp matching. A committee is assigned when the users IDP identity value (see organization/idp_identity_key) starts with this string.';
 comment on column organization_t.idp_identity_key is 'Attribute in the idp data that identifies the user. Used to match against committees identity_key to determine membership.';
 
 -- EDIT SECTION --

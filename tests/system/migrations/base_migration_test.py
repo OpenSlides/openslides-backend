@@ -226,25 +226,25 @@ class BaseMigrationTestCase(TestCase):
     def assert_enum_exists(
         self,
         curs: Cursor[DictRow],
-        enumname: str,
-        enumcontent: list[str],
+        enum_name: str,
+        enum_content: list[str],
     ) -> None:
         type_data = curs.execute(
-            f"SELECT t.typname, array_agg(e.enumlabel) AS content FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE typname='{enumname}' GROUP BY t.typname;"
+            f"SELECT t.typname, array_agg(e.enumlabel) AS content FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE typname='{enum_name}' GROUP BY t.typname;"
         ).fetchall()
         assert len(type_data) == 1
-        assert type_data[0]["typname"] == enumname
-        assert sorted(type_data[0]["content"]) == sorted(enumcontent)
+        assert type_data[0]["typname"] == enum_name
+        assert sorted(type_data[0]["content"]) == sorted(enum_content)
 
     def assert_id_field_exists(
         self,
         curs: Cursor[DictRow],
-        tablename: str,
+        table_name: str,
         table_fields: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self.assert_field_exists(
             curs,
-            tablename,
+            table_name,
             "id",
             "integer",
             table_fields,
@@ -255,8 +255,8 @@ class BaseMigrationTestCase(TestCase):
     def assert_field_exists(
         self,
         curs: Cursor[DictRow],
-        tablename: str,
-        fieldname: str,
+        table_name: str,
+        field_name: str,
         postgres_type: str,
         table_fields: dict[str, dict[str, Any]] | None = None,
         is_identity: bool = False,
@@ -273,17 +273,17 @@ class BaseMigrationTestCase(TestCase):
         may optionally be input at the table_fields attribute.
         """
         if table_fields:
-            col_data = [table_fields[fieldname]]
+            col_data = [table_fields[field_name]]
         else:
             col_data = curs.execute(
-                f"SELECT * FROM information_schema.columns WHERE table_name='{tablename}' AND column_name='{fieldname}';"
+                f"SELECT * FROM information_schema.columns WHERE table_name='{table_name}' AND column_name='{field_name}';"
             ).fetchall()
         assert len(col_data) == 1
         self.assert_contained_in(
             {
                 "table_catalog": "openslides",
-                "table_name": tablename,
-                "column_name": fieldname,
+                "table_name": table_name,
+                "column_name": field_name,
                 "data_type": "USER-DEFINED" if enum_name else postgres_type,
                 "column_default": default,
                 "is_nullable": "YES" if is_nullable else "NO",
@@ -308,7 +308,7 @@ class BaseMigrationTestCase(TestCase):
                 cast(
                     dict[str, Any],
                     curs.execute(
-                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{tablename}' AND constraint_name='fk_{tablename}_{fieldname}_{fk_to_tablename}_id' AND constraint_type='FOREIGN KEY';"
+                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND constraint_name='fk_{table_name}_{field_name}_{fk_to_tablename}_id' AND constraint_type='FOREIGN KEY';"
                     ).fetchone(),
                 )["c"]
                 == 1
@@ -318,31 +318,31 @@ class BaseMigrationTestCase(TestCase):
                 cast(
                     dict[str, Any],
                     curs.execute(
-                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{tablename}' AND constraint_name LIKE 'fk_{tablename}_{fieldname}_%_id' AND constraint_type='FOREIGN KEY';"
+                        f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND constraint_name LIKE 'fk_{table_name}_{field_name}_%_id' AND constraint_type='FOREIGN KEY';"
                     ).fetchone(),
                 )["c"]
                 == 0
             )
 
-    def assert_view_exists(self, curs: Cursor[DictRow], viewname: str) -> None:
+    def assert_view_exists(self, curs: Cursor[DictRow], view_name: str) -> None:
         assert (
             cast(
                 dict[str, Any],
                 curs.execute(
-                    f"SELECT COUNT(1) FROM information_schema.views WHERE table_name='{viewname}';"
+                    f"SELECT COUNT(1) FROM information_schema.views WHERE table_name='{view_name}';"
                 ).fetchone(),
             )["count"]
             == 1
         )
 
     def assert_table_fields(
-        self, curs: Cursor[DictRow], tablename: str, fieldnames: list[str]
+        self, curs: Cursor[DictRow], table_name: str, field_names: list[str]
     ) -> dict[str, dict[str, Any]]:
         cols = curs.execute(
-            f"SELECT * FROM information_schema.columns WHERE table_name='{tablename}';"
+            f"SELECT * FROM information_schema.columns WHERE table_name='{table_name}';"
         ).fetchall()
         colname_to_data = {col["column_name"]: col for col in cols}
-        assert sorted(colname_to_data) == sorted(fieldnames)
+        assert sorted(colname_to_data) == sorted(field_names)
         return colname_to_data
 
     def assert_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> None:
