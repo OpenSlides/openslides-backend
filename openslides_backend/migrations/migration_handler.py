@@ -15,11 +15,7 @@ from openslides_backend.services.postgresql.utils import (
     deactivate_notify_triggers,
 )
 
-from ..migrations.exceptions import (
-    InvalidMigrationCommand,
-    MigrationException,
-    MigrationSetupException,
-)
+from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
@@ -169,13 +165,13 @@ class MigrationHandler(BaseHandler):
                                 MigrationHelper.set_database_migration_info(
                                     ver_cursor,
                                     minimum_required_index["min"],
-                                    MigrationState.MIGRATION_REQUIRED,
+                                    MigrationState.MIGRATION_FAILED,
                                 )
                             errors = (
                                 f"Pre check for migration {mig_name} failed.\n{errors}"
                             )
                             self.logger.info(errors)
-                            raise MigrationSetupException(errors)
+                            raise MigrationException(errors)
                     MigrationHelper.write_line("migration started")
                     deactivate_notify_triggers(self.migration_cursor)
                     self.execute_migrations()
@@ -216,11 +212,7 @@ class MigrationHandler(BaseHandler):
         MigrationHelper.migrate_thread_exception = None
         # Remove unfinalized migration indices from version table
         with self.ver_conn.cursor() as ver_cursor:
-            to_reset_indices = MigrationHelper.get_unfinalized_indices(ver_cursor)
             ver_cursor.execute(
-                sql.SQL(
-                    "UPDATE version SET migration_state = %s "
-                    "WHERE migration_index = ANY(%s)"
-                ),
-                (MigrationState.MIGRATION_REQUIRED, to_reset_indices),
+                sql.SQL("DELETE FROM version WHERE migration_index = ANY(%s);"),
+                (MigrationHelper.get_unfinalized_indices(ver_cursor),),
             )
