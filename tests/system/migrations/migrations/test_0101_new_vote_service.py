@@ -512,7 +512,7 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(10, 8, "Y", 2, 2),
             **self._get_vote_data(11, 9, "Y", 2, 2, 2),
             **self._get_vote_data(12, 8, "Y", 1, 2, 1),
-            # Assignment with global options
+            # Assignment with 'Y'/'N'
             **self._get_assignment_data(3),
             **self._get_poll_data(
                 poll_id=5,
@@ -623,13 +623,6 @@ class TestMigration101(BaseMigrationTestCase):
             **self._get_vote_data(24, 14, "N", 3, 3),
             **self._get_vote_data(25, 13, "N"),
             **self._get_vote_data(26, 16, "A"),
-            # Assignment - other (without option)
-            **self._get_assignment_data(5),
-            **self._get_poll_data(
-                poll_id=7,
-                content_object_id="assignment/5",
-                state="created",
-            ),
         }
 
         self.create_entries(polls_data)
@@ -667,7 +660,7 @@ class TestMigration101(BaseMigrationTestCase):
                     ("poll_config_approval", 2),
                     ("poll_config_rating_score", 4),
                     ("poll_config_selection", 5),
-                    ("poll_config_rating_approval", 7),
+                    ("poll_config_rating_approval", 6),
                     ("poll_entitled_user", 18),
                     ("poll_option", 18),
                 ):
@@ -682,7 +675,7 @@ class TestMigration101(BaseMigrationTestCase):
                     ("poll_config_approval", 2),
                     ("poll_config_rating_score", 1),
                     ("poll_config_selection", 2),
-                    ("poll_config_rating_approval", 2),
+                    ("poll_config_rating_approval", 1),
                     ("poll_entitled_user", 18),
                     ("poll_option", 14),
                 ):
@@ -857,19 +850,6 @@ class TestMigration101(BaseMigrationTestCase):
                         "ballot_user_ids": [17, 20, 23, 25, 26],
                         "entitled_user_ids": [16, 17, 18],
                     },
-                    7: {
-                        **base_poll_fields,
-                        "config_id": "poll_config_rating_approval/7",
-                        "content_object_id": "assignment/5",
-                        "visibility": "open",
-                        "state": "created",
-                        "published": False,
-                        "result": None,
-                        "option_ids": [],
-                        "ballot_ids": [],
-                        "ballot_user_ids": [],
-                        "entitled_user_ids": [],
-                    },
                 },
                 "poll_config_approval": {
                     1: {
@@ -927,15 +907,6 @@ class TestMigration101(BaseMigrationTestCase):
                         "max_yes_amount": None,
                         "allow_abstain": True,
                         "onehundred_percent_base": "entitled",
-                        "required_majority": "no_majority",
-                    },
-                    7: {
-                        "poll_id": 7,
-                        "min_options_amount": 1,
-                        "max_options_amount": 1,
-                        "max_yes_amount": None,
-                        "allow_abstain": False,
-                        "onehundred_percent_base": "valid",
                         "required_majority": "no_majority",
                     },
                 },

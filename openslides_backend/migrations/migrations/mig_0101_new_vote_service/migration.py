@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Any
 
 from psycopg import sql
@@ -19,7 +18,6 @@ from openslides_backend.shared.filters import (
     Filter,
     FilterOperator,
     Not,
-    Or,
     SqlArguments,
 )
 
@@ -143,9 +141,7 @@ class Migration(DiffMixin, BaseMigration):
                             OR (
                                 option.content_object_id LIKE 'user/%%'
                                 AND poll.max_votes_per_option <= 1
-                                AND poll.global_yes <> TRUE
-                                AND poll.global_no <> TRUE
-                                AND poll.global_option_id IS NULL
+                                AND poll.pollmethod IN ('YN', 'YNA')
                             )
                         )
                     )
@@ -164,11 +160,7 @@ class Migration(DiffMixin, BaseMigration):
             (
                 And(
                     self._get_filter_by_content_object_collection("assignment"),
-                    FilterOperator("global_option_id", "!=", None),
-                    Or(
-                        FilterOperator("global_yes", "=", True),
-                        FilterOperator("global_no", "=", True),
-                    ),
+                    FilterOperator("pollmethod", "in", ["Y", "N"]),
                 ),
                 [
                     "Y",
@@ -192,24 +184,13 @@ class Migration(DiffMixin, BaseMigration):
             ):
                 errors.append(message)
 
-        # pollmethod for selection polls
+        # pollmethod for topic
         if message := self._check_allowed_values(
             "poll",
             "pollmethod",
             ["Y", "N"],
             False,
-            None,
-            dedent("""
-                AND (
-                    poll.content_object_id LIKE 'topic/%%'
-                    OR(
-                        poll.content_object_id LIKE 'assignment/%%'
-                        AND option.content_object_id LIKE 'user/%%'
-                        AND (poll.global_yes = TRUE OR poll.global_no = TRUE)
-                        AND (poll.global_option_id IS NOT NULL)
-                    )
-                )
-                """),
+            self._get_filter_by_content_object_collection("topic"),
         ):
             errors.append(message)
 
@@ -717,7 +698,7 @@ class Migration(DiffMixin, BaseMigration):
                                         THEN 'rating_score'
                                     ELSE
                                         CASE
-                                            WHEN (p.global_yes = TRUE OR p.global_no = TRUE) AND p.global_option_id IS NOT NULL
+                                            WHEN (p.pollmethod IN ('Y', 'N'))
                                                 THEN 'selection'
                                             ELSE 'rating_approval'
                                         END
