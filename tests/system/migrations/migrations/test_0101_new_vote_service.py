@@ -19,9 +19,10 @@ class TestMigration101(BaseMigrationTestCase):
 
     @staticmethod
     def _get_meeting_data(
-        base: int = 1, extra_data: dict[FullQualifiedId, PartialModel] = {}
+        base: int = 1, extra_data: dict[FullQualifiedId, PartialModel] | None = None
     ) -> dict[FullQualifiedId, PartialModel]:
         result: dict[FullQualifiedId, PartialModel] = {}
+        extra_data = extra_data or {}
         if "committee_id" not in (
             meeting_data := extra_data.get(f"meeting/{base}", {})
         ):
@@ -31,6 +32,8 @@ class TestMigration101(BaseMigrationTestCase):
             else:
                 extra_data[f"meeting/{base}"] = {"committee_id": committee_id}
             result[f"committee/{committee_id}"] = {"name": f"Committee {committee_id}"}
+        else:
+            committee_id = meeting_data["committee_id"]
         result.update(
             {
                 f"meeting/{base}": {
