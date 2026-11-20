@@ -116,6 +116,7 @@ def main() -> int:
     # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
     if isinstance(add := diff["add"], tuple):
+        new_collections = list(add[0])
         sql += AddHelper.handle_add(add, diff_control["add"])
 
     # Things like equal fields triggers depend on renames and possibly added collections.
@@ -126,7 +127,11 @@ def main() -> int:
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
-        AlterSchemaHelper.get_drop_view_statement(collection_name)
+        (
+            AlterSchemaHelper.get_drop_view_statement(collection_name)
+            if collection_name not in new_collections
+            else ""
+        )
         + CURR_CODE_BLOCKS["view_sql"][collection_name]
         for collection_name in sorted(alter_views)
     )
