@@ -146,7 +146,7 @@ class TestTreeSortMixin(BaseActionTestCase):
         self, id_: int, expect_error: bool = False
     ) -> None:
         if expect_error:
-            self.assert_status_code(self.delete_response, 400)
+            self.assert_status_code(self.delete_response, 500)
         else:
             assert self.delete_response.json == {
                 "message": "Actions handled successfully",
@@ -166,7 +166,7 @@ class TestTreeSortMixin(BaseActionTestCase):
         self, name: str, parent_id: int | None = None, expect_error: bool = False
     ) -> None:
         if expect_error:
-            self.assert_status_code(self.create_response, 400)
+            self.assert_status_code(self.create_response, 500)
         else:
             assert self.create_response.json == {
                 "message": "Actions handled successfully",

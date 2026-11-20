@@ -38,19 +38,19 @@ def test_basic(db_connection: Connection, filter_: Filter, expected_count: int) 
         pytest.param(
             "committeee",
             None,
-            "Collection 'committeee' does not exist in the database:",
+            "Collection 'committeee' does not exist in the database.",
             id="collection_no_filter",
         ),
         pytest.param(
             "committeee",
             FilterOperator("name", "=", "23"),
-            "Collection 'committeee' does not exist in the database:",
+            "Collection 'committeee' does not exist in the database.",
             id="collection",
         ),
         pytest.param(
             "committee",
             FilterOperator("namee", "=", "23"),
-            "Field 'namee' does not exist in collection 'committee': column",
+            "Field 'namee' does not exist in collection 'committee'.",
             id="field",
         ),
     ],
@@ -66,7 +66,7 @@ def test_invalid(
         with pytest.raises(InvalidFormat) as e:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.count(collection, filter_, use_changed_models=False)
-    assert expected_error in e.value.message
+    assert expected_error == e.value.message
 
 
 def test_changed_models(db_connection: Connection) -> None:

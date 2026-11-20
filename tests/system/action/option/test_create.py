@@ -123,9 +123,8 @@ class OptionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            'option/79: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"\n'
-            + "DETAIL:  Key (content_object_id, poll_id)=(motion/112, 65) already exists.",
+        self.assertEqual(
+            'option/79: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"',
             response.json["message"],
         )
 

@@ -34,6 +34,10 @@ class View400Exception(ViewException):
     status_code = 400
 
 
+class View500Exception(ViewException):
+    status_code = 500
+
+
 class AuthenticationException(View400Exception):
     pass
 
@@ -103,6 +107,10 @@ class DatabaseException(ServiceException):
     pass
 
 
+class DatabaseInternalException(View500Exception):
+    pass
+
+
 class InvalidFormat(DatabaseException):
     pass
 
@@ -131,18 +139,6 @@ class ModelLocked(DatabaseException):
     def __init__(self, keys: str) -> None:
         super().__init__("")
         self.keys = keys
-
-
-class InvalidDatastoreState(DatabaseException):
-    pass
-
-
-class DatastoreNotEmpty(DatabaseException):
-    pass
-
-
-class DatastoreConnectionException(DatabaseException):
-    pass
 
 
 class DatastoreLockedException(DatabaseException):

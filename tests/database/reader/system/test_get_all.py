@@ -46,8 +46,7 @@ def test_invalid_collection() -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_all("commite", ["name", "id"])
     assert (
-        "Collection 'commite' does not exist in the database: relation"
-        in e_info.value.message
+        "Collection 'commite' does not exist in the database." == e_info.value.message
     )
 
 
@@ -57,6 +56,6 @@ def test_invalid_mapped_fields() -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_all("committee", ["id", "nam", "organization_id"])
     assert (
-        "Field 'nam' does not exist in collection 'committee': column"
-        in e_info.value.message
+        "Field 'nam' does not exist in collection 'committee'.\nCheck mapped fields."
+        == e_info.value.message
     )

@@ -356,16 +356,15 @@ def test_invalid_mapped_fields2() -> None:
                 ["first_name", "not_valid"],
             )
     assert (
-        "Field 'not_valid' does not exist in collection 'user': column"
-        in e.value.message
+        "Field 'not_valid' does not exist in collection 'user'.\nCheck mapped fields."
+        == e.value.message
     )
-    assert "\nCheck mapped fields." in e.value.message
 
 
 def test_invalid_collection(db_connection: Connection) -> None:
     with pytest.raises(InvalidFormat) as e:
         base_test(db_connection, "usarr", FilterOperator("username", "=", "data"), 0)
-    assert "Collection 'usarr' does not exist in the database:" in e.value.message
+    assert "Collection 'usarr' does not exist in the database." == e.value.message
 
 
 @pytest.mark.parametrize(
@@ -393,10 +392,9 @@ def test_invalid_filter_field(db_connection: Connection, filter_: Filter) -> Non
     with pytest.raises(InvalidFormat) as e:
         base_test(db_connection, "user", filter_, 0)
     assert (
-        "Field 'usarrname' does not exist in collection 'user': column"
-        in e.value.message
+        "Field 'usarrname' does not exist in collection 'user'.\nCheck filter fields."
+        == e.value.message
     )
-    assert "\nCheck filter fields." in e.value.message
 
 
 @pytest.mark.parametrize(
