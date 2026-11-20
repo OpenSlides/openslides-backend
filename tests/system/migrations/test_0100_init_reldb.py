@@ -298,7 +298,7 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
@@ -313,7 +313,7 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
