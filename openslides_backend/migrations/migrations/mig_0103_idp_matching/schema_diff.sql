@@ -141,18 +141,15 @@ CREATE VIEW "committee" AS SELECT *,
 FROM committee_t c;
 
 comment on column "committee".user_ids is 'Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee';
-DROP VIEW IF EXISTS "idp_condition";
 
 CREATE VIEW "idp_condition" AS SELECT * FROM idp_condition_t i;
 
-DROP VIEW IF EXISTS "idp_mapper";
 
 CREATE VIEW "idp_mapper" AS SELECT *,
 (select array_agg(ic.id ORDER BY ic.id) from idp_condition_t ic where ic.mapper_id = i.id) as condition_ids,
 (select array_agg(im.id ORDER BY im.id) from idp_mapping_t im where im.mapper_id = i.id) as mapping_ids
 FROM idp_mapper_t i;
 
-DROP VIEW IF EXISTS "idp_mapping";
 
 CREATE VIEW "idp_mapping" AS SELECT * FROM idp_mapping_t i;
 
