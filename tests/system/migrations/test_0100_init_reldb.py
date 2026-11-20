@@ -338,7 +338,15 @@ For more information, see
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
-    def test_migration_manager(self) -> None:
+    @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
+    def test_migration_manager(self, method_mock: Mock) -> None:
+
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+
         # 5) Call data_manipulation of module
         manager = MigrationManager(Mock(), Mock(), self.app.logging)
         result = manager.handle_request({"cmd": "migrate", "verbose": True})
@@ -348,6 +356,9 @@ For more information, see
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
             result["output"],
         )
+
+        wait_lock.release()
+        self.wait_for_migration_thread(15)
 
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZED)
