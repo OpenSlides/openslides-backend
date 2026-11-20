@@ -297,13 +297,13 @@ For more information, see
         expected_error_message = "Required env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE"
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "status": MigrationState.MIGRATION_FAILED,
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
         }
-        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.assert_indices_state(MigrationState.MIGRATION_FAILED)
 
     def test_migration_fail_time_zone(self) -> None:
         os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
@@ -312,13 +312,13 @@ For more information, see
         expected_error_message = "JST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "status": MigrationState.MIGRATION_FAILED,
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 83,
             "target_migration_index": 100,
         }
-        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+        self.assert_indices_state(MigrationState.MIGRATION_FAILED)
 
     def test_migration_handler(self) -> None:
         # Prepare what manager would.
@@ -338,7 +338,15 @@ For more information, see
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
-    def test_migration_manager(self) -> None:
+    @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
+    def test_migration_manager(self, method_mock: Mock) -> None:
+
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+
         # 5) Call data_manipulation of module
         manager = MigrationManager(Mock(), Mock(), self.app.logging)
         result = manager.handle_request({"cmd": "migrate", "verbose": True})
@@ -348,6 +356,9 @@ For more information, see
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
             result["output"],
         )
+
+        wait_lock.release()
+        self.wait_for_migration_thread(15)
 
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZED)
@@ -504,13 +515,8 @@ For more information, see
             reset = reset_data[tablename]
             if tablename == "version":
                 assert len(prev) == 2
-                assert len(reset) == 2
+                assert len(reset) == 1
                 assert prev[0] == reset[0]
-                assert reset[1] == {
-                    "migration_index": 100,
-                    "migration_state": MigrationState.MIGRATION_REQUIRED,
-                    "replace_tables": {k: {} for k in Migration.ORIGIN_COLLECTIONS},
-                }
             else:
                 self.assertEqual(prev, reset, f"Failed for {tablename}")
 

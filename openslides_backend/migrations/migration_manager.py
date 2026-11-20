@@ -53,10 +53,6 @@ class MigrationManager:
         self.logger = logging.getLogger(__name__)
 
         self.handler: MigrationHandler | None
-        MigrationHelper.load_migrations()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as cursor:
-                MigrationHelper.add_new_migrations_to_version(cursor)
         self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
@@ -117,26 +113,32 @@ class MigrationManager:
                 all_tables = set()
 
             if not MigrationHelper.migrate_thread_exception:
-                migration_indices = MigrationHelper.get_indices_from_database(cursor)
-                state_per_mi = MigrationHelper.get_database_migration_states(
-                    cursor, migration_indices
-                )
-                unmigrated_collections = {
-                    collection
-                    for mi in migration_indices
+                unfinalized_indices = [
+                    mi
+                    for mi in MigrationHelper.migrations
                     if mi > current_migration_index
-                    if state_per_mi[mi]
-                    in (
-                        MigrationState.MIGRATION_REQUIRED,
-                        MigrationState.MIGRATION_RUNNING,
+                ]
+                if unfinalized_indices:
+                    state_per_mi = MigrationHelper.get_migration_states(
+                        cursor, unfinalized_indices
                     )
-                    for collection in MigrationHelper.get_replace_tables(mi)
-                }
-                stats = {
-                    collection: amount
-                    for collection in unmigrated_collections
-                    if (amount := count(collection + "_t", cursor))
-                }
+                    unmigrated_collections = {
+                        collection
+                        for mi in unfinalized_indices
+                        if state_per_mi[mi]
+                        in (
+                            MigrationState.MIGRATION_REQUIRED,
+                            MigrationState.MIGRATION_RUNNING,
+                        )
+                        for collection in MigrationHelper.get_replace_tables(mi)
+                    }
+                    stats = {
+                        collection: amount
+                        for collection in unmigrated_collections
+                        if (amount := count(collection + "_t", cursor))
+                    }
+                else:
+                    stats = {}
 
         if exc := MigrationHelper.migrate_thread_exception:
             module_name = getattr(exc, "__module__", "")
@@ -187,6 +189,7 @@ class MigrationManager:
                 elif command == MigrationCommand.STATS:
                     return {"stats": self.get_stats()}
                 elif command != MigrationCommand.RESET:
+                    MigrationHelper.add_new_migrations_to_version(cursor)
                     self.assert_valid_migration_index(cursor)
                     match MigrationHelper.get_migration_state(cursor):
                         case MigrationState.MIGRATION_RUNNING:
