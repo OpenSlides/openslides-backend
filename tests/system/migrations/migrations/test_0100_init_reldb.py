@@ -475,7 +475,7 @@ For more information, see
         response = self.request("reset")
         assert response.json == {
             "success": True,
-            "status": MigrationState.FINALIZED,
+            "status": MigrationState.MIGRATION_REQUIRED,
             "output": "",
         }
         self.wait_for_migration_thread(15)

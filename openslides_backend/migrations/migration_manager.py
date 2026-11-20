@@ -113,26 +113,32 @@ class MigrationManager:
                 all_tables = set()
 
             if not MigrationHelper.migrate_thread_exception:
-                migration_indices = MigrationHelper.get_indices_from_database(cursor)
-                state_per_mi = MigrationHelper.get_database_migration_states(
-                    cursor, migration_indices
-                )
-                unmigrated_collections = {
-                    collection
-                    for mi in migration_indices
+                migration_indices = [
+                    mi
+                    for mi in MigrationHelper.migrations
                     if mi > current_migration_index
-                    if state_per_mi[mi]
-                    in (
-                        MigrationState.MIGRATION_REQUIRED,
-                        MigrationState.MIGRATION_RUNNING,
+                ]
+                if migration_indices:
+                    state_per_mi = MigrationHelper.get_migration_states(
+                        cursor, migration_indices
                     )
-                    for collection in MigrationHelper.get_replace_tables(mi)
-                }
-                stats = {
-                    collection: amount
-                    for collection in unmigrated_collections
-                    if (amount := count(collection + "_t", cursor))
-                }
+                    unmigrated_collections = {
+                        collection
+                        for mi in migration_indices
+                        if state_per_mi[mi]
+                        in (
+                            MigrationState.MIGRATION_REQUIRED,
+                            MigrationState.MIGRATION_RUNNING,
+                        )
+                        for collection in MigrationHelper.get_replace_tables(mi)
+                    }
+                    stats = {
+                        collection: amount
+                        for collection in unmigrated_collections
+                        if (amount := count(collection + "_t", cursor))
+                    }
+                else:
+                    stats = {}
 
         if exc := MigrationHelper.migrate_thread_exception:
             module_name = getattr(exc, "__module__", "")
@@ -178,8 +184,10 @@ class MigrationManager:
             version_conn.set_isolation_level(IsolationLevel.READ_COMMITTED)
             with version_conn.cursor() as cursor:
                 self.ver_conn = version_conn
-                if command in [MigrationCommand.PROGRESS, MigrationCommand.STATS]:
-                    return self.execute_migration_stats_command(command, cursor)
+                if command == MigrationCommand.PROGRESS:
+                    return self.handle_progress_command()
+                elif command == MigrationCommand.STATS:
+                    return {"stats": self.get_stats()}
                 elif command != MigrationCommand.RESET:
                     MigrationHelper.add_new_migrations_to_version(cursor)
                     self.assert_valid_migration_index(cursor)
@@ -213,22 +221,6 @@ class MigrationManager:
                 else:
                     # Migration already finished/had nothing to do
                     return self.get_migration_result()
-
-    def execute_migration_stats_command(
-        self, command: str, cursor: Cursor[DictRow]
-    ) -> dict[str, Any]:
-        """Returns the output of the read commands"""
-        original_indexes = MigrationHelper.get_indices_from_database(cursor)
-        MigrationHelper.add_new_migrations_to_version(cursor)
-        if command == MigrationCommand.PROGRESS:
-            result = self.handle_progress_command()
-        else:
-            result = {"stats": self.get_stats()}
-        cursor.execute(
-            sql.SQL("DELETE FROM version WHERE migration_index <> ALL(%s);"),
-            (original_indexes,),
-        )
-        return result
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         """
