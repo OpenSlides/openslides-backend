@@ -176,12 +176,14 @@ class MigrationHelper:
         raise MigrationException("No migration index could be acquired from database.")
 
     @staticmethod
-    def get_database_migration_states(
+    def get_migration_states(
         curs: Cursor[DictRow], indices: list[int]
     ) -> dict[int, MigrationState]:
         """
         Gets the states per passed migration index.
+        Includes migrations from the backend not listed in the version table.
         """
+        states_and_indices: dict[int, MigrationState] = {}
         if tmp := curs.execute(
             sql.SQL(
                 "SELECT migration_index, migration_state FROM version WHERE migration_index = ANY("
@@ -190,14 +192,21 @@ class MigrationHelper:
             + sql.SQL(");"),
             (indices,),
         ).fetchall():
-            return {
+            states_and_indices = {
                 elem.get("migration_index", 0): elem.get("migration_state", "")
                 for elem in tmp
             }
-        else:
-            raise MigrationException(
-                "Requested migration indices are not available in version table."
-            )
+        if backend_indicies := set(indices) - set(states_and_indices.keys()):
+            for migration_index in sorted(backend_indicies):
+                if migration_index in MigrationHelper.migrations:
+                    states_and_indices[migration_index] = (
+                        MigrationState.MIGRATION_REQUIRED
+                    )
+                else:
+                    raise MigrationException(
+                        "Requested migration indices are not available in version table or backend."
+                    )
+        return states_and_indices
 
     @staticmethod
     def get_database_migration_index(curs: Cursor[DictRow]) -> int:
@@ -349,7 +358,14 @@ class MigrationHelper:
             (MigrationState.FINALIZED,),
         ).fetchall()
         if not states_and_indices:
-            return MigrationState.FINALIZED
+            if (
+                MigrationHelper.get_database_migration_index(curs)
+                == MigrationHelper.get_backend_migration_index()
+            ):
+                return MigrationState.FINALIZED
+            else:
+                return MigrationState.MIGRATION_REQUIRED
+
         states = {elem.get("migration_state") for elem in states_and_indices}
         # 1. migration, 2. finalization | both: failed > running > required
         for state in [
