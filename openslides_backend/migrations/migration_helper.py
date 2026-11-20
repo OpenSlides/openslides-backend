@@ -196,8 +196,8 @@ class MigrationHelper:
                 elem.get("migration_index", 0): elem.get("migration_state", "")
                 for elem in tmp
             }
-        if backend_indicies := set(indices) - set(states_and_indices.keys()):
-            for migration_index in sorted(backend_indicies):
+        if backend_only_indicies := set(indices) - set(states_and_indices.keys()):
+            for migration_index in sorted(backend_only_indicies):
                 if migration_index in MigrationHelper.migrations:
                     states_and_indices[migration_index] = (
                         MigrationState.MIGRATION_REQUIRED
