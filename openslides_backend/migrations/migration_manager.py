@@ -113,18 +113,18 @@ class MigrationManager:
                 all_tables = set()
 
             if not MigrationHelper.migrate_thread_exception:
-                migration_indices = [
+                unfinalized_indices = [
                     mi
                     for mi in MigrationHelper.migrations
                     if mi > current_migration_index
                 ]
-                if migration_indices:
+                if unfinalized_indices:
                     state_per_mi = MigrationHelper.get_migration_states(
-                        cursor, migration_indices
+                        cursor, unfinalized_indices
                     )
                     unmigrated_collections = {
                         collection
-                        for mi in migration_indices
+                        for mi in unfinalized_indices
                         if state_per_mi[mi]
                         in (
                             MigrationState.MIGRATION_REQUIRED,

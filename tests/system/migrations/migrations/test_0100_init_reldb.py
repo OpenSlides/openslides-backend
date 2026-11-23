@@ -15,6 +15,7 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.migrations.migrations.mig_0100_init_reldb.migration import (
     Migration,
     Sql_helper,
@@ -282,9 +283,9 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_FAILED)
@@ -298,9 +299,9 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
-            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
         }
         self.assert_indices_state(MigrationState.MIGRATION_FAILED)
@@ -324,15 +325,27 @@ For more information, see
         self.assert_indices_state(MigrationState.FINALIZED)
         self.check_data()
 
-    def test_migration_manager(self) -> None:
+    @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
+    def test_migration_manager(self, method_mock: Mock) -> None:
+
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+
         # 5) Call data_manipulation of module
-        result = self.make_migration_request(self.create_migration_manager())
+        manager = MigrationManager(Mock(), Mock(), self.app.logging)
+        result = manager.handle_request({"cmd": "migrate", "verbose": True})
         self.assertEqual(result["status"], MigrationState.MIGRATION_RUNNING)
         self.assertIn(
             self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
             result["output"],
         )
+
+        wait_lock.release()
+        self.wait_for_migration_thread(15)
 
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZED)
@@ -384,7 +397,7 @@ For more information, see
         self.wait_for_migration_thread(self.MAX_WAIT)
 
         assert self.request("stats").json["stats"] == {
-            "current_migration_index": 73,
+            "current_migration_index": 83,
             "target_migration_index": 100,
             "status": MigrationState.MIGRATION_FAILED,
             "exception": 'psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "organization_t_pkey"\nDETAIL:  Key (id)=(1) already exists.',

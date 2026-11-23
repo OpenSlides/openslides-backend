@@ -100,6 +100,7 @@ def has_organization_management_level(
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
             ["organization_management_level"],
+            lock_result=False,
         )
         return expected_level <= OrganizationManagementLevel(
             user.get("organization_management_level", "")
@@ -171,6 +172,7 @@ def has_committee_management_level(
             for parent_id in datastore.get(
                 fqid_from_collection_and_id("committee", committee_id),
                 ["all_parent_ids"],
+                lock_result=False,
             ).get("all_parent_ids", [])
         ):
             return True
@@ -202,7 +204,8 @@ def get_shared_committee_management_levels(
             {
                 id_
                 for committee_id, committee in datastore.get_many(
-                    [GetManyRequest("committee", committee_ids, ["all_parent_ids"])]
+                    [GetManyRequest("committee", committee_ids, ["all_parent_ids"])],
+                    lock_result=False,
                 )["committee"].items()
                 for id_ in [committee_id, *committee.get("all_parent_ids", [])]
             }.intersection(user.get("committee_management_ids", []))

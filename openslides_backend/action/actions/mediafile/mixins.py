@@ -3,7 +3,7 @@ from typing import Any
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....services.database.commands import GetManyRequest
-from ....shared.exceptions import ActionException, DatabaseException, MissingPermission
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID
@@ -31,14 +31,12 @@ class MediafileMixin(Action):
         )
         parent_id = instance.get("parent_id")
         if not parent_id:
-            try:
-                mediafile = self.datastore.get(
-                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                    ["parent_id"],
-                )
-                parent_id = mediafile.get("parent_id")
-            except DatabaseException:
-                pass
+            mediafile = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                ["parent_id"],
+                raise_exception=False,
+            )
+            parent_id = mediafile.get("parent_id")
 
         if collection == "organization":
             if "access_group_ids" in instance and (

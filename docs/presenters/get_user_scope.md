@@ -16,7 +16,8 @@
     user_oml: String, // one of "superadmin", "can_manage_organization", "can_manage_users", ""
     committee_ids: Id[], // Ids of all committees the user is part of
     user_in_archived_meetings_only: boolean, // True if total number of meeting_ids for user is more than 0 and number of active meetings is 0
-    home_committee_id: Id | None // The id of the user's home committee, None if he doesn't have one
+    home_committee_id: Id | None, // The id of the user's home committee, None if he doesn't have one
+    is_committee_manager: boolean // Whether the user has any committee management rights at all
   },
   ...
 }

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from threading import Lock
-from typing import Any
+from typing import Any, cast
 from unittest import TestCase
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
@@ -105,7 +105,6 @@ class BaseMigrationTestCase(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.prepare_mig_100_environment()
-
         cls.migration_dir_list = [
             f
             for f in os.listdir(MIGRATIONS_PATH)
@@ -122,7 +121,7 @@ class BaseMigrationTestCase(TestCase):
         super().tearDownClass()
 
     def create_migration_manager(self) -> MigrationManager:
-        return MigrationManager(Mock(), Mock(), self.app.logging)
+        return MigrationManager(Mock(), Mock(), Mock())
 
     @staticmethod
     def make_migration_request(manager: MigrationManager) -> dict[str, Any]:
@@ -227,6 +226,22 @@ class BaseMigrationTestCase(TestCase):
             result = {}
 
         return result
+
+    def get_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> bool:
+        return cast(
+            dict[str, Any],
+            curs.execute(
+                f"SELECT EXISTS(SELECT 1 FROM information_schema.triggers WHERE trigger_name = '{trigger_name}') AS exists;"
+            ).fetchone(),
+        )["exists"]
+
+    def assert_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> None:
+        assert self.get_trigger_exists(curs, trigger_name)
+
+    def assert_trigger_not_exists(
+        self, curs: Cursor[DictRow], trigger_name: str
+    ) -> None:
+        assert not self.get_trigger_exists(curs, trigger_name)
 
     def assert_entries_count(
         self, cur: Cursor[DictRow], collection: str, expected_count: int
@@ -336,11 +351,11 @@ class BaseMigrationTestCase(TestCase):
         assert data, "data can not be empty"
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                for fqid, data in data.items():
-                    assert data, "data can not contain empty dictionaries"
+                for fqid, model_data in data.items():
+                    assert model_data, "data can not contain empty dictionaries"
                     collection, id_ = collection_and_id_from_fqid(fqid)
                     table_name = HelperGetNames.get_table_name(collection)
-                    model_data = {**data, "id": id_}
+                    model_data = {**model_data, "id": id_}
                     curs.execute(
                         sql.SQL(
                             "INSERT INTO {table_name} ({columns}) VALUES ({values});"
@@ -358,6 +373,12 @@ class BaseMigrationTestCase(TestCase):
                 if intermediate_tables_data:
                     self.write_into_intermediate_table(curs, intermediate_tables_data)
                 conn.commit()
+
+    def assert_contained_in(
+        self, is_dict: dict[str, Any], in_dict: dict[str, Any]
+    ) -> None:
+        check_dict = {key: in_dict.get(key) for key in is_dict}
+        assert is_dict == check_dict
 
     def update_entries(
         self,

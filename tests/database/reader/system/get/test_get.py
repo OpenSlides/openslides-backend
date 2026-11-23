@@ -64,8 +64,8 @@ def test_no_collection(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get("doesntexist/1")
     assert (
-        "Collection 'doesntexist' does not exist in the database:"
-        in e_info.value.message
+        "Collection 'doesntexist' does not exist in the database."
+        == e_info.value.message
     )
 
 
@@ -97,8 +97,8 @@ def test_mapped_fields_not_exists(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get(FQID, ["that_doesnt_exist"])
     assert (
-        "Field 'that_doesnt_exist' does not exist in collection 'user': column"
-        in e_info.value.message
+        "Field 'that_doesnt_exist' does not exist in collection 'user'.\nCheck mapped fields."
+        == e_info.value.message
     )
 
 

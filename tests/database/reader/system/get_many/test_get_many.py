@@ -162,8 +162,8 @@ def test_field_not_exists(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
     assert (
-        "Field 'does_not_exist' does not exist in collection 'committee': column "
-        in e_info.value.message
+        "Field 'does_not_exist' does not exist in collection 'committee'.\nCheck mapped fields."
+        == e_info.value.message
     )
 
 
@@ -189,8 +189,8 @@ def test_invalid_collection(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
     assert (
-        "Collection 'committeee' does not exist in the database: relation"
-        in e_info.value.message
+        "Collection 'committeee' does not exist in the database."
+        == e_info.value.message
     )
 
 
@@ -212,6 +212,27 @@ def test_changed_models(db_connection: Connection) -> None:
     }
 
 
+def test_changed_models_field_set_to_none(db_connection: Connection) -> None:
+    """Uses data from database and changed models dict."""
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("user/1", {"username": "admin", "last_login": None})
+        response = ex_db.get_many(
+            [GetManyRequest("user", [1], ["username", "last_login", "is_demo_user"])],
+            use_changed_models=True,
+        )
+    assert response == {
+        "user": {
+            1: {
+                "id": 1,
+                "username": "admin",
+                "is_demo_user": True,
+            },
+        },
+    }
+
+
 def test_changed_models_new(db_connection: Connection) -> None:
     """Requests data from new changed model."""
     setup_data(db_connection, standard_data)
@@ -225,6 +246,28 @@ def test_changed_models_new(db_connection: Connection) -> None:
                 "id": 1,
                 "name": "23",
             },
+            3: {
+                "id": 3,
+                "name": "3",
+            },
+        },
+    }
+
+
+def test_changed_models_only_new(db_connection: Connection) -> None:
+    """Requests data from only new changed model."""
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("committee/3", {"name": "3", "meta_new": True})
+        response = ex_db.get_many(
+            [
+                GetManyRequest("committee", [3], ["name", "description"]),
+            ],
+            use_changed_models=True,
+        )
+    assert response == {
+        "committee": {
             3: {
                 "id": 3,
                 "name": "3",
@@ -257,4 +300,24 @@ def test_use_changed_models_missing_field(db_connection: Connection) -> None:
             1: {"id": 1, "name": "3", "organization_id": 1},
             2: {"id": 2, "name": "42", "organization_id": 1},
         },
+    }
+
+
+def test_no_mapped_fields_with_changes(db_connection: Connection) -> None:
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.apply_changed_model("user/2", {"last_login": None})
+        response = extended_database.get_many([GetManyRequest("user", [1, 2])])
+    assert len(response) == 1
+    assert len(response["user"]) == 2
+    assert response["user"][1] == {
+        key: val
+        for key, val in standard_responses["user"][1].items()
+        if val is not None
+    }
+    assert response["user"][2] == {
+        key: val
+        for key, val in standard_responses["user"][2].items()
+        if key != "last_login" and val is not None
     }

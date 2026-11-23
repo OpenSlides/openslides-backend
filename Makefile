@@ -39,7 +39,8 @@ lint:
 	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
-	pytest
+# s= number of tests to skip from the beginning also works with %
+	pytest $(if $(s), --skip-first $s)
 
 coverage:
 	pytest --cov --cov-report html
@@ -52,7 +53,8 @@ test-file:
 # now=1 no wait for execution for attach. In other words: execute now.
 # cap=1 to capture print to system out
 # cov=1 to run coverage report
-	python -m debugpy --listen 0.0.0.0:5678 $(if $(now),,--wait-for-client) $(if $(da),,/usr/local/bin/pytest) $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
+# ARGS Any other arguments to pass to a script.
+	python -m debugpy --listen 0.0.0.0:5678 $(if $(now),,--wait-for-client) $(if $(da),,/usr/local/bin/pytest) $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered) $(ARGS)
 
 test-file-pyspy:
 # f= to pass the file name
@@ -188,7 +190,7 @@ replace-previous-models:
 	cp -r meta/collections/ openslides_backend/migrations/previous_models/collections/ && cp meta/collection-meta.yml openslides_backend/migrations/previous_models/
 
 generate-migration-diff:
-	python openslides_backend/migrations/sql_diff_generator.py --dumpjson
+	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)
 
 generate-db: | generate-schema recreate-database
 

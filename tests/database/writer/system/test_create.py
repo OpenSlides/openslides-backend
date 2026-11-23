@@ -11,8 +11,8 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import (
     BadCodingException,
+    InvalidData,
     ModelExists,
-    RelationException,
 )
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.patterns import (
@@ -207,7 +207,7 @@ def test_create_11_field_as_1n() -> None:
         ]
     )
     with get_new_os_conn() as conn:
-        with pytest.raises(RelationException) as e_info:
+        with pytest.raises(InvalidData) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(write_requests)
     assert (
@@ -225,7 +225,7 @@ def test_create_error_own_field_unique(
 ) -> None:
     create_models(get_data())
     with get_new_os_conn() as conn:
-        with pytest.raises(RelationException) as e_info:
+        with pytest.raises(InvalidData) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(
                 create_write_requests(

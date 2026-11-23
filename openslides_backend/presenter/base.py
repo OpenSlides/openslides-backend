@@ -10,6 +10,7 @@ from ..services.database.interface import Database
 from ..shared.exceptions import PresenterException
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
+from ..shared.util import json_schema_error_to_str
 
 
 class BasePresenter(BaseServiceProvider):
@@ -43,7 +44,7 @@ class BasePresenter(BaseServiceProvider):
             try:
                 schema(self.data)
             except JsonSchemaException as exception:
-                raise PresenterException(exception.message)
+                raise PresenterException(json_schema_error_to_str(exception))
         else:
             if self.data is not None:
                 raise PresenterException("This presenter does not take data.")

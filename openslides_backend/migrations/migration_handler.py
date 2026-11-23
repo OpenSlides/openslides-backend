@@ -15,11 +15,7 @@ from openslides_backend.services.postgresql.utils import (
     deactivate_notify_triggers,
 )
 
-from ..migrations.exceptions import (
-    InvalidMigrationCommand,
-    MigrationException,
-    MigrationSetupException,
-)
+from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
@@ -235,7 +231,7 @@ class MigrationHandler(BaseHandler):
                                 f"Pre check for migration {mig_name} failed.\n{errors}"
                             )
                             self.logger.info(errors)
-                            raise MigrationSetupException(errors)
+                            raise MigrationException(errors)
                     MigrationHelper.write_line("migration started")
                     deactivate_notify_triggers(self.migration_cursor)
                     self.execute_migrations()

@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import simplejson as json
 import yaml
@@ -12,8 +12,8 @@ from typing_extensions import NotRequired
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.helper_get_names import ROOT as CURR_MODELS_DIR
 from meta.dev.src.helper_get_names import InternalHelper, build_models_yaml_content
+from meta.dev.src.validate import RELATION_TYPES
 from openslides_backend.migrations.migration_helper import MigrationHelper
-from openslides_backend.migrations.patterns import Renames
 
 """
 To use this script create a folder 'previous_models' next to it and copy the unchanged model diffinitions from the meta into it.
@@ -24,12 +24,17 @@ The json diff will be written to 'previous_models/diff.json' if --dumpjson is gi
 # for multi layered renames it will have to have that many migrations
 # Maybe future versions of this will allow multi layered renames including other changes within
 """
+RenamesElement = dict[str, str]
+RenamesNode = dict[str, RenamesElement | dict[str, RenamesElement]]
+Renames = tuple[RenamesElement, RenamesNode]
 CollectionsRemoveTuple = tuple[list[str], dict[str, Any]]
 EnumTypesRemoveDict = dict[str, list[str]]
 MetaAttributesRemoveTuple = tuple[list[str], dict[str, Any]]
 PREVIOUS_MODELS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "previous_models"
 )
+AddDiffDict = dict[str, Any]
+AddDiff = tuple[AddDiffDict, AddDiffDict]
 
 
 class RemoveDiffDict(TypedDict):
@@ -97,16 +102,13 @@ def load_models(mig_data_path: str) -> dict[str, Any]:
     return yaml.safe_load(build_models_yaml_content(meta_file, collections_dir))
 
 
-def check_renames_node(renames: dict[str, str], collection_name: str | None) -> None:
-    if collection_name:
-        prev_tree = PREV_MODELS[collection_name]["fields"]
-        curr_tree = CURR_MODELS[collection_name]["fields"]
-        s = ""
-    else:
-        prev_tree = PREV_MODELS
-        curr_tree = CURR_MODELS
-        collection_name = "collection"
-        s = "s"
+def check_renames_element(
+    collection_name: str,
+    renames: RenamesElement,
+    prev_tree: dict[str, Any],
+    curr_tree: dict[str, Any],
+) -> None:
+    s = "s" if collection_name == "collection" else ""
     err_msg_base = f"Faulty {collection_name} yml file{s}. "
     for name_old, name_new in renames.items():
         if name_old not in prev_tree:
@@ -126,16 +128,30 @@ def check_renames_node(renames: dict[str, str], collection_name: str | None) -> 
 def validate_renames(renames: Renames) -> None:
     collection_renames = renames[0]
     field_renames = renames[1]
-    check_renames_node(collection_renames, None)
+    check_renames_element("collection", collection_renames, PREV_MODELS, CURR_MODELS)
     for collection_old, value in field_renames.items():
-        check_renames_node(value, collection_old)
+        if collection_old == "_meta":
+            for key, element in value.items():
+                check_renames_element(
+                    collection_old,
+                    cast(RenamesElement, element),
+                    PREV_MODELS[collection_old][key],
+                    CURR_MODELS[collection_old][key],
+                )
+        else:
+            check_renames_element(
+                collection_old,
+                cast(RenamesElement, value),
+                PREV_MODELS[collection_old]["fields"],
+                CURR_MODELS[collection_old]["fields"],
+            )
 
 
 def load_renames() -> Renames:
     directory = MigrationHelper.get_last_migration_directory()
     renames: Renames = getattr(
-        MigrationHelper.get_migration_class(directory), "renames", None
-    ) or ({}, {})
+        MigrationHelper.get_migration_class(directory), "renames", ({}, {})
+    )
     validate_renames(renames)
     return renames
 
@@ -167,6 +183,18 @@ def generate_diff() -> dict[str, Any]:
         "add": create_add_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
         "edit": create_edit_recursive(PREV_MODELS, CURR_MODELS, RENAMES),
     }
+
+
+def get_renames_recurse_dict(
+    key: str, renames: Renames | RenamesNode
+) -> RenamesElement | dict[str, RenamesElement]:
+    if isinstance(renames, tuple):
+        recurse_renames = renames[1].get(key, {})
+        if key != "_meta":
+            recurse_renames = {"fields": cast(RenamesElement, recurse_renames)}
+    else:
+        recurse_renames = renames.get(key, {})
+    return recurse_renames
 
 
 def update_edits_tree(
@@ -216,10 +244,8 @@ def create_remove_recursive(
     tree = {}
     if isinstance(renames, tuple):
         renames_dict = renames[0]
-        recurse_renames = {"fields": renames[1]}
     else:
         renames_dict = renames
-        recurse_renames = renames
 
     for key, prev_value in prev_models.items():
         if isinstance(renames_dict.get(key), str):
@@ -239,16 +265,16 @@ def create_remove_recursive(
             elif curr_models:
                 if not len(path) == 3 or not (
                     isinstance(prev_value, dict)
-                    and "type" in prev_value
-                    and prev_value.get("to")
+                    and prev_value.get("type") in RELATION_TYPES
                     and was_view_field(path[0], key, prev_value)
                 ):
                     missing_entries.append(key)
         if key in curr_models and isinstance(prev_value, dict) and key != "items":
+            recurse_renames = get_renames_recurse_dict(key, renames)
             result = create_remove_recursive(
                 prev_value,
                 curr_models.get(key, {}),
-                recurse_renames.get(key, {}),
+                recurse_renames,
                 enum_tree,
                 path + (key,),
             )
@@ -264,7 +290,7 @@ def create_add_recursive(
     prev_models: dict[str, Any],
     curr_models: dict[str, Any],
     renames: Renames | dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]] | None:
+) -> AddDiff | None:
     """
     Returns the additional entries on pos 0 and the sub trees on pos 1.
     """
@@ -283,10 +309,7 @@ def create_add_recursive(
         if key not in prev_models:
             additional_entries[key] = curr_models[key]
         elif isinstance(curr_value, dict):
-            if isinstance(renames, tuple):
-                recurse_renames = {"fields": renames[1].get(key, {})}
-            else:
-                recurse_renames = renames.get(key, {})
+            recurse_renames = get_renames_recurse_dict(key, renames)
             result = create_add_recursive(prev_models[key], curr_value, recurse_renames)
             if result is not None:
                 tree[key] = result
@@ -323,10 +346,7 @@ def create_edit_recursive(
             if not isinstance(curr_value, dict) and curr_value != prev_models[key]:
                 edited_entries[key] = curr_models[key]
             elif isinstance(curr_value, dict):
-                if isinstance(renames, tuple):
-                    recurse_renames = {"fields": renames[1].get(key, {})}
-                else:
-                    recurse_renames = renames.get(key, {})
+                recurse_renames = get_renames_recurse_dict(key, renames)
                 result = create_edit_recursive(
                     prev_models[key], curr_value, recurse_renames
                 )
@@ -364,9 +384,15 @@ def was_primary_side(
     collection_name: str, field_name: str, field_data: dict[str, Any]
 ) -> bool:
     with prev_models_context():
-        is_view_field, is_primary, _ = get_view_field_state_write_fields(
-            collection_name, field_name, field_data
-        )
+        return is_primary_side(collection_name, field_name, field_data)
+
+
+def is_primary_side(
+    collection_name: str, field_name: str, field_data: dict[str, Any]
+) -> bool:
+    is_view_field, is_primary, _ = get_view_field_state_write_fields(
+        collection_name, field_name, field_data
+    )
 
     return not is_view_field or is_primary
 

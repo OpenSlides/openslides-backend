@@ -50,7 +50,7 @@ class UserScopeTest(TestCase):
             }
         )
         self.set_meeting_committees([1])
-        assert self.get_scope() == UserScope.Meeting
+        assert self.get_scope() == UserScope.Committee
 
     def test_single_committee_multiple_related_meetings(self) -> None:
         self.set_user_data({"meeting_ids": [1, 2]})

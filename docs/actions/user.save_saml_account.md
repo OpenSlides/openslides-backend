@@ -48,7 +48,7 @@ Extras to do on creation:
         - A default value can be given in case the payloads attribute does not exist or contains no data. (Logged as debug)
         - Groups and structure levels are given as a list of attribute-default pairs.
 - On conflict of multiple mappers mappings on a same meetings field the last given mappers data for that field is used. Exception to this are groups and structure levels. Their data is combined. 
-- Values for groups and structure levels can additionally be given in comma separated lists composed as a single string.
+- Values for groups and structure levels can be specified either as a list of strings or as a single comma-separated string.
 - Values for groups are interpreted as their external ID and structure levels as their name within that meeting.
 - If no group exists for a meeting and no default is given, the meetings default group is used. (Logged as warning)
 - If a structure level does not exist, it is created.

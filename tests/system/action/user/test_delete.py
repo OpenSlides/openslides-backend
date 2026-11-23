@@ -620,3 +620,41 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             "Cannot remove last admin from meeting(s) 1, 4",
             response.json["message"],
         )
+
+    def set_delete_meeting_member_comm_admin_as_group(self, bob_group: int) -> None:
+        self.create_meeting()
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.create_meeting(4, {"committee_id": 60})
+        self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
+
+        alice_id = self.create_user("alice")
+        self.set_committee_management_level([60], alice_id)
+        self.set_user_groups(alice_id, [1])
+
+        bob_id = self.create_user("bob")
+        self.set_user_groups(bob_id, [bob_group])
+
+        self.login(bob_id)
+
+        response = self.request("user.delete", {"id": alice_id})
+        self.assert_status_code(response, 403)
+        self.assertEqual(
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+            response.json["message"],
+        )
+
+    def test_delete_meeting_member_comm_admin_as_same_meeting_admin(self) -> None:
+        self.set_delete_meeting_member_comm_admin_as_group(2)
+
+    def test_delete_meeting_member_comm_admin_as_same_meeting_user_manager(
+        self,
+    ) -> None:
+        self.set_delete_meeting_member_comm_admin_as_group(3)
+
+    def test_delete_meeting_member_comm_admin_as_different_meeting_admin(self) -> None:
+        self.set_delete_meeting_member_comm_admin_as_group(5)
+
+    def test_delete_meeting_member_comm_admin_as_different_meeting_user_manager(
+        self,
+    ) -> None:
+        self.set_delete_meeting_member_comm_admin_as_group(6)

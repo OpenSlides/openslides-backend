@@ -4,9 +4,11 @@ import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, cast
+from textwrap import dedent
+from typing import Any
 
 import simplejson as json
+from sqlfluff import fix
 
 from cli.util.util import get_view_field_state_write_fields
 from meta.dev.src.alter_schema_helper import AlterSchemaHelper
@@ -17,30 +19,37 @@ from meta.dev.src.generate_sql_schema import (
     Helper,
 )
 from meta.dev.src.helper_get_names import HelperGetNames, InternalHelper, TableFieldType
-from meta.dev.src.typing import SchemaZoneKey
+from meta.dev.src.typing import SchemaZoneKey, SchemaZoneTexts, TriggerSqlDict
+from meta.dev.src.validate import RELATION_TYPES
 from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
-from openslides_backend.migrations.patterns import Renames
 from openslides_backend.migrations.py_diff_generator import DiffMixinHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
-    RENAMES,
+    AddDiff,
     CollectionsRemoveTuple,
     EnumTypesRemoveDict,
     FieldAttributes,
     MetaAttributesRemoveTuple,
     RemoveDiffDict,
+    Renames,
     dumpjson,
     generate_diff,
+    is_primary_side,
     prev_models_context,
     was_primary_side,
     was_view_field,
 )
 from openslides_backend.shared.exceptions import BadCodingException
-from openslides_backend.shared.patterns import Collection, CollectionField
+from openslides_backend.shared.patterns import (
+    Collection,
+    CollectionField,
+    collection_and_field_from_collectionfield,
+    collectionfield_from_collection_and_field,
+)
 
 TRIGGER_KEYS: list[SchemaZoneKey] = [
     "create_trigger_partitioned_sequences",
@@ -54,21 +63,23 @@ TRIGGER_KEYS: list[SchemaZoneKey] = [
 ]
 
 
-def get_schema_sql_dict() -> dict[str, dict[str, str]]:
-    return {
-        "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
-        "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
-        "view_sql": deepcopy(GenerateCodeBlocks.view_sql),
-        "trigger_sql": deepcopy(GenerateCodeBlocks.trigger_sql),
-        "intermediate_sql": deepcopy(GenerateCodeBlocks.intermediate_sql),
-    }
+def get_schema_sql_dicts() -> tuple[dict[str, dict[str, str]], TriggerSqlDict]:
+    return (
+        {
+            "table_sql": deepcopy(GenerateCodeBlocks.table_sql),
+            "alter_table_final_sql": deepcopy(GenerateCodeBlocks.alter_table_final_sql),
+            "view_sql": deepcopy(GenerateCodeBlocks.view_sql),
+            "intermediate_sql": deepcopy(GenerateCodeBlocks.intermediate_sql),
+        },
+        deepcopy(GenerateCodeBlocks.trigger_sql),
+    )
 
 
 with prev_models_context():
     GenerateCodeBlocks.generate_the_code()
-    PREV_CODE_BLOCKS = get_schema_sql_dict()
+    PREV_CODE_BLOCKS, PREV_TRIGGER_SQL = get_schema_sql_dicts()
 GenerateCodeBlocks.generate_the_code()
-CURR_CODE_BLOCKS = get_schema_sql_dict()
+CURR_CODE_BLOCKS, CURR_TRIGGER_SQL = get_schema_sql_dicts()
 
 """
 This script works in conjunction with the yaml_diff_generator.py.
@@ -93,34 +104,34 @@ def main() -> int:
     if args.dumpjson:
         dumpjson(diff)
 
-    # Has to happen before remove: field types have to change before dropping the enum
-    # Using a lot of isinstance calls here for pleasing mypy
-    sql = "-- EDIT SECTION --\n"
-    edit = diff["edit"]
-    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
-        sql += handle_edit_tree(edit_dict, diff_control["edit"][1])
-
-    sql += "\n-- REMOVE SECTION --\n"
+    # Has to happen before anything so we know about removed thus inaccessible structures.
+    sql = "-- REMOVE SECTION --\n"
     remove: RemoveDiffDict | None = diff["remove"]
     if remove:
         sql += RemoveHelper.handle_remove(remove, diff_control["remove"])
 
+    # Also drops a few things and should remain second. See comment for REMOVE SECTION.
     sql += "\n-- RENAME SECTION --\n"
     sql += RenameHelper.handle_rename(diff["rename"], diff_control["rename"])
 
+    # Using a lot of isinstance calls here for pleasing mypy
     sql += "\n-- ADD SECTION --\n"
-    add = diff["add"]
-    if isinstance(add, tuple) and isinstance(add[0], dict):
-        sql += generate_new_collection_sql(add[0], diff_control["add"][0]).lstrip("\n")
-    if isinstance(add, tuple) and isinstance(add_tree_dict := add[1], dict):
-        sql += handle_add_tree(add_tree_dict, diff_control["add"][1])
+    if isinstance(add := diff["add"], tuple):
+        sql += AddHelper.handle_add(add, diff_control["add"])
+
+    # Things like equal fields triggers depend on renames and possibly added collections.
+    sql += "\n-- EDIT SECTION --\n"
+    edit = diff["edit"]
+    if isinstance(edit, tuple) and isinstance(edit_dict := edit[1], dict):
+        sql += EditHelper.handle_edit_tree(edit_dict, diff_control["edit"][1])
 
     sql += "\n-- VIEWS UPDATE SECTION --\n"
     view_sql = "".join(
-        GenerateCodeBlocks.view_sql[collection_name]
+        AlterSchemaHelper.get_drop_view_statement(collection_name)
+        + CURR_CODE_BLOCKS["view_sql"][collection_name]
         for collection_name in sorted(alter_views)
     )
-    sql += view_sql.replace("CREATE", "CREATE OR REPLACE").lstrip("\n")
+    sql += view_sql.lstrip("\n")
     with open(
         os.path.join(
             MIGRATIONS_PATH,
@@ -129,7 +140,7 @@ def main() -> int:
         ),
         "w",
     ) as f:
-        f.write(sql)
+        f.write(fix(sql))
 
     CleanupStatementsHelper.generate_cleanup_statements_sql()
     DiffMixinHelper.generate_diff_mixin()
@@ -148,6 +159,30 @@ def remove_empty(dictionary: dict[str, Any], key: str) -> None:
         del dictionary[key]
 
 
+def check_changed_view_primary(collection_name: str, field_name: str) -> None:
+    """Prints a warning if the field became a view or changed in primary side."""
+    curr_field_def = CURR_MODELS[collection_name]["fields"][field_name]
+    prev_field_def = PREV_MODELS[collection_name]["fields"][field_name]
+    is_view, is_primary, _ = get_view_field_state_write_fields(
+        collection_name, field_name, curr_field_def
+    )
+    with prev_models_context():
+        was_view, was_primary, _ = get_view_field_state_write_fields(
+            collection_name, field_name, prev_field_def
+        )
+
+    for label, previous, current in (
+        ("view", was_view, is_view),
+        ("primary", was_primary, is_primary),
+    ):
+        if previous != current:
+            print(
+                f"WARNING: The {label} state of {collection_name}/{field_name} "
+                f"changed from {previous} to {current}; "
+                f"ensure everything gets properly dropped and recreated."
+            )
+
+
 def alter_views_conditionally(
     collection_name: str, has_write_fields: bool, is_view_field: bool
 ) -> None:
@@ -155,78 +190,98 @@ def alter_views_conditionally(
         alter_views.add(collection_name)
 
 
-def generate_new_collection_sql(add: dict[str, Any], dc_add: dict[str, Any]) -> str:
-    sql = ""
-    found = set()
-    for collection_name in add:
-        found.add(collection_name)
-        sql += GenerateCodeBlocks.table_sql[collection_name]
-    for collection_name in add:
-        found.add(collection_name)
-        sql += GenerateCodeBlocks.alter_table_final_sql.get(collection_name, "")
-    for collection_name in add:
-        found.add(collection_name)
-        sql += GenerateCodeBlocks.trigger_sql[collection_name]
-    for collection_name in add:
-        found.add(collection_name)
-        sql += GenerateCodeBlocks.intermediate_sql.get(collection_name, "")
-    for collection_name in found:
-        del dc_add[collection_name]
-        alter_views.add(collection_name)
-    return sql
+def is_allowed_constant_field(
+    collection_name: str, field_name: str, field_def: dict[str, Any]
+) -> bool:
+    """True for 1:1 (currently only writing side), 1:n, 1g:1 relations and simple types"""
+    type_ = field_def["type"]
+    if type_ == "relation":
+        # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
+        return not was_view_field(collection_name, field_name, field_def)
+    return type_ in [*SIMPLE_TYPES, "generic-relation"]
 
 
 class EqualFieldsHelper:
+    """
+    Purpose is to streamline the (re-)generation and deletion of equal fields triggers)
+    First use update_equal_fields_diff for collecting the to be updated fields.
+    Then use handle_alter_equal_fields to get the whole sql string for all fields.
+    """
+
+    # Below variables follow this structure:
+    # writing_side collection : changed fields, in terms of equal fields
+    # Both sides are stored in this if a field is checked
     checked_equal_fields: dict[str, set[str]] = defaultdict(set)
-    equal_fields_diff: dict[str, set[str]] = defaultdict(set)
+    drop_equal_fields_diff: dict[str, set[str]] = defaultdict(set)
+    add_equal_fields_diff: dict[str, set[str]] = defaultdict(set)
 
     @classmethod
-    def update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+    def update_equal_fields_diff(
+        cls,
+        collection_name: str,
+        field_name: str,
+        add: bool = False,
+        drop: bool = False,
+    ) -> None:
+        """
+        Merges equal fields of both sides of the relation and updates equal_fields_diff internally
+        if it wasn't checked before. Potentially just from the other side.
+        """
         if field_name in cls.checked_equal_fields.get(collection_name, set()):
             return
+        if add:
+            cls._update_equal_fields_diff(collection_name, field_name)
+        if drop:
+            with prev_models_context():
+                cls._update_equal_fields_diff(collection_name, field_name)
 
-        own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
-        type_ = own_field_def["type"]
-
-        if type_.startswith("generic"):
-            foreign_table_fields: list[TableFieldType] = (
-                InternalHelper.get_definitions_from_foreign_list(
-                    own_field_def.get("to"), own_field_def.get("reference")
-                )
-            )
-            cls.equal_fields_diff[collection_name].add(field_name)
-            for foreign_field in foreign_table_fields:
-                cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
+    @classmethod
+    def _update_equal_fields_diff(cls, collection_name: str, field_name: str) -> None:
+        if is_previous := InternalHelper.MODELS is PREV_MODELS:
+            relevant_models = PREV_MODELS
+            equal_fiels_diff = cls.drop_equal_fields_diff
         else:
-            foreign_table_field: TableFieldType = (
-                TableFieldType.get_definitions_from_foreign(
-                    own_field_def.get("to"),
-                    own_field_def.get("reference"),
-                )
+            relevant_models = CURR_MODELS
+            equal_fiels_diff = cls.add_equal_fields_diff
+
+        own_field_def = relevant_models[collection_name]["fields"][field_name]
+
+        type_ = own_field_def["type"]
+        if not (is_writing_side := type_.startswith("generic")):
+            foreign_fields = InternalHelper.get_foreign_definitions_from_field_def(
+                own_field_def
             )
-            if was_primary_side(collection_name, field_name, own_field_def):
-                cls.equal_fields_diff[collection_name].add(field_name)
+            if foreign_fields[0].field_def["type"].startswith("generic-") or (
+                own_field_def["type"].endswith("-list")
+                and not foreign_fields[0].field_def["type"].endswith("-list")
+            ):
+                is_writing_side = False
+            elif is_previous:
+                is_writing_side = was_primary_side(
+                    collection_name, field_name, own_field_def
+                )
             else:
-                cls.equal_fields_diff[foreign_table_field.table].add(
-                    foreign_table_field.column
+                is_writing_side = is_primary_side(
+                    collection_name, field_name, own_field_def
                 )
-            cls.checked_equal_fields[foreign_table_field.table].add(
-                foreign_table_field.column
-            )
+
+        for foreign_field in InternalHelper.get_foreign_definitions_from_field_def(
+            own_field_def
+        ):
+            if is_writing_side:
+                equal_fiels_diff[collection_name].add(field_name)
+            else:
+                equal_fiels_diff[foreign_field.table].add(foreign_field.column)
+            cls.checked_equal_fields[foreign_field.table].add(foreign_field.column)
         cls.checked_equal_fields[collection_name].add(field_name)
 
     @classmethod
     def handle_alter_equal_fields(cls) -> str:
-        # TODO: This method includes commented out lines for cases when triggers have to added.
-        # handle_add and handle edit sould probably already handle all such cases. If it's true,
-        # the commented out lines should be removed.
-
         result = ""
         to_drop: list[tuple[Table, TriggerName]] = []
-        # to_add = []
 
-        for collection_name, field_names in cls.equal_fields_diff.items():
-            for field_name in field_names:
+        for collection_name, field_names in cls.drop_equal_fields_diff.items():
+            for field_name in sorted(field_names):
                 prev_own_field_def = PREV_MODELS[collection_name]["fields"][field_name]
                 prev_own_table_field = TableFieldType(
                     collection_name, field_name, prev_own_field_def
@@ -259,8 +314,16 @@ class EqualFieldsHelper:
             result += AlterSchemaHelper.get_drop_trigger_statement(
                 table_name, trigger_name
             )
-        # for table in to_add:
-        #     pass
+
+        for collection_name, field_names in cls.add_equal_fields_diff.items():
+            for field_name in sorted(field_names):
+                result += CURR_TRIGGER_SQL[collection_name][field_name][
+                    "create_trigger_equal_fields_code"
+                ]
+
+        # reinitialize for next round
+        cls.drop_equal_fields_diff = defaultdict(set)
+        cls.add_equal_fields_diff = defaultdict(set)
         return result
 
     @classmethod
@@ -309,7 +372,6 @@ class EqualFieldsHelper:
             type_,
             to_drop,
         )
-        # if added_equal_fields := curr_equal_fields - prev_equal_fields:
 
     @classmethod
     def handle_generic_relations(
@@ -347,15 +409,11 @@ class EqualFieldsHelper:
         removed_collectionfields = prev_collectionfields - curr_collectionfields
         remaining_collectionfields = prev_collectionfields - removed_collectionfields
 
-        # if added_collectionfields := (
-        #     curr_collectionfields - prev_collectionfields
-        # ):
-
         if remaining_collectionfields:
             own_equal_fields_changed = cls.equal_fields_changed(
                 prev_own_field_def, curr_own_field_def
             )
-            for collectionfield in remaining_collectionfields:
+            for collectionfield in sorted(remaining_collectionfields):
                 prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
                 curr_foreign_table_field = curr_foreign_table_fields[collectionfield]
                 if own_equal_fields_changed or cls.equal_fields_changed(
@@ -371,22 +429,8 @@ class EqualFieldsHelper:
                         curr_foreign_table_field,
                     )
 
-                    # prev_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         prev_own_table_field, prev_foreign_table_field
-                    #     )
-                    # )
-                    # curr_equal_fields = set(
-                    #     GenerateCodeBlocks.get_equal_fields(
-                    #         curr_own_table_field, curr_foreign_table_field
-                    #     )
-                    # )
-                    # if added_equal_fields := (
-                    #     curr_equal_fields - prev_equal_fields
-                    # ):
-
         if removed_collectionfields:
-            for collectionfield in removed_collectionfields:
+            for collectionfield in sorted(removed_collectionfields):
                 prev_foreign_table_field = prev_foreign_table_fields[collectionfield]
                 cls.update_to_drop_for_generic(
                     prev_own_table_field,
@@ -463,7 +507,7 @@ class EqualFieldsHelper:
         is_generic_relation: bool,
     ) -> list[tuple[Collection, TriggerName]]:
         to_drop = []
-        for equal_field in equal_fields:
+        for equal_field in sorted(equal_fields):
             if is_generic_relation:
                 generic_plain_field_name = HelperGetNames.get_generic_plain_field_name(
                     own_table_field.column,
@@ -498,7 +542,7 @@ class EqualFieldsHelper:
         is_generic_relation: bool,
     ) -> list[tuple[Collection, TriggerName]]:
         to_drop = []
-        for equal_field in equal_fields:
+        for equal_field in sorted(equal_fields):
             own_table = HelperGetNames.get_table_name(own_table_field.table)
             foreign_table = HelperGetNames.get_table_name(foreign_table_field.table)
             if is_generic_relation:
@@ -526,8 +570,13 @@ class EqualFieldsHelper:
                     (foreign_table, foreign_trigger_name),
                 ]
             )
+            table_trigger_tuple = (intermediate_table, intermediate_trigger_name)
             if intermediate_table not in RemoveHelper.intermediate_tables_to_remove:
-                to_drop.append((intermediate_table, intermediate_trigger_name))
+                to_drop.append(table_trigger_tuple)
+            else:
+                print(
+                    f"This trigger isn't dropped since it is already dropped together with its table: {table_trigger_tuple}"
+                )
 
         return to_drop
 
@@ -549,7 +598,9 @@ class RemoveHelper:
         if "collections" in remove:
             collections_remove_tuple: CollectionsRemoveTuple = remove["collections"]
             for collection_name in collections_remove_tuple[0]:
-                result += AlterSchemaHelper.get_drop_table_statement(collection_name)
+                result += AlterSchemaHelper.get_drop_table_statement(
+                    collection_name, PREV_CODE_BLOCKS["view_sql"]
+                )
                 dc_remove_dict["collections"][0].remove(collection_name)
             result += cls.handle_remove_tree(
                 collections_remove_tuple[1], dc_remove_dict["collections"][1]
@@ -599,7 +650,9 @@ class RemoveHelper:
                         )
                         remove_empty(dc_remove_tree_dict, collection_name)
         for table in sorted(cls.intermediate_tables_to_remove):
-            result += AlterSchemaHelper.get_drop_table_statement(table)
+            result += AlterSchemaHelper.get_drop_table_statement(
+                table, PREV_CODE_BLOCKS["view_sql"]
+            )
         result += EqualFieldsHelper.handle_alter_equal_fields()
         return result
 
@@ -634,6 +687,7 @@ class RemoveHelper:
         for field_name in remove_list:
             field_def = PREV_MODELS[collection_name]["fields"][field_name]
             if field_def.get("calculated"):
+                dc_remove_list.remove(field_name)
                 continue
 
             drop_column = True
@@ -651,31 +705,47 @@ class RemoveHelper:
 
                     if field_def.get("equal_fields"):
                         EqualFieldsHelper.update_equal_fields_diff(
-                            collection_name, field_name
+                            collection_name, field_name, drop=True
                         )
 
             if drop_column:
-                result += AlterSchemaHelper.get_drop_column_statement(
-                    collection_name, field_name
-                )
-                type_ = field_def["type"]
-                if "relation" in type_ and not type_.startswith("generic"):
+                affected_collection_to_field = {collection_name: field_name}
+                if field_def.get("type") in RELATION_TYPES:
                     with prev_models_context():
-                        foreign_table_field: TableFieldType = (
-                            TableFieldType.get_definitions_from_foreign(
-                                field_def.get("to"), field_def.get("reference")
+                        foreign_fields = (
+                            InternalHelper.get_foreign_definitions_from_field_def(
+                                field_def
                             )
                         )
-                    fk, idx = HelperGetNames.get_fk_and_index_name(
-                        HelperGetNames.get_table_name(collection_name),
-                        field_name,
-                        HelperGetNames.get_table_name(foreign_table_field.table),
-                        foreign_table_field.ref_column,
+                        for foreign_field in foreign_fields:
+                            affected_collection_to_field[foreign_field.table] = (
+                                foreign_field.column
+                            )
+                for trigger_coll, trigger_field in affected_collection_to_field.items():
+                    for key, triggers in (
+                        PREV_TRIGGER_SQL[trigger_coll].get(trigger_field, {}).items()
+                    ):
+                        if key not in [
+                            "create_trigger_equal_fields_code",
+                            "create_trigger_notify",
+                            "create_trigger_prevent_updates_code",
+                        ]:
+                            trigger_names = [
+                                trig.strip(" ").split(" ")[0]
+                                for trig in triggers.split("TRIGGER ")[1:]
+                            ]
+                            for trigger_name in trigger_names:
+                                result += AlterSchemaHelper.get_drop_trigger_statement(
+                                    trigger_coll, trigger_name
+                                )
+                result += AlterSchemaHelper.get_drop_column_statement(
+                    collection_name, field_name, PREV_CODE_BLOCKS["view_sql"]
+                )
+                if isinstance(field_def.get("enum"), list):
+                    # enum exists and is field based
+                    result += AlterSchemaHelper.get_drop_enum_type_statement_from_collection_and_column(
+                        collection_name, field_name
                     )
-                    result += AlterSchemaHelper.get_drop_table_constraint_statement(
-                        collection_name, fk
-                    )
-                    result += AlterSchemaHelper.get_drop_index_statement(idx)
 
             dc_remove_list.remove(field_name)
         return result
@@ -726,24 +796,12 @@ class RemoveHelper:
                     case "sql":
                         alter_views.add(collection_name)
                     case "constant":
-                        field_def = PREV_MODELS[collection_name]["fields"][field_name]
-                        if field_def["type"] not in [*SIMPLE_TYPES, "relation"]:
+                        if not is_allowed_constant_field(
+                            collection_name,
+                            field_name,
+                            PREV_MODELS[collection_name]["fields"][field_name],
+                        ):
                             continue
-                        if field_def["type"] == "relation":
-                            with prev_models_context():
-                                foreign_table_field: TableFieldType = (
-                                    TableFieldType.get_definitions_from_foreign(
-                                        field_def.get("to"),
-                                        field_def.get("reference"),
-                                    )
-                                )
-                                if foreign_table_field.field_def["type"] != "relation":
-                                    continue
-                                # TODO: remove `was_view_field` check after implementing https://github.com/OpenSlides/openslides-meta/issues/542
-                                if was_view_field(
-                                    collection_name, field_name, field_def
-                                ):
-                                    continue
                         result += AlterSchemaHelper.get_drop_trigger_statement(
                             collection_name,
                             HelperGetNames.get_constant_field_trigger_name(
@@ -751,16 +809,19 @@ class RemoveHelper:
                             ),
                         )
                     case "equal_fields":
-                        with prev_models_context():
-                            EqualFieldsHelper.update_equal_fields_diff(
-                                collection_name, field_name
-                            )
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name, drop=True
+                        )
                     case value if value in FieldAttributes.skipped_in_schema:
                         pass
                     case "type":
                         raise BadCodingException(
                             f"{collection_name}/{field_name}: '{attr}' is a required field attribute."
                         )
+                    case "reference":
+                        # Doesn't need handling since it should be done by to.
+                        # Changes should only be effective for 1:1 relations if the writing side flips.
+                        check_changed_view_primary(collection_name, field_name)
                     case _:
                         # Skipped as not likely to be removed in the foreseeable future:
                         # "to" and "reference": can only be removed if type changes to not relational field
@@ -852,224 +913,1166 @@ class RemoveHelper:
         return result
 
 
-def handle_add_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: dict[str, Any],
-) -> tuple[str, str]:
-    constraints_sql = ""
-    extra_sql_lines = ""
-    collection_name = table_name[:-2]
-    for constraint, value in field_def_diff.items():
-        """
-        TODO other constraints type etc
-        This is a full list of leaf types we have. (Including _meta.)
-        Some of which aren't constraints but need to be implemented/considered elsewhere.
+class AddHelper:
+    @staticmethod
+    def handle_add(add: AddDiff, add_diff_control: AddDiff) -> str:
+        sql = AddHelper.handle_add_meta(add_tree_dict := add[1], add_diff_control[1])
+        for new_coll_sql, old_coll_sql in zip(
+            AddHelper.generate_new_collection_sql(add[0], add_diff_control[0]),
+            AddHelper.handle_add_tree(add_tree_dict, add_diff_control[1]),
+        ):
+            sql += new_coll_sql + old_coll_sql
+        return sql
 
-        languages
-        ballot_paper_selection
-        poll_backends
-        onehundred_percent_bases
-        type
-        restriction_mode
-        constant
-        required
-        enum
-        description
-        default
-        minimum
-        read_only
-        reference
-        collections
-        field
-        equal_fields
-        to
-        on_delete
-        sequence_scope
-        unique_together
-        constant_legacy
-        unique
-        sql
-        log_triggers
-        unique_together_strict
-        maxLength
-        maximum
-        calculated
-        minLength
+    @staticmethod
+    def handle_add_meta(
+        add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> str:
+        sql = ""
+        if meta_def := add_tree_dict.pop("_meta", None):
+            for idx in range(len(meta_def)):
+                fields = meta_def[idx]
+                for field_name, field_def in fields.items():
+                    match (idx, field_name):
+                        case (1, "enum_definitions"):
+                            assert isinstance(field_def, tuple)
+                            assert not field_def[1]
+                            assert isinstance(field_def[0], dict)
+                            for key, vals in field_def[0].items():
+                                sql += Helper.get_enum_type_definition(
+                                    HelperGetNames.get_enum_name(key), vals
+                                )
+                        case _:
+                            raise BadCodingException(
+                                f"Meta field {field_name} at position {idx} not implemented."
+                            )
+                    del dc_add_tree_dict["_meta"][idx][field_name]
+            remove_empty(dc_add_tree_dict, "_meta")
+        return sql
+
+    @staticmethod
+    def generate_new_collection_sql(
+        add: dict[str, Any], dc_add: dict[str, Any]
+    ) -> tuple[str, str]:
+        table_sql = ""
+        intermediate_sql = ""
+        alter_table_sql = ""
+        for collection_name in add:
+            for field_name, field_def in CURR_MODELS[collection_name]["fields"].items():
+                table_sql += AddHelper._get_field_enum_sql(
+                    collection_name, field_name, field_def.get("enum")
+                )
+                if write_fields := field_def.get("write_fields"):
+                    intermediate_sql += CURR_CODE_BLOCKS["intermediate_sql"][
+                        write_fields[0]
+                    ]
+            table_sql += CURR_CODE_BLOCKS["table_sql"][collection_name]
+            alter_table_sql += CURR_CODE_BLOCKS["alter_table_final_sql"].get(
+                collection_name, ""
+            )
+            for triggers_dict in CURR_TRIGGER_SQL[collection_name].values():
+                for triggers in triggers_dict.values():
+                    alter_table_sql += triggers
+            del dc_add[collection_name]
+            alter_views.add(collection_name)
+        return table_sql + intermediate_sql, alter_table_sql.lstrip("\n")
+
+    @staticmethod
+    def handle_add_tree(
+        add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> tuple[str, str]:
+        sql = ""
+        after_sql = ""
+        for collection_name, collection_def in add_tree_dict.items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            for fields_idx in [0, 1]:
+                # TODO unique_together, unique_together_strict
+                fields = collection_def[1]["fields"][fields_idx]
+                dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
+                alter_table_sql = ""
+                before_sql = ""
+                for field_name, field_def in fields.items():
+                    if fields_idx == 0:
+                        # field added
+                        b_sql, constraints_sql, a_sql, is_view_field = (
+                            AddHelper._handle_add_field_attributes(
+                                table_name, field_name, field_def, dc_fields[field_name]
+                            )
+                        )
+                        before_sql += b_sql
+                        if not is_view_field:
+                            alter_table_sql += (
+                                AlterSchemaHelper.get_add_column_statement(
+                                    field_name, constraints_sql
+                                )
+                            )
+                        after_sql += a_sql
+                    else:
+                        # field altered
+                        sql += EditHelper.handle_edit_field_attributes(
+                            table_name, field_name, field_def[0], dc_fields[field_name]
+                        )
+                    remove_empty(
+                        dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
+                        field_name,
+                    )
+                sql += before_sql
+                if alter_table_sql:
+                    sql += (
+                        AlterSchemaHelper.get_alter_table_statement(
+                            table_name, alter_table_sql.rstrip(",")
+                        )
+                        + "\n"
+                    )
+            remove_empty(dc_add_tree_dict[collection_name][1], "fields")
+            remove_empty(dc_add_tree_dict, collection_name)
+        return sql, after_sql
+
+    @staticmethod
+    def _handle_add_field_attributes(
+        table_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: dict[str, Any],
+    ) -> tuple[str, str, str, bool]:
         """
-        match constraint:
-            case "type":
-                match value:
-                    case "color":
-                        constraints_sql += Helper.get_inline_color_constraint(
-                            table_name, field_name
+        Returns:
+        - before_sql: SQL generated for this field, that is supposed to be run before all other changes from this table (e.g. enums)
+        - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
+        - after_sql: Other SQL to be run after the table creation
+        - is_view_field: Whether the field actually shows up in the table.
+        """
+        collection_name = table_name[:-2]
+        field_def = CURR_MODELS[collection_name]["fields"][field_name]
+        field_is_relation = (
+            field_type := field_def_diff.get("type", "")
+        ) in RELATION_TYPES
+        is_sql_field = "sql" in field_def
+        before_sql = ""
+        if field_is_relation:
+            constraints_sql, after_sql, is_view_field = (
+                AddHelper._handle_add_relation_helper(
+                    collection_name, field_name, field_type, field_def
+                )
+            )
+        else:
+            is_view_field = is_sql_field
+            before_sql, constraints_sql, after_sql = (
+                AddHelper._handle_add_non_relation_helper(
+                    table_name,
+                    collection_name,
+                    field_name,
+                    field_def_diff,
+                    dc_field_def,
+                    field_def,
+                    field_type,
+                )
+            )
+        if any(sql_str.strip("\n ") for sql_str in [constraints_sql, after_sql]):
+            alter_views.add(collection_name)
+        return before_sql, constraints_sql.rstrip("\n,"), after_sql, is_view_field
+
+    @staticmethod
+    def _handle_add_relation_helper(
+        collection_name: str,
+        field_name: str,
+        field_type: str,
+        field_def: dict[str, Any],
+    ) -> tuple[str, str, bool]:
+        """
+        Returns:
+        - constraints_sql: Table internal field and constraint add SQL for the field (no ADD COLUMN at the beginning).
+        - after_sql: Other SQL to be run after the table creation
+        - is_view_field: Whether the field actually shows up in the table.
+        """
+        constraints_sql = ""
+
+        code, after_sql, is_view_field = AddHelper._get_szt_for_added_relation(
+            collection_name, field_name, field_type, field_def
+        )
+
+        if not is_view_field:
+            raw_table_code = "\n".join(
+                [
+                    code.get("table", ""),
+                    code.get("alter_table", ""),
+                    code.get("undecided", ""),
+                ]
+            )
+            alter_table_code = code.get("alter_table_final", "")
+        else:
+            raw_table_code = ""
+            alter_table_code = ""
+        if errors := "\n".join(x.strip("\n ") for x in code.get("errors", [])):
+            raise BadCodingException(
+                f"SQL code generation errors for field {collection_name}/{field_name}:\n{errors}"
+            )
+
+        # remove leading column name, then add the table data.
+        if table_code := raw_table_code.lstrip("\n "):
+            if table_code.startswith(field_name):
+                table_code = table_code.split(" ", maxsplit=1)[1]
+            constraints_sql += f" {table_code}".rstrip()
+        after_sql += alter_table_code
+        after_sql += "\n".join(
+            val for val in CURR_TRIGGER_SQL[collection_name][field_name].values() if val
+        )
+
+        return constraints_sql, after_sql, is_view_field
+
+    @staticmethod
+    def _handle_add_non_relation_helper(
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: dict[str, Any],
+        field_def: dict[str, Any],
+        field_type: str,
+    ) -> tuple[str, str, str]:
+        """
+        Function for calculating preliminary sql, the constraints,
+        later sql code and whether the field is a view field
+        for new relations.
+        """
+        before_sql = ""
+        constraints_sql = ""
+        after_sql = ""
+        if sql_type := Helper.get_type_definition(
+            collection_name, field_name, field_type, field_def
+        ):
+            constraints_sql += f" {sql_type}"
+        for constraint, value in field_def_diff.items():
+            """
+            TODO other constraints that haven't been considered yet
+            These cases should probably be considered in a later PR
+
+            minimum
+            collections
+            field
+            log_triggers
+            maximum
+            """
+            if "sql" in field_def:
+                alter_views.add(collection_name)
+            else:
+                match constraint:
+                    case "type":
+                        match value:
+                            case "color":
+                                constraints_sql += Helper.get_inline_color_constraint(
+                                    collection_name, field_name
+                                )
+                            case "timezone":
+                                constraints_sql += (
+                                    Helper.get_inline_timezone_constraint(
+                                        table_name, field_name
+                                    )
+                                )
+                            case (
+                                "string"
+                                | "number"
+                                | "boolean"
+                                | "JSON"
+                                | "HTMLStrict"
+                                | "HTMLPermissive"
+                                | "float"
+                                | "decimal(6)"
+                                | "timestamp"
+                                | "string[]"
+                                | "number[]"
+                                | "text"
+                                | "text[]"
+                            ):
+                                pass
+                            case _:
+                                if "relation" in value:
+                                    raise BadCodingException(
+                                        f"{field_name}: How did this happen?!? This code should be unreachable!"
+                                    )
+                                raise NotImplementedError(
+                                    f"{table_name}/{field_name}: {constraint}, {value}"
+                                )
+                    case "required":
+                        constraints_sql += Helper.get_inline_required_constraint(
+                            collection_name, field_name
                         )
-                    case "timezone":
-                        constraints_sql += Helper.get_inline_timezone_constraint(
-                            table_name, field_name
+                    case "enum":
+                        # Only need to handle field enums (i.e. if it's a list)
+                        # Otherwise it's a meta enum and all that needs to happen
+                        # for the individual field is already done via the type handling.
+                        before_sql += AddHelper._get_field_enum_sql(
+                            collection_name, field_name, value
                         )
-                    case (
-                        "string"
-                        | "number"
-                        | "boolean"
-                        | "JSON"
-                        | "HTMLStrict"
-                        | "HTMLPermissive"
-                        | "float"
-                        | "decimal(6)"
-                        | "timestamp"
-                        | "string[]"
-                        | "number[]"
-                        | "text"
-                        | "text[]"
-                    ):
+                    case "sequence_scope":
+                        constraints_sql += (
+                            Helper.get_unique_together_constraint_definition(
+                                collection_name, [field_name, value], False
+                            )
+                        )
+                    case "unique":
+                        constraints_sql += Helper.get_inline_unique_constraint(
+                            collection_name, field_name
+                        )
+                    # TODO: Move this somewhere where it'll be called
+                    # case "unique_together_strict":
+                    #     constraints_sql += (
+                    #         GenerateCodeBlocks.get_constraint_unique_together(
+                    #             collection_name, value, True
+                    #         )
+                    #     )
+                    case "maximum":
+                        constraints_sql += Helper.get_inline_maximum_constraint(
+                            collection_name, field_name, value
+                        )
+                    case "minimum":
+                        constraints_sql += Helper.get_inline_minimum_constraint(
+                            collection_name, field_name, value
+                        )
+                    case "minLength":
+                        if field_def["type"] == "string":
+                            constraints_sql += Helper.get_inline_minlength_constraint(
+                                collection_name, field_name, value
+                            )
+                    case "default":
+                        default_value = Helper.get_formatted_default_value(
+                            collection_name, field_name, value, field_def["type"]
+                        )
+                        constraints_sql += Helper.get_inline_default_constraint(
+                            collection_name, field_name, default_value
+                        )
+                    case "description":
+                        after_sql += Helper.get_post_view_comment(
+                            HelperGetNames.get_table_name(table_name),
+                            field_name,
+                            value,
+                        )
+                    case "maxLength":
+                        # Handled via the type handling
                         pass
-                    case (
-                        "relation"
-                        | "relation-list"
-                        | "generic-relation"
-                        | "generic-relation-list"
-                    ):
-                        # TODO
+                    case "constant":
+                        # Handled via the trigger handling
                         pass
                     case _:
+                        if constraint in FieldAttributes.skipped_in_schema:
+                            continue
+                        if constraint in ["equal_fields", "reference", "to"]:
+                            raise BadCodingException(
+                                f"{field_name}: Non-relation fields should not have attribute {constraint}."
+                            )
                         raise NotImplementedError(
                             f"{table_name}/{field_name}: {constraint}, {value}"
                         )
-            case "constant":
-                # TODO
-                pass
-            case "required":
-                extra_sql_lines += add_not_null_conditionally(
-                    collection_name,
-                    field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
-                    True,
+                after_sql += "\n".join(
+                    val
+                    for val in CURR_TRIGGER_SQL[collection_name][field_name].values()
+                    if val
                 )
-            case "enum":
-                # TODO
-                # handle_enum_change()
-                pass
-            case "equal_fields":
-                # TODO
-                pass
-            case "sequence_scope":
-                # TODO
-                pass
-            case "unique":
-                constraints_sql += Helper.get_inline_unique_constraint(
-                    table_name, field_name
+            del dc_field_def[constraint]
+
+        return before_sql, constraints_sql, after_sql
+
+    @staticmethod
+    def _get_field_enum_sql(
+        collection_name: str, field_name: str, enum: list[str] | str | None
+    ) -> str:
+        if isinstance(enum, list):
+            return Helper.get_enum_type_definition(
+                HelperGetNames.get_enum_name_for_column(collection_name, field_name),
+                enum,
+            )
+        return ""
+
+    @staticmethod
+    def _delete_table_fields_from_szt_for_add(code: SchemaZoneTexts) -> None:
+        """
+        Removes certain table fields, which should not be used
+        for new list relations from a SchemaZoneTexts.
+        """
+        for field in ["table", "alter_table", "undecided"]:
+            if field in code:
+                del code[field]  # type: ignore
+
+    @staticmethod
+    def _get_szt_for_added_relation(
+        collection_name: str,
+        field_name: str,
+        field_type: str,
+        field_def: dict[str, Any],
+    ) -> tuple[SchemaZoneTexts, str, bool]:
+        """
+        Calculates the correct SchemaZoneTexts depending on the
+        type of relation.
+        Also returns the sql for the intermediate tables if it's
+        a list relation and is_view_field based on the field type and data.
+        """
+        intermediate_sql = ""
+        own_table_field = TableFieldType(collection_name, field_name, field_def)
+        is_list = field_type.endswith("-list")
+        code: SchemaZoneTexts = {}
+        is_sql_field = "sql" in field_def
+        if field_type.startswith("generic-"):
+            foreign_table_fields: list[TableFieldType] = (
+                InternalHelper.get_definitions_from_foreign_list(
+                    field_def.get("to"), field_def.get("reference")
                 )
-            case "unique_together_strict":
-                # TODO
-                pass
-            case "maximum":
-                constraints_sql += Helper.get_inline_maximum_constraint(
-                    table_name, field_name, value
+            )
+            state, primary, _, error = InternalHelper.check_relation_definitions(
+                own_table_field, foreign_table_fields
+            )
+            if is_list:
+                # generic list
+                cant_generate = is_sql_field or not primary
+                is_view_field = True
+                if not cant_generate:
+                    code, error = GenerateCodeBlocks.get_generic_relation_list_type(
+                        collection_name, field_name, field_def, field_type
+                    )
+                    AddHelper._delete_table_fields_from_szt_for_add(code)
+                    gm_foreign_table, *_ = Helper.get_gm_table_for_gm_nm_relation_lists(
+                        own_table_field, foreign_table_fields
+                    )
+                    if intermediate := CURR_CODE_BLOCKS.get("intermediate_sql", {}).get(
+                        gm_foreign_table
+                    ):
+                        intermediate_sql += intermediate
+            else:
+                # generic
+                is_view_field = is_sql_field or state != FieldSqlErrorType.FIELD
+                if not is_view_field:
+                    code, error = GenerateCodeBlocks.get_generic_relation_type(
+                        collection_name, field_name, field_def, field_type, is_add=True
+                    )
+        else:
+            foreign_table_field: TableFieldType = (
+                TableFieldType.get_definitions_from_foreign(
+                    field_def.get("to"),
+                    field_def.get("reference"),
                 )
-            case "minimum":
-                constraints_sql += Helper.get_inline_minimum_constraint(
-                    table_name, field_name, value
+            )
+            state, primary, _, error = InternalHelper.check_relation_definitions(
+                own_table_field, [foreign_table_field]
+            )
+            if is_list:
+                # relation list
+                cant_generate = (
+                    is_sql_field or state == FieldSqlErrorType.ERROR or not primary
                 )
-            case "maxLength":
-                # TODO
-                pass
-            case "minLength":
-                constraints_sql += Helper.get_inline_minlength_constraint(
-                    table_name, field_name, value
+                is_view_field = True
+                if not cant_generate:
+                    code, error = GenerateCodeBlocks.get_relation_list_type(
+                        collection_name, field_name, field_def, field_type
+                    )
+                    AddHelper._delete_table_fields_from_szt_for_add(code)
+                    nm_table_name, *_ = Helper.get_nm_table_for_n_m_relation_lists(
+                        own_table_field, foreign_table_field
+                    )
+                    if intermediate := CURR_CODE_BLOCKS.get("intermediate_sql", {}).get(
+                        nm_table_name
+                    ):
+                        intermediate_sql += intermediate
+            else:
+                is_view_field = is_sql_field
+                # relation
+                code, error = GenerateCodeBlocks.get_relation_type(
+                    collection_name, field_name, field_def, field_type
                 )
-            case "default":
-                constraints_sql += Helper.get_inline_default_constraint(
-                    table_name, field_name, value
+
+        if error:
+            raise BadCodingException(f"{collection_name}/{field_name}: {error}")
+        return code, intermediate_sql, is_view_field
+
+
+class EditHelper:
+    @staticmethod
+    def handle_edit_tree(
+        edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+        dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
+    ) -> str:
+        sql = ""
+        meta = edit_tree_dict.pop("_meta", ({}, {}))
+        for key, meta_def_part in meta[1].items():
+            match key:
+                case "enum_definitions":
+                    enum_to_collectionfields = EditHelper.find_global_enum_usage()
+                    for enum, values in meta_def_part[0].items():
+                        for other_collectionfield in enum_to_collectionfields[enum]:
+                            other_coll, other_field = (
+                                collection_and_field_from_collectionfield(
+                                    other_collectionfield
+                                )
+                            )
+                            sql += EditHelper.get_change_enum_to_text(
+                                other_coll,
+                                other_field,
+                                PREV_MODELS[other_coll]["fields"][other_field],
+                            )
+                        sql += EditHelper.edit_enum(
+                            values,
+                            PREV_MODELS["_meta"]["enum_definitions"][enum],
+                            HelperGetNames.get_enum_name(enum),
+                        )
+                        del dc_edit_tree_dict["_meta"][1]["enum_definitions"][0][enum]
+                case _:
+                    raise NotImplementedError(f"meta-collection.yml changed in {key}.")
+            remove_empty(dc_edit_tree_dict["_meta"][1], key)
+        if any(meta):
+            remove_empty(dc_edit_tree_dict, "_meta")
+
+        for collection_name, collection_def in edit_tree_dict.items():
+            table_name = HelperGetNames.get_table_name(collection_name)
+            # TODO unique_together, unique_together_strict
+            dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
+            for field_name, field_def in collection_def[1]["fields"][1].items():
+                if nested_field_def_edits := field_def[1]:
+                    for field_attribute, values in nested_field_def_edits.items():
+                        if field_attribute == "items":
+                            sql += EditHelper.handle_enum_field_attribute(
+                                collection_name,
+                                field_name,
+                                field_attribute,
+                                values[0]["enum"],
+                            )
+                            del dc_fields[field_name][1][field_attribute][0]["enum"]
+                        elif field_attribute == "to":
+                            sql += EditHelper.handle_to_field_attribute(
+                                collection_name,
+                                field_name,
+                            )
+                            dc_edit_tree_dict[collection_name][1]["fields"][1][
+                                field_name
+                            ][1][field_attribute] = ({}, {})
+                        remove_empty(dc_fields[field_name][1], field_attribute)
+                sql += EditHelper.handle_edit_field_attributes(
+                    table_name, field_name, field_def[0], dc_fields[field_name]
                 )
-            case "sql":
-                alter_views.add(collection_name)
-            case "to":
-                # This essentially would be an integer field being turned into a real relation
-                # Should probably be handled together with reference and type
-                # TODO
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
-                    collection_name,
-                    field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
+                remove_empty(
+                    dc_edit_tree_dict[collection_name][1]["fields"][1], field_name
                 )
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
-                )
-            case "reference":
-                # TODO
-                pass
-            case "restriction_mode" | "description" | "on_delete" | "constant_legacy":
-                # this is irrelevant, thus omitted
-                pass
-            case _:
+            remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
+            remove_empty(dc_edit_tree_dict, collection_name)
+        sql += EqualFieldsHelper.handle_alter_equal_fields()
+        return sql
+
+    @staticmethod
+    def get_enum_data(field_def: dict[str, Any]) -> str | list[str] | None:
+        if data := field_def.get("enum"):
+            return data
+        return field_def.get("items", {}).get("enum")
+
+    @staticmethod
+    def find_global_enum_usage() -> dict[str, list[str]]:
+        global_enum_to_collection_fields: dict[str, list[str]] = defaultdict(list)
+        for collection in CURR_MODELS:
+            if collection == "_meta":
+                continue
+            for field, field_def in (
+                CURR_MODELS.get(collection, {}).get("fields", {}).items()
+            ):
+                new_data = EditHelper.get_enum_data(field_def)
+                if isinstance(new_data, str):
+                    global_enum_to_collection_fields[new_data].append(
+                        collectionfield_from_collection_and_field(collection, field)
+                    )
+        return global_enum_to_collection_fields
+
+    @staticmethod
+    def get_change_enum_to_text(
+        collection_name: str, field_name: str, field_def_old: dict[str, Any]
+    ) -> str:
+        assert "enum" in field_def_old or "items" in field_def_old
+        target_type = "text[]" if "items" in field_def_old else "text"
+        # We can't exchange the type directly as this would potentially invalidate the column.
+        result = EditHelper.facilitate_change_column_type_statements(
+            collection_name,
+            field_name,
+            target_type,
+            skip_prevent_update_trigger_recreation=True,
+        )
+        alter_views.add(collection_name)
+        if field_def_old.get("default"):
+            # dropped since it retains its type and would later disturb conversion to the new enum.
+            result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                collection_name, field_name, "DEFAULT"
+            )
+        return result
+
+    @staticmethod
+    def facilitate_change_column_type_statements(
+        collection_name: str,
+        field_name: str,
+        new_type: str,
+        skip_prevent_update_trigger_recreation: bool = False,
+    ) -> str:
+        return (
+            EditHelper.drop_field_related_triggers(collection_name, field_name)
+            + AlterSchemaHelper.generate_change_column_type_statements(
+                collection_name, field_name, new_type
+            )
+            + EditHelper.create_field_related_triggers(
+                collection_name, field_name, skip_prevent_update_trigger_recreation
+            )
+        )
+
+    @staticmethod
+    def drop_field_related_triggers(collection_name: str, field_name: str) -> str:
+        trigger_names = {
+            trig.strip(" ").split(" ")[0]
+            for triggers in CURR_TRIGGER_SQL[collection_name][field_name].values()
+            for trig in triggers.split("TRIGGER ")[1:]
+        }
+        return "".join(
+            [
+                AlterSchemaHelper.get_drop_trigger_statement(collection_name, name)
+                for name in trigger_names
+            ]
+        )
+
+    @staticmethod
+    def create_field_related_triggers(
+        collection_name: str, field_name: str, skip_prevent_update_trigger: bool
+    ) -> str:
+        return "".join(
+            [
+                triggers
+                for key, triggers in CURR_TRIGGER_SQL[collection_name][
+                    field_name
+                ].items()
+                if not skip_prevent_update_trigger
+                or key != "create_trigger_prevent_updates_code"
+            ]
+        )
+
+    @staticmethod
+    def get_recreate_enum(enum_name: str, values: list[str]) -> str:
+        return AlterSchemaHelper.get_drop_type_statement(
+            enum_name
+        ) + Helper.get_enum_type_definition(enum_name, values)
+
+    @staticmethod
+    def get_recreate_enum_on_column(
+        collection_name: str,
+        field_name: str,
+        enum_name: str,
+        values: list[str],
+        field_def_old: dict[str, Any],
+    ) -> str:
+        return EditHelper.get_change_enum_to_text(
+            collection_name, field_name, field_def_old
+        ) + EditHelper.get_recreate_enum(enum_name, values)
+
+    @staticmethod
+    def handle_to_field_attribute(
+        collection_name: str,
+        field_name: str,
+    ) -> str:
+        """
+        Handles changes to the 'to' attribute.
+        """
+        result = ""
+        field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
+        field_def_new = CURR_MODELS[collection_name]["fields"][field_name]
+        old_foreign = InternalHelper.get_foreign_definitions_from_field_def(
+            field_def_old
+        )
+        old_collection_to_fields: dict[str, str] = {
+            ff.table: ff.column for ff in old_foreign
+        }
+        new_foreign = InternalHelper.get_foreign_definitions_from_field_def(
+            field_def_new
+        )
+        new_collections: list[str] = [ff.table for ff in new_foreign]
+        if (new_type := field_def_new["type"]) == field_def_old["type"]:
+            if new_type == "generic-relation":
+                recreate_triggers = False
+                if removed := set(old_collection_to_fields).difference(new_collections):
+                    # Probably going to have to move the construction of the
+                    # generic field constraint to a later step in the migration
+                    # for foreign relation removals
+                    raise NotImplementedError(
+                        f"{collection_name}/{field_name}: Removing 'to' fields not implemented: removed {removed}"
+                    )
+                alter_lines = ""
+                after_lines = ""
+                for foreign_field in new_foreign:
+                    if foreign_field.table not in old_collection_to_fields:
+                        generic_plain_field_name = (
+                            HelperGetNames.get_generic_plain_field_name(
+                                field_name,
+                                foreign_field.table,
+                                foreign_field.ref_column,
+                            )
+                        )
+                        alter_lines += Helper.get_generic_combined_fields(
+                            collection_name,
+                            generic_plain_field_name,
+                            field_name,
+                            foreign_field,
+                            True,
+                        )
+                        after_lines += AlterSchemaHelper.get_foreign_key_table_constraint_as_alter_table(
+                            collection_name,
+                            foreign_field.table,
+                            generic_plain_field_name,
+                            foreign_field.ref_column,
+                        )
+                        alter_views.add(foreign_field.table)
+                        recreate_triggers = True
+                    elif (
+                        foreign_field.column
+                        != old_collection_to_fields[foreign_field.table]
+                    ):
+                        alter_views.add(foreign_field.table)
+                        recreate_triggers = True
+                triggers = ""
+                table_name = HelperGetNames.get_table_name(collection_name)
+                old_trigger_name_to_trigger: dict[str, str] = {}
+                if recreate_triggers:
+                    for key, trigger_sql in (
+                        PREV_TRIGGER_SQL[collection_name].get(field_name, {}).items()
+                    ):
+                        if (
+                            CURR_TRIGGER_SQL[collection_name]
+                            .get(field_name, {})
+                            .get(key)
+                            != trigger_sql
+                        ):
+                            trigger_parts = trigger_sql.split(";")[:-1]
+                            old_trigger_name_to_trigger = {
+                                trigger_part_parts[1].split(" ")[
+                                    0
+                                ]: f"{trigger_part};".strip("\n ")
+                                for trigger_part in trigger_parts
+                                if len(
+                                    trigger_part_parts := trigger_part.split("TRIGGER ")
+                                )
+                                > 1
+                            }
+                            for (
+                                trigger_name,
+                                trigger,
+                            ) in old_trigger_name_to_trigger.items():
+                                if trigger not in CURR_TRIGGER_SQL[collection_name].get(
+                                    field_name, {}
+                                ).get(key, ""):
+                                    result += (
+                                        AlterSchemaHelper.get_drop_trigger_statement(
+                                            table_name, trigger_name
+                                        )
+                                    )
+                if alter_lines:
+                    result += (
+                        AlterSchemaHelper.get_drop_table_constraint_statement(
+                            table_name,
+                            HelperGetNames.get_generic_valid_constraint_name(
+                                collection_name, field_name
+                            ),
+                        )
+                        + AlterSchemaHelper.get_alter_table_statement(
+                            table_name,
+                            f"\n{alter_lines}"
+                            + Helper.get_generic_field_constraint(
+                                collection_name, field_name, new_collections, True
+                            ).rstrip("\n,"),
+                        )
+                        + after_lines
+                    )
+                if recreate_triggers:
+                    for key, triggers in (
+                        CURR_TRIGGER_SQL[collection_name].get(field_name, {}).items()
+                    ):
+                        if (
+                            PREV_TRIGGER_SQL[collection_name]
+                            .get(field_name, {})
+                            .get(key)
+                            != triggers
+                        ):
+                            result += ";".join(
+                                [
+                                    new_trigger
+                                    for new_trigger in triggers.split(";")
+                                    if not any(
+                                        trigger in f"{new_trigger};"
+                                        for trigger in old_trigger_name_to_trigger.values()
+                                    )
+                                ]
+                            )
+            else:
                 raise NotImplementedError(
-                    f"{table_name}/{field_name}: {constraint}, {value}"
+                    f"{collection_name}/{field_name}: 'to' for {new_type}"
                 )
-        del dc_field_def[constraint]
-    return constraints_sql, extra_sql_lines
+        else:
+            raise NotImplementedError(
+                f"{collection_name}/{field_name}: 'to' for changed field type"
+            )
+        return result + "\n"
 
-
-def handle_edit_field_attributes(
-    table_name: str,
-    field_name: str,
-    field_def_diff: dict[str, Any],
-    dc_field_def: tuple[dict[str, Any], dict[str, Any]],
-) -> str:
-    constraints_sql = ""
-    collection_name = table_name[:-2]
-    for constraint, value in field_def_diff.items():
-        field_def = CURR_MODELS[collection_name]["fields"][field_name]
-        match constraint:
-            case "default":
-                default = Helper.get_formatted_default_value(
-                    table_name, field_name, field_def_diff["default"], field_def["type"]
-                )
-                constraints_sql += f"ALTER TABLE {table_name} ALTER COLUMN {field_name} SET DEFAULT {default};\n"
-            case "description":
-                pass
-            case "sql":
-                alter_views.add(collection_name)
-            case "reference" | "to":
-                if table_name in RENAMES[0] or field_name in RENAMES[1].get(
-                    table_name, {}
-                ):
-                    # Shouldn't be a case since this is already skipped in yaml diff generator.
-                    # TODO decide whether to fail or delete this check
-                    print(
-                        f"Skipping {table_name}/{field_name} 'to' attribute since it is renamed."
-                    )
-                    continue
-                else:
-                    NotImplementedError(
-                        f"{constraint}: {value} is probably a view field or unmentioned in renames."
-                    )
-
-                is_view_field, _, write_fields = get_view_field_state_write_fields(
+    @staticmethod
+    def handle_enum_field_attribute(
+        collection_name: str, field_name: str, constraint: str, value: list[str] | str
+    ) -> str:
+        result = ""
+        field_def_old = PREV_MODELS[collection_name]["fields"][field_name]
+        value_old = field_def_old.get(constraint)
+        if constraint == "items":
+            value_old = value_old["enum"]
+        if isinstance(value_old, list):
+            enum_name_old = HelperGetNames.get_enum_name_for_column(
+                collection_name, field_name
+            )
+            if isinstance(value, list):
+                # field based enum composition got changed
+                result += EditHelper.edit_enum(
+                    value,
+                    value_old,
+                    enum_name_old,
                     collection_name,
                     field_name,
-                    CURR_MODELS[collection_name]["fields"][field_name],
+                    field_def_old,
                 )
-                alter_views_conditionally(
-                    collection_name, bool(write_fields), is_view_field
+            else:
+                # changed from field based enum to meta enum
+                result += EditHelper.get_change_enum_to_text(
+                    collection_name, field_name, field_def_old
+                ) + AlterSchemaHelper.get_drop_type_statement(enum_name_old)
+        else:
+            # Previously referencing meta enum or no enum at all.
+            if isinstance(value, list):
+                # changed from meta enum to field based enum
+                result += Helper.get_enum_type_definition(
+                    HelperGetNames.get_enum_name_for_column(
+                        collection_name, field_name
+                    ),
+                    value,
                 )
-                # TODO recreate affected triggers
-            case "required":
-                if value is True:
-                    constraints_sql += add_not_null_conditionally(
+            if value_old is not None:
+                # Previously referencing meta enum.
+                result += EditHelper.get_change_enum_to_text(
+                    collection_name, field_name, field_def_old
+                )
+        return result
+
+    @staticmethod
+    def handle_edit_field_attributes(
+        table_name: str,
+        field_name: str,
+        field_def_diff: dict[str, Any],
+        dc_field_def: tuple[dict[str, Any], dict[str, Any]],
+    ) -> str:
+        constraints_sql = ""
+        collection_name = table_name[:-2]
+        for constraint, value in field_def_diff.items():
+            field_def = CURR_MODELS[collection_name]["fields"][field_name]
+            type_ = field_def["type"]
+            match constraint:
+                case "default":
+                    default = Helper.get_formatted_default_value(
+                        table_name, field_name, field_def_diff["default"], type_
+                    )
+                    constraints_sql += AlterSchemaHelper.get_set_default_statement(
+                        table_name, field_name, default
+                    )
+                case "required":
+                    constraints_sql += EditHelper.handle_required(
+                        value, table_name, collection_name, field_name, field_def, type_
+                    )
+                case "constant":
+                    # This case will most likely never appear since we just delete and add booleans.
+                    constraints_sql += EditHelper.handle_constant(
+                        table_name,
+                        collection_name,
+                        field_name,
+                        PREV_MODELS[collection_name]["fields"][field_name],
+                        add=value,
+                        drop=not value,
+                    )
+                case "enum":
+                    constraints_sql += EditHelper.handle_enum_field_attribute(
+                        collection_name, field_name, constraint, value
+                    )
+                case "items":
+                    # Is always an add case treated here since nested enum can only be edit case.
+                    constraints_sql += EditHelper.handle_enum_field_attribute(
+                        collection_name, field_name, constraint, value["enum"]
+                    )
+                case "sql":
+                    alter_views.add(collection_name)
+                case "equal_fields":
+                    EqualFieldsHelper.update_equal_fields_diff(
+                        collection_name, field_name, drop=True, add=True
+                    )
+                case "reference" | "to":
+                    # TODO recreate other affected triggers and foreign key constraints
+                    print(
+                        f"Renaming fields with 'to' like '{collection_name}/{field_name}' isn't fully implemented yet."
+                    )
+                    if field_def.get("equal_fields"):
+                        EqualFieldsHelper.update_equal_fields_diff(
+                            collection_name, field_name, drop=True, add=True
+                        )
+                    is_view_field, _, write_fields = get_view_field_state_write_fields(
                         collection_name,
                         field_name,
                         CURR_MODELS[collection_name]["fields"][field_name],
-                        False,
                     )
-            case "enum" | "items":
-                pass
-                # if not all the items from old enum are in new enum: handle_enum_change
-            case _:
-                raise NotImplementedError(f"{constraint}: {value}")
-        del dc_field_def[0][constraint]
-    return constraints_sql
+                    alter_views_conditionally(
+                        collection_name, bool(write_fields), is_view_field
+                    )
+                # case attribute if attribute in FieldAttributes.field_attributes:
+                case "minimum" | "maximum" | "minLength" | "unique":
+                    constraints_sql = EditHelper.handle_max_min_unique(
+                        collection_name,
+                        field_name,
+                        constraint,
+                        value,
+                        add=True,
+                        drop=True,
+                    )
+                case attr if attr in FieldAttributes.skipped_in_schema:
+                    pass
+                case _:
+                    # Currently unhandled:
+                    # "required" "unique" as they are only present with true and will be deleted if false.
+                    # type changes are not yet supported
+                    raise NotImplementedError(
+                        f"{constraint}: edit field {collection_name}/{field_name} with value {value}"
+                    )
+            del dc_field_def[0][constraint]
+        return constraints_sql
+
+    @staticmethod
+    def handle_max_min_unique(
+        collection_name: str,
+        field_name: str,
+        constraint: str,
+        value: bool | int,
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        constraints_sql = ""
+        if drop:
+            constraint_name_func = getattr(
+                HelperGetNames,
+                f"get_{constraint.lower()}_constraint_name",
+            )
+            name = constraint_name_func(
+                collection_name,
+                ([field_name] if constraint == "unique" else field_name),
+            )
+            constraints_sql += AlterSchemaHelper.get_drop_table_constraint_statement(
+                collection_name, name
+            )
+        if add:
+            constraints_sql += AlterSchemaHelper.get_add_table_constraint_statement(
+                constraint, collection_name, field_name, value
+            )
+        return constraints_sql
+
+    @staticmethod
+    def handle_constant(
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        add: bool = False,
+        drop: bool = False,
+    ) -> str:
+        if is_allowed_constant_field(collection_name, field_name, field_def):
+            trigger_sql = ""
+            if add:
+                trigger_sql += GenerateCodeBlocks.get_trigger_prevent_updates(
+                    collection_name, field_name
+                )
+            if drop:
+                trigger_sql += AlterSchemaHelper.get_drop_trigger_statement(
+                    collection_name,
+                    HelperGetNames.get_constant_field_trigger_name(
+                        table_name, field_name
+                    ),
+                )
+            return trigger_sql
+        else:
+            return ""
+
+    @staticmethod
+    def handle_required(
+        should_set: bool,
+        table_name: str,
+        collection_name: str,
+        field_name: str,
+        field_def: dict[str, Any],
+        type_: str,
+    ) -> str:
+        trigger_names_per_table = {}
+        result = ""
+        if "relation" in type_:
+            own_table_field = TableFieldType(collection_name, field_name, field_def)
+            foreign_table_fields = (
+                InternalHelper.get_foreign_definitions_from_field_def(field_def)
+            )
+            state, *_ = InternalHelper.check_relation_definitions(
+                own_table_field, foreign_table_fields
+            )
+            for foreign_table_field in foreign_table_fields:
+                # detect 1:1 relation with view side
+                if type_.endswith("relation") and state == FieldSqlErrorType.SQL:
+                    if foreign_table_field.field_def["type"] == "generic-relation":
+                        foreign_column = f"{foreign_table_field.column}_{own_table_field.table}_{own_table_field.ref_column}"
+                    else:
+                        foreign_column = foreign_table_field.column
+                    block = (
+                        GenerateCodeBlocks.get_trigger_check_not_null_for_1_1_relation(
+                            own_table_field.table,
+                            own_table_field.column,
+                            foreign_table_field.table,
+                            foreign_column,
+                        )
+                    )
+                    if should_set:
+                        result += block
+                    else:
+                        for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
+                            trigger_names_per_table[match[1]] = match[2]
+                # detect relation list
+                elif type_.endswith("relation-list"):
+                    if (
+                        foreign_type_ := foreign_table_field.field_def["type"]
+                    ) == "relation":
+                        block = GenerateCodeBlocks.get_trigger_check_not_null_for_1_n(
+                            own_table_field.table,
+                            own_table_field.column,
+                            foreign_table_field.table,
+                            foreign_table_field.column,
+                        )
+                    elif foreign_type_ == "relation-list":
+                        block = GenerateCodeBlocks.get_trigger_check_not_null_for_n_m(
+                            own_table_field, foreign_table_field
+                        )
+                    if should_set:
+                        result += block
+                    else:
+                        for match in re.finditer(r"TRIGGER\s+(\w+).+ON\s+(\w+)", block):
+                            trigger_names_per_table[match[0]] = match[1]
+                else:
+                    if should_set:
+                        result += AlterSchemaHelper.get_set_not_null_statement(
+                            table_name, field_name
+                        )
+                    else:
+                        result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                            collection_name, field_name, "NOT NULL"
+                        )
+                    # No need to set multiple times on content_object_id field itself
+                    break
+            # Only filled when not should_set
+            for trigger_name, table_name in trigger_names_per_table.items():
+                result += AlterSchemaHelper.get_drop_trigger_statement(
+                    table_name, trigger_name
+                )
+        else:
+            if should_set:
+                result += AlterSchemaHelper.get_set_not_null_statement(
+                    table_name, field_name
+                )
+            else:
+                result += AlterSchemaHelper.get_drop_column_attribute_statement(
+                    collection_name, field_name, "NOT NULL"
+                )
+        return result
+
+    @staticmethod
+    def edit_enum(
+        values_new: list[str],
+        values_old: list[str],
+        enum_name: str,
+        collection_name: str = "",
+        field_name: str = "",
+        field_def: dict[str, Any] = {},
+    ) -> str:
+        """Adds new enum entries and renames entries when amount of entries matches. Otherwise recreates enum."""
+        # not_found_streak = None
+        recreate_enum = False
+        add_attributes: list[str] = []
+        rename_attributes = {}  # old: new
+        concurrent_mismatches = {}  # old: new
+        expected_idx = 0
+        alter_enum_sql = ""
+        # Finding the stretches that differ by identifying the position in the old array
+        for nmbr, v_new in enumerate(values_new):
+            if recreate_enum:
+                break
+            expected_idx = nmbr - len(add_attributes)
+            try:
+                idx_old = values_old.index(v_new)
+            except ValueError:
+                # value not in list
+                # edge up NOT_FOUND_STREAK
+                # collect for change detection
+                if expected_idx < len(values_old):
+                    concurrent_mismatches[values_old[expected_idx]] = v_new
+                elif not concurrent_mismatches:
+                    add_attributes.append(v_new)
+                else:
+                    raise Exception(
+                        "It seems you are trying to rename and add at the end of the list at the same time."
+                    )
+                # not_found_streak = True
+            else:
+                # edge down for NOT_FOUND_STREAK
+                if idx_old == expected_idx:
+                    # if gap matches rename attribute and give warning to check those lines in output
+                    # else recreated enum
+                    # if not_found_streak:
+                    #     not_found_streak = False
+                    rename_attributes.update(concurrent_mismatches)
+                elif idx_old < expected_idx:
+                    # Add inbetween of new entries.
+                    add_attributes.extend(v for v in concurrent_mismatches.values())
+                elif idx_old > expected_idx:
+                    # Add inbetween of old entries means remove in new.
+                    # We can't delete but can tolerate it being unused. So nothing to do here.
+                    # TODO decide whether to do nothing,
+                    recreate_enum = True
+                    # or change type to string?
+                if concurrent_mismatches:
+                    concurrent_mismatches.clear()
+        # Clean up remaining
+        if len(values_new) > len(values_old) + len(add_attributes):
+            add_attributes.extend(v for v in concurrent_mismatches.values())
+        else:
+            rename_attributes.update(concurrent_mismatches)
+        if len(values_old) > len(values_new) - len(add_attributes):
+            recreate_enum = True
+
+        # Do the stuff
+        if collection_name:
+            recreate_enum_sql = EditHelper.get_recreate_enum_on_column(
+                collection_name, field_name, enum_name, values_new, field_def
+            )
+        else:
+            recreate_enum_sql = EditHelper.get_recreate_enum(enum_name, values_new)
+        if recreate_enum:
+            # recreate enum
+            alter_enum_sql += recreate_enum_sql
+        else:
+            for attr in add_attributes:
+                alter_enum_sql += AlterSchemaHelper.get_add_value_to_enum(
+                    enum_name, attr
+                )
+            if rename_attributes:
+                print(dedent(f"""
+                        Renaming entries for '{enum_name}'.
+                        {rename_attributes}
+                        Make sure that this is intended.
+                        Alternatively recreate it by replacing with:
+                        """) + recreate_enum_sql)
+            for attr_old, attr_new in rename_attributes.items():
+                alter_enum_sql += AlterSchemaHelper.get_rename_value_in_enum(
+                    enum_name, attr_old, attr_new
+                )
+        return alter_enum_sql
 
 
 class RenameHelper:
@@ -1078,6 +2081,29 @@ class RenameHelper:
         result = ""
         collection_renames = renames[0]
         field_renames = renames[1]
+
+        if meta_renames := field_renames.pop("_meta", {}):
+            dc_meta_renames = dc_rename_dict[1]["_meta"]
+            for key, meta_def_part in meta_renames.items():
+                match key:
+                    case "enum_definitions":
+                        assert isinstance(dc_meta_renames["enum_definitions"], dict)
+                        assert isinstance(meta_def_part, dict)
+                        for enum_old, enum_new in meta_def_part.items():
+                            result += AlterSchemaHelper.get_rename_enum(
+                                HelperGetNames.get_enum_name(enum_old),
+                                HelperGetNames.get_enum_name(enum_new),
+                            )
+                            del dc_meta_renames["enum_definitions"][enum_old]
+                    case _:
+                        raise NotImplementedError(
+                            f"meta-collection.yml renamed in {key}."
+                        )
+                remove_empty(dc_meta_renames, key)
+            remove_empty(dc_rename_dict[1], "_meta")
+
+        # TODO better rename intermediate table (and its columns)?
+        result += cls.recreate_intermediate_tables(renames)
 
         for collection_name_old, collection_name_new in collection_renames.items():
             table_name_new = HelperGetNames.get_table_name(collection_name_new)
@@ -1103,16 +2129,19 @@ class RenameHelper:
                 result += RenameHelper.rename_inline_constraint_sql(
                     collection_name_old, collection_name_new, field_name, field_name
                 )
+            for field_name in collection_def_old:
+                result += RenameHelper.recreate_triggers(
+                    collection_name_old, collection_name_new, field_name, field_name
+                )
             del dc_rename_dict[0][collection_name_old]
 
         for collection_name, collection_diff in field_renames.items():
-            dc_collection = cast(dict, dc_rename_dict[1][collection_name])
+            dc_collection = dc_rename_dict[1][collection_name]
             collection_def_new = CURR_MODELS[collection_name]["fields"]
             fk_idx_names_new = RenameHelper.get_alter_table_final_names(
                 collection_name, collection_def_new
             )
             collection_def_old = PREV_MODELS[collection_name]["fields"]
-            GenerateCodeBlocks.intermediate_tables = dict()
             with prev_models_context():
                 fk_idx_names_old = RenameHelper.get_alter_table_final_names(
                     collection_name, collection_def_old
@@ -1132,22 +2161,112 @@ class RenameHelper:
                 result += AlterSchemaHelper.get_rename_view_column(
                     collection_name, field_name_old, field_name_new
                 )
-                # TODO rename intermediate table column
+                table_name = HelperGetNames.get_table_name(collection_name)
                 if not is_view_field:
                     result += AlterSchemaHelper.get_rename_table_column(
-                        HelperGetNames.get_table_name(collection_name),
+                        table_name,
                         field_name_old,
                         field_name_new,
                     )
                 result += RenameHelper.get_field_dependent_renames(
-                    HelperGetNames.get_table_name(collection_name),
+                    table_name,
                     fk_idx_names_old[field_name_old],
                     fk_idx_names_new[field_name_new],
+                )
+                result += RenameHelper.recreate_triggers(
+                    collection_name, collection_name, field_name_old, field_name_new
                 )
                 del dc_collection[field_name_old]
             # TODO Renaming and redefining constraints
             # TODO unique together constraints
             remove_empty(dc_rename_dict[1], collection_name)
+            result += EqualFieldsHelper.handle_alter_equal_fields()
+        return result
+
+    @classmethod
+    def recreate_intermediate_tables(cls, renames: Renames) -> str:
+        result = ""
+        collection_renames = renames[0]
+        field_renames = renames[1]
+        intermediate_tables_dropped: list[str] = []
+
+        def handle_recreate(
+            collection_name_old: str,
+            collection_name_new: str,
+            field_name_old: str,
+            field_name_new: str,
+        ) -> str:
+            table_redefinitions = ""
+            if "relation" in field_def_old["type"]:
+                with prev_models_context():
+                    _, _, write_fields_old = get_view_field_state_write_fields(
+                        collection_name_old, field_name_old, field_def_old
+                    )
+                _, _, write_fields_new = get_view_field_state_write_fields(
+                    collection_name_new,
+                    field_name_new,
+                    collection_def_new[field_name_new],
+                )
+                if write_fields_old and write_fields_new:
+                    table = write_fields_old[0]
+                    if table not in intermediate_tables_dropped:
+                        intermediate_tables_dropped.append(table)
+                        table_redefinitions += (
+                            AlterSchemaHelper.get_drop_table_statement(
+                                table, PREV_CODE_BLOCKS["view_sql"]
+                            )
+                        )
+                        RemoveHelper.intermediate_tables_to_remove.add(table)
+
+                        table = write_fields_new[0]
+                        table_redefinitions += CURR_CODE_BLOCKS["intermediate_sql"][
+                            table
+                        ]
+            if table_redefinitions:
+                table_redefinitions += "\n"
+            return table_redefinitions
+
+        # recreate for renamed collection
+        for collection_name_old, collection_name_new in collection_renames.items():
+            collection_def_new = CURR_MODELS[collection_name_new]["fields"]
+            collection_def_old = PREV_MODELS[collection_name_old]["fields"]
+            for field_name, field_def_old in collection_def_old.items():
+                result += handle_recreate(
+                    collection_name_old, collection_name_new, field_name, field_name
+                )
+
+        # recreate for renamed field
+        for collection_name, collection_diff in field_renames.items():
+            collection_def_new = CURR_MODELS[collection_name]["fields"]
+            collection_def_old = PREV_MODELS[collection_name]["fields"]
+            for field_name_old, field_name_new in collection_diff.items():
+                field_def_old = collection_def_old[field_name_old]
+                assert isinstance(field_name_new, str)
+                result += handle_recreate(
+                    collection_name, collection_name, field_name_old, field_name_new
+                )
+        if result:
+            result = f"-- drop intermediate tables\n{result}\n"
+        return result
+
+    @classmethod
+    def recreate_triggers(
+        cls,
+        collection_name_old: str,
+        collection_name_new: str,
+        field_name_old: str,
+        field_name_new: str,
+    ) -> str:
+        result = ""
+        field_def = CURR_MODELS[collection_name_new]["fields"][field_name_new]
+        if "equal_fields" in field_def:
+            # only collect for later recreation
+            EqualFieldsHelper.update_equal_fields_diff(
+                collection_name_old, field_name_old, drop=True
+            )
+            EqualFieldsHelper.update_equal_fields_diff(
+                collection_name_new, field_name_new, add=True
+            )
         return result
 
     @classmethod
@@ -1183,17 +2302,31 @@ class RenameHelper:
         ):
             field_def = models_lookup[collection_name]["fields"][field_name]
             for attr in sorted(field_def):
-                RenameHelper.handle_attribute(
-                    collection_name,
-                    field_name,
-                    field_def,
-                    attr,
-                    diff_control,
-                    names_list,
-                    enum_names,
-                )
+                if models_lookup == PREV_MODELS:
+                    with prev_models_context():
+                        RenameHelper.handle_attribute(
+                            collection_name,
+                            field_name,
+                            field_def,
+                            attr,
+                            diff_control,
+                            names_list,
+                            enum_names,
+                            result,
+                        )
+                else:
+                    RenameHelper.handle_attribute(
+                        collection_name,
+                        field_name,
+                        field_def,
+                        attr,
+                        diff_control,
+                        names_list,
+                        enum_names,
+                        result,
+                    )
         assert not diff_control, f"{diff_control} left after attribute check of rename."
-        for name_old, name_new in zip(enum_names_new, enum_names_old):
+        for name_old, name_new in zip(enum_names_old, enum_names_new):
             result += AlterSchemaHelper.get_rename_enum(name_old, name_new)
         for name_old, name_new in zip(constraint_names_old, constraint_names_new):
             if name_old != name_new:
@@ -1219,20 +2352,33 @@ class RenameHelper:
         diff_control: list[str],
         names_list: list[str],
         enum_names: list[str],
+        trigger_sql: str,
     ) -> None:
         name = None
         match attr:
             # TODO handle log_triggers field attribute
             case "default" | "required":
+                # TODO regenerate not null triggers also on collection level
                 # Don't have names.
                 pass
-            case "sql" | "equal_fields" | "constant" | "reference":
+            case "sql" | "equal_fields" | "reference":
                 # Skipped out of separate reasons.
                 # "sql" View columns will always already be renamed.
-                # "equal_fields" | "constant" Generate triggers which are treated elsewhere.
+                # "equal_fields" are always treated by the other side which cannot be
+                # redirected or renamed as that would lead to changes in this field.
                 # "reference" Covered by 'to'.
                 pass
+            case "constant":
+                trigger_sql += EditHelper.handle_constant(
+                    collection_name,
+                    collection_name,
+                    field_name,
+                    field_def,
+                    add=True,
+                    drop=True,
+                )
             case "to":
+                # TODO regenerate unique ids pair triggers for self referencing fields
                 name = RenameHelper.handle_attribute_to(
                     collection_name, field_name, field_def
                 )
@@ -1246,6 +2392,7 @@ class RenameHelper:
                     ([field_name] if attr == "unique" else field_name),
                 )
             case "type":
+                # TODO regenerate sequence triggers
                 match field_def["type"]:
                     case "timezone":
                         name = HelperGetNames.get_timezone_constraint_name(
@@ -1255,10 +2402,14 @@ class RenameHelper:
                         name = HelperGetNames.get_color_constraint_name(
                             collection_name, field_name
                         )
-            case "enum":
-                enum_names.append(
-                    HelperGetNames.get_enum_name_for_column(collection_name, field_name)
-                )
+            case "enum" | "items":
+                if isinstance(field_def.get("items", field_def).get("enum"), list):
+                    enum_names.append(
+                        HelperGetNames.get_enum_name_for_column(
+                            collection_name, field_name
+                        )
+                    )
+                # else: meta enums don't have to be renamed.
             case value if value in FieldAttributes.skipped_in_schema:
                 pass
             case _:
@@ -1324,7 +2475,12 @@ class RenameHelper:
             result += AlterSchemaHelper.get_rename_constraint(
                 table_name_new, constraint_name_old, constraint_name_new
             )
-        for trigger_key in TRIGGER_KEYS:
+        for trigger_key in [
+            entry
+            for entry in TRIGGER_KEYS
+            if entry != "create_trigger_equal_fields_code"
+        ]:
+            # TODO needs to be deleted and need to find a place where the log triggers can be regenerated
             if tk_old := field_old.get(trigger_key):
                 tk_new = field_new[trigger_key]
                 for trigger_name_new, trigger_name_old in zip(tk_new, tk_old):
@@ -1342,6 +2498,9 @@ class RenameHelper:
             lambda: defaultdict(list)
         )
         errors: list[str] = []
+
+        # Clean up the intermediate tables to prevent 'Tried to create im_table '{nm_table_name}' twice' error.
+        GenerateCodeBlocks.intermediate_tables = dict()
 
         for fname, fdata in fields.items():
             method_or_str, type_ = GenerateCodeBlocks.get_method(fname, fdata)
@@ -1381,58 +2540,6 @@ class RenameHelper:
                 if error:
                     errors.append(Helper.prefix_error(error, collection_name, fname))
         return name_per_field_and_schemazonekey
-
-
-def handle_add_tree(
-    add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_add_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    sql = ""
-    for collection_name, collection_def in add_tree_dict.items():
-        # TODO _meta
-        table_name = HelperGetNames.get_table_name(collection_name)
-        # TODO unique_together, unique_together_strict
-        for fields_idx in [0, 1]:
-            # fields always exists
-            fields = collection_def[1]["fields"][fields_idx]
-            dc_fields = dc_add_tree_dict[collection_name][1]["fields"][fields_idx]
-            for field_name, field_def in fields.items():
-                if fields_idx == 0:
-                    constraints_sql, extra_sql = handle_add_field_attributes(
-                        table_name, field_name, field_def, dc_fields[field_name]
-                    )
-                    sql += f"ALTER TABLE {table_name} ADD COLUMN {field_name}{constraints_sql};\n"
-                    sql += extra_sql
-                else:
-                    # field altered
-                    sql += handle_edit_field_attributes(
-                        table_name, field_name, field_def[0], dc_fields[field_name]
-                    )
-                remove_empty(
-                    dc_add_tree_dict[collection_name][1]["fields"][fields_idx],
-                    field_name,
-                )
-        remove_empty(dc_add_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_add_tree_dict, collection_name)
-    return sql
-
-
-def handle_edit_tree(
-    edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-    dc_edit_tree_dict: dict[str, tuple[dict[str, Any], dict[str, Any]]],
-) -> str:
-    sql = ""
-    for collection_name, collection_def in edit_tree_dict.items():
-        table_name = HelperGetNames.get_table_name(collection_name)
-        dc_fields = dc_edit_tree_dict[collection_name][1]["fields"][1]
-        for field_name, field_def in collection_def[1]["fields"][1].items():
-            sql += handle_edit_field_attributes(
-                table_name, field_name, field_def[0], dc_fields[field_name]
-            )
-            remove_empty(dc_edit_tree_dict[collection_name][1]["fields"][1], field_name)
-        remove_empty(dc_edit_tree_dict[collection_name][1], "fields")
-        remove_empty(dc_edit_tree_dict, collection_name)
-    return sql
 
 
 def add_not_null_conditionally(

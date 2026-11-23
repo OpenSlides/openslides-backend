@@ -80,3 +80,27 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
             yield conn
             conn.commit()
             curs.execute("SELECT truncate_testdata_tables();")
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--skip-first",
+        action="store",
+        type=str,
+        default="0",
+        help="Skip the first N collected tests",
+    )
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    n = config.getoption("--skip-first")
+    if "%" in n:
+        n = int(len(items) * int(n[:-1]) / 100)
+    else:
+        n = int(n)
+    if n > 0:
+        skip_marker = pytest.mark.skip(reason=f"part of first {n} skipped tests")
+        for item in items[:n]:
+            item.add_marker(skip_marker)

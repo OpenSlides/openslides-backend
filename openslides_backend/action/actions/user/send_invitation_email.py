@@ -30,7 +30,11 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
-from ....shared.exceptions import DatabaseException, MissingPermission
+from ....shared.exceptions import (
+    DatabaseException,
+    MissingPermission,
+    ModelDoesNotExist,
+)
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
@@ -105,12 +109,15 @@ class UserSendInvitationMail(UpdateAction):
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
-                    except DatabaseException as e:
-                        result["message"] = f"DatabaseException: {e.message}"
-                        result["type"] = EmailErrorType.OTHER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
                         result["type"] = EmailErrorType.USER_ERROR
+                    except ModelDoesNotExist as e:
+                        result["message"] = f"ModelDoesNotExist: {e.message}"
+                        result["type"] = EmailErrorType.USER_ERROR
+                    except DatabaseException as e:
+                        result["message"] = f"DatabaseException: {e.message}"
+                        result["type"] = EmailErrorType.OTHER_ERROR
                     except SMTPDataError as e:
                         result["message"] = f"SMTPDataError: {str(e)}"
                         result["type"] = EmailErrorType.CONFIGURATION_ERROR
@@ -118,6 +125,7 @@ class UserSendInvitationMail(UpdateAction):
                         raise e
                     except Exception as e:
                         result["message"] = f"Exception: {str(e)}"
+                        result["type"] = EmailErrorType.OTHER_ERROR
 
                     if result["sent"]:
                         instance.pop("meeting_id", None)

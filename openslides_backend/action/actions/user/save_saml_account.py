@@ -1,6 +1,8 @@
 import re
 from collections import defaultdict
 from collections.abc import Generator, Iterable
+from decimal import Decimal, InvalidOperation
+from types import UnionType
 from typing import Any, cast
 
 import fastjsonschema
@@ -15,6 +17,7 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
+from ....shared.util import json_schema_error_to_str
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -124,7 +127,7 @@ class UserSaveSamlAccount(
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(json_schema_error_to_str(exception))
 
     def validate_fields(self, instance_old: dict[str, Any]) -> dict[str, Any]:
         """
@@ -222,7 +225,7 @@ class UserSaveSamlAccount(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
             )
         if meeting_users:
-            self.execute_other_action(UserUpdate, [mu for mu in meeting_users.values()])
+            self.execute_other_action(UserUpdate, [*meeting_users.values()])
         return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
@@ -321,11 +324,7 @@ class UserSaveSamlAccount(
         user_id: int,
         is_update: bool,
     ) -> dict[int, dict[str, Any]]:
-        if not (
-            external_meeting_ids := sorted(
-                [ext_id for ext_id in meeting_user_data.keys()]
-            )
-        ):
+        if not (external_meeting_ids := sorted([*meeting_user_data.keys()])):
             return {}
         meetings = {
             meeting_id: meeting
@@ -462,11 +461,16 @@ class UserSaveSamlAccount(
                     missing_attributes.append(idp_attribute)
                     value = attr_default.get("default")
                 if value:
+                    if not self.validate_mu_value(value, saml_meeting_user_field):
+                        continue
                     if saml_meeting_user_field in ["groups", "structure_levels"]:
                         # Need to append to group and structure_level for same meeting.
                         if not result:
                             result = set()
-                        cast(set, result).update(value.split(", "))
+                        if isinstance(value, list):
+                            cast(set, result).update(value)
+                        else:
+                            cast(set, result).update(value.split(", "))
                     elif saml_meeting_user_field == "comment":
                         # Want comments from all matching mappers.
                         if result:
@@ -504,6 +508,45 @@ class UserSaveSamlAccount(
             self.logger.debug(
                 f"Meeting mapper: {mapper_name} could not find value in idp data for fields: {fields}. Using default if available."
             )
+
+    def validate_mu_value(self, value: Any, saml_meeting_user_field: str) -> bool:
+        """Returns True if valid, False otherwise."""
+        ok = True
+        log_value = ""
+        allowed_types: UnionType | type[str] = str
+        match saml_meeting_user_field:
+            case "number":
+                allowed_types = str
+            case "vote_weight":
+                allowed_types = str | int
+                try:
+                    Decimal(value)
+                except InvalidOperation:
+                    ok = False
+                    log_value = f"value {value}"
+            case "groups" | "structure_levels":
+                allowed_types = str | list
+            case "present":
+                allowed_types = str | int | bool
+                try:
+                    BooleanField().validate(value)
+                except ValueError:
+                    ok = False
+                    log_value = f"value {value}"
+            case "comment":
+                allowed_types = str
+            case _:
+                raise ActionException(
+                    f"{saml_meeting_user_field} is not a valid saml attribute for meeting mappers."
+                )
+        if not isinstance(value, allowed_types):
+            ok = False
+            log_value = f"type {type(value)}"
+        if not ok:
+            self.logger.error(
+                f"Saml user with invalid {log_value} for {saml_meeting_user_field} tried to log in."
+            )
+        return ok
 
     def get_group_ids(
         self, group_names: list[str], meeting: dict, db_meeting_user_exists: bool

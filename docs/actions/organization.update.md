@@ -43,7 +43,7 @@
 ## Action
 Updates the organization.
 Checks if the theme_id is one of the theme_ids.
-`time_zone` must be a valid timezone string (see [presenter](../presenters/get_valid_timezones.md)).
+`time_zone` must be a valid IANA timezone string.
 
 This is an example of the saml_attr_mapping, where you can see the mappable fields.
 ```json
