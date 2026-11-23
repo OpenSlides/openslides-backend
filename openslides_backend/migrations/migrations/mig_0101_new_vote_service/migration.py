@@ -5,6 +5,7 @@ from psycopg import sql
 from openslides_backend.migrations.base import BaseMigration
 from openslides_backend.migrations.patterns import (
     ColumnDataSource,
+    ColumnRef,
     InsertFromTables,
     Join,
     JoinOn,
@@ -392,12 +393,12 @@ class Migration(DiffMixin, BaseMigration):
             ),
             return_fields=["vote_delegations_from_id", "vote_delegations_from_id"],
         )
-        poll_type_to_visibility_map = {
-            "analog": "manually",
-            "named": "open",
-            "pseudoanonymous": "secret",
-            "cryptographic": "secret",
-        }
+        poll_type_to_visibility_map = [
+            ("analog", "manually"),
+            ("named", "open"),
+            ("pseudoanonymous", "secret"),
+            ("cryptographic", "secret"),
+        ]
         poll_onehundred_percent_bases_map = {
             "Y": "no_general",
             "N": "no_general",
@@ -414,7 +415,7 @@ class Migration(DiffMixin, BaseMigration):
 
     def create_meeting_poll_settings(
         self,
-        poll_type_to_visibility_map: dict[str, str],
+        poll_type_to_visibility_map: list[tuple[str, str]],
         poll_onehundred_percent_bases_map: dict[str, str],
     ) -> None:
         fields_maps_by_poll_type = {
@@ -426,18 +427,18 @@ class Migration(DiffMixin, BaseMigration):
                 "sort_result_by_votes": "assignment_poll_sort_poll_result_by_votes",
                 "enable_cumulative_voting": "assignment_poll_enable_max_votes_per_option",
             },
+            "motion": {
+                "group_ids": "motion_poll_default_group_ids",
+                "method": "motion_poll_default_method",
+                "visibility": "motion_poll_default_type",
+                "onehundred_percent_base": "motion_poll_default_onehundred_percent_base",
+            },
             "topic": {
                 "group_ids": "topic_poll_default_group_ids",
                 "method": "poll_default_method",
                 "visibility": "poll_default_type",
                 "onehundred_percent_base": "poll_default_onehundred_percent_base",
                 "sort_result_by_votes": "poll_sort_poll_result_by_votes",
-            },
-            "motion": {
-                "group_ids": "motion_poll_default_group_ids",
-                "method": "motion_poll_default_method",
-                "visibility": "motion_poll_default_type",
-                "onehundred_percent_base": "motion_poll_default_onehundred_percent_base",
             },
         }
         meeting_m = TableRef("meeting", True)
@@ -447,8 +448,8 @@ class Migration(DiffMixin, BaseMigration):
         ]
         for poll_type, default_base in (
             ("assignment", "valid"),
-            ("topic", "valid"),
             ("motion", "yes_no_abstain"),
+            ("topic", "yes_no_abstain"),
         ):
             field_name = fields_maps_by_poll_type[poll_type]["onehundred_percent_base"]
             self.update_from_values_map(
@@ -553,10 +554,17 @@ class Migration(DiffMixin, BaseMigration):
                                 fields_map["visibility"]: type_,
                                 "visibility": visibility,
                             }
-                            for type_, visibility in poll_type_to_visibility_map.items()
+                            for type_, visibility in [
+                                *poll_type_to_visibility_map,
+                                (
+                                    None,
+                                    "manually" if poll_type == "topic" else "secret",
+                                ),
+                            ]
                         ],
                         join_on_columns=[fields_map["visibility"]],
                     ),
+                    order_by=[ColumnRef("id", "meeting_m")],
                 )
             ]
             filter_new_meeting_poll_settings = FilterOperator("id", "in", new_ids)
@@ -621,7 +629,7 @@ class Migration(DiffMixin, BaseMigration):
 
     def migrate_polls(
         self,
-        poll_type_to_visibility_map: dict[str, str],
+        poll_type_to_visibility_map: list[tuple[str, str]],
         poll_onehundred_percent_bases_map: dict[str, str],
     ) -> None:
         self.update_from_values_map(
@@ -644,7 +652,7 @@ class Migration(DiffMixin, BaseMigration):
             ValuesSource(
                 [
                     {"type": poll_type, "visibility": poll_visibility}
-                    for poll_type, poll_visibility in poll_type_to_visibility_map.items()
+                    for poll_type, poll_visibility in poll_type_to_visibility_map
                 ],
                 ["type"],
             ),
@@ -797,6 +805,9 @@ class Migration(DiffMixin, BaseMigration):
                 ),
             )
         ]
+        if not migrated_polls:
+            return
+
         self._assign_configs_to_polls("poll_config_approval", migrated_polls)
         self._generate_poll_result(
             option_m,
@@ -946,6 +957,8 @@ class Migration(DiffMixin, BaseMigration):
             + assignment_rating_score_polls
             + assignment_rating_approval_polls
         )
+        if not all_polls:
+            return
 
         for poll_config_type, poll_ids in (
             ("selection", topic_polls + assignment_selection_polls),
@@ -1464,6 +1477,7 @@ class Migration(DiffMixin, BaseMigration):
         poll_ids: list[int],
         ballot_user_ids: list[int],
     ) -> None:
+        anoanonymized_ballots_filter: Filter = FilterOperator("poll_id", "in", poll_ids)
         if ballot_user_ids:
             public_ballot_ids = [
                 ballot["poll_ballot_user_id"]
@@ -1494,6 +1508,11 @@ class Migration(DiffMixin, BaseMigration):
                     return_fields=["poll_ballot_user_id"],
                 )
             ]
+            anoanonymized_ballots_filter = And(
+                anoanonymized_ballots_filter,
+                Not(FilterOperator("id", "in", public_ballot_ids)),
+            )
+
         self.insert_from_other_table(
             "poll_ballot",
             InsertFromTables(
@@ -1502,10 +1521,7 @@ class Migration(DiffMixin, BaseMigration):
                         source_table=Join(
                             source_table,
                             [],
-                            And(
-                                FilterOperator("poll_id", "in", poll_ids),
-                                Not(FilterOperator("id", "in", public_ballot_ids)),
-                            ),
+                            anoanonymized_ballots_filter,
                         ),
                         value_definition=[
                             ColumnDataSource("weight", "weight"),

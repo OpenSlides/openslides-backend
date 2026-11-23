@@ -454,6 +454,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
         select_columns: sql.Composed,
         joined_tables: list[JoinedTableParts],
         condition: sql.Composable | None = None,
+        order_by: list[ColumnRef] | None = None,
         return_fields: list[str] | None = None,
     ) -> sql.Composed:
         """
@@ -469,6 +470,7 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             "FROM {source_table}"
             "{joined_tables}"
             "{where}"
+            "{order_by}"
             "{returning};"
         ).format(
             target_table=sql.Identifier(target_table),
@@ -477,6 +479,15 @@ class MigrationSqlHelper(BaseSqlQueryHelper):
             source_table=sql.Identifier(source_table),
             joined_tables=MigrationSqlHelper.join_table_parts(joined_tables),
             where=MigrationSqlHelper.normalize_where(condition),
+            order_by=(
+                sql.SQL(" ORDER BY {return_fields}").format(
+                    return_fields=sql.SQL(", ").join(
+                        column.identifier for column in order_by
+                    )
+                )
+                if order_by
+                else sql.SQL("")
+            ),
             returning=(
                 sql.SQL(" RETURNING {return_fields}").format(
                     return_fields=MigrationSqlHelper.join_columns(return_fields)

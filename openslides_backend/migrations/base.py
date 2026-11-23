@@ -429,6 +429,7 @@ class BaseMigration:
         target_collection: Collection,
         copy_from_source_tables: InsertFromTables,
         values_source: ValuesSource | None = None,
+        order_by: list[ColumnRef] | None = None,
         return_fields: list[str] | None = [],
     ) -> list[dict[str, Any]]:
         """
@@ -438,6 +439,9 @@ class BaseMigration:
         as the source.
 
         Optional 'values_source' can be used to provide additional target values.
+
+        Optional 'order_by' allows to define order in which ids are assigned
+        to the new entries based on values in source tables.
 
         Target columns must not be defined more than once across 'values_source'
         and 'copy_from_source_tables'.
@@ -495,6 +499,7 @@ class BaseMigration:
                 source_table=copy_from_source_tables.root_source_table.table_name,
                 joined_tables=joined_tables_parts,
                 condition=filter_condition,
+                order_by=order_by,
                 return_fields=return_fields,
             ),
             arguments,

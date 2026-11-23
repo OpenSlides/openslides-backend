@@ -25,26 +25,16 @@ class TestMigration101(BaseMigrationTestCase):
     ) -> dict[FullQualifiedId, PartialModel]:
         result: dict[FullQualifiedId, PartialModel] = {}
         extra_data = extra_data or {}
-        if "committee_id" not in (
-            meeting_data := extra_data.get(f"meeting/{base}", {})
-        ):
-            committee_id = base + 59
-            if meeting_data:
-                extra_data[f"meeting/{base}"]["committee_id"] = committee_id
-            else:
-                extra_data[f"meeting/{base}"] = {"committee_id": committee_id}
-            result[f"committee/{committee_id}"] = {"name": f"Committee {committee_id}"}
-        else:
-            committee_id = meeting_data["committee_id"]
         result.update(
             {
+                **({"committee/60": {"name": "Committee 60"}} if base == 1 else {}),
                 f"meeting/{base}": {
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "motions_default_workflow_id": base,
                     "motions_default_amendment_workflow_id": base,
                     "reference_projector_id": base,
-                    "committee_id": committee_id,
+                    "committee_id": 60,
                     "is_active_in_organization_id": 1,
                     "language": "en",
                 },
@@ -280,9 +270,11 @@ class TestMigration101(BaseMigrationTestCase):
     def test_migration_correct(self) -> None:
         """
         Ensures the correct migration of:
-            - All types of poll + of the related collections
+            - All types of poll + the related collections
             - meeting_user/vote_delegated_to_id
             - group/permissions
+            - meeting_poll_setting
+            - renamed fields of meeting and projector
         """
         meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data(
             1,
@@ -291,7 +283,7 @@ class TestMigration101(BaseMigrationTestCase):
                     "motion_poll_projection_name_order_first": "first_name",
                     "motion_poll_projection_max_columns": 8,
                     "assignment_poll_default_method": "yna",
-                    "motion_poll_default_method": "votes",
+                    "motion_poll_default_method": "YNA",
                     "poll_default_method": "N",
                     "assignment_poll_default_type": "named",
                     "motion_poll_default_type": "named",
@@ -301,7 +293,7 @@ class TestMigration101(BaseMigrationTestCase):
                     "poll_default_onehundred_percent_base": "valid",
                     "assignment_poll_sort_poll_result_by_votes": False,
                     "assignment_poll_enable_max_votes_per_option": True,
-                    "poll_sort_poll_result_by_votes": True,
+                    "poll_sort_poll_result_by_votes": False,
                     "poll_default_live_voting_enabled": True,
                 },
                 "group/1": {
@@ -720,6 +712,61 @@ class TestMigration101(BaseMigrationTestCase):
                         "vote_delegations_from_ids": [],
                     },
                 },
+                "projector": {
+                    1: {"used_as_default_projector_for_topic_poll_in_meeting_id": 1}
+                },
+                "meeting": {
+                    1: {
+                        "poll_projection_name_order_first": "first_name",
+                        "poll_projection_max_columns": 8,
+                        "default_projector_topic_poll_ids": [1],
+                        "poll_setting_ids": [1, 2, 3],
+                        "assignment_poll_config_id": 1,
+                        "motion_poll_config_id": 2,
+                        "topic_poll_config_id": 3,
+                    }
+                },
+                "meeting_poll_setting": {
+                    1: {
+                        "enable_live_voting": True,
+                        "allow_live_voting": True,
+                        "sort_result_by_votes": False,
+                        "enable_cumulative_voting": True,
+                        "method": "rating_approval.yes_no_abstain",
+                        "visibility": "open",
+                        "onehundred_percent_base": "yes_no_abstain",
+                        "group_ids": [1, 3],
+                        "used_as_assignment_poll_config_in_meeting_id": 1,
+                        "used_as_motion_poll_config_in_meeting_id": None,
+                        "used_as_topic_poll_config_in_meeting_id": None,
+                        "meeting_id": 1,
+                    },
+                    2: {
+                        "enable_live_voting": True,
+                        "allow_live_voting": True,
+                        "method": "approval.yes_no_abstain",
+                        "visibility": "open",
+                        "onehundred_percent_base": "valid",
+                        "group_ids": [3],
+                        "used_as_assignment_poll_config_in_meeting_id": None,
+                        "used_as_motion_poll_config_in_meeting_id": 1,
+                        "used_as_topic_poll_config_in_meeting_id": None,
+                        "meeting_id": 1,
+                    },
+                    3: {
+                        "enable_live_voting": True,
+                        "allow_live_voting": True,
+                        "sort_result_by_votes": False,
+                        "method": "selection.yes",
+                        "visibility": "manually",
+                        "onehundred_percent_base": "valid",
+                        "group_ids": [3],
+                        "used_as_assignment_poll_config_in_meeting_id": None,
+                        "used_as_motion_poll_config_in_meeting_id": None,
+                        "used_as_topic_poll_config_in_meeting_id": 1,
+                        "meeting_id": 1,
+                    },
+                },
                 "poll": {
                     1: {
                         **base_poll_fields,
@@ -1091,7 +1138,6 @@ class TestMigration101(BaseMigrationTestCase):
                         "represented_meeting_user_id": 103,
                         "acting_meeting_user_id": 103,
                     },
-                    #
                     17: {
                         "poll_id": 6,
                         "poll_ballot_id": 12,
@@ -1214,7 +1260,6 @@ class TestMigration101(BaseMigrationTestCase):
                         "split": False,
                         "poll_ballot_user_id": 16,
                     },
-                    #
                     9: {
                         "poll_id": 6,
                         "value": dumps(
@@ -1484,6 +1529,128 @@ class TestMigration101(BaseMigrationTestCase):
 
         self.check_entries(expected_data)
 
+    def test_poll_meeting_setting(self) -> None:
+        # Check defaults
+        # Check defaults are used for incorrect source values
+        # Check transformations from maps
+        methods = (
+            (None, None, None),
+            ("nya", "Y", "YNA"),
+            ("YN", "YN", None),
+            ("YNA", "YNA", None),
+            ("yna", None, None),
+            ("Y", None, None),
+            ("N", None, None),
+        )
+        types = (None, "analog", "named", "pseudoanonymous", "cryptographic")
+        onehundred_percent_bases = (None, "Y", "N", "YN", "YNA")
+
+        meetings_data = {}
+        for i, method in enumerate(methods):
+            extra_data = {
+                "assignment_poll_default_method": method[0],
+                "motion_poll_default_method": method[1],
+                "poll_default_method": method[2],
+            }
+            if i <= 4:
+                for poll_type in ("assignment_", "motion_", ""):
+                    extra_data.update(
+                        {
+                            f"{poll_type}poll_default_type": types[i],
+                            f"{poll_type}poll_default_onehundred_percent_base": onehundred_percent_bases[
+                                i
+                            ],
+                        }
+                    )
+            meetings_data.update(
+                self._get_meeting_data(i + 1, {f"meeting/{i + 1}": extra_data})
+            )
+        self.set_up_organization()
+        self.create_entries(meetings_data)
+        manager = self.create_migration_manager()
+        intermediate_result = self.make_migration_request(manager)
+        if intermediate_result["status"] == MigrationState.MIGRATION_FAILED:
+            raise BadCodingException(
+                f"Migration failed with message: {intermediate_result['exception']}."
+            )
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        self.assert_migration_finalized()
+
+        expected_data = {}
+        for i, data in enumerate(
+            (
+                {},
+                {
+                    "all": {
+                        "visibility": "manually",
+                        "onehundred_percent_base": "no_general",
+                    }
+                },
+                {
+                    "all": {
+                        "visibility": "open",
+                        "onehundred_percent_base": "no_general",
+                    },
+                    "assignment": {"method": "rating_approval.yes_no"},
+                    "motion": {"method": "approval.yes_no"},
+                },
+                {
+                    "all": {"onehundred_percent_base": "yes_no"},
+                    "assignment": {"method": "rating_approval.yes_no_abstain"},
+                    "motion": {"method": "approval.yes_no_abstain"},
+                    "topic": {"visibility": "secret"},
+                },
+                {
+                    "all": {"onehundred_percent_base": "yes_no_abstain"},
+                    "assignment": {"method": "rating_approval.yes_no_abstain"},
+                    "topic": {"visibility": "secret"},
+                },
+                {},
+                {"assignment": {"method": "selection.no"}},
+            )
+        ):
+            expected_data[i + 1] = {
+                "meeting_id": i + 1,
+                "used_as_assignment_poll_config_in_meeting_id": i + 1,
+                "method": "selection.yes",
+                "visibility": "secret",
+                "onehundred_percent_base": "valid",
+                **data.get("assignment", {}),
+                **data.get("all", {}),
+            }
+            expected_data[i + 8] = {
+                "meeting_id": i + 1,
+                "used_as_motion_poll_config_in_meeting_id": i + 1,
+                "method": "approval.yes_no_abstain",
+                "visibility": "secret",
+                "onehundred_percent_base": "yes_no_abstain",
+                **data.get("motion", {}),
+                **data.get("all", {}),
+            }
+            expected_data[i + 15] = {
+                "meeting_id": i + 1,
+                "used_as_topic_poll_config_in_meeting_id": i + 1,
+                "method": "selection.yes",
+                "visibility": "manually",
+                "onehundred_percent_base": "yes_no_abstain",
+                **data.get("topic", {}),
+                **data.get("all", {}),
+            }
+        self.check_entries(
+            {
+                "meeting_poll_setting": expected_data,
+                "meeting": {
+                    id_: {
+                        "poll_setting_ids": [i * 7 + id_ for i in [0, 1, 2]],
+                        "assignment_poll_config_id": id_,
+                        "motion_poll_config_id": id_ + 7,
+                        "topic_poll_config_id": id_ + 14,
+                    }
+                    for id_ in range(1, 8)
+                },
+            }
+        )
+
     def test_check_prerequisites(self) -> None:
         meeting_data: dict[FullQualifiedId, PartialModel] = self._get_meeting_data()
 
@@ -1684,3 +1851,103 @@ class TestMigration101(BaseMigrationTestCase):
             raise BadCodingException(
                 f"Migration failed with message: {result['exception']}."
             )
+
+    # @patch("openslides_backend.migrations.migration_helper.MigrationHelper.write_line")
+    # def test_migration_route(self, method_mock: Mock) -> None:
+    #     """Uses migrate http route."""
+    #     wait_lock = Lock()
+    #     wait_lock.acquire()
+    #     indicator_lock = Lock()
+    #     indicator_lock.acquire()
+    #     method_mock.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+    #     # 5) Call data_manipulation of module
+    #     # Future migrations do not need to test all commands. Calling MigrationManager or MigrationHandler directly should be sufficient.
+    #     # TODO do response checks in test_migration_route.py if possible
+
+    #     response = self.request("stats")
+    #     assert response.json == {
+    #         "success": True,
+    #         "stats": {
+    #             "status": MigrationState.MIGRATION_REQUIRED,
+    #             "output": "",
+    #             "current_migration_index": MIN_NON_REL_MIGRATION,
+    #             "target_migration_index": 100,
+    #             "migratable_models": {
+    #                 "agenda_item": 15,
+    #                 "assignment": 2,
+    #                 "assignment_candidate": 5,
+    #                 "chat_group": 2,
+    #                 "committee": 1,
+    #                 "gender": 4,
+    #                 "group": 5,
+    #                 "list_of_speakers": 16,
+    #                 "mediafile": 1,
+    #                 "meeting": 1,
+    #                 "meeting_mediafile": 1,
+    #                 "meeting_user": 3,
+    #                 "motion": 4,
+    #                 "motion_block": 1,
+    #                 "motion_category": 2,
+    #                 "motion_change_recommendation": 2,
+    #                 "motion_comment": 1,
+    #                 "motion_comment_section": 1,
+    #                 "motion_state": 15,
+    #                 "motion_submitter": 4,
+    #                 "motion_supporter": 1,
+    #                 "motion_workflow": 2,
+    #                 "option": 13,
+    #                 "organization": 1,
+    #                 "organization_tag": 1,
+    #                 "personal_note": 1,
+    #                 "poll": 5,
+    #                 "projection": 4,
+    #                 "projector": 2,
+    #                 "projector_countdown": 2,
+    #                 "projector_message": 1,
+    #                 "speaker": 13,
+    #                 "structure_level": 3,
+    #                 "tag": 3,
+    #                 "theme": 3,
+    #                 "topic": 8,
+    #                 "user": 3,
+    #                 "vote": 9,
+    #             },
+    #         },
+    #     }
+
+    #     response = self.request("migrate")
+    #     assert response.json == {
+    #         "success": True,
+    #         "status": MigrationState.MIGRATION_RUNNING,
+    #         "output": self.EXPECTED_INTRODUCTION
+    #         + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
+    #     }
+
+    #     indicator_lock.acquire()
+    #     response = self.request("stats")
+    #     assert response.json == {
+    #         "success": True,
+    #         "stats": {
+    #             "status": MigrationState.MIGRATION_RUNNING,
+    #             "output": self.EXPECTED_INTRODUCTION
+    #             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
+    #             "current_migration_index": MIN_NON_REL_MIGRATION,
+    #             "target_migration_index": 100,
+    #             "migratable_models": response.json["stats"]["migratable_models"],
+    #         },
+    #     }
+    #     assert self.request("migrate").json == {
+    #         "success": False,
+    #         "message": "Migration is running, only 'stats' or 'progress' commands are allowed.",
+    #     }
+    #     wait_lock.release()
+    #     self.wait_for_migration_thread(self.MAX_WAIT)
+
+    #     assert self.request("progress").json == {
+    #         "success": True,
+    #         "status": MigrationState.FINALIZED,
+    #         "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\nmigration finished\n",
+    #     }
+
+    #     self.assert_indices_state(MigrationState.FINALIZED)
+    #     self.check_data()
