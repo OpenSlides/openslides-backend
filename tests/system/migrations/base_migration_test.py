@@ -37,6 +37,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.filters import BaseSqlQueryHelper, Filter, SqlArguments
 from openslides_backend.shared.patterns import (
     Collection,
     FullQualifiedId,
@@ -262,6 +263,28 @@ class BaseMigrationTestCase(TestCase):
                 f"Database did not contain the expected result '{value} vs {result}' for this query.\n{query}"
             )
 
+    def assert_entries_not_exist(self, collection: Collection, filter_: Filter) -> None:
+        """
+        Checks whether there are no entries of the given collection that match the filter.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                arguments: SqlArguments = []
+                curs.execute(
+                    sql.SQL("SELECT id FROM {view} WHERE {filter};").format(
+                        view=sql.Identifier(collection),
+                        filter=BaseSqlQueryHelper.build_filter_str(
+                            filter_, arguments, collection
+                        ),
+                    ),
+                    [arguments],
+                )
+                if entries_exist := curs.fetchall():
+                    raise Exception(
+                        f"No {collection} entries should match the filter: {filter_}.\n"
+                        f"Found entries with ids: {[entry['id'] for entry in entries_exist]}\n"
+                    )
+
     def get_migration_state(self) -> MigrationState | None:
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
@@ -410,7 +433,7 @@ class BaseMigrationTestCase(TestCase):
     def check_entries(
         self,
         expected_data: ModelMap,
-        enum_list_columns: dict[Collection, list[str]],
+        enum_list_columns: dict[Collection, list[str]] = {},
     ) -> None:
         assert expected_data, "data can not be empty"
         failing_rows: dict[FullQualifiedId, list[tuple[str, Any, Any]]] = {}

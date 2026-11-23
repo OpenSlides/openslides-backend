@@ -856,7 +856,17 @@ class Migration(DiffMixin, BaseMigration):
                 ),
             )
         ]
-        self._create_poll_ballots(vote_m, migrated_polls, new_ballot_user_ids)
+        self._create_poll_ballots(
+            vote_m,
+            [
+                entry["id"]
+                for entry in self.cursor.execute(
+                    "SELECT id FROM poll_m WHERE id = ANY(%s) and type != 'analog'",
+                    (migrated_polls,),
+                ).fetchall()
+            ],
+            new_ballot_user_ids,
+        )
 
         # Create options only for assignment polls
         poll_candidate_m = TableRef("poll_candidate", True)
@@ -1078,7 +1088,7 @@ class Migration(DiffMixin, BaseMigration):
                                     o.id::text,
                                     TRUNC(v.weight)::numeric(16,6)::text
                                 )::text
-                            ELSE array_to_string(array_agg(v.option_id), ', ')
+                            ELSE array_to_string(array_agg(v.option_id ORDER BY v.option_id), ', ')
                         END AS value
                     FROM vote_m v
                     JOIN option_m o ON o.id = v.option_id
@@ -1438,11 +1448,12 @@ class Migration(DiffMixin, BaseMigration):
             common_table_expression=sql.SQL("""
                 WITH cte_entitled_users AS (
                     SELECT
-                        poll_id,
-                        COUNT(*) AS all,
-                        COUNT(*) FILTER(WHERE present = TRUE) AS present
-                    FROM poll_entitled_user_t
-                    GROUP BY poll_id
+                        p.id AS poll_id,
+                        COUNT(peu.id) AS all,
+                        COUNT(peu.id) FILTER(WHERE present = TRUE) AS present
+                    FROM poll_t p
+                    LEFT JOIN poll_entitled_user_t peu ON p.id = peu.poll_id
+                    GROUP BY p.id
                 )
             """),
         )
@@ -1453,33 +1464,36 @@ class Migration(DiffMixin, BaseMigration):
         poll_ids: list[int],
         ballot_user_ids: list[int],
     ) -> None:
-        public_ballot_ids = [
-            ballot["poll_ballot_user_id"]
-            for ballot in self.insert_from_other_table(
-                "poll_ballot",
-                InsertFromTables(
-                    copy_data=[
-                        TableDataSource(
-                            source_table=Join(
-                                source_table,
-                                [],
-                                And(
-                                    FilterOperator("id", "in", ballot_user_ids),
-                                    FilterOperator("link_user_to_ballot", "=", True),
+        if ballot_user_ids:
+            public_ballot_ids = [
+                ballot["poll_ballot_user_id"]
+                for ballot in self.insert_from_other_table(
+                    "poll_ballot",
+                    InsertFromTables(
+                        copy_data=[
+                            TableDataSource(
+                                source_table=Join(
+                                    source_table,
+                                    [],
+                                    And(
+                                        FilterOperator("id", "in", ballot_user_ids),
+                                        FilterOperator(
+                                            "link_user_to_ballot", "=", True
+                                        ),
+                                    ),
                                 ),
+                                value_definition=[
+                                    ColumnDataSource("weight", "weight"),
+                                    ColumnDataSource("poll_id", "poll_id"),
+                                    ColumnDataSource("value", "value"),
+                                    ColumnDataSource("poll_ballot_user_id", "id"),
+                                ],
                             ),
-                            value_definition=[
-                                ColumnDataSource("weight", "weight"),
-                                ColumnDataSource("poll_id", "poll_id"),
-                                ColumnDataSource("value", "value"),
-                                ColumnDataSource("poll_ballot_user_id", "id"),
-                            ],
-                        ),
-                    ]
-                ),
-                return_fields=["poll_ballot_user_id"],
-            )
-        ]
+                        ]
+                    ),
+                    return_fields=["poll_ballot_user_id"],
+                )
+            ]
         self.insert_from_other_table(
             "poll_ballot",
             InsertFromTables(
