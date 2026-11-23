@@ -72,7 +72,10 @@ def test_simple(db_connection: Connection) -> None:
                 "\n"
                 "{url}\n"
                 "Username: {username}\n"
-                "Password: {magicLink}\n"
+                "Sign in to OpenSlides: {magicLink}\n"
+                "\n"
+                "Alternatively scan this QR Code on your phone:\n"
+                "{qrCode}\n"
                 "\n"
                 "\n"
                 "This email was generated automatically.",

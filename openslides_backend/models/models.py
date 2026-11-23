@@ -944,7 +944,7 @@ class Meeting(Model, MeetingModelMixin):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically."
     )
     users_enable_vote_delegations = fields.BooleanField()
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
@@ -2270,7 +2270,7 @@ class Organization(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically."
     )
     url = fields.CharField(default="https://example.com")
 

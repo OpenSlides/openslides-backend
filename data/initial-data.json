@@ -37,7 +37,7 @@
             "theme_ids": [1, 2, 3],
             "users_email_sender": "OpenSlides",
             "users_email_subject": "OpenSlides access data",
-            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {magicLink}\n\n\nThis email was generated automatically.",
+            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
             "user_ids": [1],
             "require_duplicate_from": false,

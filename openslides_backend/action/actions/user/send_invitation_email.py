@@ -258,16 +258,6 @@ class UserSendInvitationMail(UpdateAction, IDPMagicLinkMixin, QRCodeMixin):
 
         magic_link = self.create_magic_link(user.get("idp_id", ""))
 
-        body_dict = {
-            "magicLink": magic_link,
-            "url": mail_data.get("url", ""),
-            **subject_format,
-        }
-
-        body_format = format_dict(None, body_dict)
-
-        email_body = mail_data.get("users_email_body", "").format_map(body_format)
-
         # Magic link as QR
         qr_code = self.render_qr_png(magic_link, "png", 8, 2)
         qr_cid = make_msgid(domain=EmailSettings.host)
@@ -275,7 +265,16 @@ class UserSendInvitationMail(UpdateAction, IDPMagicLinkMixin, QRCodeMixin):
             <p><img src="cid:{qr_cid[1:-1]}" width="200" height="200" alt="QR code"></p>
             """
 
-        email_body = email_body + "\n" + qr_code_body
+        # Format Email
+        body_dict = {
+            "magicLink": magic_link,
+            "qrCode": qr_code_body,
+            "url": mail_data.get("url", ""),
+            **subject_format,
+        }
+
+        body_format = format_dict(None, body_dict)
+        email_body = mail_data.get("users_email_body", "").format_map(body_format)
 
         EmailUtils.send_email(
             self.mail_client,
