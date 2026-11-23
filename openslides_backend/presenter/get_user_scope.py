@@ -4,6 +4,7 @@ import fastjsonschema
 
 from openslides_backend.shared.schema import id_list_schema
 
+from ..shared.exceptions import AnonymousNotAllowed
 from ..shared.mixins.user_scope_mixin import UserScopeMixin
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -32,7 +33,12 @@ class GetUserScope(UserScopeMixin, BasePresenter):
 
     schema = get_user_scope_schema
 
+    def check_permissions(self) -> None:
+        if self.auth.is_anonymous(self.user_id):
+            raise AnonymousNotAllowed("get_user_scope")
+
     def get_result(self) -> Any:
+        self.check_permissions()
         result: dict[str, Any] = {}
         user_ids = self.data["user_ids"]
         for user_id in user_ids:
@@ -41,9 +47,9 @@ class GetUserScope(UserScopeMixin, BasePresenter):
                 scope_id,
                 user_oml,
                 committee_meeting_ids,
-                user_in_archived_meetings_only,
+                _,
                 home_committee_id,
-                is_committee_manager,
+                _,
             ) = self.get_user_scope(user_id)
             committee_ids = list(committee_meeting_ids)
             result[str(user_id)] = {
@@ -51,8 +57,6 @@ class GetUserScope(UserScopeMixin, BasePresenter):
                 "id": scope_id,
                 "user_oml": user_oml,
                 "committee_ids": committee_ids,
-                "user_in_archived_meetings_only": user_in_archived_meetings_only,
                 "home_committee_id": home_committee_id,
-                "is_committee_manager": is_committee_manager,
             }
         return result
