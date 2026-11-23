@@ -27,7 +27,7 @@ class TestGetUSerScope(BasePresenterTestCase):
             group_ids=[1],
             committee_management_ids=[60],
         )
-        self.create_user("no_organization")
+        self.create_user("no_one")
         self.create_user(
             "oml_and_meeting",
             organization_management_level=OrganizationManagementLevel.SUPERADMIN,
@@ -150,7 +150,7 @@ class TestGetUSerScopeAnonymous(BasePresenterTestCase):
             group_ids=[1],
             committee_management_ids=[60],
         )
-        self.create_user("no_organization")
+        self.create_user("no_one")
         self.create_user(
             "oml_and_meeting",
             organization_management_level=OrganizationManagementLevel.SUPERADMIN,
