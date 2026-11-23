@@ -59,72 +59,56 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "committee_ids": [],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": False,
                 },
                 "3": {
                     "collection": "committee",
                     "id": 63,
                     "user_oml": "",
                     "committee_ids": [63],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": True,
                 },
                 "4": {
                     "collection": "committee",
                     "id": 60,
                     "user_oml": "",
                     "committee_ids": [60],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": True,
                 },
                 "5": {
                     "collection": "organization",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": False,
                 },
                 "6": {
                     "collection": "organization",
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
                     "committee_ids": [60],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": False,
                 },
                 "7": {
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [60],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
-                    "is_committee_manager": False,
                 },
                 "8": {
                     "collection": "committee",
                     "id": 60,
                     "user_oml": "",
                     "committee_ids": [],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": 60,
-                    "is_committee_manager": False,
                 },
                 "9": {
                     "collection": "committee",
                     "id": 63,
                     "user_oml": "",
                     "committee_ids": [60],
-                    "user_in_archived_meetings_only": False,
                     "home_committee_id": 63,
-                    "is_committee_manager": False,
                 },
             },
         )
@@ -138,3 +122,58 @@ class TestGetUSerScope(BasePresenterTestCase):
         status_code, data = self.request("get_user_scope", {"user_ids": []})
         self.assertEqual(status_code, 200)
         assert data == {}
+
+
+class TestGetUSerScopeAnonymous(BasePresenterTestCase):
+    init_with_login = False
+
+    def test_as_anonymous(self) -> None:
+        self.create_meeting()
+        self.create_meeting(
+            4,
+            meeting_data={
+                "committee_id": 60,
+                "is_active_in_organization_id": None,
+                "is_archived_in_organization_id": 1,
+            },
+        )
+        oml_id = self.create_user(
+            "only_oml_level",
+            organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
+        )
+        self.create_user(
+            "only_cml_level",
+            committee_management_ids=[63],
+        )
+        self.create_user(
+            "cml_and_meeting",
+            group_ids=[1],
+            committee_management_ids=[60],
+        )
+        self.create_user("no_organization")
+        self.create_user(
+            "oml_and_meeting",
+            organization_management_level=OrganizationManagementLevel.SUPERADMIN,
+            group_ids=[1],
+        )
+        self.create_user(
+            "meeting_and_archived_meeting",
+            group_ids=[1, 4],
+        )
+        self.create_user(
+            "with_home_committee",
+            home_committee_id=60,
+        )
+        self.create_user(
+            "with_home_committee_and_meetings",
+            group_ids=[1, 4],
+            home_committee_id=63,
+        )
+
+        status_code, data = self.request(
+            "get_user_scope", {"user_ids": list(range(oml_id, oml_id + 8))}
+        )
+        self.assertEqual(status_code, 403)
+        self.assertIn(
+            "Anonymous is not allowed to execute get_user_scope", data["message"]
+        )
