@@ -16,15 +16,17 @@ from ...shared.env import Environment
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import AuthenticationService
 
+
 class IDPPayload:
     def __init__(self, claims: dict):
-        self.sub = claims.get("sub", "")                               # User ID
-        self.sid = claims.get("sid", "")                               # Session ID
-        self.os_id = claims.get("os_id", "")                           # OS User ID
-        self.preferred_username = claims.get("preferred_username", "") # User Name
-        self.azp = claims.get("azp", "")                               # Client name
-        self.exp = claims.get("exp", 0)                                # Expirery Date
-        self.iss = claims.get("iss", "")                               # Issuer URL
+        self.sub = claims.get("sub", "")  # User ID
+        self.sid = claims.get("sid", "")  # Session ID
+        self.external_id = claims.get("externalId", "")  # OS User ID
+        self.preferred_username = claims.get("preferred_username", "")  # User Name
+        self.azp = claims.get("azp", "")  # Client name
+        self.exp = claims.get("exp", 0)  # Expirery Date
+        self.iss = claims.get("iss", "")  # Issuer URL
+
 
 class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
     """
@@ -63,14 +65,14 @@ class AuthenticationOIDC(AuthenticationService, AuthenticatedService):
         # Convert JWT to Payload
         payload = self._extract_payload(header_value[len("Bearer: "):])
 
-        if not payload or not payload.sub or not payload.os_id:
+        if not payload or not payload.sub or not payload.external_id:
             return (0, "")
 
         if self.is_session_id_blocked(payload.sid):
             self.logger.warning(f"Session ID {payload.sid} is blocked by blocklist")
             return (0, "")
 
-        return (int(payload.os_id), header_value)
+        return (int(payload.external_id), header_value)
 
     def backchannel_logout(self, encoded_logout_token: str) -> str:
         # Extract Logout Token
