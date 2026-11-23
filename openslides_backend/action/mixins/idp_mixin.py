@@ -394,10 +394,6 @@ class IDPMixin(Action):
                 timeout=3,
             )
             if response.status_code != 204:
-                if response.status_code == 400 and response.json()["code"] == 9:
-                    self.logger.warning("Error updating the email of the user.")
-                    return
-
                 self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating email of user: {e}") from e
@@ -438,10 +434,6 @@ class IDPMixin(Action):
                 timeout=3,
             )
             if response.status_code != 204:
-                if response.status_code == 400 and response.json()["code"] == 9:
-                    self.logger.warning("Error updating the username of the user.")
-                    return
-
                 self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating username of user: {e}") from e
@@ -481,10 +473,6 @@ class IDPMixin(Action):
                 timeout=3,
             )
             if response.status_code != 204:
-                if response.status_code == 400 and response.json()["code"] == 9:
-                    self.logger.warning("Error updating the password of the user.")
-                    return
-
                 self.idp_error(response)
         except Exception as e:
             raise ActionException(f"Error updating password: {e}") from e
@@ -525,7 +513,7 @@ class IDPMixin(Action):
             )
 
             # Logout user
-            #            self.revoke_all_sessions_of_user(idp_id)
+            self.revoke_all_sessions_of_user(idp_id)
 
             if response.status_code != 200:
                 error_response = response.json()["message"]
