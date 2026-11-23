@@ -33,5 +33,4 @@ trap 'eval "$DC down --volumes"' EXIT
 if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
 eval "$DC build --no-cache"
 eval "$DC up --detach"
-eval "$DC exec -T backend scripts/wait.sh auth 9004"
 eval "$DC exec -T backend ./entrypoint.sh pytest --cov"

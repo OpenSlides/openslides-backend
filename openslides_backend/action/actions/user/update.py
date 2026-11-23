@@ -1,6 +1,6 @@
 import re
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
@@ -16,9 +16,9 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.idp_mixin import IDPMixin
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
-from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.base_delete import MeetingUserBaseDelete
@@ -80,7 +80,6 @@ class UserUpdate(
             "last_name",
             "is_active",
             "is_physical_person",
-            "default_password",
             "can_change_own_password",
             "gender_id",
             "email",
@@ -88,7 +87,6 @@ class UserUpdate(
             "organization_management_level",
             "committee_management_ids",
             "is_demo_user",
-            "saml_id",
             "member_number",
             "external",
             "home_committee_id",
@@ -148,8 +146,6 @@ class UserUpdate(
                 "is_active",
                 "idp_id",
                 "organization_management_level",
-                "saml_id",
-                "password",
                 "home_committee_id",
             ],
         )
@@ -161,16 +157,6 @@ class UserUpdate(
             instance["home_committee_id"] = None
         elif home_committee_id:
             instance["external"] = False
-        if user.get("saml_id") and (
-            instance.get("can_change_own_password") or instance.get("default_password")
-        ):
-            raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
-            )
-        if instance.get("saml_id") and user.get("password"):
-            instance["can_change_own_password"] = False
-            instance["default_password"] = ""
-            instance["password"] = ""
 
         if instance.get("username") and re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
@@ -204,13 +190,17 @@ class UserUpdate(
                     self.update_username(action_data[0], action_data[0].get("username"))
 
                 if "is_active" in action_data[0]:
-                    self.set_user_enable_status(action_data[0], action_data[0].get("is_active"))
+                    self.set_user_enable_status(
+                        action_data[0], action_data[0].get("is_active")
+                    )
                     self.revoke_all_sessions_of_user(action_data[0])
 
                 if "email" in action_data[0]:
                     self.update_email(action_data[0], action_data[0].get("email"))
             except Exception as e:
-                self.logger.error(f"Couldn't update IDP user fields after OS user was updated: {e}")
+                self.logger.error(
+                    f"Couldn't update IDP user fields after OS user was updated: {e}"
+                )
 
         return on_success
 

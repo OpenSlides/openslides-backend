@@ -3,6 +3,7 @@ from . import (  # noqa
     account_json_upload,
     assign_meetings,
     block_session_id,
+    send_magic_link,
     create,
     delete,
     merge_together,

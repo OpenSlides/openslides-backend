@@ -13,7 +13,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         dict[str, str | ListOfDicts | dict[str, str | dict[str, str] | ListOfDicts]]
     ]
     saml_attr_mapping: dict[str, str | MeetingMappers] = {
-        "saml_id": "username",
         "title": "title",
         "first_name": "firstName",
         "last_name": "lastName",
@@ -266,7 +265,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "users_email_sender": "email_sender",
                 "users_email_replyto": " email@replyto.de  ",
                 "users_email_subject": "email subject",
-                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically.",
                 "require_duplicate_from": True,
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
@@ -309,7 +308,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "users_email_sender": "email_sender",
                 "users_email_replyto": "email@replyto.de",
                 "users_email_subject": "email subject",
-                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically.",
                 "require_duplicate_from": True,
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
@@ -428,27 +427,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "data.saml_attr_mapping must be object" in response.json["message"]
-
-    def test_update_broken_saml_attr_mapping_missing_saml_id(self) -> None:
-        response = self.request(
-            "organization.update", {"id": 1, "saml_attr_mapping": {"x": "y"}}
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.saml_attr_mapping must contain ['saml_id'] properties"
-            in response.json["message"]
-        )
-
-    def test_update_broken_saml_attr_mapping_unknown_field(self) -> None:
-        response = self.request(
-            "organization.update",
-            {"id": 1, "saml_attr_mapping": {"saml_id": "111", "unkown_field": "xxx"}},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.saml_attr_mapping must not contain {'unkown_field'} properties"
-            in response.json["message"]
-        )
 
     def test_update_default_language(self) -> None:
         response = self.request(

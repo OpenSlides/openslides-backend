@@ -5,7 +5,6 @@ from tests.system.base import DEFAULT_PASSWORD
 class UserSetPasswordSelfActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.reset_redis()
 
     def test_set_password_correct_permission(self) -> None:
         self.create_meeting()

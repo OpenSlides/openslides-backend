@@ -184,18 +184,8 @@ class BaseSystemTestCase(TestCase):
     ) -> Client:
         return Client(self.app, on_auth_data_changed)
 
-    def login(self, user_id: int) -> None:
-        """
-        Login the given user by fetching the default password from the datastore.
-        """
-        user = self.get_model(f"user/{user_id}")
-        assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"])
-
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
-        self.vote_service.set_authentication(
-            auth_data["access_token"]
-        )
+        self.vote_service.set_authentication(auth_data["access_token"])
 
     def get_application(self) -> OpenSlidesBackendWSGIApplication:
         raise NotImplementedError()

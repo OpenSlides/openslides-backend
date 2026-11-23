@@ -1,8 +1,8 @@
+import logging
 from collections.abc import Iterable
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
-import logging
 
 from psycopg.types.json import Jsonb
 

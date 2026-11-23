@@ -2,14 +2,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 # Translators:
 # Katharina <karmitt2@web.de>, 2021
 # Emanuel Schütze <emanuel.schuetze@intevation.de>, 2022
 # Wiebke Spekker <wiebkespekker@gmx.de>, 2022
 # Birte Spekker <birte.spekker@intevation.de>, 2025
 # Javier Borrego, 2025
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -4259,11 +4259,11 @@ msgstr "Encuestas"
 msgid ""
 "Possible placeholders for email subject and body: {title}, {first_name}, "
 "{last_name}, {groups}, {structure_levels}, {event_name}, {url}, {username} "
-"and {password}"
+"and {magicLink}"
 msgstr ""
 "Posibles marcadores de posición para el asunto y el cuerpo del correo "
 "electrónico: {title}, {first_name}, {last_name}, {groups}, "
-"{structure_levels}, {event_name}, {url}, {username} y {password}"
+"{structure_levels}, {event_name}, {url}, {username} y {magicLink}"
 
 msgid "Possible points of order"
 msgstr "Posibles cuestiones de orden"
@@ -6617,7 +6617,7 @@ msgid ""
 "\n"
 "{url}\n"
 "Username: {username}\n"
-"Password: {password}\n"
+"Sign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n"
 "\n"
 "\n"
 "This email was generated automatically."
@@ -6628,7 +6628,7 @@ msgstr ""
 "\n"
 " {url} \n"
 "Nombre de usuario\\: {username} \n"
-"Contraseña\\: {password} \n"
+"Contraseña\\: {magicLink} \n"
 "\n"
 "Este correo electrónico se ha generado automáticamente."
 

@@ -6,9 +6,9 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permissions import Permissions
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...mixins.idp_mixin import IDPMixin
 
 
 @register_action("user.set_password")
@@ -24,7 +24,6 @@ class UserSetPasswordAction(
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
-        required_properties=["password"],
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
     history_information = "Password changed"
@@ -36,7 +35,5 @@ class UserSetPasswordAction(
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        # TODO: Encrypt password
-
         self.update_password(instance, instance["password"], False)
         return instance

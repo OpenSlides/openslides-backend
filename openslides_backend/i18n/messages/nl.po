@@ -2,11 +2,11 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 # Translators:
 # Birte Spekker <birte.spekker@intevation.de>, 2025
 # Michael Schulze, 2026
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -4246,11 +4246,11 @@ msgstr "Polls"
 msgid ""
 "Possible placeholders for email subject and body: {title}, {first_name}, "
 "{last_name}, {groups}, {structure_levels}, {event_name}, {url}, {username} "
-"and {password}"
+"and {magicLink}"
 msgstr ""
 "Mogelijke plaatshouders voor e-mailonderwerp en -tekst: {title}, "
 "{first_name}, {last_name}, {groups}, {structure_levels}, {event_name}, "
-"{url}, {username} en {password}."
+"{url}, {username} en {magicLink}."
 
 msgid "Possible points of order"
 msgstr "Mogelijke punten van orde"
@@ -6589,7 +6589,7 @@ msgid ""
 "\n"
 "{url}\n"
 "Username: {username}\n"
-"Password: {password}\n"
+"Sign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n"
 "\n"
 "\n"
 "This email was generated automatically."

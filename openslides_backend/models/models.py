@@ -178,6 +178,15 @@ class AssignmentCandidate(Model):
     )
 
 
+class BlockedSessions(Model):
+    collection = "blocked_sessions"
+    verbose_name = "blocked sessions"
+
+    id = fields.IntegerField(required=True, constant=True)
+    session_id = fields.CharField(required=True, constant=True)
+    timestamp = fields.TimestampField(required=True)
+
+
 class ChatGroup(Model):
     collection = "chat_group"
     verbose_name = "chat group"
@@ -616,6 +625,16 @@ class ListOfSpeakers(Model):
     )
 
 
+class MagicLinks(Model):
+    collection = "magic_links"
+    verbose_name = "magic links"
+
+    id = fields.IntegerField(required=True, constant=True)
+    token_hash = fields.CharField(required=True, constant=True)
+    idp_id = fields.CharField(required=True, constant=True)
+    timestamp = fields.TimestampField(required=True)
+
+
 class Mediafile(Model):
     collection = "mediafile"
     verbose_name = "mediafile"
@@ -925,7 +944,7 @@ class Meeting(Model, MeetingModelMixin):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically."
     )
     users_enable_vote_delegations = fields.BooleanField()
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
@@ -2179,7 +2198,7 @@ class Organization(Model):
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
     privacy_policy = fields.TextField()
-    login_text = fields.TextField()
+    login_text = fields.HTMLStrictField()
     reset_password_verbose_errors = fields.BooleanField()
     gender_ids = fields.RelationListField(
         to={"gender": "organization_id"}, is_view_field=True, is_primary=True
@@ -2251,7 +2270,7 @@ class Organization(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nSign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n\n\nThis email was generated automatically."
     )
     url = fields.CharField(default="https://example.com")
 
@@ -2897,17 +2916,7 @@ class User(Model):
     member_number = fields.CharField(unique=True)
     idp_id = fields.CharField(
         unique=True,
-        constraints={
-            "minLength": 1,
-            "description": "unique-key from IDP for OIDC login",
-        },
-    )
-    saml_id = fields.CharField(
-        unique=True,
-        constraints={
-            "minLength": 1,
-            "description": "unique-key from IdP for SAML login",
-        },
+        constraints={"minLength": 1, "description": "unique-key from IDP for login"},
     )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
@@ -2915,8 +2924,6 @@ class User(Model):
     last_name = fields.CharField()
     is_active = fields.BooleanField(default=True)
     is_physical_person = fields.BooleanField(default=True)
-    password = fields.CharField()
-    default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
     email = fields.CharField()
     default_vote_weight = fields.DecimalField(

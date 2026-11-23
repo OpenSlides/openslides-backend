@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 # Translators:
 # Katharina <karmitt2@web.de>, 2022
 # Alexandra Damm <damm@chiesaluterana.it>, 2024
 # Birte Spekker <birte.spekker@intevation.de>, 2025
 # albanobattistella <albanobattistella@gmail.com>, 2026
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -4275,11 +4275,11 @@ msgstr "Sondaggio"
 msgid ""
 "Possible placeholders for email subject and body: {title}, {first_name}, "
 "{last_name}, {groups}, {structure_levels}, {event_name}, {url}, {username} "
-"and {password}"
+"and {magicLink}"
 msgstr ""
 "Possibili segnaposti per l'oggetto e il corpo dell'email: {title}, "
 "{first_name}, {last_name}, {groups}, {structure_levels}, {event_name}, "
-"{url}, {username} e {password}"
+"{url}, {username} e {magicLink}"
 
 msgid "Possible points of order"
 msgstr "Possibili mozioni d'ordine"
@@ -6644,7 +6644,7 @@ msgid ""
 "\n"
 "{url}\n"
 "Username: {username}\n"
-"Password: {password}\n"
+"Sign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n"
 "\n"
 "\n"
 "This email was generated automatically."
@@ -6655,7 +6655,7 @@ msgstr ""
 "\n"
 "{url}\n"
 "Nome utente: {username}\n"
-"Password: {password}\n"
+"Sign in to OpenSlides: {magicLink}\n\nAlternatively scan this QR Code on your phone:\n{qrCode}\n"
 "\n"
 "Questa e-mail è stata generata automaticamente."
 

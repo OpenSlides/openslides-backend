@@ -1,33 +1,27 @@
 from typing import Any, Protocol
 
-from ..shared.authenticated_service import AuthenticatedServiceInterface
-
-
-class AuthenticationService(AuthenticatedServiceInterface, Protocol):
+class AuthenticationService(Protocol):
     """
     Interface of the Auth Service.
     """
-
-    auth_handler: Any
-
-    def authenticate(self) -> tuple[int, str | None]:
+    def authenticate(self, auth_header: str) -> int:
         """
-        A request to get knowledge about themselves. This information is contained in the payload of
-        a Token. So, this function handles the refreshing of a Token.
+        Decodes a JWT token set by the IDP provider.
+        Handles exceptions and validates audience/client source
 
-        Sends back a new Token.
-
-        Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
-
-        Authentication data must be set beforehand via set_authentication.
+        Returns the OpenSlides User ID contained within the JWT token on success
+        Returns 0 as User ID, of authentication failed
         """
 
-    def backchannel_logout(self, encoded_logout_token: str)  -> None:
+    def set_client_id(self, client_id: str) -> None:
         """
-        A request to logout and block an active session id. Takes an encoded JWT token containing a
+        Sets the expected client ID manually. If unset or empty, the client ID will be read from a volume mounted client ID file
+        """
+
+    def decode_logout_token(self, encoded_logout_token: str) -> str:
+        """
+        Decodes a request to logout and block an active session id. Takes an encoded JWT token containing a
         logout token as a parameter
-
-        Used to signal a backchannel logout originating from an IDP to all OS services.
 
         Throws an exception, if the request is invalid
         """
@@ -51,25 +45,8 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Checks if the given user is anonymous or not.
         """
 
-    def block_session_id(self, session_id: int) -> None:
-        """
-        Blocks session_id, invalidating their authentication requests
-        """
-
-    def is_session_id_blocked(self, session_id: int) -> bool:
+    def is_session_id_blocked(self, session_id: str) -> bool:
         """
         Checks if session_id is blocked and thereby invalid
         """
 
-    def clear_all_sessions(self) -> None:
-        """
-        Clears all sessions of the requesting user.
-
-        Authentication data must be set beforehand via set_authentication.
-        """
-
-    def clear_sessions_by_user_id(self, user_id: int) -> None:
-        """
-        Clears all sessions of the given user.
-        Use with caution as the auth-service uses its internal route for this.
-        """

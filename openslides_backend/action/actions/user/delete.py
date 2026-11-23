@@ -1,5 +1,5 @@
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
@@ -7,11 +7,10 @@ from openslides_backend.shared.exceptions import ActionException
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator, Or
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
-from ...mixins.idp_mixin import IDPMixin
 from ...generics.delete import DeleteAction
+from ...mixins.idp_mixin import IDPMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .user_mixins import AdminIntegrityCheckMixin
@@ -39,9 +38,8 @@ class UserDelete(
 
         try:
             self.user_id_to_idp_id[instance["id"]] = self.datastore.get(
-                fqid=f"user/{instance.get('id')}",
-                mapped_fields=["idp_id"]
-                )["idp_id"]
+                fqid=f"user/{instance.get('id')}", mapped_fields=["idp_id"]
+            )["idp_id"]
         except Exception as e:
             self.logger.error(f"User {instance.get('id')} has no IDP ID: {e}")
 
@@ -49,12 +47,14 @@ class UserDelete(
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
-            if not action_data[0].get('id') in self.user_id_to_idp_id:
-                self.logger.error(f"IDP ID for User {action_data[0].get('id')} not found, can't delete IDP user")
+            if not action_data[0].get("id") in self.user_id_to_idp_id:
+                self.logger.error(
+                    f"IDP ID for User {action_data[0].get('id')} not found, can't delete IDP user"
+                )
                 return
 
             # Delete IDP account
-            self.delete_user(self.user_id_to_idp_id[action_data[0].get('id')])
+            self.delete_user(self.user_id_to_idp_id[action_data[0].get("id")])
 
         return on_success
 
