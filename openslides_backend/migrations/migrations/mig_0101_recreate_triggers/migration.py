@@ -1,6 +1,3 @@
-from psycopg import Cursor
-from psycopg.rows import DictRow
-
 from openslides_backend.migrations.base import BaseMigration
 
 
@@ -63,14 +60,14 @@ class Migration(BaseMigration):
         "vote",
     ]
 
-    @staticmethod
-    def data_preparation(curs: Cursor[DictRow]) -> None:
+    def data_preparation(self) -> None:
         """
         Abuses the data preparation method a bit to delete all triggers.
         """
-        for trigger in curs.execute(
+        self.execute_query(
             "SELECT event_object_table, trigger_name FROM information_schema.triggers GROUP BY event_object_table, trigger_name;"
-        ).fetchall():
+        )
+        for trigger in self.cursor.fetchall():
             eot = trigger["event_object_table"]
             tn = trigger["trigger_name"]
-            curs.execute(f"DROP TRIGGER {tn} ON {eot};\n")
+            self.execute_query(f"DROP TRIGGER {tn} ON {eot};\n")

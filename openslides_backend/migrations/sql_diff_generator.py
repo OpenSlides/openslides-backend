@@ -1196,8 +1196,13 @@ class AddHelper:
                                     f"{table_name}/{field_name}: {constraint}, {value}"
                                 )
                     case "required":
-                        constraints_sql += Helper.get_inline_required_constraint(
-                            collection_name, field_name
+                        constraints_sql += EditHelper.handle_required(
+                            True,
+                            table_name,
+                            collection_name,
+                            field_name,
+                            field_def,
+                            field_def["type"],
                         )
                     case "enum":
                         # Only need to handle field enums (i.e. if it's a list)
@@ -1240,8 +1245,8 @@ class AddHelper:
                         default_value = Helper.get_formatted_default_value(
                             collection_name, field_name, value, field_def["type"]
                         )
-                        constraints_sql += Helper.get_inline_default_constraint(
-                            collection_name, field_name, default_value
+                        constraints_sql += AlterSchemaHelper.get_set_default_statement(
+                            table_name, field_name, default_value
                         )
                     case "description":
                         after_sql += Helper.get_post_view_comment(
@@ -1973,9 +1978,19 @@ class EditHelper:
                 )
         else:
             if should_set:
-                result += AlterSchemaHelper.get_set_not_null_statement(
-                    table_name, field_name
+                set_not_null = AlterSchemaHelper.get_set_not_null_statement(
+                    collection_name, field_name
                 )
+                # TODO: do the same for relations
+                if default := field_def.get("default"):
+                    result += (
+                        AlterSchemaHelper.get_update_empty_entries_statement(
+                            collection_name, field_name, default, field_def["type"]
+                        )
+                        + set_not_null
+                    )
+                else:
+                    CleanupStatementsHelper.update_cleanup_statements(set_not_null)
             else:
                 result += AlterSchemaHelper.get_drop_column_attribute_statement(
                     collection_name, field_name, "NOT NULL"
@@ -2540,27 +2555,6 @@ class RenameHelper:
                 if error:
                     errors.append(Helper.prefix_error(error, collection_name, fname))
         return name_per_field_and_schemazonekey
-
-
-def add_not_null_conditionally(
-    collection_name: str, field_name: str, field_def: dict[str, Any], is_new_field: bool
-) -> str:
-    set_not_null = AlterSchemaHelper.get_set_column_attribute_statement(
-        collection_name, field_name, "NOT NULL"
-    )
-    if default := field_def.get("default"):
-        get_statement_func = (
-            AlterSchemaHelper.get_update_all_entries_statement
-            if is_new_field
-            else AlterSchemaHelper.get_update_empty_entries_statement
-        )
-        return (
-            get_statement_func(collection_name, field_name, default, field_def["type"])
-            + set_not_null
-        )
-
-    CleanupStatementsHelper.update_cleanup_statements(set_not_null)
-    return ""
 
 
 # def handle_enum_change():

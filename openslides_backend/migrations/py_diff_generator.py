@@ -93,7 +93,7 @@ class DiffMixinHelper:
             migration_tables
         ).items():
             query_fields = [
-                *[field_name for field_name in fields_data[0]],
+                *[*fields_data[0]],
                 *[
                     f"{field_name}::{simple_type} AS {field_name}"
                     for field_name, simple_type in fields_data[1].items()
