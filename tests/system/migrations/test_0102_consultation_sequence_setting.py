@@ -5,7 +5,18 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import PartialModel
-from tests.system.migrations.base_migration_test import BaseMigrationTestCase
+from tests.system.migrations.base_migration_test import (
+    AssertFieldData,
+    BaseMigrationTestCase,
+)
+
+
+def get_fk_constraint_name_condition(field_data: AssertFieldData) -> str:
+    start_str = f"fk_{field_data.table_name}_{field_data.field_name}_"
+    if to_name := field_data.fk_to_table_name:
+        return f"constraint_name='{start_str}{to_name}_id'"
+    else:
+        return f"constraint_name LIKE '{start_str}%_id'"
 
 
 def get_meeting_data(base: int = 1) -> dict[FullQualifiedId, PartialModel]:
@@ -64,6 +75,9 @@ def get_meeting_data(base: int = 1) -> dict[FullQualifiedId, PartialModel]:
 class TestMigration102(BaseMigrationTestCase):
     migration_number = 102
 
+    def get_find_fk_constraint_name_condition(self, field_data: AssertFieldData) -> str:
+        return get_fk_constraint_name_condition(field_data)
+
     def test_0102(self) -> None:
 
         self.set_up_organization()
@@ -83,27 +97,14 @@ class TestMigration102(BaseMigrationTestCase):
         self.create_entries(get_meeting_data(4))
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                assert (
-                    col_data := curs.execute(
-                        "SELECT * FROM information_schema.columns WHERE table_name='meeting_t' AND column_name='motions_enable_consultation_sequence';"
-                    ).fetchone()
+                self.assert_field_exists(
+                    curs,
+                    "meeting_t",
+                    "motions_enable_consultation_sequence",
+                    "boolean",
+                    default="true",
                 )
-                # check if field exists and has the correct settings
-                self.assert_contained_in(
-                    {
-                        "table_name": "meeting_t",
-                        "column_name": "motions_enable_consultation_sequence",
-                        "data_type": "boolean",
-                        "column_default": "true",
-                        "is_nullable": "YES",
-                        "is_updatable": "YES",
-                        # I never ever will desert you when your heart is torn
-                        "is_self_referencing": "NO",
-                        "is_identity": "NO",
-                        "is_generated": "NEVER",
-                    },
-                    col_data,
-                )
+
                 # check if default is applied to both old meetings (1)
                 # and meetings created after the migration is finalized (4).
                 assert (

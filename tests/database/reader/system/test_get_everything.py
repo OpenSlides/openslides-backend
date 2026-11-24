@@ -79,6 +79,10 @@ def test_simple(db_connection: Connection) -> None:
                 "users_email_replyto": None,
                 "users_email_sender": "OpenSlides",
                 "users_email_subject": "OpenSlides access data",
+                "idm_identity_key": None,
+                "idm_organization_managment_key": None,
+                "idm_committee_management_key": None,
+                "idm_mapper_ids": None,
             },
         },
         "theme": {

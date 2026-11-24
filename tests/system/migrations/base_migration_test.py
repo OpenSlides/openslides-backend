@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
@@ -50,6 +51,20 @@ DEPR_SQL_PATH = os.path.realpath(
     os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
 )
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
+
+
+@dataclass
+class AssertFieldData:
+    table_name: str
+    field_name: str
+    postgres_type: str
+    table_fields: dict[str, dict[str, Any]] | None = None
+    is_identity: bool = False
+    is_nullable: bool = True
+    default: str | None = None
+    max_len: int | None = None
+    fk_to_table_name: str | None = None
+    enum_name: str | None = None
 
 
 class BaseMigrationTestCase(TestCase):
@@ -222,6 +237,142 @@ class BaseMigrationTestCase(TestCase):
                 f"SELECT EXISTS(SELECT 1 FROM information_schema.triggers WHERE trigger_name = '{trigger_name}') AS exists;"
             ).fetchone(),
         )["exists"]
+
+    def assert_enum_exists(
+        self,
+        curs: Cursor[DictRow],
+        enum_name: str,
+        enum_content: list[str],
+    ) -> None:
+        type_data = curs.execute(
+            f"SELECT t.typname, array_agg(e.enumlabel) AS content FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE typname='{enum_name}' GROUP BY t.typname;"
+        ).fetchall()
+        assert len(type_data) == 1
+        assert type_data[0]["typname"] == enum_name
+        assert sorted(type_data[0]["content"]) == sorted(enum_content)
+
+    def assert_id_field_exists(
+        self,
+        curs: Cursor[DictRow],
+        table_name: str,
+        table_fields: dict[str, dict[str, Any]] | None = None,
+    ) -> None:
+        self.assert_field_exists(
+            curs,
+            table_name,
+            "id",
+            "integer",
+            table_fields,
+            is_identity=True,
+            is_nullable=False,
+        )
+
+    def get_find_fk_constraint_name_condition(
+        self,
+        field_data: AssertFieldData,
+    ) -> str:
+        """
+        Needs to be overridden by subclass to define whatever
+        query condition should be added to the WHERE part to restrict
+        the foreign constraint check to specifically the ones referring
+        to this field.
+
+        This is to ensure this test class remains valid even with schema generation changes.
+        """
+        raise BadCodingException(
+            "assert_field_exists only works if get_find_fk_constraint_name_condition is overridden."
+        )
+
+    def assert_field_exists(
+        self,
+        curs: Cursor[DictRow],
+        table_name: str,
+        field_name: str,
+        postgres_type: str,
+        table_fields: dict[str, dict[str, Any]] | None = None,
+        is_identity: bool = False,
+        is_nullable: bool = True,
+        default: str | None = None,
+        max_len: int | None = None,
+        fk_to_table_name: str | None = None,
+        enum_name: str | None = None,
+    ) -> None:
+        """
+        Checks if the schema_data of a field exists.
+        To reduce database calls, a table column data dict
+        (as is returned by assert_table_fields)
+        may optionally be input at the table_fields attribute.
+        """
+        field_data = AssertFieldData(
+            table_name,
+            field_name,
+            postgres_type,
+            table_fields,
+            is_identity,
+            is_nullable,
+            default,
+            max_len,
+            fk_to_table_name,
+            enum_name,
+        )
+        if table_fields:
+            col_data = [table_fields[field_name]]
+        else:
+            col_data = curs.execute(
+                f"SELECT * FROM information_schema.columns WHERE table_name='{table_name}' AND column_name='{field_name}';"
+            ).fetchall()
+        assert len(col_data) == 1
+        self.assert_contained_in(
+            {
+                "table_catalog": "openslides",
+                "table_name": table_name,
+                "column_name": field_name,
+                "data_type": "USER-DEFINED" if enum_name else postgres_type,
+                "column_default": default,
+                "is_nullable": "YES" if is_nullable else "NO",
+                "is_updatable": "YES",
+                "is_self_referencing": "NO",
+                "is_identity": "YES" if is_identity else "NO",
+                "identity_generation": "BY DEFAULT" if is_identity else None,
+                "identity_start": "1" if is_identity else None,
+                "identity_increment": "1" if is_identity else None,
+                "identity_maximum": "2147483647" if is_identity else None,
+                "identity_minimum": "1" if is_identity else None,
+                "identity_cycle": "NO",
+                "is_generated": "NEVER",
+                "character_maximum_length": max_len,
+            },
+            col_data[0],
+        )
+        if enum_name:
+            assert col_data[0]["udt_name"] == enum_name
+        assert cast(
+            dict[str, Any],
+            curs.execute(
+                f"SELECT COUNT(1) AS c FROM information_schema.table_constraints WHERE table_name='{table_name}' AND {self.get_find_fk_constraint_name_condition(field_data)} AND constraint_type='FOREIGN KEY';"
+            ).fetchone(),
+        )["c"] == (1 if fk_to_table_name else 0)
+
+    def assert_view_exists(self, curs: Cursor[DictRow], view_name: str) -> None:
+        assert (
+            cast(
+                dict[str, Any],
+                curs.execute(
+                    f"SELECT COUNT(1) FROM information_schema.views WHERE table_name='{view_name}';"
+                ).fetchone(),
+            )["count"]
+            == 1
+        )
+
+    def assert_table_fields(
+        self, curs: Cursor[DictRow], table_name: str, field_names: list[str]
+    ) -> dict[str, dict[str, Any]]:
+        cols = curs.execute(
+            f"SELECT * FROM information_schema.columns WHERE table_name='{table_name}';"
+        ).fetchall()
+        colname_to_data = {col["column_name"]: col for col in cols}
+        assert sorted(colname_to_data) == sorted(field_names)
+        return colname_to_data
 
     def assert_trigger_exists(self, curs: Cursor[DictRow], trigger_name: str) -> None:
         assert self.get_trigger_exists(curs, trigger_name)
