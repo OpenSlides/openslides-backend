@@ -25,7 +25,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models({"user/111": {"username": "User111"}})
 
     def two_meetings_test_fail_ADEFGH(
-        self, committee_id: None | int = None, group_B_success: bool = False
+        self,
+        committee_id: None | int = None,
+        group_B_success: bool = False,
+        with_meeting_perm_text: bool = True,
     ) -> None:
         # test group A
         response = self.request(
@@ -36,8 +39,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
+        insert = "s" if with_meeting_perm_text else ""
+        error_text = f"You are not allowed to perform action user.update. Missing permission{insert}: OrganizationManagementLevel can_manage_users in organization 1"
+        if with_meeting_perm_text:
+            error_text += " or Permission user.can_update in meetings {1, 4}"
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            error_text,
             response.json["message"],
         )
         self.assert_model_exists(
@@ -98,7 +105,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            error_text,
             response.json["message"],
         )
         self.assert_model_exists(
@@ -1175,7 +1182,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         # 111 is committee admin
         committee_id = 60
         self.set_committee_management_level([committee_id], 111)
-        self.two_meetings_test_fail_ADEFGH(committee_id)
+        self.two_meetings_test_fail_ADEFGH(committee_id, with_meeting_perm_text=False)
         # test group B and C
         response = self.request(
             "user.update",
@@ -1201,7 +1208,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
             response.json["message"],
         )
         self.assert_model_exists(
@@ -1317,7 +1324,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
             response.json["message"],
         )
 
@@ -4513,6 +4520,73 @@ class UserUpdateActionTest(BaseActionTestCase):
             f"user/{bob_id}",
             {"username": "bob", "organization_management_level": "superadmin"},
         )
+
+    def update_for_meeting_member_comm_admin_as_group(
+        self, bob_group: int, set_field: Literal["email", "username"]
+    ) -> None:
+        self.create_meeting()
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.create_meeting(4, {"committee_id": 60})
+        self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
+
+        alice_id = self.create_user("alice")
+        self.set_committee_management_level([60], alice_id)
+        self.set_user_groups(alice_id, [1])
+
+        bob_id = self.create_user("bob")
+        self.set_user_groups(bob_id, [bob_group])
+
+        self.login(bob_id)
+        data = {"email": "bob.email@malicious.de", "username": "bobdermeisterhacker"}
+
+        response = self.request(
+            "user.update", {"id": alice_id, set_field: data[set_field]}
+        )
+        self.assert_status_code(response, 403)
+        self.assertEqual(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+            response.json["message"],
+        )
+
+    def test_update_email_for_meeting_member_comm_admin_as_same_meeting_admin(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(2, "email")
+
+    def test_update_email_for_meeting_member_comm_admin_as_same_meeting_user_manager(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(3, "email")
+
+    def test_update_email_for_meeting_member_comm_admin_as_different_meeting_admin(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(5, "email")
+
+    def test_update_email_for_meeting_member_comm_admin_as_different_meeting_user_manager(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(6, "email")
+
+    def test_update_username_for_meeting_member_comm_admin_as_same_meeting_admin(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(2, "username")
+
+    def test_update_username_for_meeting_member_comm_admin_as_same_meeting_user_manager(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(3, "username")
+
+    def test_update_username_for_meeting_member_comm_admin_as_different_meeting_admin(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(5, "username")
+
+    def test_update_username_for_meeting_member_comm_admin_as_different_meeting_user_manager(
+        self,
+    ) -> None:
+        self.update_for_meeting_member_comm_admin_as_group(6, "username")
 
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):

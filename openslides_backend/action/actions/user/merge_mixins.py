@@ -395,8 +395,7 @@ class MeetingUserMergeMixin(
         for meeting_user in meeting_users.values():
             if b_ids := list(
                 {
-                    id_
-                    for id_ in [
+                    *[
                         *meeting_user.get("acting_ballot_ids", []),
                         *meeting_user.get("represented_ballot_ids", []),
                     ]

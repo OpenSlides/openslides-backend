@@ -2,6 +2,8 @@ from typing import Any
 
 from psycopg import Connection, rows, sql
 from psycopg.errors import (
+    DatabaseError,
+    InterfaceError,
     SerializationFailure,
     UndefinedColumn,
     UndefinedFunction,
@@ -11,7 +13,11 @@ from psycopg.errors import (
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
 )
-from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
+from openslides_backend.shared.exceptions import (
+    DatabaseException,
+    DatabaseInternalException,
+    InvalidFormat,
+)
 from openslides_backend.shared.filters import And, Filter, Not, Or
 from openslides_backend.shared.patterns import Collection, Id
 from openslides_backend.shared.typing import LockResult, Model, PartialModel
@@ -113,8 +119,8 @@ class DatabaseReader(SqlQueryHelper):
                 collection, query, arguments, mapped_fields, lock_result
             )
         except InvalidFormat as e:
-            if '"' in e.message:
-                part_one, field, *_ = e.message.split('"')
+            if "'" in e.message:
+                part_one, field, *_ = e.message.split("'")
                 if "Field" in part_one and self.is_field_in_filter(field, filter_):
                     e.message += "\nCheck filter fields."
             raise e
@@ -236,22 +242,33 @@ class DatabaseReader(SqlQueryHelper):
             with self.connection.cursor() as curs:
                 results = curs.execute(query, arguments).fetchall()
         except UndefinedColumn as e:
+            self.logger.error(str(e))
             column = e.args[0].split('"')[1]
-            error_msg = (
-                f"Field '{column}' does not exist in collection '{collection}': {e}"
-            )
+            error_msg = f"Field '{column}' does not exist in collection '{collection}'."
             if mapped_fields and column in mapped_fields.unique_fields:
                 error_msg += "\nCheck mapped fields."
-            raise InvalidFormat(error_msg)
+            raise InvalidFormat(error_msg) from e
         except UndefinedTable as e:
+            self.logger.error(str(e))
             raise InvalidFormat(
-                f"Collection '{collection}' does not exist in the database: {e}"
-            )
+                f"Collection '{collection}' does not exist in the database."
+            ) from e
         except UndefinedFunction as e:
-            raise InvalidFormat(e.diag.message_primary or "")
+            self.logger.error(str(e))
+            raise InvalidFormat(e.diag.message_primary or "") from e
         except SerializationFailure as e:
-            raise e
+            self.logger.error(str(e))
+            raise DatabaseInternalException("SerializationFailure") from e
+        except DatabaseError as e:
+            self.logger.error(str(e))
+            raise DatabaseException("Psycopg encountered a new problem.") from e
+        except InterfaceError as e:
+            self.logger.error(str(e))
+            raise DatabaseException(
+                "The user encountered a new problem with psycopg."
+            ) from e
         except Exception as e:
-            raise DatabaseException(f"Unexpected error reading from database: {e}")
+            self.logger.error(str(e))
+            raise DatabaseException("Unexpected error reading from database.") from e
 
         return results

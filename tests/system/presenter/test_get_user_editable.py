@@ -172,6 +172,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
     def test_with_same_meeting(self) -> None:
         """
         User 5 can be edited because he is only in meetings which User 111 is admin of.
+        User 6 can be edited because while he is only in meetings which User 111 is admin of, he is also a committee admin.
         User 7 can not be edited because he is in two of the same meetings but User 111 is not admin in all of them.
         """
         self.set_models(
@@ -186,6 +187,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
         self.create_meeting_for_two_users(4, 5, 111)
         self.create_meeting_for_two_users(7, 7, 111, {"committee_id": 60})
         self.create_meeting_for_two_users(10, 7, 111, {"committee_id": 66})
+        test_user_id = self.create_user("commadmin", [1], committee_management_ids=[60])
 
         # User 111 is meeting admin in meeting 1, 4 and 7 but normal user in 10
         # User 5 is normal user in meeting 1 and 4
@@ -202,7 +204,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
         status_code, data = self.request(
             "get_user_editable",
             {
-                "user_ids": [5, 7],
+                "user_ids": [5, 7, test_user_id],
                 "fields": ["first_name", "default_password"],
             },
         )
@@ -221,12 +223,23 @@ class TestGetUSerEditable(BasePresenterTestCase):
                         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
                     ],
                 },
+                f"{test_user_id}": {
+                    "default_password": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                    ],
+                    "first_name": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                    ],
+                },
             },
         )
 
     def test_with_same_meeting_can_update(self) -> None:
         """
         User 5 can be edited because he is only in meetings which User 111 has can_manage of.
+        User 6 can be edited because while he is only in meetings which User 111 has can_update of, he is also a committee admin.
         User 7 can be edited because he is only in meetings which User 111 has can_update of.
         """
         self.set_models(
@@ -241,6 +254,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
         self.create_meeting_for_two_users(4, 5, 111)
         self.create_meeting_for_two_users(7, 7, 111, {"committee_id": 60})
         self.create_meeting_for_two_users(10, 7, 111, {"committee_id": 66})
+        test_user_id = self.create_user("commadmin", [1], committee_management_ids=[60])
         self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
         self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
         self.set_group_permissions(9, [Permissions.User.CAN_MANAGE])
@@ -259,7 +273,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
         status_code, data = self.request(
             "get_user_editable",
             {
-                "user_ids": [5, 7],
+                "user_ids": [5, 7, test_user_id],
                 "fields": ["first_name", "default_password"],
             },
         )
@@ -269,6 +283,16 @@ class TestGetUSerEditable(BasePresenterTestCase):
             {
                 "5": {"default_password": [True, ""], "first_name": [True, ""]},
                 "7": {"default_password": [True, ""], "first_name": [True, ""]},
+                f"{test_user_id}": {
+                    "default_password": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                    ],
+                    "first_name": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                    ],
+                },
             },
         )
 

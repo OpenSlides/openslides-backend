@@ -639,7 +639,14 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Invalid date format" in response.json["message"]
+        assert (
+            "Invalid date for column {{field}}: Got {{content}}; expected format YYYY-MM-DD"
+            in response.json["message"]
+        )
+        assert response.json["message_args"] == {
+            "field": "meeting_end_time",
+            "content": "12XX-broken",
+        }
 
     def test_json_upload_start_date_after_end_date(self) -> None:
         self.set_models({"organization/1": {"time_zone": "Europe/Chisinau"}})
@@ -1956,4 +1963,71 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "Could not identify parent: Name 'National council' found multiple times, the field will therefore be ignored.",
             ],
             "state": ImportState.DONE,
+        }
+
+    def json_upload_with_only_new_with_parents(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "root"},
+                    {"name": "level 1", "parent": "root"},
+                    {"name": "level 2", "parent": "level 1"},
+                    {"name": "level 3", "parent": "level 2"},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response, 0) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                }
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "root",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 1",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "level 3",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "level 2",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
         }

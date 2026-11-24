@@ -133,6 +133,7 @@ meeting_settings_keys = [
     "motions_export_follow_recommendation",
     "motions_enable_restricted_editor_for_manager",
     "motions_enable_restricted_editor_for_non_manager",
+    "motions_enable_consultation_sequence",
     "poll_projection_name_order_first",
     "poll_projection_max_columns",
     "users_enable_presence_view",

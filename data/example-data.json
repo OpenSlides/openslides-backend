@@ -1,5 +1,5 @@
 {
-    "_migration_index": 100,
+    "_migration_index": 102,
     "gender":{
         "1":{
             "id": 1,
@@ -354,6 +354,7 @@
             "motions_export_submitter_recommendation": true,
             "motions_export_follow_recommendation": false,
             "motions_enable_restricted_editor_for_non_manager": true,
+            "motions_enable_consultation_sequence": true,
             "poll_projection_name_order_first": "last_name",
             "poll_projection_max_columns": 6,
             "users_enable_presence_view": true,

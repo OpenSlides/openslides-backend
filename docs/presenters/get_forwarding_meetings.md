@@ -24,12 +24,33 @@ or `{ok: False}` on errors
 
 # Logic
 
-If the user does not have `motion.can_forward` in the given meeting, an error is returned. 
+If the user does not have `motion.can_forward` in the given meeting, an error is returned.
 If the given meeting is archived or there is no committee, an exception is thrown and an error is returned.
 
 The relation `meeting/committee_id` -> `committee/forward_to_committee_ids` is followed. A list is returned. Every committee in the list generates one entry:
 
-For each meeting in the committee it is checked whether it is active (`is_active_in_organization_id`). All those meetings are collected in a list represented by `{id: <meeting/id>, name: <meeting/name>}`. For the committee, this object is created:
+For each meeting in the committee it is checked whether:
+* It is active (`is_active_in_organization_id`)
+* Its `id` does not match `meeting_id` from the payload
+* It ends today or in the future (`end_time` >= start of current day)
+
+All those meetings are collected in a list represented by:
+
+```
+{
+    id: <meeting/id>,
+    name: <meeting/name>,
+    start_time: <meeting/start_time>,
+    end_time: <meeting/end_time>
+}
+```
+
+String representations of `start_time` and `end_time` are created for the
+`meeting/time_zone` if it is defined. Otherwise `organization/time_zone`
+or UTC is used.
+
+For the committee, this object is created:
+
 ```
 {
     id: <committee/id>,
@@ -38,4 +59,5 @@ For each meeting in the committee it is checked whether it is active (`is_active
     meetings: <List of meetings>
 }
 ```
+
 A list of these objects is returned to the caller.

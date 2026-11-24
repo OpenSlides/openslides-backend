@@ -108,6 +108,7 @@ def export_meeting(
                             ),
                         ],
                         use_changed_models=False,
+                        lock_result=False,
                     )["mediafile"]
                 )
                 next_file_ids = list(
@@ -182,11 +183,7 @@ def export_meeting(
                 for entry in export[collection].values():
                     if entry.get(user_field.get_own_field_name()):
                         user_ids.update(
-                            {
-                                id_
-                                for id_ in entry.get(user_field.get_own_field_name())
-                                or []
-                            }
+                            {*(entry.get(user_field.get_own_field_name()) or [])}
                         )
             if (
                 isinstance(user_field, RelationField)

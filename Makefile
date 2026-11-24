@@ -39,7 +39,8 @@ lint:
 	@@$(MAKE) -C ./meta/dev cleanup-yaml
 
 test:
-	pytest
+# s= number of tests to skip from the beginning also works with %
+	pytest $(if $(s), --skip-first $s)
 
 coverage:
 	pytest --cov --cov-report html
@@ -48,9 +49,19 @@ test-file:
 # f= to pass the file name
 # k= to pass a test name
 # v=1 to run verbose test output
+# da=1 debug anything without using pytest.
+# now=1 no wait for execution for attach. In other words: execute now.
 # cap=1 to capture print to system out
 # cov=1 to run coverage report
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
+# ARGS Any other arguments to pass to a script.
+	python -m debugpy --listen 0.0.0.0:5678 $(if $(now),,--wait-for-client) $(if $(da),,/usr/local/bin/pytest) $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered) $(ARGS)
+
+test-file-pyspy:
+# f= to pass the file name
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+	py-spy record --subprocesses --format speedscope -- python -m debugpy --listen 0.0.0.0:5678 /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
@@ -88,13 +99,8 @@ mypy:
 cleanup-collection-yaml:
 	make -C meta/dev cleanup-yaml
 
-generate-schema:
-	make -C meta/dev generate-relational-schema
-
 join-models-yml:
 	make -C meta/dev join-models-yml
-
-generate-db: | generate-schema create-database-with-schema
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -169,14 +175,24 @@ pip-check: | deprecation-warning
 extract-translations:
 	pybabel extract --no-location --sort-output -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
+# Database
+
 drop-database:
 	make -C meta/dev drop-database
 
 create-database:
 	make -C meta/dev create-database
 
-generate-relational-schema:
+generate-schema:
 	make -C meta/dev generate-relational-schema
+
+replace-previous-models:
+	cp -r meta/collections/ openslides_backend/migrations/previous_models/collections/ && cp meta/collection-meta.yml openslides_backend/migrations/previous_models/
+
+generate-migration-diff:
+	python openslides_backend/migrations/sql_diff_generator.py $(ARGS)
+
+generate-db: | generate-schema recreate-database
 
 apply-db-schema:
 	make -C meta/dev apply-db-schema
@@ -189,6 +205,10 @@ recreate-database:
 
 run-psql:
 	make -C meta/dev run-psql
+
+# General
+
+generate-files: | generate-permissions generate-models generate-schema generate-migration-diff
 
 # Build and run production docker container (not usable inside the docker container)
 

@@ -70,23 +70,27 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
             mapped_fields=["id"],
         )
 
-        ancesters = []
+        ancestors = []
         if parent_id:
-            # Calculate the ancesters of parent
-            ancesters.append(parent_id)
+            # Calculate the ancestors of parent
+            ancestors.append(parent_id)
             grandparent = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, parent_id),
                 ["parent_id"],
             )
             while grandparent.get("parent_id") is not None:
                 gp_parent_id = grandparent["parent_id"]
-                ancesters.append(gp_parent_id)
+                ancestors.append(gp_parent_id)
                 grandparent = self.datastore.get(
                     fqid_from_collection_and_id(self.model.collection, gp_parent_id),
                     ["parent_id"],
                 )
         for num, id_ in enumerate(ids):
-            if id_ in ancesters:
+            if id_ in ancestors:
+                if id_ == parent_id:
+                    raise ActionException(
+                        f"Assigning item {id_} to itself is not possible."
+                    )
                 raise ActionException(
                     f"Assigning item {id_} to one of its children is not possible."
                 )

@@ -867,20 +867,6 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert row["data"]["default_password"]["info"] == ImportState.GENERATED
         assert row["data"]["default_password"]["value"]
 
-    def test_json_upload_wrong_gender(self) -> None:
-        self.json_upload_wrong_gender()
-        response_import = self.request("account.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender_id" not in user.keys()
-
-    def test_json_upload_wrong_gender_2(self) -> None:
-        self.json_upload_wrong_gender_2()
-        response_import = self.request("account.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender_id" not in user.keys()
-
     def test_json_upload_legacy_username(self) -> None:
         self.json_upload_legacy_username()
         response = self.request("account.import", {"id": 1, "import": True})

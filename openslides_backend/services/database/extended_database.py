@@ -93,6 +93,7 @@ class ExtendedDatabase(Database):
 
     _changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
+    never_lock: bool = False
 
     def __init__(
         self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
@@ -174,6 +175,7 @@ class ExtendedDatabase(Database):
         changes - all updates to any model during the action are saved in there.
         The parameter use_changed_models defines whether they are searched or not.
         """
+        self._check_never_lock(lock_result)
         if fqid is None:
             raise BadCodingException("No fqid. Offer at least one fqid.")
         try:
@@ -202,7 +204,7 @@ class ExtendedDatabase(Database):
                     field for field in mapped_fields if field not in changed_model_copy
                 ]
             else:
-                missing_fields = [field for field in changed_model_copy.keys()]
+                missing_fields = list(changed_model_copy)
             if not missing_fields:
                 # nothing to do, we've got the full model
                 return changed_model_copy
@@ -251,53 +253,52 @@ class ExtendedDatabase(Database):
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
+        self._check_never_lock(lock_result)
         if use_changed_models:
             mapped_fields_per_collection_and_id: dict[str, dict[int, Any]] = (
                 defaultdict(dict)
             )
             for request in get_many_requests:
-                if not request.mapped_fields:
-                    raise DatabaseException("No mapped fields given.")
                 collection = request.collection
                 for id_ in request.ids:
                     mapped_fields_per_collection_and_id[collection][id_] = list(
                         request.mapped_fields
                     )
             # fetch results from changed models
-            results, missing_fields_per_collection_and_id = (
+            results, missing_fields_per_collection_and_id, gmr_base = (
                 self._get_many_from_changed_models(mapped_fields_per_collection_and_id)
             )
             # fetch missing fields in the changed_models from the db and merge into the results
             if missing_fields_per_collection_and_id:
                 get_many_requests = [
-                    GetManyRequest(collection, [id_], fields)
-                    for collection, id_fields_dict in missing_fields_per_collection_and_id.items()
-                    for id_, fields in id_fields_dict.items()
+                    GetManyRequest(collection, ids, list(fields))
+                    for collection, fields_ids_dict in gmr_base.items()
+                    for fields, ids in fields_ids_dict.items()
                 ]
                 missing_results = self.database_reader.get_many(
                     get_many_requests, lock_result
                 )
                 for collection, models in missing_results.items():
-                    for id_, model in models.items():
-                        # we can just update the model with the db fields since they must not have been
-                        # present previously
-                        results.setdefault(collection, {}).setdefault(id_, {}).update(
-                            model
-                        )
-                # delete fields set to None in changed models
-                for (
-                    collection,
-                    mapped_fields_per_id,
-                ) in mapped_fields_per_collection_and_id.items():
-                    for id_, mapped_fields in mapped_fields_per_id.items():
-                        for field in mapped_fields:
-                            if (
-                                collection in results
-                                and id_ in results[collection]
-                                and field in results[collection][id_]
-                                and results[collection][id_][field] is None
-                            ):
-                                del results[collection][id_][field]
+                    for id_, missing_fields in missing_fields_per_collection_and_id[
+                        collection
+                    ].items():
+                        if model := models.get(id_):
+                            # we can just update the model with the db fields since they must not have been
+                            # present previously
+                            model.update(
+                                results.setdefault(collection, {}).get(id_, {})
+                            )
+                            results[collection][id_] = model
+                            if missing_fields == []:
+                                # See in _get_many_from_changed_models: if the model is not new
+                                # and mapped_fields are [] (i.e. all fields)
+                                # _get_many_from_changed_models will leave the None fields in
+                                # to ensure they don't get overwritten with the newly loaded data.
+                                for field, value in list(
+                                    results[collection][id_].items()
+                                ):
+                                    if value is None:
+                                        del results[collection][id_][field]
         else:
             results = self.database_reader.get_many(get_many_requests, lock_result)
         return results
@@ -306,17 +307,23 @@ class ExtendedDatabase(Database):
         self,
         mapped_fields_per_collection_and_id: MappedFieldsPerCollectionAndId,
     ) -> tuple[
-        dict[Collection, dict[int, PartialModel]], MappedFieldsPerCollectionAndId
+        dict[Collection, dict[int, PartialModel]],
+        MappedFieldsPerCollectionAndId,
+        dict[Collection, dict[tuple[str, ...], list[int]]],
     ]:
         """
+         Returns a dictionary of the changed models for the given collections together with all
         Returns a dictionary of the changed models for the given collections together with all
-        missing fields.
+        missing fields. Also returns the base data for a get many request for missing fields in the shape of: {collection: {tuple(missing fields): [ids of this config]}}
         """
         results: dict[Collection, dict[int, PartialModel]] = defaultdict(
             lambda: defaultdict(dict)
         )
         missing_fields_per_collection_and_id: MappedFieldsPerCollectionAndId = (
             defaultdict(lambda: defaultdict(list))
+        )
+        gmr_base: dict[Collection, dict[tuple[str, ...], list[int]]] = defaultdict(
+            lambda: defaultdict(list)
         )
         for (
             collection,
@@ -330,24 +337,32 @@ class ExtendedDatabase(Database):
                 if changed_model := self._changed_models[collection].get(id_, dict()):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
+                        has_missing = False
                         for field in mapped_fields:
-                            if field in changed_model or changed_model.get("meta_new"):
-                                results[collection][id_][field] = changed_model.get(
-                                    field, None
-                                )
-                            else:
+                            if field in changed_model:
+                                if (val := changed_model[field]) is not None:
+                                    results[collection][id_][field] = val
+                            elif not changed_model.get("meta_new"):
                                 missing_fields_per_collection_and_id[collection][
                                     id_
                                 ].append(field)
+                                has_missing = True
+                        if has_missing:
+                            fields = missing_fields_per_collection_and_id[collection][
+                                id_
+                            ]
+                            gmr_base[collection][tuple(fields)].append(id_)
                     else:
-                        # assuming that whole model is needed and we want that?
+                        # The whole model is requested.
                         results[collection][id_] = changed_model
                         missing_fields_per_collection_and_id[collection][id_] = []
+                        gmr_base[collection][tuple([])].append(id_)
                 else:
+                    gmr_base[collection][tuple(mapped_fields)].append(id_)
                     missing_fields_per_collection_and_id[collection][
                         id_
                     ] = mapped_fields
-        return (results, missing_fields_per_collection_and_id)
+        return (results, missing_fields_per_collection_and_id, gmr_base)
 
     def get_all(
         self,
@@ -355,6 +370,7 @@ class ExtendedDatabase(Database):
         mapped_fields: list[str] = [],
         lock_result: bool = True,
     ) -> dict[Id, PartialModel]:
+        self._check_never_lock(lock_result)
         return self.database_reader.get_all(
             collection, MappedFields(mapped_fields), lock_result
         )
@@ -367,6 +383,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> dict[int, PartialModel]:
+        self._check_never_lock(lock_result)
         if not filter_:
             result = self.database_reader.get_all(
                 collection, MappedFields(mapped_fields), lock_result
@@ -463,6 +480,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
+        self._check_never_lock(lock_result)
         if method not in VALID_AGGREGATE_FUNCTIONS:
             raise BadCodingException(f"Invalid aggregate function: {method}")
         if use_changed_models and self._changed_models[collection]:
@@ -642,6 +660,7 @@ class ExtendedDatabase(Database):
         lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
+        self._check_never_lock(lock_result)
         return self.database_reader.execute_custom_select(query, lock_result, arguments)
 
     def _model_fits_subfilter(
@@ -747,3 +766,16 @@ class ExtendedDatabase(Database):
                 raise NotImplementedError("Operator %= is not supported")
             case default:
                 raise NotImplementedError(f"Operator {default} is not supported")
+
+    def _check_never_lock(self, lock_result: LockResult) -> None:
+        """
+        A check for select methods that can lock.
+        Raises a BadCodingException if locking is on and never_lock is enabled.
+
+        This is a programming safety mechanism to ensure the presenters don't
+        select with locking on.
+        """
+        if self.env.is_dev_mode() and self.never_lock and lock_result:
+            raise BadCodingException(
+                "ExtendedDatabase running in never_lock mode, all requests must have locking set to false."
+            )

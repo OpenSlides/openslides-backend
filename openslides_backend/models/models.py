@@ -865,6 +865,7 @@ class Meeting(Model, MeetingModelMixin):
     motions_export_follow_recommendation = fields.BooleanField(default=False)
     motions_enable_restricted_editor_for_manager = fields.BooleanField()
     motions_enable_restricted_editor_for_non_manager = fields.BooleanField(default=True)
+    motions_enable_consultation_sequence = fields.BooleanField(default=True)
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,

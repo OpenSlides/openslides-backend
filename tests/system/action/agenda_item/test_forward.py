@@ -903,7 +903,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 if parent_id
                                 else {}
                             ),
-                            **{field: val for field, val in data[0].items()},
+                            **data[0],
                         },
                     )
                     self.assert_model_exists(

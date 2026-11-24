@@ -34,6 +34,10 @@ class View400Exception(ViewException):
     status_code = 400
 
 
+class View500Exception(ViewException):
+    status_code = 500
+
+
 class AuthenticationException(View400Exception):
     pass
 
@@ -41,6 +45,16 @@ class AuthenticationException(View400Exception):
 class ActionException(View400Exception):
     action_error_index: int | None
     action_data_error_index: int | None
+
+    def __init__(
+        self,
+        message: str,
+        additional_json: dict[str, Any] = {},
+        message_args: dict[str, Any] = {},
+    ) -> None:
+        super().__init__(message)
+        self.additional_json = additional_json
+        self.message_args = message_args
 
     def get_json(self) -> dict[str, Any]:
         json = super().get_json()
@@ -51,6 +65,7 @@ class ActionException(View400Exception):
             and self.action_data_error_index is not None
         ):
             json["action_data_error_index"] = self.action_data_error_index
+        json["message_args"] = self.message_args
         return json
 
 
@@ -92,6 +107,10 @@ class DatabaseException(ServiceException):
     pass
 
 
+class DatabaseInternalException(View500Exception):
+    pass
+
+
 class InvalidFormat(DatabaseException):
     pass
 
@@ -120,18 +139,6 @@ class ModelLocked(DatabaseException):
     def __init__(self, keys: str) -> None:
         super().__init__("")
         self.keys = keys
-
-
-class InvalidDatastoreState(DatabaseException):
-    pass
-
-
-class DatastoreNotEmpty(DatabaseException):
-    pass
-
-
-class DatastoreConnectionException(DatabaseException):
-    pass
 
 
 class DatastoreLockedException(DatabaseException):

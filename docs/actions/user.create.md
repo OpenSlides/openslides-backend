@@ -16,6 +16,7 @@
     member_number: string;
     default_vote_weight: decimal(6);
     external: boolean;
+    default_password: string;
 
 // Group B
     number: string;
@@ -39,9 +40,6 @@
 
 // Group E
     organization_management_level: string;
-
-// Group F
-    default_password: string;
 
 // Group G
     is_demo_user: boolean;
@@ -95,7 +93,7 @@ The request user needs the basic permissions, see [Permissions for altering a us
 
 Group A:
 
-No special permissions
+Aside from the above, the request user needs at minimum the OML-Level of the requested user.
 
 Group B:
 
@@ -118,10 +116,6 @@ The request user must satisfy at least one of:
 Group E:
 
 The request user needs the OML equal or higher than that he wants to set. So the minimum is `can_manage_users`.
-
-Group F:
-
-The request user needs the permissions under the rules of user_scope, see [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user), but at minimum the OML-Level of the requested user.
 
 Group G:
 

@@ -1,6 +1,7 @@
 from typing import Any
 
 import bleach
+import fastjsonschema
 import simplejson as json
 from bleach.css_sanitizer import CSSSanitizer
 
@@ -191,3 +192,9 @@ def validate_html(
 def get_initial_data_file(file: str) -> dict[str, Any]:
     with open(file) as fileh:
         return json.load(fileh)
+
+
+def json_schema_error_to_str(err: fastjsonschema.JsonSchemaException) -> str:
+    if hasattr(err, "message"):
+        return err.message
+    return str(err)

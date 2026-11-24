@@ -45,6 +45,7 @@ from ..shared.patterns import (
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
+from ..shared.util import json_schema_error_to_str
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -331,7 +332,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 }
             )
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(f"Action {self.name}: " + exception.message)
+            raise ActionException(
+                f"Action {self.name}: " + json_schema_error_to_str(exception)
+            )
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
@@ -750,7 +753,16 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         """
         Can be overridden by actions to return a cleanup method to execute
-        after the result was successfully written to the DS.
+        after the result was successfully written to the DB and the connection was closed.
+        """
+        return None
+
+    def get_on_success_transaction_based(
+        self, action_data: ActionData
+    ) -> Callable[[], None] | None:
+        """
+        Can be overridden by actions to return a cleanup method to execute
+        after the result was successfully written to the DB.
         """
         return None
 
