@@ -22,6 +22,9 @@
     disable_forward_with_attachments: boolean;
     restrict_editing_same_level_committee_admins: boolean;
     restrict_edit_forward_committees: boolean;
+    idm_identity_key: string;
+    idm_organization_managment_key: string;
+    idm_committee_management_key: string;
     
 // Group B
     enable_electronic_voting: boolean;

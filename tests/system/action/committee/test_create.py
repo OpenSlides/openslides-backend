@@ -32,6 +32,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "forward_to_committee_ids": [1],
                 "receive_forwardings_from_committee_ids": [1],
                 "external_id": external_id,
+                "identity_key": "10101010101010101010101010",
             },
         )
         self.assert_status_code(response, 200)
@@ -45,6 +46,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "organization_tag_ids": [12],
                 "forward_to_committee_ids": [1],
                 "receive_forwardings_from_committee_ids": [1],
+                "identity_key": "10101010101010101010101010",
             },
         )
         self.assert_model_exists(

@@ -32,6 +32,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             "manager_ids",
             "external_id",
             "parent_id",
+            "identity_key",
         ],
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

@@ -43,6 +43,9 @@ class OrganizationUpdate(
         "disable_forward_with_attachments",
         "restrict_editing_same_level_committee_admins",
         "restrict_edit_forward_committees",
+        "idm_identity_key",
+        "idm_organization_managment_key",
+        "idm_committee_management_key",
     )
 
     group_B_fields = (

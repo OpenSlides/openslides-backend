@@ -807,6 +807,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                             "start_time": 1623016800,
                             "end_time": 1623016800,
                             "enable_anonymous": True,
+                            "enable_idm_matching": True,
                             "organization_tag_ids": [],
                             "id": 1,
                         }
@@ -832,6 +833,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting_user/2",
             {"meeting_id": 1, "user_id": 2, "group_ids": [2]},
         )
+        self.assert_model_exists("meeting/1", {"enable_idm_matching": True})
 
     def test_update_anonymous_if_disabled_in_orga(self) -> None:
         self.create_meeting()

@@ -452,6 +452,26 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
 
     def test_update_default_language(self) -> None:
         response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "idm_identity_key": "T'is",
+                "idm_organization_managment_key": "but",
+                "idm_committee_management_key": "a scratch!",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {
+                "idm_identity_key": "T'is",
+                "idm_organization_managment_key": "but",
+                "idm_committee_management_key": "a scratch!",
+            },
+        )
+
+    def test_update_idp_fields(self) -> None:
+        response = self.request(
             "organization.update", {"id": 1, "default_language": "it"}
         )
         self.assert_status_code(response, 200)

@@ -8,6 +8,7 @@
 // Group A
     name: string;
     description: HTML;
+    identity_key: string;
     default_meeting_id: Id;
     organization_tag_ids: Id[];
     external_id: string;

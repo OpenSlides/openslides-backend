@@ -9,6 +9,7 @@
     description: HTML;
     organization_tag_ids: Id[];
     external_id: string;
+    identity_key: string;
     parent_id: Id;
 
     manager_ids: Id[];
