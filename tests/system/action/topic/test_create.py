@@ -151,7 +151,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "mediafile_id": 3,
                 "attachment_ids": ["topic/1"],
                 "inherited_access_group_ids": [2],
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "is_public": False,
             },
         )

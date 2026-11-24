@@ -40,7 +40,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "description": description,
-                "meeting_ids": None,
+                "meeting_ids": [],
                 "external_id": external_id,
                 "organization_tag_ids": [12],
                 "forward_to_committee_ids": [1],

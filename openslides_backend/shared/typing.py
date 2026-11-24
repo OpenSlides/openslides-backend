@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from .patterns import Collection, Id
+from .patterns import Collection, FullQualifiedId, Id
 
 PartialModel = dict[str, Any]
 Model = dict[str, Any]
@@ -8,7 +8,8 @@ ModelMap = dict[Collection, dict[Id, PartialModel]]
 
 Schema = dict[str, Any]
 
-HistoryInformation = dict[str, list[str]]
+
+HistoryInformation = dict[FullQualifiedId, list[str]]
 
 JSON = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 

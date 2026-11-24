@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -71,18 +71,22 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "projector_countdown_warning_time": 0,
                 "organization_tag_ids": [3],
                 "is_active_in_organization_id": 1,
-                "assignment_poll_default_group_ids": [3],
-                "motion_poll_default_group_ids": [3],
-                "topic_poll_default_group_ids": [3],
-                "motion_poll_projection_name_order_first": "last_name",
-                "motion_poll_projection_max_columns": 6,
+                "poll_setting_ids": [1, 2, 3],
+                "assignment_poll_config_id": 1,
+                "motion_poll_config_id": 2,
+                "topic_poll_config_id": 3,
+                "poll_projection_name_order_first": "last_name",
+                "poll_projection_max_columns": 6,
                 **{field: [1] for field in Meeting.all_default_projectors()},
             },
         )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1]})
         self.assert_model_exists("group/1", {"name": "Default"})
         self.assert_model_exists("group/2", {"name": "Admin"})
-        self.assert_model_exists("group/3", {"name": "Delegates"})
+        self.assert_model_exists(
+            "group/3",
+            {"name": "Delegates", "used_in_meeting_poll_setting_ids": [1, 2, 3]},
+        )
         self.assert_model_exists("group/4", {"name": "Staff"})
         self.assert_model_exists(
             "motion_workflow/1",
@@ -186,9 +190,69 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "countdown_time": 60,
             },
         )
+        self.assert_model_exists(
+            "meeting_poll_setting/1",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": 1,
+                "used_as_motion_poll_config_in_meeting_id": None,
+                "used_as_topic_poll_config_in_meeting_id": None,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": Poll.METHOD_SELECTION_Y,
+                "required_majority": "no_majority",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_setting/2",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": None,
+                "used_as_motion_poll_config_in_meeting_id": 1,
+                "used_as_topic_poll_config_in_meeting_id": None,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YES_NO_ABSTAIN,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": Poll.METHOD_APPROVAL_YNA,
+                "required_majority": "no_majority",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_poll_setting/3",
+            {
+                "meeting_id": 1,
+                "used_as_assignment_poll_config_in_meeting_id": None,
+                "used_as_motion_poll_config_in_meeting_id": None,
+                "used_as_topic_poll_config_in_meeting_id": 1,
+                "group_ids": [3],
+                "sort_result_by_votes": True,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
+                "enable_cumulative_voting": False,
+                "allow_live_voting": False,
+                "enable_live_voting": False,
+                "enable_max_options_limit": False,
+                "enable_max_yes_votes": False,
+                "method": Poll.METHOD_SELECTION_Y,
+                "required_majority": "no_majority",
+            },
+        )
 
     def test_check_action_data_fields(self) -> None:
-        """Also checks defaults for assignment_poll and motion_poll."""
+        """Also checks defaults for polls."""
         external_id = "external"
         self.basic_test(
             {
@@ -207,10 +271,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "start_time": datetime.fromtimestamp(1608120653, ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1608121653, ZoneInfo("UTC")),
                 "external_id": external_id,
-                "assignment_poll_default_type": "pseudoanonymous",
-                "assignment_poll_default_method": "Y",
-                "motion_poll_default_type": "pseudoanonymous",
-                "motion_poll_default_method": "YNA",
             },
         )
 

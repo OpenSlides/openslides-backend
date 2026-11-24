@@ -137,7 +137,7 @@ def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
 # Build FQIDs
 
 
-def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
+def fqid_from_collection_and_id(collection: str, id: str | int) -> FullQualifiedId:
     return f"{collection}{KEYSEPARATOR}{id}"
 
 

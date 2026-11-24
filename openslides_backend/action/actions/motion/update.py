@@ -4,6 +4,7 @@ from typing import Any
 
 from psycopg.types.json import Jsonb
 
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -223,19 +224,17 @@ class MotionUpdate(
             raise PermissionDenied(msg)
 
     def get_history_information(self) -> HistoryInformation | None:
-        information = {}
+        information: HistoryInformation = {}
         for instance in deepcopy(self.instances):
-            instance_information = []
+            entries = []
 
             # workflow timestamp changed
             if "workflow_timestamp" in instance:
                 timestamp = instance.pop("workflow_timestamp")
-                instance_information.extend(
-                    ["Workflow_timestamp set to {}", f"{timestamp}"]
-                )
+                entries.extend(["Workflow_timestamp set to {}", f"{timestamp}"])
 
             # category changed
-            instance_information.extend(
+            entries.extend(
                 self.create_history_information_for_field(
                     instance,
                     "category_id",
@@ -245,7 +244,7 @@ class MotionUpdate(
             )
 
             # block changed
-            instance_information.extend(
+            entries.extend(
                 self.create_history_information_for_field(
                     instance, "block_id", "motion_block", "Motion block"
                 )
@@ -263,12 +262,14 @@ class MotionUpdate(
             ]
             if any(field in instance for field in generic_update_fields):
                 # still other fields given, so we also add the generic "updated" message
-                instance_information.append("Motion updated")
+                entries.append("Motion updated")
 
-            if instance_information:
-                information[
-                    fqid_from_collection_and_id(self.model.collection, instance["id"])
-                ] = instance_information
+            if entries:
+                update_history_information(
+                    information,
+                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                    entries,
+                )
 
         return information
 

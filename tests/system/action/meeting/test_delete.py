@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -55,7 +56,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("committee/60", {"meeting_ids": None})
+        self.assert_model_exists("committee/60", {"meeting_ids": []})
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("tag/42")
         self.assert_model_not_exists("motion/1")
@@ -74,7 +75,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("committee/60", {"meeting_ids": None})
+        self.assert_model_exists("committee/60", {"meeting_ids": []})
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("projector/1")
         self.assert_model_not_exists("projection/42")
@@ -132,11 +133,11 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting/1")
 
         self.assert_model_exists(
-            ONE_ORGANIZATION_FQID, {"active_meeting_ids": None, "committee_ids": [60]}
+            ONE_ORGANIZATION_FQID, {"active_meeting_ids": [], "committee_ids": [60]}
         )
         self.assert_model_exists(
             "committee/60",
-            {"user_ids": [1], "meeting_ids": None, "manager_ids": [1]},
+            {"user_ids": [1], "meeting_ids": [], "manager_ids": [1]},
         )
         self.assert_model_not_exists("group/11")
         self.assert_model_exists(
@@ -144,7 +145,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {"committee_ids": [60], "committee_management_ids": [60]},
         )
         self.assert_model_exists(
-            "user/2", {"meeting_user_ids": None, "committee_ids": None}
+            "user/2", {"meeting_user_ids": [], "committee_ids": []}
         )
         self.assert_model_not_exists("motion/53")
         self.assert_model_not_exists("assignment/53")
@@ -246,30 +247,21 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "content_object_id": "assignment/140",
                     "title": "Analog poll 150",
-                    "type": "analog",
-                    "pollmethod": "YNA",
+                    "state": Poll.STATE_CREATED,
+                    "config_id": "poll_config_approval/160",
+                    "visibility": Poll.VISIBILITY_MANUALLY,
                     "meeting_id": 1,
                 },
-                "option/160": {
-                    "meeting_id": 1,
+                "poll_config_approval/160": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID
+                },
+                "poll_option/180": {
                     "poll_id": 150,
-                    "content_object_id": "poll_candidate_list/170",
+                    "content_object_id": "meeting_user/1",
                 },
-                "poll_candidate_list/170": {
-                    "meeting_id": 1,
-                    "option_id": 160,
-                },
-                "poll_candidate/180": {
-                    "meeting_id": 1,
-                    "weight": 1,
-                    "poll_candidate_list_id": 170,
-                    "user_id": 2,
-                },
-                "poll_candidate/181": {
-                    "meeting_id": 1,
-                    "weight": 1,
-                    "poll_candidate_list_id": 170,
-                    "user_id": 3,
+                "poll_option/181": {
+                    "poll_id": 150,
+                    "content_object_id": "meeting_user/2",
                 },
                 "list_of_speakers/190": {
                     "meeting_id": 1,
@@ -307,10 +299,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "group/3",
             "assignment/140",
             "poll/150",
-            "option/160",
-            "poll_candidate_list/170",
-            "poll_candidate/180",
-            "poll_candidate/181",
+            "poll_config_approval/160",
+            "poll_option/180",
+            "poll_option/181",
             "list_of_speakers/190",
             "speaker/210",
             "speaker/211",
@@ -318,9 +309,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         ]
         for fqid in deleted_models:
             self.assert_model_not_exists(fqid)
-        self.assert_model_exists("committee/60", {"meeting_ids": None})
+        self.assert_model_exists("committee/60", {"meeting_ids": []})
         self.assert_model_exists(
-            ONE_ORGANIZATION_FQID, {"active_meeting_ids": None, "committee_ids": [60]}
+            ONE_ORGANIZATION_FQID, {"active_meeting_ids": [], "committee_ids": [60]}
         )
 
     def test_delete_with_locked_meeting(self) -> None:
@@ -391,7 +382,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting_mediafile/2")
-        self.assert_model_exists("mediafile/1", {"meeting_mediafile_ids": None})
+        self.assert_model_exists("mediafile/1", {"meeting_mediafile_ids": []})
 
 
 class MeetingDeleteActionFullDataTest(BaseActionTestCase):
@@ -415,7 +406,7 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
-        self.assert_model_exists("committee/1", {"meeting_ids": None})
+        self.assert_model_exists("committee/1", {"meeting_ids": []})
         # assert all related models are deleted
         for i in range(5):
             self.assert_model_not_exists(f"group/{i+1}")
@@ -446,12 +437,23 @@ class MeetingDeleteActionFullDataTest(BaseActionTestCase):
             self.assert_model_not_exists(f"motion_state/{i+1}")
         for i in range(2):
             self.assert_model_not_exists(f"motion_workflow/{i+1}")
-        for i in range(5):
+        for i in range(3):
+            self.assert_model_not_exists(f"meeting_poll_setting/{i+1}")
+        for i in range(6):
             self.assert_model_not_exists(f"poll/{i+1}")
-        for i in range(13):
-            self.assert_model_not_exists(f"option/{i+1}")
+        for i in range(10):
+            self.assert_model_not_exists(f"poll_option/{i+1}")
         for i in range(9):
-            self.assert_model_not_exists(f"vote/{i+1}")
+            self.assert_model_not_exists(f"poll_ballot/{i+1}")
+        self.assert_model_not_exists("poll_ballot_user/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"poll_config_approval/{i+1}")
+        self.assert_model_not_exists("poll_config_selection/1")
+        self.assert_model_not_exists("poll_config_rating_score/1")
+        self.assert_model_not_exists("poll_config_rating_approval/1")
+        self.assert_model_not_exists("poll_config_stv_scottish/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"poll_entitled_user/{i+1}")
         for i in range(2):
             self.assert_model_not_exists(f"assignment/{i+1}")
         for i in range(5):

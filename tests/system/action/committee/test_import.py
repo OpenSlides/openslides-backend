@@ -896,7 +896,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ]
         )
         assert preview_row["state"] == "error"
-        self.assert_model_exists("committee/61", {"meeting_ids": None})
+        self.assert_model_exists("committee/61", {"meeting_ids": []})
         self.assert_model_not_exists("meeting/3")
 
     def test_json_upload_meeting_template_admin_not_found_anymore(self) -> None:
@@ -936,20 +936,18 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         self.assert_parents_test_result(response)
         expected_structure: dict[
             int,
-            tuple[
-                str, int | None, list[int] | None, list[int] | None, list[int] | None
-            ],
+            tuple[str, int | None, list[int], list[int], list[int]],
         ] = {
-            1: ("one", None, None, None, None),
+            1: ("one", None, [], [], []),
             2: ("two", 6, [3, 10], [6], [3, 10]),
-            3: ("three", 2, None, [2, 6], None),
-            4: ("nine", 9, None, [6, 8, 9], None),
-            5: ("four", None, None, None, None),
-            6: ("five", None, [2, 7, 8], None, [2, 3, 4, 7, 8, 9, 10]),
-            7: ("six", 6, None, [6], None),
+            3: ("three", 2, [], [2, 6], []),
+            4: ("nine", 9, [], [6, 8, 9], []),
+            5: ("four", None, [], [], []),
+            6: ("five", None, [2, 7, 8], [], [2, 3, 4, 7, 8, 9, 10]),
+            7: ("six", 6, [], [6], []),
             8: ("seven", 6, [9], [6], [4, 9]),
             9: ("eight", 8, [4], [6, 8], [4]),
-            10: ("ten", 2, None, [2, 6], None),
+            10: ("ten", 2, [], [2, 6], []),
         }
         for id_, (
             name,
@@ -1063,7 +1061,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/1",
             {
                 "parent_id": None,
-                "all_parent_ids": None,
+                "all_parent_ids": [],
                 "child_ids": [2, 9],
                 "all_child_ids": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
             },
@@ -1100,8 +1098,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "parent_id": 6,
                 "all_parent_ids": [1, 2, 6],
-                "child_ids": None,
-                "all_child_ids": None,
+                "child_ids": [],
+                "all_child_ids": [],
             },
         )
         self.assert_model_exists(
@@ -1119,8 +1117,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 {
                     "parent_id": 6,
                     "all_parent_ids": [1, 2, 6],
-                    "child_ids": None,
-                    "all_child_ids": None,
+                    "child_ids": [],
+                    "all_child_ids": [],
                 },
             )
         self.assert_model_exists(
@@ -1147,8 +1145,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "parent_id": 10,
                 "all_parent_ids": [1, 3, 4, 9, 10, 13, 14],
-                "child_ids": None,
-                "all_child_ids": None,
+                "child_ids": [],
+                "all_child_ids": [],
                 "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
             },
         )
@@ -1157,8 +1155,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "parent_id": 10,
                 "all_parent_ids": [1, 3, 4, 9, 10, 13, 14],
-                "child_ids": None,
-                "all_child_ids": None,
+                "child_ids": [],
+                "all_child_ids": [],
             },
         )
         self.assert_model_exists(
@@ -1184,8 +1182,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "parent_id": 13,
                 "all_parent_ids": [1, 9, 13],
-                "child_ids": None,
-                "all_child_ids": None,
+                "child_ids": [],
+                "all_child_ids": [],
             },
         )
 

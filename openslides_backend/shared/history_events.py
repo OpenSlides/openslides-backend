@@ -9,6 +9,30 @@ from .typing import HistoryInformation
 EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
 
 
+def update_history_information(
+    information: HistoryInformation,
+    fqid: FullQualifiedId,
+    entries: list[str],
+) -> None:
+    """Updates history information for fqid"""
+    if fqid not in information:
+        information[fqid] = entries
+    else:
+        information[fqid].extend(entries)
+
+
+def update_history_information_multi(
+    information: HistoryInformation,
+    fqids: list[FullQualifiedId],
+    entries: list[str],
+) -> None:
+    """
+    Adds given HistoryInformation to the given information for every fqid in fqids.
+    """
+    for fqid in fqids:
+        update_history_information(information, fqid, entries)
+
+
 def calculate_history_event_payloads(
     user_id: int | None,
     information: HistoryInformation,

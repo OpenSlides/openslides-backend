@@ -208,7 +208,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting/4")
-        self.assert_model_exists("committee/60", {"meeting_ids": None})
+        self.assert_model_exists("committee/60", {"meeting_ids": []})
 
     def test_delete_1_2_events(self) -> None:
         self.create_meeting(4)
@@ -216,4 +216,4 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting/4")
-        self.assert_model_exists("committee/60", {"meeting_ids": None})
+        self.assert_model_exists("committee/60", {"meeting_ids": []})
