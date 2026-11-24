@@ -273,7 +273,7 @@
             "welcome_text": "[Space for your welcome text.]",
             "start_time": "2011-11-11T11:11:11+01:00",
             "end_time": "2011-03-09T12:00:00+01:00",
-            "enable_idp_matching": false,
+            "enable_idm_matching": false,
             "conference_open_microphone": false,
             "conference_open_video": false,
             "conference_auto_connect": false,

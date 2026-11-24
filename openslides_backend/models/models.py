@@ -245,7 +245,7 @@ class Committee(Model):
     external_id = fields.CharField(unique=True)
     identity_key = fields.CharField(
         constraints={
-            "description": "Mainly used by idp matching. A committee is assigned when the users IDP identity value (see organization/idp_identity_key) starts with this string."
+            "description": "Mainly used by idm matching. A committee is assigned when the users IDP identity value (see organization/idm_identity_key) starts with this string."
         }
     )
     meeting_ids = fields.RelationListField(
@@ -556,45 +556,45 @@ class HistoryPosition(Model):
     )
 
 
-class IdpCondition(Model):
-    collection = "idp_condition"
-    verbose_name = "idp condition"
+class IdmCondition(Model):
+    collection = "idm_condition"
+    verbose_name = "idm condition"
 
     id = fields.IntegerField(required=True, constant=True)
-    idp_field = fields.CharField(required=True)
+    idm_field = fields.CharField(required=True)
     regex = fields.CharField(
         required=True,
         constraints={
-            "description": "Assertation regex to match against the idp_fields value."
+            "description": "Assertation regex to match against the idm_fields value."
         },
     )
-    mapper_id = fields.RelationField(to={"idp_mapper": "condition_ids"}, required=True)
+    mapper_id = fields.RelationField(to={"idm_mapper": "condition_ids"}, required=True)
 
 
-class IdpMapper(Model):
-    collection = "idp_mapper"
-    verbose_name = "idp mapper"
+class IdmMapper(Model):
+    collection = "idm_mapper"
+    verbose_name = "idm mapper"
 
     id = fields.IntegerField(required=True, constant=True)
     group_external_ids = fields.CharArrayField(required=True)
     weight = fields.IntegerField(default=10000)
     organization_id = fields.OrganizationField(
-        to={"organization": "idp_mapper_ids"}, required=True
+        to={"organization": "idm_mapper_ids"}, required=True
     )
     condition_ids = fields.RelationListField(
-        to={"idp_condition": "mapper_id"}, is_view_field=True
+        to={"idm_condition": "mapper_id"}, is_view_field=True
     )
     mapping_ids = fields.RelationListField(
-        to={"idp_mapping": "mapper_id"}, is_view_field=True
+        to={"idm_mapping": "mapper_id"}, is_view_field=True
     )
 
 
-class IdpMapping(Model):
-    collection = "idp_mapping"
-    verbose_name = "idp mapping"
+class IdmMapping(Model):
+    collection = "idm_mapping"
+    verbose_name = "idm mapping"
 
     id = fields.IntegerField(required=True, constant=True)
-    idp_field = fields.CharField(required=True)
+    idm_field = fields.CharField(required=True)
     os_field = fields.CharField(
         required=True,
         constraints={
@@ -611,7 +611,7 @@ class IdpMapping(Model):
     default_value = fields.CharField()
     allow_update = fields.BooleanField()
     override_default = fields.BooleanField()
-    mapper_id = fields.RelationField(to={"idp_mapper": "mapping_ids"}, required=True)
+    mapper_id = fields.RelationField(to={"idm_mapper": "mapping_ids"}, required=True)
 
 
 class ImportPreview(Model):
@@ -760,7 +760,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     enable_anonymous = fields.BooleanField(default=False)
     custom_translations = fields.JSONField()
-    enable_idp_matching = fields.BooleanField(default=False)
+    enable_idm_matching = fields.BooleanField(default=False)
     conference_show = fields.BooleanField(default=False)
     conference_auto_connect = fields.BooleanField(default=False)
     conference_los_restriction = fields.BooleanField(default=True)
@@ -2280,13 +2280,23 @@ class Organization(Model):
     saml_metadata_idp = fields.TextField()
     saml_metadata_sp = fields.TextField()
     saml_private_key = fields.TextField()
-    idp_identity_key = fields.CharField(
+    idm_identity_key = fields.CharField(
         constraints={
-            "description": "Attribute in the idp data that identifies the user. Used to match against committees identity_key to determine membership."
+            "description": "Attribute in the idm data that identifies the user. Used to match against committees identity_key to determine membership."
         }
     )
-    idp_mapper_ids = fields.RelationListField(
-        to={"idp_mapper": "organization_id"}, is_view_field=True
+    idm_organization_managment_key = fields.CharField(
+        constraints={
+            "description": "String attribute in the idm data that identifies the users organization management level. Accepted values are 'can_manage_organization' and 'can_manage_users'. All other values, including 'superadmin', are not accepted."
+        }
+    )
+    idm_committee_management_key = fields.CharField(
+        constraints={
+            "description": "Attribute in the idm data that identifies the users committee management rights. Formatted as a list of exact committee identity_keys."
+        }
+    )
+    idm_mapper_ids = fields.RelationListField(
+        to={"idm_mapper": "organization_id"}, is_view_field=True
     )
     committee_ids = fields.RelationListField(
         to={"committee": "organization_id"}, is_view_field=True, is_primary=True
