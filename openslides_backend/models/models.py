@@ -582,10 +582,14 @@ class IdmMapper(Model):
         to={"organization": "idm_mapper_ids"}, required=True
     )
     condition_ids = fields.RelationListField(
-        to={"idm_condition": "mapper_id"}, is_view_field=True
+        to={"idm_condition": "mapper_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
     mapping_ids = fields.RelationListField(
-        to={"idm_mapping": "mapper_id"}, is_view_field=True
+        to={"idm_mapping": "mapper_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
 
 
