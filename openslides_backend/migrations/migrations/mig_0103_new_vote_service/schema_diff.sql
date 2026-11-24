@@ -49,9 +49,9 @@ ALTER TABLE poll_t DROP COLUMN votescast CASCADE;
 ALTER TABLE poll_t DROP COLUMN entitled_users_at_stop CASCADE;
 ALTER TABLE poll_t DROP COLUMN global_option_id CASCADE;
 DROP TABLE nm_poll_voted_ids_user_t CASCADE;
-DROP TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids ON meeting_user_t;
-DROP TRIGGER equal_meeting_id_on_motion_t_option_ids ON motion_t;
-DROP TRIGGER equal_meeting_id_on_poll_t_option_ids ON poll_t;
+DROP TRIGGER equal_meeting_id_on_meeting_user_vote_delegations_from_ids ON meeting_user_t;
+DROP TRIGGER equal_meeting_id_on_motion_option_ids ON motion_t;
+DROP TRIGGER equal_meeting_id_on_poll_option_ids ON poll_t;
 DROP TYPE enum_ballot_paper_selection;
 DROP TYPE enum_poll_backends;
 DROP TYPE enum_onehundred_percent_bases;
@@ -296,7 +296,7 @@ CREATE INDEX idx_meeting_poll_setting_t_meeting_id ON meeting_poll_setting_t (me
 -- definition trigger prevent_updates for meeting_poll_setting.meeting_id
 CREATE TRIGGER tr_constant_meeting_poll_setting_meeting_id BEFORE UPDATE OF meeting_id ON meeting_poll_setting_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('meeting_poll_setting', 'meeting_id');
-CREATE TRIGGER tr_log_meeting_poll_setting_t_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_poll_setting_t
+CREATE TRIGGER tr_log_meeting_poll_setting_meeting_id AFTER INSERT OR UPDATE OF meeting_id OR DELETE ON meeting_poll_setting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'meeting_id', 'poll_setting_ids');
 -- notify triggers for meeting_poll_setting_t fields
 CREATE TRIGGER tr_log_meeting_poll_setting AFTER INSERT OR UPDATE OR DELETE ON meeting_poll_setting_t
@@ -317,15 +317,15 @@ FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'weight');
 -- definition trigger prevent_updates for poll_ballot.poll_id
 CREATE TRIGGER tr_constant_poll_ballot_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot', 'poll_id');
-CREATE TRIGGER tr_log_poll_ballot_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_t
+CREATE TRIGGER tr_log_poll_ballot_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_ids');
 
-CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id ON poll_ballot_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id ON poll_ballot_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', FALSE);
-CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_user_t_poll_ballot_id AFTER INSERT ON poll_ballot_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_poll_id_on_poll_ballot_user_poll_ballot_id AFTER INSERT ON poll_ballot_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals('poll_ballot', 'poll_ballot_user', 'poll_ballot_user_id', 'poll_id', TRUE);
 
-CREATE TRIGGER tr_log_poll_ballot_t_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id OR DELETE ON poll_ballot_t
+CREATE TRIGGER tr_log_poll_ballot_poll_ballot_user_id AFTER INSERT OR UPDATE OF poll_ballot_user_id OR DELETE ON poll_ballot_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll_ballot_user', 'poll_ballot_user_id', 'poll_ballot_id');
 -- notify triggers for poll_ballot_t fields
 CREATE TRIGGER tr_log_poll_ballot AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_t
@@ -344,11 +344,11 @@ CREATE INDEX idx_poll_ballot_user_t_represented_meeting_user_id ON poll_ballot_u
 -- definition trigger prevent_updates for poll_ballot_user.poll_id
 CREATE TRIGGER tr_constant_poll_ballot_user_poll_id BEFORE UPDATE OF poll_id ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION prevent_updates('poll_ballot_user', 'poll_id');
-CREATE TRIGGER tr_log_poll_ballot_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_user_t
+CREATE TRIGGER tr_log_poll_ballot_user_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'ballot_user_ids');
-CREATE TRIGGER tr_log_poll_ballot_user_t_acting_meeting_user_id AFTER INSERT OR UPDATE OF acting_meeting_user_id OR DELETE ON poll_ballot_user_t
+CREATE TRIGGER tr_log_poll_ballot_user_acting_meeting_user_id AFTER INSERT OR UPDATE OF acting_meeting_user_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'acting_meeting_user_id', 'acting_ballot_ids');
-CREATE TRIGGER tr_log_poll_ballot_user_t_represented_meeting_user_id AFTER INSERT OR UPDATE OF represented_meeting_user_id OR DELETE ON poll_ballot_user_t
+CREATE TRIGGER tr_log_poll_ballot_user_represented_meeting_user_id AFTER INSERT OR UPDATE OF represented_meeting_user_id OR DELETE ON poll_ballot_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'represented_meeting_user_id', 'represented_ballot_ids');
 -- notify triggers for poll_ballot_user_t fields
 CREATE TRIGGER tr_log_poll_ballot_user AFTER INSERT OR UPDATE OR DELETE ON poll_ballot_user_t
@@ -426,9 +426,9 @@ CREATE INDEX idx_poll_entitled_user_t_poll_id ON poll_entitled_user_t (poll_id);
 ALTER TABLE poll_entitled_user_t ADD CONSTRAINT fk_poll_entitled_user_t_meeting_user_id_meeting_user_t_id FOREIGN KEY(meeting_user_id) REFERENCES meeting_user_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_entitled_user_t_meeting_user_id ON poll_entitled_user_t (meeting_user_id);
 
-CREATE TRIGGER tr_log_poll_entitled_user_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_entitled_user_t
+CREATE TRIGGER tr_log_poll_entitled_user_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_entitled_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'entitled_user_ids');
-CREATE TRIGGER tr_log_poll_entitled_user_t_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_entitled_user_t
+CREATE TRIGGER tr_log_poll_entitled_user_meeting_user_id AFTER INSERT OR UPDATE OF meeting_user_id OR DELETE ON poll_entitled_user_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_user', 'meeting_user_id', 'poll_entitled_user_ids');
 -- notify triggers for poll_entitled_user_t fields
 CREATE TRIGGER tr_log_poll_entitled_user AFTER INSERT OR UPDATE OR DELETE ON poll_entitled_user_t
@@ -443,7 +443,7 @@ CREATE INDEX idx_poll_option_t_content_object_id_meeting_user_id ON poll_option_
 ALTER TABLE poll_option_t ADD CONSTRAINT fk_poll_option_t_content_object_id_user_id_user_t_id FOREIGN KEY(content_object_id_user_id) REFERENCES user_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_poll_option_t_content_object_id_user_id ON poll_option_t (content_object_id_user_id);
 
-CREATE TRIGGER tr_log_poll_option_t_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_option_t
+CREATE TRIGGER tr_log_poll_option_poll_id AFTER INSERT OR UPDATE OF poll_id OR DELETE ON poll_option_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('poll', 'poll_id', 'option_ids');
 
 CREATE TRIGGER tr_log_meeting_user_content_object_id_meeting_user_id AFTER INSERT OR UPDATE OF content_object_id_meeting_user_id OR DELETE ON poll_option_t
@@ -474,11 +474,11 @@ CREATE TABLE nm_group_uimpsi_meeting_poll_setting_t (
 CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_group_id ON nm_group_uimpsi_meeting_poll_setting_t (group_id);
 CREATE INDEX idx_nm_group_uimpsi_meeting_poll_setting_t_meeting_poll_f22a8ca ON nm_group_uimpsi_meeting_poll_setting_t (meeting_poll_setting_id);
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting_ids AFTER INSERT ON group_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_used_in_meeting_poll_setting_ids AFTER INSERT ON group_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_poll_setting_t_group_ids AFTER INSERT ON meeting_poll_setting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_poll_setting_group_ids AFTER INSERT ON meeting_poll_setting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_group_uimpsi_meeting_poll_setting_t', 'meeting_poll_setting_id', 'meeting_poll_setting', 'group_id', 'group', 'meeting_id', 'group_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_t_used_in_meeting_poll_setting07fe571 AFTER INSERT ON nm_group_uimpsi_meeting_poll_setting_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_group_used_in_meeting_poll_setting07fe571 AFTER INSERT ON nm_group_uimpsi_meeting_poll_setting_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('group_id', 'group', 'meeting_poll_setting_id', 'meeting_poll_setting', 'meeting_id', 'used_in_meeting_poll_setting_ids');
 
 
@@ -490,15 +490,15 @@ CREATE CONSTRAINT TRIGGER notify_transaction_end AFTER INSERT OR UPDATE OR DELET
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_end();
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_assignment_poll_config_id_meeting_poll_sett903ddfc FOREIGN KEY(assignment_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_assignment_poll_config_id ON meeting_t (assignment_poll_config_id);
-CREATE TRIGGER tr_log_meeting_t_assignment_poll_config_id AFTER INSERT OR UPDATE OF assignment_poll_config_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_assignment_poll_config_id AFTER INSERT OR UPDATE OF assignment_poll_config_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'assignment_poll_config_id', 'used_as_assignment_poll_config_in_meeting_id');
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_motion_poll_config_id_meeting_poll_setting_t_id FOREIGN KEY(motion_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_motion_poll_config_id ON meeting_t (motion_poll_config_id);
-CREATE TRIGGER tr_log_meeting_t_motion_poll_config_id AFTER INSERT OR UPDATE OF motion_poll_config_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_motion_poll_config_id AFTER INSERT OR UPDATE OF motion_poll_config_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'motion_poll_config_id', 'used_as_motion_poll_config_in_meeting_id');
 ALTER TABLE meeting_t ADD CONSTRAINT fk_meeting_t_topic_poll_config_id_meeting_poll_setting_t_id FOREIGN KEY(topic_poll_config_id) REFERENCES meeting_poll_setting_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_meeting_t_topic_poll_config_id ON meeting_t (topic_poll_config_id);
-CREATE TRIGGER tr_log_meeting_t_topic_poll_config_id AFTER INSERT OR UPDATE OF topic_poll_config_id OR DELETE ON meeting_t
+CREATE TRIGGER tr_log_meeting_topic_poll_config_id AFTER INSERT OR UPDATE OF topic_poll_config_id OR DELETE ON meeting_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting_poll_setting', 'topic_poll_config_id', 'used_as_topic_poll_config_in_meeting_id');
 
 CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
@@ -517,11 +517,11 @@ CREATE TABLE nm_meeting_user_vote_delegated_to_ids_meeting_user_t (
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_tee86852 ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegations_from_id);
 CREATE INDEX idx_nm_meeting_user_vote_delegated_to_ids_meeting_user_t54a80eb ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t (vote_delegated_to_id);
 
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_vote_delegated_to_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_vote_delegations_from_ids AFTER INSERT ON meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_multi('nm_meeting_user_vote_delegated_to_ids_meeting_user_t', 'vote_delegated_to_id', 'meeting_user', 'vote_delegations_from_id', 'meeting_user', 'meeting_id', 'vote_delegations_from_ids');
-CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_t_vote_delegated_to_ids68aada4 AFTER INSERT ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t INITIALLY DEFERRED
+CREATE CONSTRAINT TRIGGER equal_meeting_id_on_meeting_user_vote_delegated_to_ids68aada4 AFTER INSERT ON nm_meeting_user_vote_delegated_to_ids_meeting_user_t INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_equals_intermediate('vote_delegations_from_id', 'meeting_user', 'vote_delegated_to_id', 'meeting_user', 'meeting_id', 'vote_delegated_to_ids');
 
 
@@ -563,7 +563,7 @@ comment on column poll_t.allow_invalid is 'If true, the vote service does not va
 comment on column poll_t.allow_vote_split is 'If true, users can split there vote.';
 -- ALTER TABLE projector_t ADD CONSTRAINT fk_projector_t_used_as_default_projector_for_topic_poll_b2f5888 FOREIGN KEY(used_as_default_projector_for_topic_poll_in_meeting_id) REFERENCES meeting_t(id) INITIALLY DEFERRED;
 -- CREATE INDEX idx_projector_t_used_as_default_projector_for_topic_pollb4f5002 ON projector_t (used_as_default_projector_for_topic_poll_in_meeting_id);
--- CREATE TRIGGER tr_log_projector_t_used_as_default_projector_for_topic_p9aaf88b AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_poll_in_meeting_id OR DELETE ON projector_t
+-- CREATE TRIGGER tr_log_projector_used_as_default_projector_for_topic_p9aaf88b AFTER INSERT OR UPDATE OF used_as_default_projector_for_topic_poll_in_meeting_id OR DELETE ON projector_t
 -- FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('meeting', 'used_as_default_projector_for_topic_poll_in_meeting_id', 'default_projector_topic_poll_ids');
 
 -- EDIT SECTION --
