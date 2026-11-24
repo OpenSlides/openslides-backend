@@ -4,6 +4,7 @@ from typing import Any
 
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.services.database.interface import PartialModel
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -11,7 +12,7 @@ from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
 from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
+from ....shared.schema import decimal_schema, id_list_schema
 from ...action import Action, original_instances
 from ...mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ...util.typing import ActionData
@@ -84,7 +85,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
         "structure_level_ids": id_list_schema,
-        "vote_delegated_to_id": optional_id_schema,
+        "vote_delegated_to_ids": id_list_schema,
         "vote_delegations_from_ids": id_list_schema,
         "group_ids": id_list_schema,
         "locked_out": {"type": "boolean"},
@@ -154,12 +155,12 @@ class UserMixin(CheckForArchivedMeetingMixin):
 
 class UpdateHistoryMixin(Action):
     def get_history_information(self) -> HistoryInformation | None:
-        information = {}
+        information: HistoryInformation = {}
 
         # Scan the instances and collect the info for the history information
         # Copy instances first since they are modified
         for instance in deepcopy(self.instances):
-            instance_information = []
+            entries = []
 
             # Fetch the current instance from the db to diff with the given instance
             db_instance = self.datastore.get(
@@ -190,22 +191,24 @@ class UpdateHistoryMixin(Action):
                 "default_vote_weight",
             ]
             if any(field in instance for field in update_fields):
-                instance_information.append("Personal data changed")
+                entries.append("Personal data changed")
 
             # other fields
             if "organization_management_level" in instance:
-                instance_information.append("Organization Management Level changed")
+                entries.append("Organization Management Level changed")
             if "committee_management_ids" in instance:
-                instance_information.append("Committee management changed")
+                entries.append("Committee management changed")
             if "is_active" in instance:
                 if instance["is_active"]:
-                    instance_information.append("Set active")
+                    entries.append("Set active")
                 else:
-                    instance_information.append("Set inactive")
+                    entries.append("Set inactive")
 
-            if instance_information:
-                information[fqid_from_collection_and_id("user", instance["id"])] = (
-                    instance_information
+            if entries:
+                update_history_information(
+                    information,
+                    fqid_from_collection_and_id("user", instance["id"]),
+                    entries,
                 )
         return information
 

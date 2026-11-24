@@ -28,7 +28,7 @@
     locked_out: boolean;
 
     structure_level_id: Id;
-    vote_delegated_to_id: Id;
+    vote_delegated_to_ids: Id[];
     vote_delegations_from_ids: Id[];
 
 // Group C
@@ -56,11 +56,7 @@
 
 // only internal
     is_present_in_meeting_ids: Id[];
-    option_ids: Id[];
-    poll_candidate_ids: Id[];
-    poll_voted_ids: Id[];
-    vote_ids: Id[];
-    delegated_vote_ids: Id[];
+    poll_option_ids: Id[];
 }
 ```
 

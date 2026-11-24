@@ -169,7 +169,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "access_group_ids": [3],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -207,8 +207,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "mediafile_id": 111,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )
@@ -251,7 +251,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_mediafile/1111",
             {
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [1, 3],
                 "is_public": False,
             },
@@ -376,7 +376,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111",
             {
                 "access_group_ids": [3],
-                "inherited_access_group_ids": None,
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -411,8 +411,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_mediafile/1111",
             {
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
                 "is_public": False,
             },
         )
@@ -546,7 +546,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 mediafile,
                 {
                     "is_public": False,
-                    "access_group_ids": None,
+                    "access_group_ids": [],
                     "inherited_access_group_ids": [3],
                 },
             )
@@ -796,7 +796,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 112,
                 "meeting_id": 1,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [1, 3],
             },
         )
@@ -805,7 +805,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 114,
                 "meeting_id": 1,
-                "access_group_ids": None,
+                "access_group_ids": [],
                 "inherited_access_group_ids": [3],
             },
         )

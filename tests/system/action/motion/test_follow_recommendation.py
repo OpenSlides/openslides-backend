@@ -124,12 +124,12 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
             {
                 "state_id": 76,
                 "state_extension": "test",
-                "state_extension_reference_ids": None,
+                "state_extension_reference_ids": [],
             },
         )
         self.assert_model_exists(
             "motion/23",
-            {"referenced_in_motion_state_extension_ids": None},
+            {"referenced_in_motion_state_extension_ids": []},
         )
 
     def test_follow_recommendation_no_permission(self) -> None:

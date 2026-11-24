@@ -1466,7 +1466,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             meeting_user_ids: list[int] = []
             self.create_user("delegatee", [1], meeting_user_ids=meeting_user_ids)
             self.set_models(
-                {"meeting_user/1": {"vote_delegated_to_id": meeting_user_ids[0]}}
+                {"meeting_user/1": {"vote_delegated_to_ids": meeting_user_ids}}
             )
         self.set_organization_management_level(None)
         self.set_group_permissions(1, [perm])

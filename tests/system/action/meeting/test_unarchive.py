@@ -20,7 +20,7 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
-            {"active_meeting_ids": [1], "archived_meeting_ids": None},
+            {"active_meeting_ids": [1], "archived_meeting_ids": []},
         )
 
     def test_unarchive_2_meetings(self) -> None:

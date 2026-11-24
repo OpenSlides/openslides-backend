@@ -33,7 +33,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion_category/22",
-            {"weight": 1, "parent_id": None, "child_ids": None, "level": 0},
+            {"weight": 1, "parent_id": None, "child_ids": [], "level": 0},
         )
 
     def test_sort_not_all_sorted(self) -> None:
@@ -130,11 +130,11 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_category/11",
-            {"weight": 1, "parent_id": 1, "child_ids": None, "level": 1},
+            {"weight": 1, "parent_id": 1, "child_ids": [], "level": 1},
         )
         self.assert_model_exists(
             "motion_category/12",
-            {"weight": 2, "parent_id": 1, "child_ids": None, "level": 1},
+            {"weight": 2, "parent_id": 1, "child_ids": [], "level": 1},
         )
 
     def test_sort_no_permission(self) -> None:

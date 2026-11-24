@@ -119,19 +119,13 @@
     motions_enable_restricted_editor_for_non_manager: boolean;
     motions_enable_consultation_sequence: boolean;
 
-    motion_poll_ballot_paper_selection: string;
-    motion_poll_ballot_paper_number: number;
-    motion_poll_default_type: string;
-    motion_poll_default_method: string;
-    motion_poll_default_onehundred_percent_base: string;
-    motion_poll_default_group_ids: Id[];
-    motion_poll_default_backend: string;
-    motion_poll_projection_name_order_first: string;
-    motion_poll_projection_max_columns: number;
+    poll_projection_name_order_first: string;
+    poll_projection_max_columns: number;
 
     users_enable_presence_view: boolean;
     users_enable_vote_weight: boolean;
     users_enable_vote_delegations: boolean;
+    users_vote_delegations_max_amount: number;
     users_allow_self_set_present: boolean;
     users_pdf_welcometitle: string;
     users_pdf_welcometext: string;
@@ -150,21 +144,42 @@
     assignments_export_title: string;
     assignments_export_preamble: string;
 
-    assignment_poll_ballot_paper_selection: string;
-    assignment_poll_ballot_paper_number: number;
     assignment_poll_add_candidates_to_list_of_speakers: boolean;
-    assignment_poll_enable_max_votes_per_option: boolean;
-    assignment_poll_sort_poll_result_by_votes: boolean;
-    assignment_poll_default_type: string;
-    assignment_poll_default_method: string;
-    assignment_poll_default_onehundred_percent_base: string;
-    assignment_poll_default_group_ids: Id[];
-    assignment_poll_default_backend: string;
+    assignment_poll_setting_allow_live_voting: boolean;
+    assignment_poll_setting_group_ids: Id[];
+    assignment_poll_setting_enable_cumulative_voting: boolean;
+    assignment_poll_setting_enable_live_voting: boolean;
+    assignment_poll_setting_enable_max_options_limit: boolean;
+    assignment_poll_setting_enable_max_yes_votes: boolean;
+    assignment_poll_setting_method: string;
+    assignment_poll_setting_onehundred_percent_base: string;
+    assignment_poll_setting_required_majority: string;
+    assignment_poll_setting_sort_result_by_votes: boolean;
+    assignment_poll_setting_visibility: string;
 
-    topic_poll_default_group_ids: Id[];
+    motion_poll_setting_allow_live_voting: boolean;
+    motion_poll_setting_group_ids: Id[];
+    motion_poll_setting_enable_cumulative_voting: boolean;
+    motion_poll_setting_enable_live_voting: boolean;
+    motion_poll_setting_enable_max_options_limit: boolean;
+    motion_poll_setting_enable_max_yes_votes: boolean;
+    motion_poll_setting_method: string;
+    motion_poll_setting_onehundred_percent_base: string;
+    motion_poll_setting_required_majority: string;
+    motion_poll_setting_sort_result_by_votes: boolean;
+    motion_poll_setting_visibility: string;
 
-    poll_default_backend: string;
-    poll_default_live_voting_enabled: boolean;
+    topic_poll_setting_allow_live_voting: boolean;
+    topic_poll_setting_group_ids: Id[];
+    topic_poll_setting_enable_cumulative_voting: boolean;
+    topic_poll_setting_enable_live_voting: boolean;
+    topic_poll_setting_enable_max_options_limit: boolean;
+    topic_poll_setting_enable_max_yes_votes: boolean;
+    topic_poll_setting_method: string;
+    topic_poll_setting_onehundred_percent_base: string;
+    topic_poll_setting_required_majority: string;
+    topic_poll_setting_sort_result_by_votes: boolean;
+    topic_poll_setting_visibility: string;
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;
@@ -184,7 +199,7 @@
     default_projector_countdown_ids: Ids;
     default_projector_assignment_poll_ids: Ids;
     default_projector_motion_poll_ids: Ids;
-    default_projector_poll_ids: Ids;
+    default_projector_topic_poll_ids: Ids;
 
 // Group D
     external_id: string; // unique in org
@@ -216,7 +231,7 @@ This action doesn't allow for a meeting to be set as a template and have `locked
 
 If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Public` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set. It will always have the lowest weight among all other groups in this meeting, meaning 0.
 
-The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
+The meetings `anonymous_group_id` may not be used for the `assignment_poll_setting_group_ids`, `topic_poll_setting_group_ids` and `motion_poll_setting_group_ids` fields.
 
 `enable_anonymous` may only be set to true if `enable_anonymous` is set to true in the organization.
 

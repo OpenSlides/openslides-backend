@@ -104,7 +104,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/111")
         self.assert_model_exists("motion/34")
         self.assert_model_not_exists("projection/1")
-        self.assert_model_exists("projector/1", {"current_projection_ids": None})
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.create_meeting(1)

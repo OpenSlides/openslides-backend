@@ -101,7 +101,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.test_update_tag_ids_add()
         response = self.request("agenda_item.update", {"id": 111, "tag_ids": []})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("agenda_item/111", {"tag_ids": None})
+        self.assert_model_exists("agenda_item/111", {"tag_ids": []})
 
     def test_update_multiple_with_tag(self) -> None:
         self.set_models(
@@ -139,9 +139,9 @@ class AgendaItemActionTest(BaseActionTestCase):
             "agenda_item.update", [{"id": 1, "tag_ids": []}, {"id": 2, "tag_ids": []}]
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("agenda_item/1", {"tag_ids": None})
-        self.assert_model_exists("agenda_item/2", {"tag_ids": None})
-        self.assert_model_exists("tag/1", {"tagged_ids": None})
+        self.assert_model_exists("agenda_item/1", {"tag_ids": []})
+        self.assert_model_exists("agenda_item/2", {"tag_ids": []})
+        self.assert_model_exists("tag/1", {"tagged_ids": []})
 
     def update_multiple_with_type_variations(
         self, variations: list[dict[str, int | str]]

@@ -53,8 +53,6 @@ from openslides_backend.shared.util import (
 )
 from tests.util import AuthData, Client, Response
 
-from .util import TestVoteService
-
 DEFAULT_PASSWORD = "password"
 
 ADMIN_USERNAME = "admin"
@@ -64,7 +62,6 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
     anon_client: Client
@@ -86,7 +83,6 @@ class BaseSystemTestCase(TestCase):
         self.env = cast(Environment, self.app.env)
         self.auth = self.services.authentication()
         self.media = self.services.media()
-        self.vote_service = cast(TestVoteService, self.services.vote())
         self.set_thread_watch_timeout(-1)
 
         self.user_id = 1
@@ -105,7 +101,7 @@ class BaseSystemTestCase(TestCase):
                     },
                 }
             )
-        self.client = self.create_client(self.update_vote_service_auth_data)
+        self.client = self.create_client()
         self.client.auth = self.auth  # type: ignore
         if self.init_with_login:
             if self.auth_data:
@@ -193,11 +189,6 @@ class BaseSystemTestCase(TestCase):
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
         self.client.login(user["username"], user["default_password"])
-
-    def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
-        self.vote_service.set_authentication(
-            auth_data["access_token"], auth_data["refresh_id"]
-        )
 
     def get_application(self) -> OpenSlidesBackendWSGIApplication:
         raise NotImplementedError()

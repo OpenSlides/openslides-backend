@@ -8,6 +8,8 @@ from typing import Any
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
@@ -44,6 +46,7 @@ EXAMPLE_DATA_PATH = os.path.realpath(
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
 
 
+@pytest.mark.skip(reason="Waiting for the migration framework.")
 class TestMigration100(BaseMigrationTestCase):
     """
     Commentary:

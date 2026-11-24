@@ -56,7 +56,7 @@ def test_delete_nm() -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_no_model(fqid)
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": []})
 
 
 def create_models_for_1_1_tests() -> None:
@@ -314,7 +314,7 @@ def test_delete_1_n_not_null_success_replace_relations(
             "default_projector_countdown_ids": [2],
             "default_projector_assignment_poll_ids": [2],
             "default_projector_motion_poll_ids": [2],
-            "default_projector_poll_ids": [2],
+            "default_projector_topic_poll_ids": [2],
             "reference_projector_id": 2,
         },
     )
@@ -335,7 +335,7 @@ def test_delete_1_n_not_null_success_replace_relations(
             "used_as_default_projector_for_countdown_in_meeting_id": 1,
             "used_as_default_projector_for_assignment_poll_in_meeting_id": 1,
             "used_as_default_projector_for_motion_poll_in_meeting_id": 1,
-            "used_as_default_projector_for_poll_in_meeting_id": 1,
+            "used_as_default_projector_for_topic_poll_in_meeting_id": 1,
             "used_as_reference_projector_meeting_id": 1,
         },
     )
@@ -414,7 +414,7 @@ def test_delete_n_m_not_null_success_delete_one_side(
         conn.commit()
     assert_no_model("meeting_user/3")
     assert_model(
-        "group/4", {"id": 4, "name": "4", "meeting_id": 1, "meeting_user_ids": None}
+        "group/4", {"id": 4, "name": "4", "meeting_id": 1, "meeting_user_ids": []}
     )
 
 

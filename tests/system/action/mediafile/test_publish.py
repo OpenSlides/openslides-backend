@@ -88,8 +88,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/1",
             {
-                "meeting_mediafile_access_group_ids": None,
-                "meeting_mediafile_inherited_access_group_ids": None,
+                "meeting_mediafile_access_group_ids": [],
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
         )
         self.assert_model_not_exists("meeting_mediafile/1110")
@@ -161,8 +161,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/1",
             {
-                "meeting_mediafile_access_group_ids": None,
-                "meeting_mediafile_inherited_access_group_ids": None,
+                "meeting_mediafile_access_group_ids": [],
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
         )
         for id_ in [110, 111, 112, 113]:

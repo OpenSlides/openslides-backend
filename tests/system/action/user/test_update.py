@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -67,22 +68,14 @@ class UserUpdateActionTest(BaseActionTestCase):
                 response.json["message"],
             )
             self.assert_model_exists(
-                "user/111",
-                {
-                    "committee_management_ids": [committee_id],
-                },
+                "user/111", {"committee_management_ids": [committee_id]}
             )
         else:
             self.assertIn(
                 "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee ",
                 response.json["message"],
             )
-            self.assert_model_exists(
-                "user/111",
-                {
-                    "committee_management_ids": None,
-                },
-            )
+            self.assert_model_exists("user/111", {"committee_management_ids": []})
         # test group E
         response = self.request(
             "user.update",
@@ -279,7 +272,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user_id": 23,
                 "meeting_id": 1,
                 "group_ids": [1],
-                "vote_delegated_to_id": 224,
+                "vote_delegated_to_ids": [224],
             },
         )
         self.assert_history_information(
@@ -321,7 +314,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 22,
                 "meeting_id": 1,
-                "vote_delegated_to_id": 223,
+                "vote_delegated_to_ids": [223],
             },
         )
         self.assert_status_code(response, 200)
@@ -330,7 +323,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 22,
                 "meeting_id": 1,
-                "vote_delegated_to_id": 223,
+                "vote_delegated_to_ids": [223],
             },
         )
         self.assert_model_exists(
@@ -347,7 +340,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 22,
                 "meeting_id": 1,
-                "vote_delegated_to_id": None,
+                "vote_delegated_to_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -356,7 +349,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 22,
                 "meeting_id": 1,
-                "vote_delegated_to_id": None,
+                "vote_delegated_to_ids": [],
             },
         )
         self.assert_model_exists(
@@ -364,7 +357,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 23,
                 "meeting_id": 1,
-                "vote_delegations_from_ids": None,
+                "vote_delegations_from_ids": [],
             },
         )
 
@@ -415,7 +408,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "user.update", {"id": 111, "vote_delegated_to_id": 11, "meeting_id": 1}
+            "user.update", {"id": 111, "vote_delegated_to_ids": [11], "meeting_id": 1}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -479,8 +472,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "meeting_ids": None,
-                "meeting_user_ids": None,
+                "meeting_ids": [],
+                "meeting_user_ids": [],
                 "committee_management_ids": [60, 61],
                 "committee_ids": [60, 61],
             },
@@ -518,9 +511,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/111", {"committee_management_ids": None, "committee_ids": None}
+            "user/111", {"committee_management_ids": [], "committee_ids": []}
         )
-        self.assert_model_exists("committee/1", {"user_ids": None})
+        self.assert_model_exists("committee/1", {"user_ids": []})
 
     def test_committee_manager_add_and_remove_both(self) -> None:
         """test with 2 actions in 2 transaction"""
@@ -582,11 +575,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("meeting_user/111")
-        self.assert_model_exists("committee/1", {"user_ids": None})
+        self.assert_model_exists("committee/1", {"user_ids": []})
         self.assert_model_exists("committee/2", {"user_ids": [123]})
         self.assert_model_exists("committee/3", {"user_ids": [123]})
         self.assert_model_exists("committee/4", {"user_ids": [123]})
-        self.assert_model_exists("meeting/11", {"user_ids": None})
+        self.assert_model_exists("meeting/11", {"user_ids": []})
         self.assert_model_exists("meeting/22", {"user_ids": [123]})
         self.assert_model_exists("meeting/33", {"user_ids": [123]})
 
@@ -1629,10 +1622,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"user_id": 111, "meeting_id": 4, "number": "number1 in 4"},
         )
         self.assert_model_exists(
-            "meeting_user/3", {"user_id": 5, "meeting_id": 1, "vote_delegated_to_id": 7}
+            "meeting_user/3",
+            {"user_id": 5, "meeting_id": 1, "vote_delegated_to_ids": [7]},
         )
         self.assert_model_exists(
-            "meeting_user/5", {"user_id": 6, "meeting_id": 1, "vote_delegated_to_id": 7}
+            "meeting_user/5",
+            {"user_id": 6, "meeting_id": 1, "vote_delegated_to_ids": [7]},
         )
 
     def test_perm_group_B_user_can_update_no_permission(self) -> None:
@@ -3003,18 +2998,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_present_in_meeting_ids": [7],
             },
         )
-        self.assert_model_exists(
-            "meeting/4",
-            {
-                "present_user_ids": None,
-            },
-        )
-        self.assert_model_exists(
-            "meeting/7",
-            {
-                "present_user_ids": [1234],
-            },
-        )
+        self.assert_model_exists("meeting/4", {"present_user_ids": []})
+        self.assert_model_exists("meeting/7", {"present_user_ids": [1234]})
         self.assert_model_not_exists("meeting_user/4444")
         self.assert_model_exists(
             "meeting_user/7777",
@@ -3081,122 +3066,54 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_with_internal_fields(self) -> None:
         self.create_meeting()
-        self.create_user("dummy2", [1])
-        self.create_user("dummy3", [1])
-        self.set_user_groups(1, [1])
-        self.create_topic(1, 1)
+        self.create_user("changing")
+        self.create_user_for_meeting(1)
+        self.create_motion(1, 15)
         self.set_models(
             {
-                "user/1": {
-                    "username": "boady",
-                },
-                "user/2": {"username": "john", "delegated_vote_ids": [2]},
-                "meeting/1": {
-                    "poll_ids": [1],
-                    "option_ids": [1, 2],
-                    "poll_candidate_list_ids": [1],
-                    "poll_candidate_ids": [1],
-                    "vote_ids": [1, 2],
-                },
-                "poll/1": {
-                    "title": "pull",
-                    "type": "analog",
-                    "pollmethod": "YNA",
+                "poll/20": {
+                    "title": "Poll 20",
                     "meeting_id": 1,
-                    "option_ids": [1, 2],
-                    "content_object_id": "topic/1",
+                    "content_object_id": "motion/15",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/25",
+                    "state": Poll.STATE_FINISHED,
+                    "published": True,
                 },
-                "option/1": {
-                    "meeting_id": 1,
-                    "vote_ids": [1],
-                    "content_object_id": "user/1",
+                "poll_config_approval/25": {
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_VALID,
                 },
-                "option/2": {
-                    "meeting_id": 1,
-                    "vote_ids": [2],
-                    "content_object_id": "poll_candidate_list/1",
-                },
-                "poll_candidate_list/1": {
-                    "meeting_id": 1,
-                    "option_id": 2,
-                    "poll_candidate_ids": [1],
-                },
-                "poll_candidate/1": {
-                    "poll_candidate_list_id": 1,
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "weight": 3,
-                },
-                "vote/1": {
-                    "meeting_id": 1,
-                    "option_id": 1,
-                    "user_id": 1,
-                    "user_token": "dfjdskjfksdjf",
-                    "weight": Decimal("1.000000"),
-                    "value": "Y",
-                },
-                "vote/2": {
-                    "meeting_id": 1,
-                    "option_id": 2,
-                    "user_id": 1,
-                    "delegated_user_id": 2,
-                    "user_token": "dfjdskjfksdjf",
-                    "weight": Decimal("1.000000"),
-                    "value": "Y",
+                "poll_option/1": {
+                    "content_object_id": "meeting_user/1",
+                    "poll_id": 20,
                 },
             }
         )
+
         response = self.request(
             "user.update",
-            {
-                "id": 3,
-                "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
-            },
+            {"id": 2, "is_present_in_meeting_ids": [1], "poll_option_ids": [1]},
             internal=True,
         )
         self.assert_status_code(response, 200)
-        expected: dict[str, dict[str, Any]] = {
-            "user/3": {
-                "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
-            },
-            "meeting/1": {
-                "present_user_ids": [3],
-            },
-            "poll/1": {"voted_ids": [3]},
-            "option/1": {"content_object_id": "user/3"},
-            "poll_candidate/1": {
-                "user_id": 3,
-            },
-            "vote/1": {"user_id": 3},
-            "vote/2": {"delegated_user_id": 3},
-        }
-        for fqid, model in expected.items():
-            self.assert_model_exists(fqid, model)
+        self.assert_model_exists(
+            "user/2", {"is_present_in_meeting_ids": [1], "poll_option_ids": [1]}
+        )
+        self.assert_model_exists("meeting/1", {"present_user_ids": [2]})
+        self.assert_model_exists("poll_option/1", {"content_object_id": "user/2"})
+        self.assert_model_exists("meeting_user/1", {"poll_option_ids": []})
 
     def test_update_with_internal_fields_error(self) -> None:
         self.create_meeting()
-        self.create_user("dummy2", [1])
-        self.create_user("dummy3", [1])
+        self.create_user_for_meeting(1)
         response = self.request(
             "user.update",
             {
-                "id": 3,
+                "id": 2,
                 "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
+                "poll_option_ids": [1],
+                "history_entry_ids": [1],
+                "history_position_ids": [1],
             },
             internal=False,
         )
@@ -3206,11 +3123,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert message.endswith("} properties")
         for field in [
             "'is_present_in_meeting_ids'",
-            "'option_ids'",
-            "'poll_candidate_ids'",
-            "'poll_voted_ids'",
-            "'vote_ids'",
-            "'delegated_vote_ids'",
+            "'poll_option_ids'",
+            "'history_entry_ids'",
+            "'history_position_ids'",
         ]:
             self.assertIn(field, message)
 

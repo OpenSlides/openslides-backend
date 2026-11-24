@@ -7,7 +7,7 @@
     gender_id: Id;
     pronoun: string;
     meeting_id: ID;
-    vote_delegated_to_id: Id;
+    vote_delegated_to_ids: Id[];
     vote_delegations_from_ids: Id[];
 }
 ```

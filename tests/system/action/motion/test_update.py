@@ -217,8 +217,8 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "category_id": 4,
                 "block_id": 51,
                 "additional_submitter": "additional",
-                "tag_ids": None,
-                "attachment_meeting_mediafile_ids": None,
+                "tag_ids": [],
+                "attachment_meeting_mediafile_ids": [],
             },
         )
         # motion/113 does not exist and should therefore not be present in the relations
@@ -232,8 +232,8 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "block_id": 51,
                 "supporter_meeting_user_ids": None,
                 "additional_submitter": "additional",
-                "tag_ids": None,
-                "attachment_meeting_mediafile_ids": None,
+                "tag_ids": [],
+                "attachment_meeting_mediafile_ids": [],
                 "state_extension_reference_ids": ["motion/112"],
                 "recommendation_extension_reference_ids": ["motion/112"],
                 "workflow_timestamp": timestamp,
@@ -358,7 +358,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/111", {"recommendation_extension_reference_ids": None}
+            "motion/111", {"recommendation_extension_reference_ids": []}
         )
 
     def test_meeting_mismatch(self) -> None:
@@ -419,10 +419,10 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
             {"id": 1, "recommendation_extension": ""},
         )
         self.assert_model_exists(
-            "motion/1", {"recommendation_extension_reference_ids": None}
+            "motion/1", {"recommendation_extension_reference_ids": []}
         )
         self.assert_model_exists(
-            "motion/2", {"referenced_in_motion_recommendation_extension_ids": None}
+            "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
         )
 
     def test_update_identical_motions(self) -> None:
@@ -446,7 +446,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
             {"id": 2, "text": text2},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/1", {"identical_motion_ids": None})
+        self.assert_model_exists("motion/1", {"identical_motion_ids": []})
         self.assert_model_exists(
             "motion/2", {"text_hash": hash2, "identical_motion_ids": [3]}
         )
@@ -512,8 +512,8 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "attachment_ids": ["motion/111"],
                 "meeting_id": 1,
                 "mediafile_id": 1,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
                 "is_public": True,
             },
         )

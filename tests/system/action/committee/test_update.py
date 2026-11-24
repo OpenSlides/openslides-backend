@@ -163,7 +163,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/1",
-            {"forward_to_committee_ids": None},
+            {"forward_to_committee_ids": []},
         )
         self.assert_model_exists(
             "committee/2",
@@ -201,7 +201,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/1",
-            {"receive_forwardings_from_committee_ids": None},
+            {"receive_forwardings_from_committee_ids": []},
         )
         self.assert_model_exists(
             "committee/2", {"receive_forwardings_from_committee_ids": [3]}
@@ -229,12 +229,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "committee/1", {"receive_forwardings_from_committee_ids": None}
+            "committee/1", {"receive_forwardings_from_committee_ids": []}
         )
         self.assert_model_exists(
-            "committee/2", {"receive_forwardings_from_committee_ids": None}
+            "committee/2", {"receive_forwardings_from_committee_ids": []}
         )
-        self.assert_model_exists("committee/3", {"forward_to_committee_ids": None})
+        self.assert_model_exists("committee/3", {"forward_to_committee_ids": []})
 
     def test_update_complex_4(self) -> None:
         """A->A, Try A->{}"""
@@ -258,8 +258,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "committee/1",
             {
-                "forward_to_committee_ids": None,
-                "receive_forwardings_from_committee_ids": None,
+                "forward_to_committee_ids": [],
+                "receive_forwardings_from_committee_ids": [],
             },
         )
 
@@ -288,7 +288,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("committee/1", {"forward_to_committee_ids": None})
+        self.assert_model_exists("committee/1", {"forward_to_committee_ids": []})
         self.assert_model_exists(
             "committee/2",
             {
@@ -300,7 +300,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee/3",
             {
                 "forward_to_committee_ids": [2],
-                "receive_forwardings_from_committee_ids": None,
+                "receive_forwardings_from_committee_ids": [],
             },
         )
         self.assert_model_exists(
@@ -314,7 +314,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {"id": self.COMMITTEE_ID, "manager_ids": [30]},
         )
         self.assert_status_code(response, 400)
-        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": None})
+        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": []})
         self.assertIn("Model 'user/30' does not exist.", response.json["message"])
 
     def test_update_wrong_forward_committee(self) -> None:
@@ -324,9 +324,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {"id": self.COMMITTEE_ID, "forward_to_committee_ids": [101]},
         )
         self.assert_status_code(response, 400)
-        self.assert_model_exists(
-            self.COMMITTEE_FQID, {"forward_to_committee_ids": None}
-        )
+        self.assert_model_exists(self.COMMITTEE_FQID, {"forward_to_committee_ids": []})
         self.assertIn("Model 'committee/101' does not exist.", response.json["message"])
 
     def test_update_wrong_default_meeting(self) -> None:
@@ -416,7 +414,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "user/21",
             {"committee_management_ids": [1], "committee_ids": [1]},
         )
-        self.assert_model_exists("user/20", {"committee_management_ids": None})
+        self.assert_model_exists("user/20", {"committee_management_ids": []})
 
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
@@ -583,7 +581,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "user/21",
-            {"committee_management_ids": None, "committee_ids": [1]},
+            {"committee_management_ids": [], "committee_ids": [1]},
         )
 
     def test_update_after_deleting_default_committee(self) -> None:
@@ -601,7 +599,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
         response = self.request("committee.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"committee_management_ids": None})
+        self.assert_model_exists("user/1", {"committee_management_ids": []})
         self.assert_model_not_exists("committee/1")
 
         response = self.request(
@@ -677,25 +675,23 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        expected: dict[
-            int, tuple[int | None, list[int] | None, list[int] | None, list[int] | None]
-        ] = {
-            1: (None, [17], None, [14, 16, *range(17, 32)]),
-            2: (None, [3, 10], None, [3, 7, 8, 9, 10, 11, 12, 13, 15]),
+        expected: dict[int, tuple[int | None, list[int], list[int], list[int]]] = {
+            1: (None, [17], [], [14, 16, *range(17, 32)]),
+            2: (None, [3, 10], [], [3, 7, 8, 9, 10, 11, 12, 13, 15]),
             3: (2, [7], [2], [7, 8, 9, 15]),
-            4: (None, [5, 6], None, [5, 6]),
-            5: (4, None, [4], None),
-            6: (4, None, [4], None),
+            4: (None, [5, 6], [], [5, 6]),
+            5: (4, [], [4], []),
+            6: (4, [], [4], []),
             7: (3, [8, 9], [2, 3], [8, 9, 15]),
-            8: (7, None, [2, 3, 7], None),
+            8: (7, [], [2, 3, 7], []),
             9: (7, [15], [2, 3, 7], [15]),
             10: (2, [11], [2], [11, 12, 13]),
             11: (10, [12, 13], [2, 10], [12, 13]),
-            12: (11, None, [2, 10, 11], None),
-            13: (11, None, [2, 10, 11], None),
+            12: (11, [], [2, 10, 11], []),
+            13: (11, [], [2, 10, 11], []),
             14: (18, [16], [1, 17, 18], [16]),
-            15: (9, None, [2, 3, 7, 9], None),
-            16: (14, None, [1, 14, 17, 18], None),
+            15: (9, [], [2, 3, 7, 9], []),
+            16: (14, [], [1, 14, 17, 18], []),
             17: (
                 1,
                 [18, 25],
@@ -704,17 +700,17 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             ),
             18: (17, [14, 19, 22], [1, 17], [14, 16, 19, 20, 21, 22, 23]),
             19: (18, [20, 21], [1, 17, 18], [20, 21]),
-            20: (19, None, [1, 17, 18, 19], None),
-            21: (19, None, [1, 17, 18, 19], None),
+            20: (19, [], [1, 17, 18, 19], []),
+            21: (19, [], [1, 17, 18, 19], []),
             22: (18, [23], [1, 17, 18], [23]),
-            23: (22, None, [1, 17, 18, 22], None),
-            24: (26, None, [1, 17, 25, 26], None),
+            23: (22, [], [1, 17, 18, 22], []),
+            24: (26, [], [1, 17, 25, 26], []),
             25: (17, [26, 29], [1, 17], [24, 26, 27, 28, 29, 30, 31]),
             26: (25, [24, 27, 28], [1, 17, 25], [24, 27, 28]),
-            27: (26, None, [1, 17, 25, 26], None),
-            28: (26, None, [1, 17, 25, 26], None),
+            27: (26, [], [1, 17, 25, 26], []),
+            28: (26, [], [1, 17, 25, 26], []),
             29: (25, [30, 31], [1, 17, 25], [30, 31]),
-            30: (29, None, [1, 17, 25, 29], None),
+            30: (29, [], [1, 17, 25, 29], []),
         }
         for id_, (
             parent_id,
@@ -735,9 +731,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee/31",
             {
                 "parent_id": 29,
-                "child_ids": None,
+                "child_ids": [],
                 "all_parent_ids": [1, 17, 25, 29],
-                "all_child_ids": None,
+                "all_child_ids": [],
                 "name": "Renamed committee",
             },
         )
@@ -855,7 +851,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         response = self.request("committee.update", {"id": 4, "parent_id": None})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "committee/4", {"parent_id": None, "all_parent_ids": None}
+            "committee/4", {"parent_id": None, "all_parent_ids": []}
         )
 
     def test_update_set_ancestor_as_parent_with_ancestor_perm(self) -> None:
