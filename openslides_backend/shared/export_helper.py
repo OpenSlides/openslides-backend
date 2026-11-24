@@ -239,7 +239,8 @@ def export_meeting(
             [
                 GetManyRequest(collection, ids, get_fields_for_export(collection))
                 for collection, ids in related_collections.items()
-            ]
+            ],
+            lock_result=False,
         )
         for collection, data in related_models.items():
             export.setdefault(collection, {}).update(
