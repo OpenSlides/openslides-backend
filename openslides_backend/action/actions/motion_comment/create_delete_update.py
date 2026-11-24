@@ -5,7 +5,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MotionComment
-from ....permissions.permission_helper import has_committee_management_level
+from ....permissions.permission_helper import has_committee_management_level, has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, FilterOperator
@@ -35,6 +35,45 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
             ["admin_group_id", "committee_id"],
             lock_result=False,
         )
+        motion_id = self.get_field_from_instance("motion_id", instance)
+        meeting_user = self.datastore.filter(
+            "meeting_user",
+            And(
+                FilterOperator("user_id", "=", self.user_id),
+                FilterOperator("meeting_id", "=", meeting_id),
+            ),
+            ["id"],
+        )
+        meeting_user_id = None
+        if meeting_user:
+            meeting_user_id = int(list(meeting_user)[0])
+        is_submitter = motion_id and self.datastore.exists(
+            "motion_submitter",
+            And(
+                FilterOperator("meeting_user_id", "=", meeting_user_id),
+                FilterOperator("motion_id", "=", motion_id),
+            ),
+        )
+        if restrictions := list(
+            self.datastore.filter(
+                "motion_state",
+                FilterOperator("motion_ids", "has", motion_id),
+                ["restrictions"],
+            ).values()
+        )[0].get("restrictions", []):
+            success = False
+            for restriction in restrictions:
+                if restriction == "is_submitter":
+                    if is_submitter:
+                        success = True
+                        break
+                elif has_perm(self.datastore, self.user_id, restriction, meeting_id):
+                    success = True
+                    break
+            if not success:
+                raise PermissionDenied(
+                    f"You are not allowed to perform action {self.name} on motion {motion_id} as you are not allowed to see the motion in its current state."
+                )
 
         allowed_groups = set(section.get("write_group_ids", []))
         allowed_groups.add(meeting["admin_group_id"])
@@ -57,28 +96,8 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
             OrganizationManagementLevel.SUPERADMIN,
         ]:
             return
-
         if section.get("submitter_can_write"):
-            motion_id = self.get_field_from_instance("motion_id", instance)
-
-            meeting_user = self.datastore.filter(
-                "meeting_user",
-                And(
-                    FilterOperator("user_id", "=", self.user_id),
-                    FilterOperator("meeting_id", "=", meeting_id),
-                ),
-                ["id"],
-            )
-            meeting_user_id = None
-            if meeting_user:
-                meeting_user_id = int(list(meeting_user)[0])
-            if motion_id and self.datastore.exists(
-                "motion_submitter",
-                And(
-                    FilterOperator("meeting_user_id", "=", meeting_user_id),
-                    FilterOperator("motion_id", "=", motion_id),
-                ),
-            ):
+            if is_submitter:
                 return
 
         msg = f"You are not allowed to perform action {self.name}."

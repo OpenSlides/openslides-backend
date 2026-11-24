@@ -172,11 +172,25 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
                     "line_from": 14,
                     "line_to": 15,
                 },
+                "motion_comment_section/1": {
+                    "name": "The voices, the terrible voices O_O",
+                    "meeting_id": 1,
+                    "read_group_ids": [1],
+                    "write_group_ids": [1],
+                },
+                "motion_comment/1": {
+                    "comment": "AAAAAAAAAAaaaaaaaaaaaaaaaaaa",
+                    "meeting_id": 1,
+                    "section_id": 1,
+                    "motion_id": 111,
+                },
             }
         )
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_not_exists("motion_comment/1")
+        self.assert_model_exists("motion_comment_section/1")
         self.assert_model_not_exists("motion_editor/1")
         self.assert_model_not_exists("motion_working_group_speaker/1")
         self.assert_history_information("motion/111", ["Motion deleted"])
