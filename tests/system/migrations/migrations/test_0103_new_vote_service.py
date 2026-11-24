@@ -15,9 +15,8 @@ from openslides_backend.shared.typing import ModelMap, PartialModel
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 
 
-class TestMigration101(BaseMigrationTestCase):
-    migration_number = 101
-    EXPECTED_INTRODUCTION = ""
+class TestMigration103(BaseMigrationTestCase):
+    migration_number = 103
 
     @staticmethod
     def _get_meeting_data(
@@ -1530,9 +1529,12 @@ class TestMigration101(BaseMigrationTestCase):
         self.check_entries(expected_data)
 
     def test_poll_meeting_setting(self) -> None:
-        # Check defaults
-        # Check defaults are used for incorrect source values
-        # Check transformations from maps
+        """
+        Checks that:
+            - defaults are set for empty fields
+            - defaults are set for fields with incorrect values
+            - values are transformed correctly
+        """
         methods = (
             (None, None, None),
             ("nya", "Y", "YNA"),
