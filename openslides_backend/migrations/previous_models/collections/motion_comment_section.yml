@@ -1,0 +1,48 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: A
+    constant: true
+  submitter_can_write:
+    type: boolean
+    restriction_mode: A
+  comment_ids:
+    type: relation-list
+    to: motion_comment/section_id
+    on_delete: PROTECT
+    equal_fields: meeting_id
+    restriction_mode: A
+  read_group_ids:
+    type: relation-list
+    to: group/read_comment_section_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  write_group_ids:
+    type: relation-list
+    to: group/write_comment_section_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_comment_section_ids
+    required: true
+    restriction_mode: A
+    constant: true

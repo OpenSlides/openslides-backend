@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, MeetingPollSetting
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
@@ -17,6 +17,7 @@ from ...mixins.create_action_with_dependencies import CreateActionWithDependenci
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
+from ..meeting_poll_setting.create import MeetingPollSettingCreate
 from ..meeting_user.create import MeetingUserCreate
 from ..motion_workflow.create import (
     MotionWorkflowCreateComplexWorkflowAction,
@@ -171,11 +172,17 @@ class MeetingCreate(
 
         instance["default_group_id"] = id_from_fqid(fqid_default_group)
         instance["admin_group_id"] = id_from_fqid(fqid_admin_group)
-        instance["assignment_poll_default_group_ids"] = [
-            id_from_fqid(fqid_delegates_group)
-        ]
-        instance["motion_poll_default_group_ids"] = [id_from_fqid(fqid_delegates_group)]
-        instance["topic_poll_default_group_ids"] = [id_from_fqid(fqid_delegates_group)]
+        self.execute_other_action(
+            MeetingPollSettingCreate,
+            [
+                {
+                    "meeting_id": instance["id"],
+                    poll_type_field: instance["id"],
+                    "group_ids": [id_from_fqid(fqid_delegates_group)],
+                }
+                for poll_type_field in MeetingPollSetting.POLL_TYPE_FIELDS
+            ],
+        )
 
         # Add user to admin group
         if admin_ids := instance.pop("admin_ids", []):

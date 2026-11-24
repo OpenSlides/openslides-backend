@@ -31,10 +31,12 @@ class MigrationHandler(BaseHandler):
         services: Services,
         logging: LoggingModule,
         version_connection: Any,
+        verbose: bool = False,
     ) -> None:
         super().__init__(env, services, logging)
         self.migration_cursor = curs
         self.ver_conn = version_connection
+        self.verbose = verbose
         with version_connection.cursor() as ver_curs:
             database_m_idx = MigrationHelper.get_database_migration_index(ver_curs)
         self.pending_migrations = {
@@ -88,24 +90,52 @@ class MigrationHandler(BaseHandler):
                 f"Couldn't find an SQL diff for {migration_number}. This can be intentional."
             )
         except Exception as e:
-            raise MigrationException(f"Error applying schema diff: {e}")
+            raise MigrationException(
+                f"Error applying schema diff for {migration_number}: {e}"
+            )
+
+    def apply_cleanup_statements(self, migration_number: int) -> None:
+        """Applies the sql cleanup statements for the given migration if they exist."""
+        try:
+            with open(
+                os.path.join(
+                    MIGRATIONS_PATH,
+                    self.pending_migrations[migration_number],
+                    "cleanup_statements.sql",
+                )
+            ) as f:
+                self.migration_cursor.execute(f.read())
+        except FileNotFoundError:
+            self.logger.warning(
+                f"Couldn't find an cleanup statements SQL for {migration_number}. This can be intentional."
+            )
+        except Exception as e:
+            raise MigrationException(
+                f"Error applying cleanup statements for {migration_number}: {e}"
+            )
 
     def execute_migrations(self) -> None:
         """
-        Executes the data_definition and data_manipulation methods of the migrations
-        stored in self.pending_migrations.
+        Executes the data_preparation, data_definition, data_manipulation and cleanup
+        methods of the migrations stored in self.pending_migrations.
         """
         for index, package_name in self.pending_migrations.items():
             try:
-                mig_class = MigrationHelper.get_migration_class(package_name)
                 self.logger.info("Executing migration: " + package_name)
+                mig_class = MigrationHelper.get_migration_class(package_name)(
+                    self.migration_cursor, self.logger, self.verbose
+                )
 
-                stash = mig_class.data_preparation(self.migration_cursor)
-                self.apply_schema_diff(index)
                 # Execute user defined functions or super classes noop.
-                mig_class.data_definition(self.migration_cursor)
-                mig_class.data_manipulation(self.migration_cursor, stash)
-                mig_class.cleanup(self.migration_cursor)
+                stash = mig_class.data_preparation()
+                self.apply_schema_diff(index)
+                mig_class.data_definition()
+                mig_class.data_manipulation(stash)
+                mig_class.cleanup()
+
+                # Proceed initially deferred triggers before applying cleanup statements
+                self.migration_cursor.connection.commit()
+                self.apply_cleanup_statements(index)
 
                 with self.ver_conn.cursor() as ver_curs:
                     MigrationHelper.set_database_migration_info(
@@ -131,6 +161,36 @@ class MigrationHandler(BaseHandler):
         self.logger.info(
             f"Migration index was set to {max(self.pending_migrations)}..."
         )
+
+    def pre_check(self) -> None:
+        """
+        Runs pre-migration checks.
+        """
+        self.logger.info("Checking migratability ...")
+        with self.ver_conn.cursor() as ver_cursor:
+            state = MigrationHelper.get_migration_state(ver_cursor)
+            match state:
+                case MigrationState.MIGRATION_REQUIRED:
+                    # Check prerequisites
+                    for package_name in self.pending_migrations.values():
+                        mig_class = MigrationHelper.get_migration_class(package_name)
+                        mig_name = package_name[4:]
+                        self.logger.info("Pre check: " + mig_name + " ...")
+                        if errors := mig_class(
+                            self.migration_cursor, self.logger, self.verbose
+                        ).check_prerequisites():
+                            errors = (
+                                f"Pre check for migration {mig_name} failed.\n{errors}"
+                            )
+                            self.logger.info(errors)
+                        else:
+                            self.logger.info(
+                                f"Pre check for migration {mig_name} finished successfully."
+                            )
+                case _:
+                    raise MigrationException(
+                        f"{state} not allowed when executing pre-check command."
+                    )
 
     def migrate(self) -> None:
         """
@@ -158,9 +218,9 @@ class MigrationHandler(BaseHandler):
                         mig_class = MigrationHelper.get_migration_class(package_name)
                         mig_name = package_name[4:]
                         self.logger.info("Pre check: " + mig_name + " ...")
-                        if errors := mig_class.check_prerequisites(
-                            self.migration_cursor
-                        ):
+                        if errors := mig_class(
+                            self.migration_cursor, self.logger, self.verbose
+                        ).check_prerequisites():
                             if minimum_required_index:
                                 MigrationHelper.set_database_migration_info(
                                     ver_cursor,
@@ -196,7 +256,9 @@ class MigrationHandler(BaseHandler):
         assert (
             self.migration_cursor and not self.migration_cursor.closed
         ), "Handlers cursor must be initialized."
-        if command == "migrate":
+        if command == "pre-check":
+            self.pre_check()
+        elif command == "migrate":
             self.migrate()
         elif command == "reset":
             self.reset()

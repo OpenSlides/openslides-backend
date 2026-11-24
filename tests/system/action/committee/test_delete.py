@@ -38,14 +38,14 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists(self.COMMITTEE_FQID)
         self.assert_model_exists(
             "user/21",
-            {"committee_ids": None, "committee_management_ids": None},
+            {"committee_ids": [], "committee_management_ids": []},
         )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"committee_ids": [2, 3]})
-        self.assert_model_exists("organization_tag/12", {"tagged_ids": None})
+        self.assert_model_exists("organization_tag/12", {"tagged_ids": []})
         self.assert_model_exists(
-            "committee/2", {"receive_forwardings_from_committee_ids": None}
+            "committee/2", {"receive_forwardings_from_committee_ids": []}
         )
-        self.assert_model_exists("committee/3", {"forward_to_committee_ids": None})
+        self.assert_model_exists("committee/3", {"forward_to_committee_ids": []})
 
     def test_delete_wrong_id(self) -> None:
         self.create_data()
@@ -180,7 +180,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/20",
             {
-                "committee_management_ids": None,
-                "committee_ids": None,
+                "committee_management_ids": [],
+                "committee_ids": [],
             },
         )

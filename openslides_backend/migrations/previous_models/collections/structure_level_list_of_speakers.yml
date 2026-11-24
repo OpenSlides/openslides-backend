@@ -1,0 +1,53 @@
+unique_together:
+  - meeting_id, structure_level_id, list_of_speakers_id
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  structure_level_id:
+    type: relation
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    reference: structure_level
+    to: structure_level/structure_level_list_of_speakers_ids
+  list_of_speakers_id:
+    type: relation
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    reference: list_of_speakers
+    to: list_of_speakers/structure_level_list_of_speakers_ids
+  speaker_ids:
+    type: relation-list
+    equal_fields: meeting_id
+    restriction_mode: A
+    to: speaker/structure_level_list_of_speakers_id
+  initial_time:
+    type: number
+    minimum: 1
+    required: true
+    restriction_mode: A
+    description: The initial time of this structure_level for this LoS
+  additional_time:
+    type: float
+    restriction_mode: A
+    description: The summed added time of this structure_level for this LoS
+  remaining_time:
+    type: float
+    required: true
+    restriction_mode: A
+    description: The currently remaining time of this structure_level for this LoS
+  current_start_time:
+    type: timestamp
+    restriction_mode: A
+    description: The current start time of a speaker for this structure_level. Is only set if a currently speaking speaker exists
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/structure_level_list_of_speakers_ids
+    required: true
+    constant: true
+    restriction_mode: A

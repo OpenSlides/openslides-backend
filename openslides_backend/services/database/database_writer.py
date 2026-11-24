@@ -327,7 +327,7 @@ class DatabaseWriter(SqlQueryHelper):
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
                         array_type_dict[field_name] = self.get_array_type(
-                            field, type(value_list[0])
+                            collection, field_name, type(value_list[0])
                         )
                     if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field
@@ -571,16 +571,11 @@ class DatabaseWriter(SqlQueryHelper):
             with self.connection.cursor() as curs:
                 curs._tx = adapt.Transformer(curs)
                 real_statement = curs._convert_query(statement, arguments)
-            fields = (
-                statement.as_string().split("(")[1].split(")")[0]
-                if "UPDATE " not in statement.as_string()
-                else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()
-            )
             raise InvalidFormat(
-                f"""{e.args[0] if self.env.is_dev_mode() else ""}
+                f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
-        {"The psycopg arguments are: " + str(arguments) if self.env.is_dev_mode() else ""}
-        The fields are: {fields}
+        The psycopg arguments are: {arguments}
+        The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}"""
             ) from e

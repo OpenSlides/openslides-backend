@@ -1,0 +1,498 @@
+from typing import Any, cast
+
+from psycopg import Cursor, sql
+from psycopg.rows import DictRow
+
+from meta.dev.src.helper_get_names import HelperGetNames
+from openslides_backend.migrations.patterns import (
+    Column,
+    ColumnRef,
+    Join,
+    JoinedTableParts,
+    JoinOn,
+    Table,
+    ValuesSource,
+    View,
+)
+from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.filters import BaseSqlQueryHelper, SqlArguments
+from openslides_backend.shared.patterns import Collection, Field
+
+
+class MigrationSqlHelper(BaseSqlQueryHelper):
+    # -- Override not implemented parent method --
+    @staticmethod
+    def get_array_type(
+        collection: Collection, field: Field, curs: Cursor[DictRow]
+    ) -> sql.Composable:
+        table_name = HelperGetNames.get_table_name(collection)
+        result = (
+            curs.execute(
+                sql.SQL("""
+                    SELECT
+                        element_type.typname AS element_type_name
+                    FROM pg_attribute AS a
+                    JOIN pg_type AS array_type
+                        ON array_type.oid = a.atttypid
+                    JOIN pg_type AS element_type
+                        ON element_type.oid = array_type.typelem
+                    WHERE a.attrelid = {table_name}::regclass
+                    AND a.attname = {column_name}
+                    """).format(
+                    table_name=table_name,
+                    column_name=field,
+                )
+            ).fetchone()
+            or {}
+        )
+        if element_type_name := result.get("element_type_name"):
+            return sql.SQL(f"::{element_type_name}[]")
+        raise BadCodingException(f"{table_name}/{field} is not an array column.")
+
+    @staticmethod
+    def _get_type(
+        table_name: Table,
+        column: Column,
+        curs: Cursor[DictRow],
+    ) -> str:
+        result = (
+            curs.execute(
+                sql.SQL("""
+                    SELECT
+                        pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type
+                    FROM pg_catalog.pg_attribute a
+                    JOIN pg_catalog.pg_class c
+                        ON c.oid = a.attrelid
+                    JOIN pg_catalog.pg_namespace n
+                        ON n.oid = c.relnamespace
+                    WHERE a.attrelid = {table_name}::regclass
+                    AND a.attname = {column_name}
+                    ORDER BY a.attnum;
+                    """).format(
+                    table_name=table_name,
+                    column_name=column,
+                )
+            ).fetchone()
+            or {}
+        )
+        if data_type := result.get("data_type"):
+            return data_type
+        raise BadCodingException(
+            f"Failed to retrieve the type of {table_name}/{column}."
+        )
+
+    @staticmethod
+    def get_type_for_casting(
+        curs: Cursor[DictRow],
+        table_name: Table,
+        column: Column,
+    ) -> sql.SQL | None:
+        """
+        Returns type for column if it is different from the type in the view.
+        """
+        # TODO (when dammi is merged): save types in DiffMixin and retrieve them from the dict. Move this method to BaseMigration.
+        if not table_name.endswith("_t"):
+            return None
+        type_ = MigrationSqlHelper._get_type(table_name, column, curs)
+        if type_.startswith("enum_"):
+            return sql.SQL(f"::{type_}")
+        return None
+
+    @staticmethod
+    def add_type_to_column_refs(
+        curs: Cursor[DictRow],
+        table_name: Table,
+        columns: list[tuple[ColumnRef, Column]],
+    ) -> None:
+        for column_ref, target_column in columns:
+            if (
+                type_ := MigrationSqlHelper.get_type_for_casting(
+                    curs, table_name, target_column
+                )
+            ) is not None:
+                column_ref.set_type(type_)
+
+    # -- Methods for building SET part --
+    @staticmethod
+    def get_set_columns_part(
+        new_values: dict[Column, sql.Composable | Any], arguments: SqlArguments
+    ) -> sql.Composed:
+        if not new_values:
+            raise BadCodingException("column_names must not be empty")
+
+        if any([isinstance(value, sql.Composable) for value in new_values.values()]):
+            sql_parts = []
+            for column, value in new_values.items():
+                if isinstance(value, sql.Composable):
+                    sql_parts.append(
+                        sql.SQL("{column} = {value}").format(
+                            column=sql.Identifier(column), value=value
+                        )
+                    )
+                else:
+                    sql_parts.append(
+                        sql.SQL("{column} = {placeholder}").format(
+                            column=sql.Identifier(column),
+                            placeholder=sql.Placeholder(),
+                        )
+                    )
+                    arguments.append(value)
+            return sql.SQL(", ").join(sql_parts)
+
+        columns = list(new_values.keys())
+        values = list(new_values.values())
+        arguments.extend(cast(SqlArguments, values))
+
+        if len(columns) == 1:
+            return sql.SQL("{column} = {placeholder}").format(
+                column=sql.Identifier(columns[0]),
+                placeholder=sql.Placeholder(),
+            )
+        else:
+            return sql.SQL("({column_names}) = ({placeholders})").format(
+                column_names=MigrationSqlHelper.join_columns(columns),
+                placeholders=MigrationSqlHelper.get_joined_placeholders(values),
+            )
+
+    @staticmethod
+    def build_identifier(
+        column: Column, qualifier: str | None = None, type_: sql.SQL | None = None
+    ) -> sql.Identifier | sql.Composed:
+        identifier = (
+            sql.Identifier(column)
+            if qualifier is None
+            else sql.Identifier(qualifier, column)
+        )
+        if type_:
+            return sql.SQL("{identifier}{type}").format(
+                identifier=identifier, type=type_
+            )
+        return identifier
+
+    @staticmethod
+    def get_value_assignment(
+        target_column: Column,
+        value: sql.Composable,
+        target_table: str | None = None,
+    ) -> sql.Composed:
+        return sql.SQL("{target} = {value}").format(
+            target=MigrationSqlHelper.build_identifier(target_column, target_table),
+            value=value,
+        )
+
+    @staticmethod
+    def get_column_assignment(
+        curs: Cursor[DictRow],
+        target_column: Column,
+        target_table: str | None = None,
+        source_column: Column | None = None,
+        source_table: str | None = None,
+        type_source_table: str | None = None,
+    ) -> sql.Composed:
+        if source_column is None:
+            source_column = target_column
+        return sql.SQL("{target} = {source}").format(
+            target=MigrationSqlHelper.build_identifier(target_column, target_table),
+            source=MigrationSqlHelper.build_identifier(
+                source_column,
+                source_table,
+                (
+                    MigrationSqlHelper.get_type_for_casting(
+                        curs, type_source_table, target_column
+                    )
+                    if type_source_table
+                    else None
+                ),
+            ),
+        )
+
+    # -- Methods for building parts for ARRAYs updates --
+    @staticmethod
+    def build_array_source_expression(
+        column: Column,
+        replace: dict[Any, Any] | None,
+        arguments: list[SqlArguments],
+        array_type: sql.Composable,
+    ) -> sql.Composed:
+        expression = sql.SQL("COALESCE({column}, ARRAY[]{array_type})").format(
+            column=sql.Identifier(column), array_type=array_type
+        )
+        if replace:
+            for old, new in replace.items():
+                expression = sql.SQL(
+                    "array_replace({expression}, {old_value}, {new_value})"
+                ).format(
+                    expression=expression,
+                    old_value=sql.Placeholder(),
+                    new_value=sql.Placeholder(),
+                )
+                arguments.extend([old, new])
+        return expression
+
+    @staticmethod
+    def build_array_remove_expression(
+        remove: set[Any] | None,
+        arguments: list[SqlArguments],
+        array_type: sql.Composable,
+    ) -> sql.Composable:
+        if not remove:
+            return sql.SQL("")
+        arguments.append(sorted(remove))
+        return sql.SQL(" EXCEPT SELECT unnest({remove}{array_type})").format(
+            remove=sql.Placeholder(), array_type=array_type
+        )
+
+    @staticmethod
+    def build_array_add_expression(
+        add: set[Any] | None,
+        arguments: list[SqlArguments],
+        array_type: sql.Composable,
+    ) -> sql.Composable:
+        if not add:
+            return sql.SQL("")
+        arguments.append(sorted(add))
+        return sql.SQL(" UNION SELECT unnest({add}{array_type})").format(
+            add=sql.Placeholder(), array_type=array_type
+        )
+
+    @staticmethod
+    def build_array_update_part(
+        column: Column,
+        array_type: sql.Composable,
+        source: sql.Composable,
+        add: sql.Composable,
+        remove: sql.Composable,
+    ) -> sql.Composed:
+        return sql.SQL(
+            "{column} = NULLIF("
+            "ARRAY(SELECT DISTINCT list_element FROM (SELECT unnest({source}) AS list_element{remove}{add}) AS elements ORDER BY list_element),"
+            "ARRAY[]{array_type})"
+        ).format(
+            column=sql.Identifier(column),
+            source=source,
+            remove=remove,
+            add=add,
+            array_type=array_type,
+        )
+
+    # -- Methods for building WHERE part --
+    @staticmethod
+    def get_lookup_part_from_other_table(
+        curs: Cursor[DictRow], join: Join, filter_string: sql.Composable
+    ) -> sql.Composed:
+        return sql.SQL("EXISTS (SELECT 1 FROM {joined_table} WHERE {where})").format(
+            joined_table=sql.Identifier(join.right_table.table_name),
+            where=MigrationSqlHelper.join_conditions(
+                [
+                    *MigrationSqlHelper.get_conditions_for_join(
+                        curs, join.right_table.table_name, join.join_on
+                    ),
+                    filter_string,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def get_conditions_for_join(
+        curs: Cursor[DictRow],
+        right_table: str,
+        join_on_columns: list[JoinOn],
+        match_nulls: bool = False,
+    ) -> list[sql.Composable]:
+        join_query = (
+            "{left_column} IS NOT DISTINCT FROM {right_column}"
+            if match_nulls
+            else "{left_column} = {right_column}"
+        )
+        return [
+            sql.SQL(join_query).format(
+                left_column=sql.Identifier(
+                    join_on.left_table.table_name, join_on.left_column
+                ),
+                right_column=MigrationSqlHelper.build_identifier(
+                    join_on.right_column,
+                    right_table,
+                    MigrationSqlHelper.get_type_for_casting(
+                        curs, join_on.left_table.table_name, join_on.left_column
+                    ),
+                ),
+            )
+            for join_on in join_on_columns
+        ]
+
+    @staticmethod
+    def join_conditions(conditions: list[sql.Composable]) -> sql.Composable:
+        if not conditions:
+            raise BadCodingException("Filter condition list must not be empty")
+
+        return sql.SQL(" AND ").join(
+            sql.SQL("({condition})").format(condition=condition)
+            for condition in conditions
+        )
+
+    # -- Methods for building FROM part --
+    @staticmethod
+    def build_values_table(
+        values_source: ValuesSource, arguments: SqlArguments
+    ) -> sql.Composed:
+        arguments.extend(
+            row[column]
+            for row in values_source.rows
+            for column in values_source.values_columns
+        )
+        return sql.SQL("(VALUES {values}) AS {alias}({columns})").format(
+            values=sql.SQL(", ").join(
+                sql.SQL("({placeholders})").format(
+                    placeholders=MigrationSqlHelper.get_joined_placeholders(
+                        values_source.values_columns
+                    )
+                )
+                for _ in values_source.rows
+            ),
+            alias=sql.Identifier(values_source.alias),
+            columns=MigrationSqlHelper.join_columns(values_source.values_columns),
+        )
+
+    @staticmethod
+    def join_columns(columns: list[Column]) -> sql.Composable:
+        assert columns
+        return sql.SQL(", ").join(sql.Identifier(column) for column in columns)
+
+    @staticmethod
+    def get_joined_placeholders(values: list[Any]) -> sql.Composable:
+        assert values
+        return sql.SQL(", ").join(sql.Placeholder() * len(values))
+
+    @staticmethod
+    def join_tables(
+        tables: list[sql.Composable],
+    ) -> sql.Composable:
+        if not tables:
+            return sql.SQL("")
+        return sql.SQL(" ") + sql.SQL(" ").join(tables)
+
+    # -- Methods for building the queries --
+    @staticmethod
+    def normalize_cte(common_table_expression: sql.Composable | None) -> sql.Composable:
+        if common_table_expression is None:
+            return sql.SQL("")
+        return sql.SQL("{cte}\n").format(cte=common_table_expression)
+
+    @staticmethod
+    def normalize_from(from_part: sql.Composable | None) -> sql.Composable:
+        if from_part is None:
+            return sql.SQL("")
+        return sql.SQL(" FROM {from_part}").format(from_part=from_part)
+
+    @staticmethod
+    def join_table_parts(
+        table_parts: list[JoinedTableParts] | None,
+    ) -> sql.Composable:
+        if not table_parts:
+            return sql.SQL("")
+        return MigrationSqlHelper.join_tables(
+            [
+                sql.SQL("{join_type} JOIN {right_table} ON {conditions}").format(
+                    join_type=sql.SQL(table.join_type.upper()),
+                    right_table=(
+                        sql.Identifier(table.right_table)
+                        if isinstance(table.right_table, str)
+                        else table.right_table
+                    ),
+                    conditions=sql.SQL(" AND ").join(
+                        sql.SQL("({condition})").format(condition=condition)
+                        for condition in table.conditions
+                    ),
+                )
+                for table in table_parts
+            ]
+        )
+
+    @staticmethod
+    def normalize_where(
+        condition: sql.Composable | list[sql.Composable] | None,
+    ) -> sql.Composable:
+        if condition is None:
+            return sql.SQL("")
+
+        if isinstance(condition, list):
+            condition = MigrationSqlHelper.join_conditions(condition)
+
+        return sql.SQL(" WHERE {condition}").format(condition=condition)
+
+    @staticmethod
+    def build_update_entries_sql(
+        table_name: str,
+        set_part: sql.Composable,
+        source_table: sql.Composable | None = None,
+        joined_tables: list[JoinedTableParts] | None = None,
+        filter_condition: sql.Composable | list[sql.Composable] | None = None,
+        common_table_expression: sql.Composable | None = None,
+    ) -> sql.Composed:
+        return sql.SQL(
+            "{common_table_expression}UPDATE {target_table} "
+            "SET {set_part}"
+            "{from_part}"
+            "{joined_tables}"
+            "{where};"
+        ).format(
+            common_table_expression=MigrationSqlHelper.normalize_cte(
+                common_table_expression
+            ),
+            target_table=sql.Identifier(table_name),
+            set_part=set_part,
+            from_part=MigrationSqlHelper.normalize_from(source_table),
+            joined_tables=MigrationSqlHelper.join_table_parts(joined_tables),
+            where=MigrationSqlHelper.normalize_where(filter_condition),
+        )
+
+    @staticmethod
+    def build_insert_from_other_table_sql(
+        source_table: Table | View,
+        target_table: Table,
+        target_columns: sql.Composable,
+        select_columns: sql.Composed,
+        joined_tables: list[JoinedTableParts],
+        condition: sql.Composable | None = None,
+        order_by: list[ColumnRef] | None = None,
+        return_fields: list[str] | None = None,
+    ) -> sql.Composed:
+        """
+        transfer_from_source: map of the columns that should be transfered from the source table
+        where source and target columns have different names:
+            * key: column name in the target table into which the value will be inserted
+            * value: column in the source table from which the value will be taken
+        """
+
+        return sql.SQL(
+            "INSERT INTO {target_table} ({target_columns}) "
+            "SELECT {select_columns} "
+            "FROM {source_table}"
+            "{joined_tables}"
+            "{where}"
+            "{order_by}"
+            "{returning};"
+        ).format(
+            target_table=sql.Identifier(target_table),
+            target_columns=target_columns,
+            select_columns=select_columns,
+            source_table=sql.Identifier(source_table),
+            joined_tables=MigrationSqlHelper.join_table_parts(joined_tables),
+            where=MigrationSqlHelper.normalize_where(condition),
+            order_by=(
+                sql.SQL(" ORDER BY {return_fields}").format(
+                    return_fields=sql.SQL(", ").join(
+                        column.identifier for column in order_by
+                    )
+                )
+                if order_by
+                else sql.SQL("")
+            ),
+            returning=(
+                sql.SQL(" RETURNING {return_fields}").format(
+                    return_fields=MigrationSqlHelper.join_columns(return_fields)
+                )
+                if return_fields
+                else sql.SQL("")
+            ),
+        )

@@ -1,0 +1,23 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  message:
+    type: HTMLStrict
+    required: true
+    restriction_mode: A
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/projector_message_ids
+    restriction_mode: A
+    required: true
+    constant: true

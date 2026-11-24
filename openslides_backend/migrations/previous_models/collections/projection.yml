@@ -1,0 +1,84 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  options:
+    type: JSON
+    restriction_mode: A
+  stable:
+    type: boolean
+    default: false
+    restriction_mode: A
+  weight:
+    type: number
+    restriction_mode: A
+  type:
+    type: string
+    restriction_mode: A
+  content:
+    type: JSON
+    calculated: true
+    restriction_mode: A
+  current_projector_id:
+    type: relation
+    reference: projector
+    to: projector/current_projection_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  preview_projector_id:
+    type: relation
+    reference: projector
+    to: projector/preview_projection_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  history_projector_id:
+    type: relation
+    reference: projector
+    to: projector/history_projection_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  content_object_id:
+    type: generic-relation
+    reference:
+      - meeting
+      - motion
+      - meeting_mediafile
+      - list_of_speakers
+      - motion_block
+      - assignment
+      - agenda_item
+      - topic
+      - poll
+      - projector_message
+      - projector_countdown
+    to:
+      - meeting/projection_ids
+      - motion/projection_ids
+      - meeting_mediafile/projection_ids
+      - list_of_speakers/projection_ids
+      - motion_block/projection_ids
+      - assignment/projection_ids
+      - agenda_item/projection_ids
+      - topic/projection_ids
+      - poll/projection_ids
+      - projector_message/projection_ids
+      - projector_countdown/projection_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/all_projection_ids
+    required: true
+    restriction_mode: A
+    constant: true
+# A projection is an M2M model between a projector and an element which is assigned to it.
+# It can either be the current projection, a preview or a history projection (i.e. previously
+# projected, with reference retained for protocolling purposes). The projection can only be
+# connected to the projector once in one of these contexts. Projections are projector- and
+# element-specific, meaning that, while the type of projector reference may change, neither
+# the referenced projector, nor the content_object of the projection may be changed.

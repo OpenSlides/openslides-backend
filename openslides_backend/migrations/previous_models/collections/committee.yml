@@ -1,0 +1,114 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  description:
+    type: HTMLStrict
+    restriction_mode: A
+  external_id:
+    type: string
+    unique: true
+    restriction_mode: A
+  meeting_ids:
+    type: relation-list
+    to: meeting/committee_id
+    on_delete: PROTECT
+    restriction_mode: A
+  default_meeting_id:
+    type: relation
+    to: meeting/default_meeting_for_committee_id
+    reference: meeting
+    restriction_mode: A
+  user_ids:
+    type: relation-list
+    to: user/committee_ids
+    restriction_mode: A
+    read_only: true
+    description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
+    sql: |
+      (
+        SELECT array_agg(DISTINCT user_id ORDER BY user_id)
+        FROM (
+          -- Select user_ids from committees meetings
+          SELECT mu.user_id
+          FROM meeting_t AS m
+          INNER JOIN meeting_user_t AS mu ON mu.meeting_id = m.id
+          WHERE m.committee_id = c.id
+
+          UNION
+
+          -- Select user_ids from committee managers
+          SELECT cmu.user_id
+          FROM nm_committee_manager_ids_user_t cmu
+          WHERE cmu.committee_id = c.id
+
+          UNION
+
+          -- Select user_id from home committees
+          SELECT u.id
+          FROM user_t u
+          WHERE u.home_committee_id = c.id
+        ) _
+      ) AS user_ids
+    log_triggers:
+      - on_table: meeting_user_t
+        log_collection_id_sql: SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id
+        log_value_column: user_id
+      - on_table: nm_committee_manager_ids_user_t
+        log_collection_id_column: committee_id
+        log_value_column: user_id
+      - on_table: user_t
+        on_columns: home_committee_id
+        log_collection_id_column: home_committee_id
+        log_value_column: id
+  manager_ids:
+    type: relation-list
+    to: user/committee_management_ids
+    restriction_mode: B
+  parent_id:
+    type: relation
+    to: committee/child_ids
+    restriction_mode: A
+    reference: committee
+  child_ids:
+    type: relation-list
+    to: committee/parent_id
+    restriction_mode: A
+  all_parent_ids: # Calculated: All parents, grandparents, etc. of this motion.
+    type: relation-list
+    to: committee/all_child_ids
+    restriction_mode: A
+  all_child_ids: # Calculated: All children, grandchildren, etc. of this motion.
+    type: relation-list
+    to: committee/all_parent_ids
+    restriction_mode: A
+  native_user_ids:
+    type: relation-list
+    to: user/home_committee_id
+    restriction_mode: B
+  forward_to_committee_ids:
+    type: relation-list
+    to: committee/receive_forwardings_from_committee_ids
+    restriction_mode: B
+  receive_forwardings_from_committee_ids:
+    type: relation-list
+    to: committee/forward_to_committee_ids
+    restriction_mode: B
+  organization_tag_ids:
+    type: relation-list
+    to: organization_tag/tagged_ids
+    restriction_mode: A
+  organization_id:
+    type: relation
+    reference: organization
+    to: organization/committee_ids
+    required: true
+    restriction_mode: A
+    constant: true
+    default: 1

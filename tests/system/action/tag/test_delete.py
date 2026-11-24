@@ -37,7 +37,7 @@ class TagDeleteTest(BaseActionTestCase):
             {
                 "id": 222,
                 "comment": "test_comment_ertgd590854398",
-                "tag_ids": None,
+                "tag_ids": [],
                 "content_object_id": "motion/1",
             },
         )

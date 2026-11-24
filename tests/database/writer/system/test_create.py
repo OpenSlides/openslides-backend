@@ -110,7 +110,7 @@ def test_create_view_field() -> None:
         extended_database.write(create_write_requests(data))
     assert_model(
         "user/1",
-        {"id": 1, "username": "1", "first_name": "1", "meeting_user_ids": None},
+        {"id": 1, "username": "1", "first_name": "1", "meeting_user_ids": []},
     )
 
 

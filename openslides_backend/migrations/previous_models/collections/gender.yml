@@ -1,0 +1,24 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    unique: true
+    required: true
+    restriction_mode: A
+  organization_id:
+    type: relation
+    required: true
+    constant: true
+    default: 1
+    to: organization/gender_ids
+    restriction_mode: A
+    reference: organization
+  user_ids:
+    type: relation-list
+    to: user/gender_id
+    restriction_mode: A
+    reference: user

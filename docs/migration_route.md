@@ -3,7 +3,7 @@
 Migrations are available via the internal route `/internal/migrations/` with the following payload:
 ```js
 {
-    "cmd": "migrate" |  "reset" | "stats",
+    "cmd": "pre-check" | "migrate" | "reset" | "stats",
     "verbose": bool
 }
 ```

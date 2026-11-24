@@ -57,13 +57,9 @@ class UserUpdate(
 
     internal_id_fields = [
         "is_present_in_meeting_ids",
-        "option_ids",
-        "poll_candidate_ids",
-        "poll_voted_ids",
-        "vote_ids",
-        "delegated_vote_ids",
         "history_entry_ids",
         "history_position_ids",
+        "poll_option_ids",
     ]
 
     model = User()

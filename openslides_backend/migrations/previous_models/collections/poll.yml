@@ -1,0 +1,165 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  title:
+    type: string
+    required: true
+    restriction_mode: A
+  description:
+    type: string
+    restriction_mode: A
+  type:
+    type: string
+    required: true
+    enum:
+      - analog
+      - named
+      - pseudoanonymous
+      - cryptographic
+    restriction_mode: A
+  backend:
+    type: string
+    required: true
+    enum: poll_backends
+    default: fast
+    restriction_mode: A
+  is_pseudoanonymized:
+    type: boolean
+    restriction_mode: A
+  pollmethod:
+    type: string
+    required: true
+    enum:
+      - "Y"
+      - "YN"
+      - "YNA"
+      - "N"
+    restriction_mode: A
+  state:
+    type: string
+    enum:
+      - created
+      - started
+      - finished
+      - published
+    default: created
+    restriction_mode: A
+  min_votes_amount:
+    type: number
+    default: 1
+    minimum: 1
+    restriction_mode: A
+  max_votes_amount:
+    type: number
+    default: 1
+    minimum: 1
+    restriction_mode: A
+  max_votes_per_option:
+    type: number
+    default: 1
+    minimum: 1
+    restriction_mode: A
+  global_yes:
+    type: boolean
+    default: false
+    restriction_mode: A
+  global_no:
+    type: boolean
+    default: false
+    restriction_mode: A
+  global_abstain:
+    type: boolean
+    default: false
+    restriction_mode: A
+  onehundred_percent_base:
+    type: string
+    required: true
+    enum: onehundred_percent_bases
+    default: disabled
+    restriction_mode: A
+  votesvalid:
+    type: decimal(6)
+    restriction_mode: B
+  votesinvalid:
+    type: decimal(6)
+    restriction_mode: B
+  votescast:
+    type: decimal(6)
+    restriction_mode: D
+  entitled_users_at_stop:
+    type: JSON
+    restriction_mode: A
+  live_voting_enabled:
+    type: boolean
+    default: false
+    description: If true, the vote service sends the votes of the users to the autoupdate service.
+    restriction_mode: A
+  live_votes:
+    type: JSON
+    calculated: true
+    description: dict from user to their vote. The value is null, when live voting is disabled.
+    restriction_mode: C
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: A
+    constant: true
+  content_object_id:
+    type: generic-relation
+    reference:
+      - motion
+      - assignment
+      - topic
+    to:
+      collections:
+        - motion
+        - assignment
+        - topic
+      field: poll_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  option_ids:
+    type: relation-list
+    to: option/poll_id
+    reference: option
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+  global_option_id:
+    type: relation
+    to: option/used_as_global_option_in_poll_id
+    reference: option
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant_legacy: true
+  voted_ids:
+    type: relation-list
+    to: user/poll_voted_ids
+    restriction_mode: A
+  entitled_group_ids:
+    type: relation-list
+    to: group/poll_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/poll_ids
+    reference: meeting
+    restriction_mode: A
+    required: true
+    constant: true

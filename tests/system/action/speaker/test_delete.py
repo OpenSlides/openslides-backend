@@ -72,7 +72,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("speaker/890")
-        self.assert_model_exists("meeting_user/7", {"speaker_ids": None})
+        self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_wrong_id(self) -> None:
         self.create_meeting(111)
@@ -199,7 +199,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("speaker/890")
-        self.assert_model_exists("meeting_user/7", {"speaker_ids": None})
+        self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_with_deleted_user(self) -> None:
         self.create_meeting(111)
@@ -249,12 +249,12 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
             }
         )
         if is_delegator:
-            delegatee_id: list[int] = []
-            self.create_user("delegatee", [1], meeting_user_ids=delegatee_id)
+            delegatee_ids: list[int] = []
+            self.create_user("delegatee", [1], meeting_user_ids=delegatee_ids)
             self.set_models(
                 {
-                    "meeting_user/7": {"vote_delegated_to_id": delegatee_id[0]},
-                    f"meeting_user/{delegatee_id[0]}": {
+                    "meeting_user/7": {"vote_delegated_to_ids": delegatee_ids},
+                    f"meeting_user/{delegatee_ids[0]}": {
                         "vote_delegations_from_ids": [7]
                     },
                 }
@@ -359,7 +359,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "current_start_time": None,
                 "structure_level_id": 5,
                 "list_of_speakers_id": 23,
-                "speaker_ids": None,
+                "speaker_ids": [],
                 "initial_time": 30,
                 "meeting_id": 111,
             },
@@ -423,7 +423,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "current_start_time": None,
                 "structure_level_id": 5,
                 "list_of_speakers_id": 23,
-                "speaker_ids": None,
+                "speaker_ids": [],
                 "initial_time": 30,
                 "meeting_id": 111,
             },

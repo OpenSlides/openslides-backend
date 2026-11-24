@@ -45,7 +45,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
                 GetManyRequest(
                     "agenda_item",
                     list(assign_item_ids),
-                    ["parent_id", "child_ids", "meeting_id", "weight", "level"],
+                    ["parent_id", "meeting_id", "weight", "level"],
                 )
             ]
         )

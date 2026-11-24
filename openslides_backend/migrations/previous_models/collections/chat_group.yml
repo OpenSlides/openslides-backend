@@ -1,0 +1,39 @@
+unique_together:
+  - meeting_id, name
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/chat_group_id
+    equal_fields: meeting_id
+    restriction_mode: A
+    on_delete: CASCADE
+  read_group_ids:
+    type: relation-list
+    to: group/read_chat_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  write_group_ids:
+    type: relation-list
+    to: group/write_chat_group_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/chat_group_ids
+    required: true
+    restriction_mode: A
+    constant: true

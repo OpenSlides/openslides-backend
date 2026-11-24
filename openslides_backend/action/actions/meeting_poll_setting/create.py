@@ -1,0 +1,125 @@
+from typing import Any
+
+from openslides_backend.shared.exceptions import ActionException
+
+from ....models.models import MeetingPollSetting, Poll
+from ....shared.filters import FilterOperator
+from ...generics.create import CreateAction
+from ...util.action_type import ActionType
+from ...util.default_schema import DefaultSchema
+from ...util.register import register_action
+
+
+@register_action("meeting_poll_setting.create", action_type=ActionType.BACKEND_INTERNAL)
+class MeetingPollSettingCreate(CreateAction):
+    """
+    Action to create a meeting_poll_setting.
+    """
+
+    model = MeetingPollSetting()
+    schema = DefaultSchema(MeetingPollSetting()).get_create_schema(
+        required_properties=["meeting_id"],
+        optional_properties=[
+            "used_as_assignment_poll_config_in_meeting_id",
+            "used_as_motion_poll_config_in_meeting_id",
+            "used_as_topic_poll_config_in_meeting_id",
+            "allow_live_voting",
+            "group_ids",
+            "enable_cumulative_voting",
+            "enable_live_voting",
+            "enable_max_options_limit",
+            "enable_max_yes_votes",
+            "method",
+            "onehundred_percent_base",
+            "required_majority",
+            "sort_result_by_votes",
+            "visibility",
+        ],
+    )
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        poll_types_fields = {
+            field_name: value
+            for field_name in MeetingPollSetting.POLL_TYPE_FIELDS
+            if (value := instance.get(field_name))
+        }
+        self.check_exactly_one_of(instance, poll_types_fields)
+
+        # Checks below are reachable only if exactly one poll type field is set
+        poll_type_field_name, poll_type_field_value = next(
+            iter(poll_types_fields.items())
+        )
+        self.check_equal_fields(instance, poll_type_field_name, poll_type_field_value)
+        self.check_prevent_updates(instance, poll_type_field_name)
+
+        return super().update_instance(instance)
+
+    def check_exactly_one_of(
+        self, instance: dict[str, Any], poll_types_fields: dict[str, int]
+    ) -> None:
+        """
+        Checks that exactly one of the poll type fields is defined for the instance:
+            - used_as_assignment_poll_config_in_meeting_id
+            - used_as_motion_poll_config_in_meeting_id
+            - used_as_topic_poll_config_in_meeting_id
+        """
+        # TODO: replace with exactly_one_of constraint (https://github.com/OpenSlides/openslides-meta/issues/540)
+        if not len(poll_types_fields):
+            raise ActionException(
+                f"One of the fields {MeetingPollSetting.POLL_TYPE_FIELDS} must be set."
+            )
+        if len(poll_types_fields) > 1:
+            raise ActionException(
+                f"Only one of {MeetingPollSetting.POLL_TYPE_FIELDS} can be set."
+            )
+
+    def check_equal_fields(
+        self,
+        instance: dict[str, Any],
+        poll_type_field_name: str,
+        poll_type_field_value: int,
+    ) -> None:
+        """
+        Checks that value in poll type field matches the meeting_id.
+        """
+        # TODO: replace with the updated equal_fields constraint (https://github.com/OpenSlides/openslides-meta/issues/541)
+        if poll_type_field_value != instance["meeting_id"]:
+            raise ActionException(
+                f"Values in fields '{poll_type_field_name}' and 'meeting_id' don't match."
+            )
+
+    def check_prevent_updates(
+        self, instance: dict[str, Any], poll_type_field_name: str
+    ) -> None:
+        """
+        Prevents creating a new meeting_poll_setting item if meeting already
+        contains meeting_poll_setting for the same poll type.
+        """
+        # TODO: replace with the updated prevent_updates constraint (https://github.com/OpenSlides/openslides-meta/issues/542)
+        meeting_id = instance["meeting_id"]
+        if self.datastore.filter(
+            "meeting_poll_setting",
+            FilterOperator(poll_type_field_name, "=", meeting_id),
+            ["id"],
+            lock_result=False,
+        ):
+            raise ActionException(
+                f"'{poll_type_field_name}' already exists in meeting/{meeting_id}."
+            )
+
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
+        is_motion_poll_setting = (
+            instance.get("used_as_motion_poll_config_in_meeting_id") is not None
+        )
+        if not instance.get("method"):
+            instance["method"] = (
+                Poll.METHOD_APPROVAL_YNA
+                if is_motion_poll_setting
+                else Poll.METHOD_SELECTION_Y
+            )
+        if not instance.get("onehundred_percent_base") and is_motion_poll_setting:
+            instance["onehundred_percent_base"] = (
+                Poll.ONEHUNDRED_PERCENT_BASE_YES_NO_ABSTAIN
+            )
+        instance = super().set_defaults(instance)
+        return instance

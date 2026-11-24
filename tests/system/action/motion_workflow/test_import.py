@@ -186,7 +186,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             {
                 "workflow_id": 43,
                 "name": "read",
-                "next_state_ids": None,
+                "next_state_ids": [],
                 "previous_state_ids": [43],
                 "weight": 12,
             },
@@ -196,7 +196,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             {
                 "workflow_id": 43,
                 "name": "end",
-                "next_state_ids": None,
+                "next_state_ids": [],
                 "previous_state_ids": [44],
                 "weight": 13,
             },

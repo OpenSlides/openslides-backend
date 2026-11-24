@@ -1,0 +1,31 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  weight:
+    type: number
+    default: 10000
+    restriction_mode: A
+  assignment_id:
+    type: relation
+    reference: assignment
+    to: assignment/candidate_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  meeting_user_id:
+    type: relation
+    reference: meeting_user
+    to: meeting_user/assignment_candidate_ids
+    restriction_mode: A
+    constant_legacy: true
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/assignment_candidate_ids
+    required: true
+    restriction_mode: A
+    constant: true

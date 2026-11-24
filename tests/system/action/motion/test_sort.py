@@ -19,7 +19,7 @@ class MotionSortActionTest(BaseActionTestCase):
             {
                 "sort_weight": 1,
                 "sort_parent_id": None,
-                "sort_child_ids": None,
+                "sort_child_ids": [],
             },
         )
 
@@ -123,7 +123,7 @@ class MotionSortActionTest(BaseActionTestCase):
             {
                 "sort_weight": 1,
                 "sort_parent_id": 1,
-                "sort_child_ids": None,
+                "sort_child_ids": [],
             },
         )
         self.assert_model_exists(
@@ -131,7 +131,7 @@ class MotionSortActionTest(BaseActionTestCase):
             {
                 "sort_weight": 2,
                 "sort_parent_id": 1,
-                "sort_child_ids": None,
+                "sort_child_ids": [],
             },
         )
 

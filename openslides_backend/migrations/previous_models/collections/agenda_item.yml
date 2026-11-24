@@ -1,0 +1,94 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  item_number:
+    type: string
+    restriction_mode: A
+  comment:
+    type: string
+    restriction_mode: C
+  closed:
+    type: boolean
+    default: false
+    restriction_mode: A
+  type:
+    type: string
+    enum:
+      - common
+      - internal
+      - hidden
+    default: common
+    restriction_mode: A
+  duration:
+    type: number
+    description: Given in seconds
+    minimum: 0
+    restriction_mode: B
+  is_internal:
+    type: boolean
+    description: Calculated by the server
+    read_only: true
+    restriction_mode: A
+  is_hidden:
+    type: boolean
+    description: Calculated by the server
+    read_only: true
+    restriction_mode: A
+  level:
+    type: number
+    description: Calculated by the server
+    read_only: true
+    restriction_mode: A
+  weight:
+    type: number
+    restriction_mode: A
+  content_object_id:
+    type: generic-relation
+    reference:
+      - motion
+      - motion_block
+      - assignment
+      - topic
+    to:
+      collections:
+        - motion
+        - motion_block
+        - assignment
+        - topic
+      field: agenda_item_id
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+    constant: true
+  parent_id:
+    type: relation
+    reference: agenda_item
+    to: agenda_item/child_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  child_ids:
+    type: relation-list
+    to: agenda_item/parent_id
+    equal_fields: meeting_id
+    restriction_mode: A
+  tag_ids:
+    type: relation-list
+    to: tag/tagged_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/agenda_item_ids
+    required: true
+    restriction_mode: A
+    constant: true

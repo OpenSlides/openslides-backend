@@ -74,8 +74,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_motion_poll_projection(self) -> None:
         data = {
-            "motion_poll_projection_name_order_first": "first_name",
-            "motion_poll_projection_max_columns": 5,
+            "poll_projection_name_order_first": "first_name",
+            "poll_projection_max_columns": 5,
         }
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
@@ -83,12 +83,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
     def test_update_motion_poll_projection_invalid_data_error(self) -> None:
         response_message = self.basic_test(
             {
-                "motion_poll_projection_name_order_first": "best_name",
+                "poll_projection_name_order_first": "best_name",
             },
             check_200=False,
         )
         self.assertEqual(
-            "Action meeting.update: data.motion_poll_projection_name_order_first must be one of ['first_name', 'last_name']",
+            "Action meeting.update: data.poll_projection_name_order_first must be one of ['first_name', 'last_name']",
             response_message,
         )
 
@@ -288,30 +288,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
 
-    def test_update_poll_default_backend_fields(self) -> None:
-        data = {
-            "motion_poll_default_backend": "long",
-            "assignment_poll_default_backend": "long",
-            "poll_default_backend": "long",
-        }
-        self.basic_test(data)
-        self.assert_model_exists("meeting/1", data)
-
-    def test_update_poll_default_live_voting_enabled(self) -> None:
-        self.basic_test({"poll_default_live_voting_enabled": True})
-        self.assert_model_exists(
-            "meeting/1",
-            {"poll_default_live_voting_enabled": True},
-        )
+    def test_update_users_vote_delegations_max_amount(self) -> None:
+        self.basic_test({"users_vote_delegations_max_amount": 4})
+        self.assert_model_exists("meeting/1", {"users_vote_delegations_max_amount": 4})
 
     def test_update_motions_block_slide_columns(self) -> None:
         self.basic_test({"motions_block_slide_columns": 2})
         self.assert_model_exists("meeting/1", {"motions_block_slide_columns": 2})
-
-    def test_update_topic_poll_default_group(self) -> None:
-        self.basic_test({"topic_poll_default_group_ids": [3]})
-        self.assert_model_exists("meeting/1", {"topic_poll_default_group_ids": [3]})
-        self.assert_model_exists("group/3", {"used_as_topic_poll_default_id": 1})
 
     def test_update_only_one_time_1(self) -> None:
         response_message = self.basic_test({"start_time": 150000}, check_200=False)
@@ -879,7 +862,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"set_as_template": None, "template_for_organization_id": None}
         )
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": None})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
 
     def test_update_set_as_template_required_duplicate_from(self) -> None:
         self.create_meeting(meeting_data={"template_for_organization_id": 1})
@@ -890,7 +873,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"set_as_template": None, "template_for_organization_id": None}
         )
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": None})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
 
     def test_update_set_as_template_not_allowed(self) -> None:
         self.create_meeting(meeting_data={"template_for_organization_id": 1})
@@ -1064,7 +1047,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"anonymous_group_id": 4})
         self.assert_model_not_exists("group/5")
 
-    def base_anonymous_group_in_poll_default_field_test(self, field: str) -> None:
+    def base_anonymous_group_in_poll_setting_field_test(self, field: str) -> None:
         self.create_meeting()
         self.set_anonymous()
         response = self.request("meeting.update", {"id": 1, field: [4]})
@@ -1074,19 +1057,19 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_anonymous_in_assignment_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "assignment_poll_default_group_ids"
+    def test_anonymous_in_assignment_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "assignment_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_motion_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "motion_poll_default_group_ids"
+    def test_anonymous_in_motion_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "motion_poll_setting_group_ids"
         )
 
-    def test_anonymous_in_topic_poll_default_group_ids(self) -> None:
-        self.base_anonymous_group_in_poll_default_field_test(
-            "topic_poll_default_group_ids"
+    def test_anonymous_in_topic_poll_setting_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_setting_field_test(
+            "topic_poll_setting_group_ids"
         )
 
     def test_update_enable_anonymous_check_language(self) -> None:

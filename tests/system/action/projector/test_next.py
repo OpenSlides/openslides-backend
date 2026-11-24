@@ -57,9 +57,9 @@ class ProjectorNext(BaseActionTestCase):
         self.assert_model_exists(
             "projector/2",
             {
-                "current_projection_ids": None,
-                "preview_projection_ids": None,
-                "history_projection_ids": None,
+                "current_projection_ids": [],
+                "preview_projection_ids": [],
+                "history_projection_ids": [],
             },
         )
 
@@ -84,8 +84,8 @@ class ProjectorNext(BaseActionTestCase):
             "projector/4",
             {
                 "current_projection_ids": [5],
-                "preview_projection_ids": None,
-                "history_projection_ids": None,
+                "preview_projection_ids": [],
+                "history_projection_ids": [],
             },
         )
 

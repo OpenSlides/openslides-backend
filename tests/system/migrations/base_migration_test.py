@@ -1,5 +1,6 @@
 import os
 import re
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
@@ -36,15 +37,19 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.services.postgresql.utils import deactivate_notify_triggers
 from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.filters import BaseSqlQueryHelper, Filter, SqlArguments
 from openslides_backend.shared.patterns import (
+    Collection,
     FullQualifiedId,
+    Id,
     collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
 )
-from openslides_backend.shared.typing import PartialModel
+from openslides_backend.shared.typing import ModelMap, PartialModel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.conftest import get_rel_db_table_names
 from tests.conftest_helper import generate_sql_for_test_initiation
-from tests.system.util import get_route_path
+from tests.system.util import create_action_test_application, get_route_path
 
 DEPR_SQL_PATH = os.path.realpath(
     os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
@@ -67,10 +72,10 @@ class BaseMigrationTestCase(TestCase):
         """
         Does not call super class to prevent usage of client and so forth.
         """
+        # Create services
+        self.app = create_action_test_application()
 
         # Set up state before migration 100
-        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
-        os.environ["MIG0100_I_READ_DOCS"] = "YES"
 
         self.apply_test_relational_schema()
 
@@ -99,6 +104,7 @@ class BaseMigrationTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        cls.prepare_mig_100_environment()
         cls.migration_dir_list = [
             f
             for f in os.listdir(MIGRATIONS_PATH)
@@ -136,6 +142,12 @@ class BaseMigrationTestCase(TestCase):
                 "theme/1": {"name": "standard theme"},
             }
         )
+
+    @staticmethod
+    def prepare_mig_100_environment() -> None:
+        """Sets environment variables required for migration 100"""
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
 
     @staticmethod
     def apply_test_relational_schema() -> None:
@@ -231,6 +243,18 @@ class BaseMigrationTestCase(TestCase):
     ) -> None:
         assert not self.get_trigger_exists(curs, trigger_name)
 
+    def assert_entries_count(
+        self, cur: Cursor[DictRow], collection: str, expected_count: int
+    ) -> None:
+        query = f"SELECT COUNT(*) FROM {collection}_t;"
+        result = cur.execute(query).fetchone()
+        if expected_count > 0:
+            assert result, f"Database did not contain a result for this query.\n{query}"
+        if result and (count := result["count"]) != expected_count:
+            raise Exception(
+                f"Entries count mismatch for {collection}_t. Expected: {expected_count}, received: {count}."
+            )
+
     def assert_content_not_none(
         self,
         cur: Cursor[DictRow],
@@ -253,6 +277,28 @@ class BaseMigrationTestCase(TestCase):
             raise Exception(
                 f"Database did not contain the expected result '{value} vs {result}' for this query.\n{query}"
             )
+
+    def assert_entries_not_exist(self, collection: Collection, filter_: Filter) -> None:
+        """
+        Checks whether there are no entries of the given collection that match the filter.
+        """
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                arguments: SqlArguments = []
+                curs.execute(
+                    sql.SQL("SELECT id FROM {view} WHERE {filter};").format(
+                        view=sql.Identifier(collection),
+                        filter=BaseSqlQueryHelper.build_filter_str(
+                            filter_, arguments, collection
+                        ),
+                    ),
+                    [arguments],
+                )
+                if entries_exist := curs.fetchall():
+                    raise Exception(
+                        f"No {collection} entries should match the filter: {filter_}.\n"
+                        f"Found entries with ids: {[entry['id'] for entry in entries_exist]}\n"
+                    )
 
     def get_migration_state(self) -> MigrationState | None:
         with get_new_os_conn() as conn:
@@ -334,6 +380,46 @@ class BaseMigrationTestCase(TestCase):
         check_dict = {key: in_dict.get(key) for key in is_dict}
         assert is_dict == check_dict
 
+    def update_entries(
+        self,
+        tables_data: dict[FullQualifiedId, PartialModel],
+        intermediate_tables_data: dict[str, list[dict[str, Any]]] = {},
+    ) -> None:
+        assert tables_data, "data can not be empty"
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for fqid, data in tables_data.items():
+                    assert data, "data can not contain empty dictionaries"
+                    collection, id_ = collection_and_id_from_fqid(fqid)
+                    table_name = HelperGetNames.get_table_name(collection)
+                    if len(data) == 1:
+                        set_part = sql.SQL("{column} = {placeholder}").format(
+                            column=sql.Identifier(list(data.keys())[0]),
+                            placeholder=sql.Placeholder(),
+                        )
+                    else:
+                        set_part = sql.SQL("({columns}) = ({placeholders})").format(
+                            columns=sql.SQL(", ").join(
+                                sql.Identifier(column) for column in data.keys()
+                            ),
+                            placeholders=sql.SQL(", ").join(
+                                sql.Placeholder() for _ in data
+                            ),
+                        )
+                    curs.execute(
+                        sql.SQL(
+                            "UPDATE {table_name} SET {set_part} WHERE id = {id};"
+                        ).format(
+                            table_name=sql.Identifier(table_name),
+                            set_part=set_part,
+                            id=sql.Placeholder(),
+                        ),
+                        [*data.values(), id_],
+                    )
+                if intermediate_tables_data:
+                    self.write_into_intermediate_table(curs, intermediate_tables_data)
+                conn.commit()
+
     @staticmethod
     def write_into_intermediate_table(
         curs: Cursor[DictRow],
@@ -364,3 +450,80 @@ class BaseMigrationTestCase(TestCase):
                     for target_value in data_item.values()
                 ],
             )
+
+    def check_entries(
+        self,
+        expected_data: ModelMap,
+        enum_list_columns: dict[Collection, list[str]] = {},
+    ) -> None:
+        assert expected_data, "data can not be empty"
+        failing_rows: dict[FullQualifiedId, list[tuple[str, Any, Any]]] = {}
+        missing_rows: dict[Collection, list[Id]] = defaultdict(list)
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for collection, expected_models in expected_data.items():
+                    if not expected_models or not all(
+                        data for data in expected_models.values()
+                    ):
+                        raise BadCodingException(
+                            "expected_data can not contain empty dictionaries"
+                        )
+
+                    # Collect all the column names per collection, cast text[] for enum[]
+                    columns = [
+                        (
+                            sql.SQL("{}::text[] AS {}").format(
+                                sql.Identifier(column),
+                                sql.Identifier(column),
+                            )
+                            if column in enum_list_columns.get(collection, [])
+                            else sql.Identifier(column)
+                        )
+                        for column in {
+                            "id",
+                            *(
+                                column
+                                for model in expected_models.values()
+                                for column in model
+                            ),
+                        }
+                    ]
+                    curs.execute(
+                        sql.SQL(
+                            "SELECT {columns} FROM {view} WHERE id = ANY({ids});"
+                        ).format(
+                            columns=sql.SQL(", ").join(columns),
+                            view=sql.Identifier(collection),
+                            ids=sql.Placeholder(),
+                        ),
+                        [list(expected_models.keys())],
+                    )
+
+                    rows = {row["id"]: row for row in curs.fetchall()}
+                    for id_, expected_model in expected_models.items():
+                        if id_ not in rows:
+                            missing_rows[collection].append(id_)
+                        elif mismatch := [
+                            (column, database_value, expected_value)
+                            for column, expected_value in expected_model.items()
+                            if (database_value := rows[id_][column]) != expected_value
+                        ]:
+                            failing_rows[
+                                fqid_from_collection_and_id(collection, id_)
+                            ] = mismatch
+
+        if not missing_rows and not failing_rows:
+            return
+        errors = []
+        if missing_rows:
+            errors.append("Rows don't exist:")
+            for collection, ids in missing_rows.items():
+                errors.append(f"\t{collection}: {ids}")
+        if failing_rows:
+            errors.append("Rows differ in column(s):")
+            for fqid, diff in failing_rows.items():
+                errors.append(f"\t{fqid}:")
+                for column, actual, expected in diff:
+                    errors.append(f"\t\t{column}: {actual} (expected: {expected})")
+        raise Exception("\n".join(errors))

@@ -1,0 +1,208 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  username:
+    type: string
+    unique: true
+    required: true
+    restriction_mode: B
+  member_number:
+    type: string
+    unique: true
+    restriction_mode: B
+  saml_id:
+    type: string
+    minLength: 1
+    unique: true
+    restriction_mode: B
+    description: unique-key from IdP for SAML login
+  pronoun:
+    type: string
+    maxLength: 32
+    restriction_mode: A
+  title:
+    type: string
+    restriction_mode: A
+  first_name:
+    type: string
+    restriction_mode: A
+  last_name:
+    type: string
+    restriction_mode: A
+  is_active:
+    type: boolean
+    default: true
+    restriction_mode: B
+  is_physical_person:
+    type: boolean
+    default: true
+    restriction_mode: A
+  password:
+    type: string
+    restriction_mode: G
+  default_password:
+    type: string
+    restriction_mode: H
+  can_change_own_password:
+    type: boolean
+    default: true
+    restriction_mode: D
+  email:
+    type: string
+    restriction_mode: B
+  default_vote_weight:
+    type: decimal(6)
+    default: "1.000000"
+    minimum: "0.000001"
+    restriction_mode: A
+  last_email_sent:
+    type: timestamp
+    restriction_mode: B
+  is_demo_user:
+    type: boolean
+    restriction_mode: A
+  last_login:
+    type: timestamp
+    restriction_mode: A
+    read_only: true
+  external:
+    type: boolean
+    restriction_mode: E
+  gender_id:
+    type: relation
+    to: gender/user_ids
+    restriction_mode: A
+    reference: gender
+  # Organization, meeting and committee
+  organization_management_level:
+    type: string
+    description: Hierarchical permission level for the whole organization.
+    enum:
+      - superadmin
+      - can_manage_organization
+      - can_manage_users
+    restriction_mode: B
+  is_present_in_meeting_ids:
+    type: relation-list
+    to: meeting/present_user_ids
+    restriction_mode: A
+  # Calculates all committee's where the user is
+  # - committee-manager (= committees in committee_management_ids)
+  # - is member (= is in a group) of a meeting in the committee
+  # - or has his home committee
+  committee_ids:
+    type: relation-list
+    to: committee/user_ids
+    restriction_mode: E
+    read_only: true
+    description: "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
+    sql: |
+      (
+        SELECT array_agg(DISTINCT ci.committee_id ORDER BY ci.committee_id)
+        FROM (
+          -- Select committee_ids from meetings the user is part of
+          SELECT m.committee_id
+          FROM meeting_user_t AS mu
+          INNER JOIN meeting_t AS m ON m.id = mu.meeting_id
+          WHERE mu.user_id = u.id
+
+          UNION
+
+          -- Select committee_ids from committee managers
+          SELECT cmu.committee_id
+          FROM nm_committee_manager_ids_user_t cmu
+          WHERE cmu.user_id = u.id
+
+          UNION
+
+          -- Select home_committee_id from user
+          SELECT u_hc.home_committee_id
+          FROM user_t u_hc
+          WHERE u_hc.home_committee_id IS NOT NULL AND u_hc.id = u.id
+        ) AS ci
+      ) AS committee_ids
+    log_triggers:
+      - on_table: meeting_user_t
+        log_collection_id_column: user_id
+        log_value_sql: SELECT committee_id FROM meeting_t WHERE id = ($1).meeting_id
+      - on_table: nm_committee_manager_ids_user_t
+        log_collection_id_column: user_id
+        log_value_column: committee_id
+      - on_table: user_t
+        on_columns: home_committee_id
+        log_collection_id_column: id
+        log_value_column: home_committee_id
+  # committee specific permissions
+  committee_management_ids:
+    type: relation-list
+    to: committee/manager_ids
+    restriction_mode: E
+  meeting_user_ids:
+    type: relation-list
+    to: meeting_user/user_id
+    restriction_mode: A
+    on_delete: CASCADE
+  poll_voted_ids:
+    type: relation-list
+    to: poll/voted_ids
+    restriction_mode: A
+  option_ids:
+    type: relation-list
+    to: option/content_object_id
+    reference: option
+    restriction_mode: A
+  vote_ids:
+    type: relation-list
+    to: vote/user_id
+    reference: vote
+    restriction_mode: A
+  delegated_vote_ids:
+    type: relation-list
+    to: vote/delegated_user_id
+    reference: vote
+    restriction_mode: A
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/user_id
+    reference: poll_candidate
+    restriction_mode: A
+  home_committee_id:
+    type: relation
+    to: committee/native_user_ids
+    restriction_mode: E
+    reference: committee
+  history_position_ids:
+    type: relation-list
+    to: history_position/user_id
+    restriction_mode: A
+  history_entry_ids:
+    type: relation-list
+    to: history_entry/model_id
+    restriction_mode: A
+  meeting_ids:
+    type: relation-list
+    description: Calculated. All ids from meetings calculated via meeting_user.
+    read_only: true
+    sql: |
+      (
+        SELECT array_agg(DISTINCT mu.meeting_id ORDER BY mu.meeting_id)
+        FROM meeting_user_t mu
+        WHERE mu.user_id = u.id
+      ) AS meeting_ids
+    to: meeting/user_ids
+    restriction_mode: E
+    log_triggers:
+      - on_table: meeting_user_t
+        log_collection_id_column: user_id
+        log_value_column: meeting_id
+  organization_id:
+    type: relation
+    reference: organization
+    to: organization/user_ids
+    required: true
+    restriction_mode: F
+    constant: true
+    default: 1

@@ -43,11 +43,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert "Actions handled successfully" in response.json["message"]
-        model_22 = self.get_model("agenda_item/22")
-        assert model_22.get("weight") == 1
-        assert model_22.get("parent_id") is None
-        assert model_22.get("child_ids") is None
-        assert model_22.get("level") == 0
+        self.assert_model_exists(
+            "agenda_item/22",
+            {"weight": 1, "parent_id": None, "child_ids": [], "level": 0},
+        )
 
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
@@ -327,21 +326,33 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         }
         response = self.request("agenda_item.sort", small_tree_data)
         self.assert_status_code(response, 200)
-        model_1 = self.get_model("agenda_item/1")
-        assert model_1.get("weight") == 1
-        assert model_1.get("parent_id") is None
-        assert model_1.get("child_ids") == [11, 12]
-        assert model_1.get("level") == 0
-        model_11 = self.get_model("agenda_item/11")
-        assert model_11.get("weight") == 1
-        assert model_11.get("parent_id") == 1
-        assert model_11.get("child_ids") is None
-        assert model_11.get("level") == 1
-        model_12 = self.get_model("agenda_item/12")
-        assert model_12.get("weight") == 2
-        assert model_12.get("parent_id") == 1
-        assert model_12.get("child_ids") is None
-        assert model_12.get("level") == 1
+        self.assert_model_exists(
+            "agenda_item/1",
+            {
+                "weight": 1,
+                "parent_id": None,
+                "child_ids": [11, 12],
+                "level": 0,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/11",
+            {
+                "weight": 1,
+                "parent_id": 1,
+                "child_ids": [],
+                "level": 1,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/12",
+            {
+                "weight": 2,
+                "parent_id": 1,
+                "child_ids": [],
+                "level": 1,
+            },
+        )
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(

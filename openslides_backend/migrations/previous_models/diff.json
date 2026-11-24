@@ -1,0 +1,132 @@
+{
+    "rename": [
+        {},
+        {}
+    ],
+    "remove": null,
+    "add": [
+        {},
+        {
+            "action_worker": [
+                {},
+                {
+                    "fields": [
+                        {
+                            "created": {
+                                "type": "timestamp",
+                                "required": true,
+                                "restriction_mode": "A"
+                            }
+                        },
+                        {
+                            "name": [
+                                {
+                                    "required": true
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "committee": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "organization_id": [
+                                {
+                                    "required": true
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meeting": [
+                {},
+                {
+                    "fields": [
+                        {
+                            "name": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "default": "OpenSlides",
+                                "restriction_mode": "A",
+                                "required": true
+                            }
+                        },
+                        {}
+                    ]
+                }
+            ],
+            "motion_state": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "restrictions": [
+                                {
+                                    "items": {
+                                        "enum": [
+                                            "motion.can_see_internal",
+                                            "motion.can_manage_metadata",
+                                            "motion.can_manage",
+                                            "is_submitter"
+                                        ]
+                                    }
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "poll": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "type": [
+                                {
+                                    "enum": [
+                                        "analog",
+                                        "named",
+                                        "pseudoanonymous",
+                                        "cryptographic"
+                                    ]
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "edit": [
+        {},
+        {
+            "poll": [
+                {},
+                {
+                    "fields": [
+                        {},
+                        {
+                            "backend": [
+                                {
+                                    "enum": "poll_backends"
+                                },
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

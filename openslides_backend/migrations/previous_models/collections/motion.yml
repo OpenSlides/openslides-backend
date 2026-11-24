@@ -1,0 +1,282 @@
+unique_together:
+  - meeting_id, number
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  number:
+    type: string
+    restriction_mode: C
+  number_value:
+    type: number
+    description: The number value of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: D
+  sequential_number:
+    type: number
+    sequence_scope: meeting_id
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
+    read_only: true
+    required: true
+    restriction_mode: C
+    constant: true
+  title:
+    type: string
+    required: true
+    restriction_mode: C
+  diff_version:
+    type: string
+    restriction_mode: C
+  text:
+    type: HTMLStrict
+    restriction_mode: C
+  text_hash:
+    type: string
+    restriction_mode: D
+  amendment_paragraphs:
+    type: JSON
+    restriction_mode: C
+  modified_final_version:
+    type: HTMLStrict
+    restriction_mode: C
+  reason:
+    type: HTMLStrict
+    restriction_mode: C
+  category_weight:
+    type: number
+    default: 10000
+    restriction_mode: C
+  state_extension:
+    type: string
+    restriction_mode: C
+  recommendation_extension:
+    type: string
+    restriction_mode: C
+  sort_weight:
+    type: number
+    default: 10000
+    restriction_mode: C
+  created:
+    type: timestamp
+    restriction_mode: C
+  last_modified:
+    type: timestamp
+    read_only: true
+    restriction_mode: C
+  workflow_timestamp:
+    type: timestamp
+    restriction_mode: C
+  start_line_number:
+    type: number
+    restriction_mode: C
+    minimum: 1
+    default: 1
+  forwarded:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
+  additional_submitter:
+    type: string
+    restriction_mode: C
+  marked_forwarded:
+    type: boolean
+    restriction_mode: A
+    description: Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false.
+  lead_motion_id:
+    type: relation
+    reference: motion
+    to: motion/amendment_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  amendment_ids:
+    type: relation-list
+    to: motion/lead_motion_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: C
+  sort_parent_id:
+    type: relation
+    reference: motion
+    to: motion/sort_child_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  sort_child_ids:
+    type: relation-list
+    to: motion/sort_parent_id
+    equal_fields: meeting_id
+    restriction_mode: C
+  origin_id:
+    type: relation
+    reference: motion
+    to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
+    restriction_mode: A
+  origin_meeting_id: # The meeting of the motion in origin_id, if any
+    type: relation
+    reference: meeting
+    to: meeting/forwarded_motion_ids
+    restriction_mode: A
+  derived_motion_ids:
+    type: relation-list
+    to: motion/origin_id # Note: The related motions may not be in the same meeting
+    restriction_mode: A
+  all_origin_ids: # Calculated: All parents (origin_id), grandparents, etc. of this motion.
+    type: relation-list
+    to: motion/all_derived_motion_ids
+    restriction_mode: A
+  all_derived_motion_ids: # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
+    type: relation-list
+    to: motion/all_origin_ids
+    restriction_mode: A
+  identical_motion_ids:
+    type: relation-list
+    to: motion/identical_motion_ids
+    restriction_mode: C
+  state_id:
+    type: relation
+    reference: motion_state
+    to: motion_state/motion_ids
+    required: true
+    equal_fields: meeting_id
+    restriction_mode: C
+  recommendation_id:
+    type: relation
+    reference: motion_state
+    to: motion_state/motion_recommendation_ids
+    equal_fields: meeting_id
+    restriction_mode: E
+  state_extension_reference_ids:
+    type: generic-relation-list
+    to:
+      collections:
+        - motion
+      field: referenced_in_motion_state_extension_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  referenced_in_motion_state_extension_ids:
+    type: relation-list
+    to: motion/state_extension_reference_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  recommendation_extension_reference_ids:
+    type: generic-relation-list
+    to:
+      collections:
+        - motion
+      field: referenced_in_motion_recommendation_extension_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  referenced_in_motion_recommendation_extension_ids:
+    type: relation-list
+    to: motion/recommendation_extension_reference_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  category_id:
+    type: relation
+    reference: motion_category
+    to: motion_category/motion_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  block_id:
+    type: relation
+    reference: motion_block
+    to: motion_block/motion_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  submitter_ids:
+    type: relation-list
+    to: motion_submitter/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  supporter_ids:
+    type: relation-list
+    to: motion_supporter/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  editor_ids:
+    type: relation-list
+    to: motion_editor/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: B
+  working_group_speaker_ids:
+    type: relation-list
+    to: motion_working_group_speaker/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: B
+  poll_ids:
+    type: relation-list
+    to: poll/content_object_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  option_ids:
+    type: relation-list
+    to: option/content_object_id
+    reference: option
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  change_recommendation_ids:
+    type: relation-list
+    to: motion_change_recommendation/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  comment_ids:
+    type: relation-list
+    to: motion_comment/motion_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  agenda_item_id:
+    type: relation
+    to: agenda_item/content_object_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+  list_of_speakers_id:
+    type: relation
+    to: list_of_speakers/content_object_id
+    required: true
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: C
+    constant: true
+  tag_ids:
+    type: relation-list
+    to: tag/tagged_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  attachment_meeting_mediafile_ids:
+    type: relation-list
+    to: meeting_mediafile/attachment_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: C
+  personal_note_ids:
+    type: relation-list
+    to: personal_note/content_object_id
+    equal_fields: meeting_id
+    on_delete: CASCADE
+    restriction_mode: C
+  meeting_id:
+    type: relation
+    reference: meeting
+    to: meeting/motion_ids
+    required: true
+    restriction_mode: A
+    constant: true
+  history_entry_ids:
+    type: relation-list
+    to: history_entry/model_id
+    restriction_mode: A

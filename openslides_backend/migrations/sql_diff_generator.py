@@ -25,6 +25,7 @@ from openslides_backend.migrations.migration_helper import (
     MIGRATIONS_PATH,
     MigrationHelper,
 )
+from openslides_backend.migrations.py_diff_generator import DiffMixinHelper
 from openslides_backend.migrations.yaml_diff_generator import (
     CURR_MODELS,
     PREV_MODELS,
@@ -140,6 +141,9 @@ def main() -> int:
         "w",
     ) as f:
         f.write(fix(sql))
+
+    CleanupStatementsHelper.generate_cleanup_statements_sql()
+    DiffMixinHelper.generate_diff_mixin()
 
     for dict_name in diff:
         remove_empty(diff_control, dict_name)
@@ -1192,8 +1196,13 @@ class AddHelper:
                                     f"{table_name}/{field_name}: {constraint}, {value}"
                                 )
                     case "required":
-                        constraints_sql += Helper.get_inline_required_constraint(
-                            collection_name, field_name
+                        constraints_sql += EditHelper.handle_required(
+                            True,
+                            table_name,
+                            collection_name,
+                            field_name,
+                            field_def,
+                            field_def["type"],
                         )
                     case "enum":
                         # Only need to handle field enums (i.e. if it's a list)
@@ -1236,8 +1245,8 @@ class AddHelper:
                         default_value = Helper.get_formatted_default_value(
                             collection_name, field_name, value, field_def["type"]
                         )
-                        constraints_sql += Helper.get_inline_default_constraint(
-                            collection_name, field_name, default_value
+                        constraints_sql += AlterSchemaHelper.get_set_default_statement(
+                            table_name, field_name, default_value
                         )
                     case "description":
                         after_sql += Helper.get_post_view_comment(
@@ -1969,9 +1978,19 @@ class EditHelper:
                 )
         else:
             if should_set:
-                result += AlterSchemaHelper.get_set_not_null_statement(
-                    table_name, field_name
+                set_not_null = AlterSchemaHelper.get_set_not_null_statement(
+                    collection_name, field_name
                 )
+                # TODO: do the same for relations
+                if default := field_def.get("default"):
+                    result += (
+                        AlterSchemaHelper.get_update_empty_entries_statement(
+                            collection_name, field_name, default, field_def["type"]
+                        )
+                        + set_not_null
+                    )
+                else:
+                    CleanupStatementsHelper.update_cleanup_statements(set_not_null)
             else:
                 result += AlterSchemaHelper.get_drop_column_attribute_statement(
                     collection_name, field_name, "NOT NULL"
@@ -2536,6 +2555,41 @@ class RenameHelper:
                 if error:
                     errors.append(Helper.prefix_error(error, collection_name, fname))
         return name_per_field_and_schemazonekey
+
+
+# def handle_enum_change():
+#    1. Create new enum
+#    2. Drop view + add to alter_views
+#    3. Change type:
+#        * enum -> varchar
+#        * items -> varchar[]
+#    4. Add to cleanup statements:
+#        * Drop view
+#        * Change type to the new enum/enum[]
+#        * Create view
+
+
+class CleanupStatementsHelper:
+    cleanup_statements = ""
+
+    @classmethod
+    def update_cleanup_statements(cls, new_string: str) -> None:
+        cls.cleanup_statements += new_string
+
+    @classmethod
+    def generate_cleanup_statements_sql(cls) -> None:
+        if not cls.cleanup_statements:
+            print(
+                "No cleanup statements were generated -> Skipping cleanup_statements.sql generation"
+            )
+        cleanup_statements_path = os.path.join(
+            MIGRATIONS_PATH,
+            MigrationHelper.get_last_migration_directory(),
+            "cleanup_statements.sql",
+        )
+        with open(os.path.join(cleanup_statements_path), "w") as f:
+            f.write(cls.cleanup_statements)
+            print(f"{cleanup_statements_path} successfully created.")
 
 
 if __name__ == "__main__":

@@ -216,7 +216,7 @@ class ChatGroupCreate(BaseActionTestCase):
                 "name": "redekreis1",
                 "meeting_id": 1,
                 "read_group_ids": [1, 2],
-                "write_group_ids": None,
+                "write_group_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -226,6 +226,6 @@ class ChatGroupCreate(BaseActionTestCase):
                 "name": "redekreis1",
                 "meeting_id": 1,
                 "read_group_ids": [1, 2],
-                "write_group_ids": None,
+                "write_group_ids": [],
             },
         )

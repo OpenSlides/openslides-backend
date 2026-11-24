@@ -116,6 +116,3 @@ class DeleteAction(Action):
         return self.datastore.is_to_be_deleted(
             fqid_from_collection_and_id("meeting", meeting_id)
         )
-
-    def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
-        return self.datastore.is_to_be_deleted(fqid)

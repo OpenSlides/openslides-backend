@@ -1,0 +1,31 @@
+fields:
+  id:
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+  poll_candidate_list_id:
+    type: relation
+    to: poll_candidate_list/poll_candidate_ids
+    reference: poll_candidate_list
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+    constant: true
+  user_id:
+    type: relation
+    to: user/poll_candidate_ids
+    reference: user
+    restriction_mode: A
+    constant_legacy: true
+  weight:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/poll_candidate_ids
+    reference: meeting
+    required: true
+    restriction_mode: A
+    constant: true

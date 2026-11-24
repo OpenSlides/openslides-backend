@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.history_events import update_history_information
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -51,9 +52,9 @@ class MeetingUserCreate(
         return super().update_instance(instance)
 
     def get_history_information(self) -> HistoryInformation | None:
-        information = {}
+        information: HistoryInformation = {}
         for instance in self.instances:
-            instance_information = []
+            entries = []
             fqids_per_collection = {
                 collection_name: [
                     fqid_from_collection_and_id(
@@ -65,15 +66,17 @@ class MeetingUserCreate(
                 for collection_name in ["group", "structure_level"]
                 if (ids := instance.get(f"{collection_name}_ids"))
             }
-            instance_information.append(
+            entries.append(
                 self.compose_history_string(list(fqids_per_collection.items()))
             )
             for collection_name, fqids in fqids_per_collection.items():
-                instance_information.extend(fqids)
-            instance_information.append(
+                entries.extend(fqids)
+            entries.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
-            information[fqid_from_collection_and_id("user", instance["user_id"])] = (
-                instance_information
+            update_history_information(
+                information,
+                fqid_from_collection_and_id("user", instance["user_id"]),
+                entries,
             )
         return information

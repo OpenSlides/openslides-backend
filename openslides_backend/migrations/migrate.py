@@ -24,6 +24,12 @@ def get_parser() -> ArgumentParser:
     )
     subparsers = parent_parser.add_subparsers(title="commands", dest="command")
     subparsers.add_parser(
+        "pre-check",
+        add_help=False,
+        description="The pre-check parser",
+        help="Run pre-migration checks.",
+    )
+    subparsers.add_parser(
         "migrate",
         add_help=False,
         description="The migrate parser",
