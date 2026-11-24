@@ -15,7 +15,7 @@ Werkzeug==3.1.9
 python-magic==0.4.27
 python-sql==1.8.1
 pygments==2.21.0
-pyyaml==6.0.3
+pyyaml==6.0.4
 sqlfluff==4.5.0
 
 # opentelemetry
