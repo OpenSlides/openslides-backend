@@ -5,9 +5,12 @@ from typing import Any
 from psycopg import Connection, adapt, rows, sql
 from psycopg.errors import (
     CheckViolation,
+    DatabaseError,
     DatatypeMismatch,
+    DeadlockDetected,
     GeneratedAlways,
     InFailedSqlTransaction,
+    InterfaceError,
     NotNullViolation,
     ProgrammingError,
     StringDataRightTruncation,
@@ -29,6 +32,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import (
     BadCodingException,
+    DatabaseException,
     InvalidData,
     InvalidFormat,
     ModelDoesNotExist,
@@ -360,7 +364,7 @@ class DatabaseWriter(SqlQueryHelper):
                 self.execute_sql(
                     statement,
                     {
-                        **{str(id_): val for id_, val in enumerate(values)},
+                        **{str(nmbr): val for nmbr, val in enumerate(values)},
                         "own_id": id_,
                     },
                     collection,
@@ -491,6 +495,8 @@ class DatabaseWriter(SqlQueryHelper):
                         assert target_id  # we will never reach here with delete or update events being None on id
                         raise ModelDoesNotExist(error_fqid)
                     return result
+        except DeadlockDetected as e:
+            raise DatabaseException(f"{e}")
         except InFailedSqlTransaction as e:
             raise BadCodingException(
                 f"Tried to set {error_fqid} in an already broken transaction: {e}"
@@ -558,10 +564,15 @@ class DatabaseWriter(SqlQueryHelper):
             with self.connection.cursor() as curs:
                 curs._tx = adapt.Transformer(curs)
                 real_statement = curs._convert_query(statement, arguments)
+            fields = (
+                statement.as_string().split("(")[1].split(")")[0]
+                if "UPDATE " not in statement.as_string()
+                else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()
+            )
             raise InvalidFormat(f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
         The psycopg arguments are: {arguments}
-        The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
+        The fields are: {fields}
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:
@@ -579,6 +590,12 @@ class DatabaseWriter(SqlQueryHelper):
                 )
             else:
                 raise e
+        except DatabaseError as e:
+            raise DatabaseException(f"Psycopg encountered a new problem: {e}")
+        except InterfaceError as e:
+            raise DatabaseException(
+                f"The user encountered a new problem with psycopg: {e}"
+            )
         except Exception as e:
             raise e
             raise ModelLocked(f"Model ... is locked on fields .... {e}\

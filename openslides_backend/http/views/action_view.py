@@ -11,7 +11,7 @@ from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...services.postgresql.db_connection_handling import get_new_os_conn
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
-from ...shared.interfaces.wsgi import RouteResponse
+from ...shared.interfaces.wsgi import Headers, RouteResponse
 from ..http_exceptions import Unauthorized
 from ..request import Request
 from .base_view import BaseView, route
@@ -32,11 +32,7 @@ class ActionView(BaseView):
     def action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching action request.")
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                MigrationHelper.assert_migration_index(curs)
-                curs.execute("SELECT default_language FROM organization_t WHERE id = 1")
-                lang: str | None = (curs.fetchone() or {}).get("default_language")
+        self.check_database_state(request.headers)
         # Get user id.
         user_id, access_token = self.get_user_id_from_headers(
             request.headers, request.cookies
@@ -49,9 +45,6 @@ class ActionView(BaseView):
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)
-        Translator.set_translation_language(
-            request.headers.get("Accept-Language"), lang
-        )
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handle_action_in_worker_thread(
             request.json, user_id, is_atomic, handler
@@ -62,9 +55,7 @@ class ActionView(BaseView):
     def internal_action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching internal action request.")
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                MigrationHelper.assert_migration_index(curs)
+        self.check_database_state()
         self.check_internal_auth_password(request)
 
         handler = ActionHandler(self.env, self.services, self.logging)
@@ -97,6 +88,21 @@ class ActionView(BaseView):
         with open(VERSION_PATH) as file:
             version = file.read().strip()
             return {"version": version}, None
+
+    def check_database_state(self, headers: None | Headers = None) -> None:
+        """Also sets up Translator with orgs default language if headers provided."""
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
+                MigrationHelper.assert_finalized(curs)
+                if headers:
+                    curs.execute(
+                        "SELECT default_language FROM organization_t WHERE id = 1"
+                    )
+                    lang: str | None = (curs.fetchone() or {}).get("default_language")
+                    Translator.set_translation_language(
+                        headers.get("Accept-Language"), lang
+                    )
 
     def check_internal_auth_password(self, request: Request) -> None:
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)

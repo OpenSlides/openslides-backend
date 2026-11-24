@@ -1,5 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.permissions.permissions import Permission, Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -160,3 +160,70 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion_comment/111", {"comment": "test_Xcdfgee"})
+
+    def base_perm_test(
+        self,
+        permissions: list[Permission],
+        restrictions: list[str],
+        is_submitter: bool,
+        success: bool,
+    ) -> None:
+        self.set_models({"motion_state/1": {"restrictions": restrictions}})
+        self.base_permission_test(
+            (
+                {
+                    "motion_submitter/1": {
+                        "meeting_user_id": 1,
+                        "meeting_id": 1,
+                        "motion_id": 111,
+                    }
+                }
+                if is_submitter
+                else {}
+            ),
+            "motion_comment.update",
+            {"comment": "This is a robbery!", "id": 111},
+            permissions,
+            fail=not success,
+        )
+
+    def test_perm_can_see_on_is_submitter(self) -> None:
+        self.base_perm_test(
+            [Permissions.Motion.CAN_SEE], ["is_submitter"], False, False
+        )
+
+    def test_perm_can_see_internal_submitter_on_can_manage_and_is_submitter(
+        self,
+    ) -> None:
+        self.base_perm_test(
+            [Permissions.Motion.CAN_SEE_INTERNAL],
+            ["motion.can_manage", "is_submitter"],
+            True,
+            True,
+        )
+
+    def test_perm_can_manage_metadata_on_can_manage_metadata(self) -> None:
+        self.base_perm_test(
+            [Permissions.Motion.CAN_MANAGE_METADATA],
+            ["motion.can_manage_metadata"],
+            False,
+            True,
+        )
+
+    def test_perm_can_manage_on_can_see_internal(self) -> None:
+        self.base_perm_test(
+            [Permissions.Motion.CAN_MANAGE], ["motion.can_see_internal"], False, True
+        )
+
+    def test_perm_can_see_internal_and_can_manage_metadata_on_can_manage_and_is_submitter(
+        self,
+    ) -> None:
+        self.base_perm_test(
+            [
+                Permissions.Motion.CAN_SEE_INTERNAL,
+                Permissions.Motion.CAN_MANAGE_METADATA,
+            ],
+            ["motion.can_manage", "is_submitter"],
+            False,
+            False,
+        )

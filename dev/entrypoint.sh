@@ -15,7 +15,7 @@ python cli/create_schema.py
 printf "\n"
 
 printf "\nMigrations:\n"
-python openslides_backend/migrations/migrate.py finalize
+python openslides_backend/migrations/migrate.py migrate
 printf "\n"
 
 exec "$@"

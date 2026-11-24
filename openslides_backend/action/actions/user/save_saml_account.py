@@ -17,6 +17,7 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
+from ....shared.util import json_schema_error_to_str
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -126,7 +127,7 @@ class UserSaveSamlAccount(
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(json_schema_error_to_str(exception))
 
     def validate_fields(self, instance_old: dict[str, Any]) -> dict[str, Any]:
         """
@@ -224,7 +225,7 @@ class UserSaveSamlAccount(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
             )
         if meeting_users:
-            self.execute_other_action(UserUpdate, [mu for mu in meeting_users.values()])
+            self.execute_other_action(UserUpdate, [*meeting_users.values()])
         return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
@@ -323,11 +324,7 @@ class UserSaveSamlAccount(
         user_id: int,
         is_update: bool,
     ) -> dict[int, dict[str, Any]]:
-        if not (
-            external_meeting_ids := sorted(
-                [ext_id for ext_id in meeting_user_data.keys()]
-            )
-        ):
+        if not (external_meeting_ids := sorted([*meeting_user_data.keys()])):
             return {}
         meetings = {
             meeting_id: meeting

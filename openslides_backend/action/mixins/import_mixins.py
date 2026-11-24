@@ -350,7 +350,9 @@ class BaseImportAction(BaseImportJsonUploadAction):
                     entry[key] = dvalue["value"]
         return rows
 
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+    def get_on_success_transaction_based(
+        self, action_data: ActionData
+    ) -> Callable[[], None]:
         def on_success() -> None:
             for instance in action_data:
                 store_id = instance["id"]
