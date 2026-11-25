@@ -579,7 +579,7 @@ class IdmMapper(Model):
     group_external_ids = fields.CharArrayField(required=True)
     weight = fields.IntegerField(default=10000)
     organization_id = fields.OrganizationField(
-        to={"organization": "idm_mapper_ids"}, required=True
+        to={"organization": "idm_mapper_ids"}, required=True, constant=True, default=1
     )
     condition_ids = fields.RelationListField(
         to={"idm_condition": "mapper_id"},
@@ -603,8 +603,7 @@ class IdmMapping(Model):
         required=True,
         constraints={
             "enum": [
-                "groups",
-                "structure_levels",
+                "structure_level_ids",
                 "number",
                 "vote_weight",
                 "present",

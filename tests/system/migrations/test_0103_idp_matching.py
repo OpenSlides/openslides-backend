@@ -134,12 +134,14 @@ class TestMigration103(BaseMigrationTestCase):
                     table_fields,
                     is_nullable=False,
                     fk_to_table_name="organization_t",
-                    default="1"
+                    default="1",
                 )
                 self.assert_view_exists(curs, "idm_mapper")
                 self.assert_trigger_exists(curs, "tr_log_idm_mapper")
                 self.assert_trigger_exists(curs, "tr_log_idm_mapper_organization_id")
-                self.assert_trigger_exists(curs, "tr_constant_idm_mapper_organization_id")
+                self.assert_trigger_exists(
+                    curs, "tr_constant_idm_mapper_organization_id"
+                )
 
                 table_fields = self.assert_table_fields(
                     curs,

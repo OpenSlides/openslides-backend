@@ -1,13 +1,13 @@
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import IdmCondition
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...generics.create import CreateAction
+from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("idm_condition.delete")
-class IdmConditionDelete(CreateAction, CheckForArchivedMeetingMixin):
+class IdmConditionDelete(DeleteAction, CheckForArchivedMeetingMixin):
     """
     Action to delete idm_condition.
     """

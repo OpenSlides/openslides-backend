@@ -12,14 +12,20 @@ class LinearSortMixin(Action):
     def sort_linear(
         self,
         nodes: list,
-        filter: Filter,
+        filter: Filter | None = None,
         weight_key: str = "weight",
     ) -> ActionData:
-        db_instances = self.datastore.filter(
-            collection=self.model.collection,
-            filter_=filter,
-            mapped_fields=["id"],
-        )
+        if filter:
+            db_instances = self.datastore.filter(
+                collection=self.model.collection,
+                filter_=filter,
+                mapped_fields=["id"],
+            )
+        else:
+            db_instances = self.datastore.get_all(
+                collection=self.model.collection,
+                mapped_fields=["id"],
+            )
         valid_instance_ids = []
         for id_ in nodes:
             if id_ not in db_instances:
