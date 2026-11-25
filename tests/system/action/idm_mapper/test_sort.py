@@ -4,7 +4,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class ChatGroupSortActionTest(BaseActionTestCase):
+class IdmMapperSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
