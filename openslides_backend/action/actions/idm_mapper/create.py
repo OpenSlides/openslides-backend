@@ -1,4 +1,3 @@
-
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import IdmMapper
 from ....permissions.management_levels import OrganizationManagementLevel

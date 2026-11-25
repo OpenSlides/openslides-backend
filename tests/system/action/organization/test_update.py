@@ -491,6 +491,44 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request("organization.update", {"id": 1, "name": "blablabla"})
         self.assert_status_code(response, 200)
 
+    def test_update_group_a_permissions_saml(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "saml_login_button_text": "Text for SAML login button",
+                "saml_attr_mapping": self.saml_attr_mapping,
+                "saml_metadata_idp": dedent("""
+                    <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                        entityID="https://auth.digiv.de/auth/realms/demo">
+                        </md:IDPSSODescriptor>
+                    </md:EntityDescriptor>
+                    """),
+                "saml_metadata_sp": dedent("""
+                    <EntityDescriptor
+                    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+                    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                    entityID="http://localhost:9004/saml/metadata">
+                    </EntityDescriptor>
+                    """),
+                "saml_private_key": "private key dependency",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_permissions_saml_enabled(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request("organization.update", {"id": 1, "saml_enabled": True})
+        self.assert_status_code(response, 403)
+
     def test_update_group_b_no_permissions(self) -> None:
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
