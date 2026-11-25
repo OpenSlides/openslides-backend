@@ -22,6 +22,14 @@
     disable_forward_with_attachments: boolean;
     restrict_editing_same_level_committee_admins: boolean;
     restrict_edit_forward_committees: boolean;
+    idm_identity_key: string;
+    idm_organization_managment_key: string;
+    idm_committee_management_key: string;
+    saml_login_button_text: string;
+    saml_attr_mapping: JSON;
+    saml_metadata_idp: text;
+    saml_metadata_sp: text;
+    saml_private_key: text;
     
 // Group B
     enable_electronic_voting: boolean;
@@ -32,11 +40,6 @@
     limit_of_users: int:
     url: string;
     saml_enabled: boolean;
-    saml_login_button_text: string;
-    saml_attr_mapping: JSON;
-    saml_metadata_idp: text;
-    saml_metadata_sp: text;
-    saml_private_key: text;
 }
 ```
 

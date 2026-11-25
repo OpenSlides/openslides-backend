@@ -27,11 +27,12 @@ CREATE TABLE idm_mapper_t (
         CONSTRAINT default_idm_mapper_weight DEFAULT 10000,
     organization_id integer
         CONSTRAINT required_idm_mapper_organization_id NOT NULL
+        CONSTRAINT default_idm_mapper_organization_id DEFAULT 1
 );
 
 
 
-CREATE TYPE enum_idm_mapping_os_field AS ENUM ('groups', 'structure_levels', 'number', 'vote_weight', 'present', 'comment');
+CREATE TYPE enum_idm_mapping_os_field AS ENUM ('structure_level_ids', 'number', 'vote_weight', 'present', 'comment');
 
 
 CREATE TABLE idm_mapping_t (
@@ -76,6 +77,10 @@ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_transaction_e
 ALTER TABLE idm_mapper_t ADD CONSTRAINT fk_idm_mapper_t_organization_id_organization_t_id FOREIGN KEY(organization_id) REFERENCES organization_t(id) INITIALLY DEFERRED;
 CREATE INDEX idx_idm_mapper_t_organization_id ON idm_mapper_t (organization_id);
 
+
+-- definition trigger prevent_updates for idm_mapper.organization_id
+CREATE TRIGGER tr_constant_idm_mapper_organization_id BEFORE UPDATE OF organization_id ON idm_mapper_t
+FOR EACH ROW EXECUTE FUNCTION prevent_updates('idm_mapper', 'organization_id');
 -- notify trigger for idm_mapper_t.organization_id
 CREATE TRIGGER tr_log_idm_mapper_organization_id AFTER INSERT OR UPDATE OF organization_id OR DELETE ON idm_mapper_t
 FOR EACH ROW EXECUTE FUNCTION log_modified_related_models('organization', 'organization_id', 'idm_mapper_ids');

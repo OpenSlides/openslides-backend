@@ -43,6 +43,14 @@ class OrganizationUpdate(
         "disable_forward_with_attachments",
         "restrict_editing_same_level_committee_admins",
         "restrict_edit_forward_committees",
+        "idm_identity_key",
+        "idm_organization_managment_key",
+        "idm_committee_management_key",
+        "saml_login_button_text",
+        "saml_attr_mapping",
+        "saml_metadata_idp",
+        "saml_metadata_sp",
+        "saml_private_key",
     )
 
     group_B_fields = (
@@ -54,11 +62,6 @@ class OrganizationUpdate(
         "limit_of_users",
         "url",
         "saml_enabled",
-        "saml_login_button_text",
-        "saml_attr_mapping",
-        "saml_metadata_idp",
-        "saml_metadata_sp",
-        "saml_private_key",
     )
 
     model = Organization()

@@ -1,0 +1,19 @@
+from ....models.models import IdmCondition
+from ....permissions.management_levels import OrganizationManagementLevel
+from ...generics.update import UpdateAction
+from ...util.default_schema import DefaultSchema
+from ...util.register import register_action
+
+
+@register_action("idm_condition.update")
+class IdmConditionUpdate(UpdateAction):
+    """
+    Action to update idm_condition.
+    """
+
+    model = IdmCondition()
+    schema = DefaultSchema(IdmCondition()).get_update_schema(
+        optional_properties=["idm_field", "regex"]
+    )
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True

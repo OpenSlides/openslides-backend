@@ -134,14 +134,14 @@ class DefaultSchema:
         )
 
     def get_linear_sort_schema(
-        self, id_field_to_sort: str, id_field_main: str = "meeting_id"
+        self, id_field_to_sort: str, id_field_main: str | None = "meeting_id"
     ) -> Schema:
         """
         Returns a default linear sort schema.
         """
         return self.get_default_schema(
             title=f"Sort {self.model} schema",
-            required_properties=[id_field_main],
+            required_properties=[id_field_main] if id_field_main else [],
             additional_required_fields={
                 id_field_to_sort: id_list_schema,
             },

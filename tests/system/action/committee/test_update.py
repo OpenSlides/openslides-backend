@@ -54,6 +54,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "manager_ids": [20, 21],
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
                 "default_meeting_id": 203,
+                "identity_key": "10101010101010101010101010",
             },
         )
         self.assert_status_code(response, 200)
@@ -67,6 +68,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "manager_ids": [20, 21],
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
                 "default_meeting_id": 203,
+                "identity_key": "10101010101010101010101010",
             },
         )
 

@@ -134,10 +134,14 @@ class TestMigration103(BaseMigrationTestCase):
                     table_fields,
                     is_nullable=False,
                     fk_to_table_name="organization_t",
+                    default="1",
                 )
                 self.assert_view_exists(curs, "idm_mapper")
                 self.assert_trigger_exists(curs, "tr_log_idm_mapper")
                 self.assert_trigger_exists(curs, "tr_log_idm_mapper_organization_id")
+                self.assert_trigger_exists(
+                    curs, "tr_constant_idm_mapper_organization_id"
+                )
 
                 table_fields = self.assert_table_fields(
                     curs,
@@ -166,8 +170,7 @@ class TestMigration103(BaseMigrationTestCase):
                     curs,
                     "enum_idm_mapping_os_field",
                     [
-                        "groups",
-                        "structure_levels",
+                        "structure_level_ids",
                         "number",
                         "vote_weight",
                         "present",

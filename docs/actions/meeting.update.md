@@ -188,7 +188,8 @@
 
 // Group D
     external_id: string; // unique in org
-    enable_anonymous: boolean
+    enable_anonymous: boolean;
+    enable_idm_matching: boolean;
     custom_translations: JSON;
 
 // Group E

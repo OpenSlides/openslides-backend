@@ -194,6 +194,7 @@ class MeetingUpdate(
             "jitsi_room_name",
             "jitsi_room_password",
             "enable_anonymous",
+            "enable_idm_matching",
             "custom_translations",
             "present_user_ids",
             *Meeting.all_default_projectors(),
@@ -373,6 +374,7 @@ class MeetingUpdate(
                 for field in [
                     "external_id",
                     "enable_anonymous",
+                    "enable_idm_matching",
                     "custom_translations",
                 ]
             ]

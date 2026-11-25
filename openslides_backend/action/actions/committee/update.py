@@ -32,6 +32,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         optional_properties=[
             "name",
             "description",
+            "identity_key",
             "default_meeting_id",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
