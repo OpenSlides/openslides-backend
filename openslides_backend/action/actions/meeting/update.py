@@ -374,8 +374,8 @@ class MeetingUpdate(
                 for field in [
                     "external_id",
                     "enable_anonymous",
-                    "custom_translations",
                     "enable_idm_matching",
+                    "custom_translations",
                 ]
             ]
         ):
