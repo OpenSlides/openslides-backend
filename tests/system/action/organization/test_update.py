@@ -450,7 +450,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_update_default_language(self) -> None:
+    def test_update_idm_fields(self) -> None:
         response = self.request(
             "organization.update",
             {
@@ -470,7 +470,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_idp_fields(self) -> None:
+    def test_update_default_language(self) -> None:
         response = self.request(
             "organization.update", {"id": 1, "default_language": "it"}
         )

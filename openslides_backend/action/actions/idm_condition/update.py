@@ -1,4 +1,3 @@
-from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import IdmCondition
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
@@ -7,7 +6,7 @@ from ...util.register import register_action
 
 
 @register_action("idm_condition.update")
-class IdmConditionUpdate(UpdateAction, CheckForArchivedMeetingMixin):
+class IdmConditionUpdate(UpdateAction):
     """
     Action to update idm_condition.
     """
@@ -17,3 +16,4 @@ class IdmConditionUpdate(UpdateAction, CheckForArchivedMeetingMixin):
         optional_properties=["idm_field", "regex"]
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True

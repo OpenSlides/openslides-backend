@@ -1,4 +1,3 @@
-from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import IdmMapper
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
@@ -7,7 +6,7 @@ from ...util.register import register_action
 
 
 @register_action("idm_mapper.update")
-class IdmMapperUpdate(UpdateAction, CheckForArchivedMeetingMixin):
+class IdmMapperUpdate(UpdateAction):
     """
     Action to update idm_mapper.
     """
@@ -17,3 +16,4 @@ class IdmMapperUpdate(UpdateAction, CheckForArchivedMeetingMixin):
         required_properties=["group_external_ids"]
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True
