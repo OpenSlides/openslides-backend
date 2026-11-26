@@ -229,6 +229,7 @@ class GroupDeleteAction(DeleteAction):
         fqid: FullQualifiedId,
         fields: dict[str, Any] | None = None,
         list_fields: ListFields | None = None,
+        distinct: bool = False,
     ) -> Event:
         """
         Building event by hand, but with eliminating the meta-* fields
