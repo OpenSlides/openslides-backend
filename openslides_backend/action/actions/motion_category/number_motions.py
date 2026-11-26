@@ -1,11 +1,14 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
+from ....shared.interfaces.event import Event, EventType
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import ActionData
 from ...generics.update import UpdateAction
@@ -58,6 +61,8 @@ class MotionCategoryNumberMotions(UpdateAction):
                     main_counter += 1
 
             for motion_id in affected_motions:
+                yield {"id": motion_id, "number": None}
+            for motion_id in affected_motions:
                 number, number_value = self.get_number(motion_id, number_value_map)
                 yield {
                     "id": motion_id,
@@ -65,6 +70,18 @@ class MotionCategoryNumberMotions(UpdateAction):
                     "number_value": number_value,
                     "last_modified": datetime.now(ZoneInfo("UTC")),
                 }
+
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
+        """
+        Creates events for one instance of the current model.
+        """
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
+        fields = {
+            k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
+        }
+        if not fields:
+            return
+        yield self.build_event(EventType.Update, fqid, fields, distinct=True)
 
     def init_memory(self, main_category_id: int) -> None:
         """Preload all categories with needed fields, all motions with needed fields

@@ -57,6 +57,24 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_model_exists("motion/78", {"number": "prefix_A 001"})
         self.assert_model_exists("motion/85", {"number": "prefix_A 002"})
 
+    def test_two_motions_swap_numbers(self) -> None:
+        self.create_motion_category(1, 111, {"prefix": "A"})
+        self.create_motion(
+            1,
+            78,
+            motion_data={"category_id": 111, "number": "A01", "category_weight": 2},
+        )
+        self.create_motion(
+            1,
+            85,
+            motion_data={"category_id": 111, "number": "A02", "category_weight": 1},
+        )
+
+        response = self.request("motion_category.number_motions", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/78", {"number": "A02"})
+        self.assert_model_exists("motion/85", {"number": "A01"})
+
     def test_check_amendments_error_case(self) -> None:
         self.create_motion_category(1, 111)
         self.create_motion_category(1, 78, {"parent_id": 111})

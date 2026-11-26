@@ -391,6 +391,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         fqid: FullQualifiedId,
         fields: dict[str, Any] | None = None,
         list_fields: ListFields | None = None,
+        distinct: bool = False,
     ) -> Event:
         """
         Helper function to create a WriteRequest.
@@ -398,6 +399,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         event = Event(
             type=type,
             fqid=fqid,
+            distinct=distinct,
         )
         if fields:
             event["fields"] = fields
@@ -596,12 +598,16 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         This is optimation to reduce the amount of update events.
         """
         events_by_fqid = defaultdict(list)
-        for event in update_events:
-            events_by_fqid[event["fqid"]].append(event)
-
         result: list[Event] = []
-        for fqid in events_by_fqid:
-            result.extend(self.merge_update_events_for_fqid(events_by_fqid[fqid]))
+
+        for event in update_events:
+            if event["distinct"]:
+                result.append(event)
+            else:
+                events_by_fqid[event["fqid"]].append(event)
+
+        for events in events_by_fqid.values():
+            result.extend(self.merge_update_events_for_fqid(events))
 
         return result
 
@@ -652,7 +658,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             else:
                 fdict[event["fqid"]] = {
                     "type": event["type"],
-                    "fields": event.get("fields", {}),
+                    "fields": event.get("fields", {}).copy(),
                 }
 
         for fqid, v in fdict.items():
